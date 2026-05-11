@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import "../pages/CSS/Login.css";
 import { useNavigate } from "react-router-dom";
-//import logoImg from "/logos/logo.jpeg";
+
 
 interface Toast {
   id: number;
@@ -119,17 +119,18 @@ export default function Login() {
           </svg>
         </button>
         <div className="logo-wrap">
-          {/* <img
-            className="logo-img"
-            src={logoImg}
-            alt="Mercadins Logo"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.background = "#1a3a7a";
-            }}
-          />*/}
+  <img
+    className="logo.jpeg"
+    src="../src/assets/logo.jpeg"
+    alt="Mercadins Logo"
+    onError={(e) => {
+      (e.currentTarget as HTMLImageElement).style.display = "none";
+    }}
+  />
+  <span className="logo-tagline">Seu mercado inteligente</span>
+</div>
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
-      </div>
 
       <div className="right">
         <div className="form-card">
@@ -153,7 +154,7 @@ export default function Login() {
                 onChange={handleChange}
                 required
               />
-              <span className="field-icon">
+              <span className="field-icon-login">
                 <svg
                   width="17"
                   height="17"
@@ -180,7 +181,7 @@ export default function Login() {
                 onChange={handleChange}
                 required
               />
-              <span className="field-icon">
+              <span className="field-icon-login">
                 <svg
                   width="17"
                   height="17"

@@ -250,9 +250,17 @@ export default function Register() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <div className="logo-wrap">
-          <span className="logo-tagline">Seu mercado inteligente</span>
-        </div>
+       <div className="logo-wrap">
+       <img
+         className="logo.jpeg"
+         src="../src/assets/logo.jpeg"
+         alt="Mercadins Logo"
+         onError={(e) => {
+         (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+        />
+        <span className="logo-tagline">Seu mercado inteligente</span>
+      </div>
       </div>
 
       {/* Right panel */}
@@ -275,7 +283,7 @@ export default function Register() {
                 value={form.nome}
                 onChange={handleChange}
               />
-              <span className="field-icon">
+              <span className="field-icon-register">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
@@ -294,7 +302,7 @@ export default function Register() {
                 value={form.telefone}
                 onChange={handleTelefone}
               />
-              <span className="field-icon">
+              <span className="field-icon-register">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
                 </svg>
@@ -312,7 +320,7 @@ export default function Register() {
                 value={form.email}
                 onChange={handleChange}
               />
-              <span className="field-icon">
+              <span className="field-icon-register">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                   <polyline points="22,6 12,13 2,6" />
@@ -331,7 +339,7 @@ export default function Register() {
                 value={form.senha}
                 onChange={handleChange}
               />
-              <span className="field-icon">
+              <span className="field-icon-register">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -371,7 +379,7 @@ export default function Register() {
                 value={form.confirmar}
                 onChange={handleChange}
               />
-              <span className="field-icon">
+              <span className="field-icon-register">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>

@@ -2,7 +2,7 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 
-const authRoutes = require('./routes/authRoutes')
+const authRoutes = require('./routes/authRoutes.js')//<-- mudei aqui UwU adicionei o .js
 
 const app = express()
 const PORT = process.env.PORT || 3001

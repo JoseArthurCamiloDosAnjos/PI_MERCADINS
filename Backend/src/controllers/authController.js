@@ -7,7 +7,7 @@ const {
   validarEmail,
   validarTelefone,
 } = require("../utils/validators");
-const { enviarEmailVerificacao } = require("../utils/mailer");
+const { enviarEmailVerificacao, enviarEmailRecuperacao } = require("../utils/mailer");
 
 // Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
@@ -149,3 +149,180 @@ const signIn = async (req, res) => {
 };
 
 module.exports = { signUp, signIn, verificarEmail };
+
+const esqueciSenha = async (req, res) => {
+
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      erro: "Email obrigatório"
+    });
+  }
+
+  try {
+
+    const sql = await conectar();
+
+    const usuario = await sql`
+      SELECT id_usuario
+      FROM usuarios
+      WHERE email = ${email}
+    `;
+
+    if (usuario.length === 0) {
+
+      return res.status(404).json({
+        erro: "Usuário não encontrado"
+      });
+    }
+
+    // gera token
+    const token =
+      crypto.randomBytes(32).toString("hex");
+
+    // expira em 1 hora
+    const expiracao =
+      new Date(Date.now() + 60 * 60 * 1000);
+
+    // salva token
+    await sql`
+      UPDATE usuarios
+      SET token_verificacao = ${token},
+          token_expiracao = ${expiracao}
+      WHERE email = ${email}
+    `;
+
+    // envia email
+    await enviarEmailRecuperacao(
+      email,
+      token
+    );
+
+    res.json({
+      mensagem:
+        "Email de recuperação enviado"
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      erro:
+        "Erro ao enviar recuperação"
+    });
+  }
+};
+
+const redefinirSenha =
+  async (req, res) => {
+
+    const {
+      token,
+      novaSenha,
+      confirmarSenha
+    } = req.body;
+
+    if (
+      !token ||
+      !novaSenha ||
+      !confirmarSenha
+    ) {
+
+      return res.status(400).json({
+        erro:
+          "Todos os campos são obrigatórios"
+      });
+    }
+
+    if (novaSenha !== confirmarSenha) {
+
+      return res.status(400).json({
+        erro:
+          "As senhas não coincidem"
+      });
+    }
+
+    const errosSenha =
+      Array.isArray(validarSenha(novaSenha))
+        ? validarSenha(novaSenha)
+        : [];
+
+    if (errosSenha.length > 0) {
+
+      return res.status(400).json({
+        erros: errosSenha
+      });
+    }
+
+    try {
+
+      const sql = await conectar();
+
+      const usuario = await sql`
+        SELECT
+          id_usuario,
+          token_expiracao
+        FROM usuarios
+        WHERE token_verificacao = ${token}
+      `;
+
+      if (usuario.length === 0) {
+
+        return res.status(400).json({
+          erro: "Token inválido"
+        });
+      }
+
+      const user = usuario[0];
+
+      // token expirado
+      if (
+        new Date() >
+        new Date(user.token_expiracao)
+      ) {
+
+        return res.status(400).json({
+          erro: "Token expirado"
+        });
+      }
+
+      // hash senha
+      const senhaHash =
+        await bcrypt.hash(
+          novaSenha,
+          10
+        );
+
+      // atualiza senha
+      await sql`
+        UPDATE usuarios
+        SET senha = ${senhaHash},
+            token_verificacao = NULL,
+            token_expiracao = NULL
+        WHERE id_usuario = ${user.id_usuario}
+      `;
+
+      res.json({
+        mensagem:
+          "Senha redefinida com sucesso"
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      res.status(500).json({
+        erro:
+          "Erro ao redefinir senha"
+      });
+    }
+};
+module.exports = {
+  signUp,
+  signIn,
+  verificarEmail,
+  esqueciSenha,
+  redefinirSenha
+};

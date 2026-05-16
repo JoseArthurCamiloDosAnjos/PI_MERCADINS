@@ -187,6 +187,22 @@ html, body {
 }
 .field input:focus ~ .field-icon-login { color: var(--navy-mid); }
 
+/* Botão olho senha */
+.toggle-senha {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+.toggle-senha:hover { color: var(--navy); }
+
 /* ── FORGOT ── */
 .forgot {
   display: block;

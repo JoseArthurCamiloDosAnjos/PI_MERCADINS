@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
-//import logoImg from "/logos/logo.jpeg";
 
 interface Toast {
   id: number;
@@ -27,7 +26,6 @@ interface FieldState {
 const emptyField: FieldState = { status: "", msg: "" };
 
 export default function Register() {
-
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -157,40 +155,40 @@ export default function Register() {
   }
 
   async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  if (!validate()) return;
-  setLoading(true);
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nome: form.nome.trim(),
-        telefone: form.telefone.trim(),
-        email: form.email.trim(),
-        senha: form.senha,
-        confirmarSenha: form.confirmar,
-      }),
-    })
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: form.nome.trim(),
+          telefone: form.telefone.trim(),
+          email: form.email.trim(),
+          senha: form.senha,
+          confirmarSenha: form.confirmar,
+        }),
+      });
 
-    const data = await res.json()
+      const data = await res.json();
 
-    if (res.ok) {
-      showToast('sucesso', 'Verifique seu email para concluir o cadastro! 🎉')
-      setTimeout(() => navigate('/auth'), 2000)
-    } else {
-      if (Array.isArray(data.erros)) {
-        showToast('erro', data.erros.join(' • '))
+      if (res.ok) {
+        showToast('sucesso', 'Verifique seu email para concluir o cadastro! 🎉');
+        setTimeout(() => navigate('/auth'), 2000);
       } else {
-        showToast('erro', data.erro || 'Erro ao cadastrar. Tente novamente.')
+        if (Array.isArray(data.erros)) {
+          showToast('erro', data.erros.join(' • '));
+        } else {
+          showToast('erro', data.erro || 'Erro ao cadastrar. Tente novamente.');
+        }
       }
+    } catch {
+      showToast('erro', 'Falha na conexão com o servidor.');
+    } finally {
+      setLoading(false);
     }
-  } catch {
-    showToast('erro', 'Falha na conexão com o servidor.')
-  } finally {
-    setLoading(false);
   }
-}
 
   // ── Strength meter ──
   function senhaStrength(senha: string) {
@@ -250,17 +248,17 @@ export default function Register() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-       <div className="logo-wrap">
-       <img
-         className="logo.jpeg"
-         src="../src/assets/logo.jpeg"
-         alt="Mercadins Logo"
-         onError={(e) => {
-         (e.currentTarget as HTMLImageElement).style.display = "none";
-        }}
-        />
-        <span className="logo-tagline">Seu mercado inteligente</span>
-      </div>
+        <div className="logo-wrap">
+          <img
+            className="logo-img"
+            src="../src/assets/logo.jpeg"
+            alt="Mercadins Logo"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+          <span className="logo-tagline">Seu mercado inteligente</span>
+        </div>
       </div>
 
       {/* Right panel */}

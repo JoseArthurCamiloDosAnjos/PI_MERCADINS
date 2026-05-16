@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import "../pages/CSS/Login.css";
 import { useNavigate } from "react-router-dom";
 
-
 interface Toast {
   id: number;
   tipo: "sucesso" | "erro" | "aviso" | "info";
@@ -119,18 +118,17 @@ export default function Login() {
           </svg>
         </button>
         <div className="logo-wrap">
-  <img
-    className="logo.jpeg"
-    src="../src/assets/logo.jpeg"
-    alt="Mercadins Logo"
-    onError={(e) => {
-      (e.currentTarget as HTMLImageElement).style.display = "none";
-    }}
-  />
-  <span className="logo-tagline">Seu mercado inteligente</span>
-</div>
+          <img
+            className="logo-img"
+            src="../src/assets/logo.jpeg"
+            alt="Mercadins Logo"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
+      </div>
 
       <div className="right">
         <div className="form-card">
@@ -202,15 +200,15 @@ export default function Login() {
               Esqueci Minha Senha
             </a>
 
-            <button type="submit" className="btn btn-primary">
-              Entrar
+            <button type="submit" className="btn btn-secondary">
+              Login
             </button>
 
             <div className="divider">ou</div>
 
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-primary"
               onClick={() => navigate("/auth/register")}
             >
               Cadastrar-se

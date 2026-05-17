@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
+import "./CSS/modais.css";
+import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
 
 interface Toast {
   id: number;
@@ -47,6 +49,8 @@ export default function Register() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmar, setShowConfirmar] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showVerificacaoModal, setShowVerificacaoModal] = useState(false);
+  const [emailCadastrado, setEmailCadastrado] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -174,8 +178,8 @@ export default function Register() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast('sucesso', 'Verifique seu email para concluir o cadastro! 🎉');
-        setTimeout(() => navigate('/auth'), 2000);
+        setEmailCadastrado(form.email.trim());
+        setShowVerificacaoModal(true);
       } else {
         if (Array.isArray(data.erros)) {
           showToast('erro', data.erros.join(' • '));
@@ -210,6 +214,13 @@ export default function Register() {
 
   return (
     <>
+      {showVerificacaoModal && (
+        <EmailVerificacaoModal
+          email={emailCadastrado}
+          onClose={() => { setShowVerificacaoModal(false); navigate("/auth"); }}
+        />
+      )}
+
       {/* Toast container */}
       <div id="toast-container">
         {toasts.map((t) => {

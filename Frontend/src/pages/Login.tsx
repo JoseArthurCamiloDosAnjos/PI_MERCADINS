@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import "../pages/CSS/Login.css";
+import "../pages/CSS/modais.css";
 import { useNavigate } from "react-router-dom";
+import EsqueciSenhaModal from "../components/EsqueciSenhaModal";
 
 interface Toast {
   id: number;
@@ -24,6 +26,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", senha: "" });
   const [showSenha, setShowSenha] = useState(false);
+  const [showEsqueciModal, setShowEsqueciModal] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(
     new Map(),
@@ -71,6 +74,10 @@ export default function Login() {
 
   return (
     <>
+      {showEsqueciModal && (
+        <EsqueciSenhaModal onClose={() => setShowEsqueciModal(false)} />
+      )}
+
       <div id="toast-container">
         {toasts.map((t) => {
           const c = tipoMap[t.tipo];
@@ -210,9 +217,13 @@ export default function Login() {
               </button>
             </div>
 
-            <a href="#" className="forgot">
+            <button
+              type="button"
+              className="forgot"
+              onClick={() => setShowEsqueciModal(true)}
+            >
               Esqueci Minha Senha
-            </a>
+            </button>
 
             <button type="submit" className="btn btn-secondary">
               Login

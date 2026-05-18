@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import "../pages/CSS/Login.css";
 import "../pages/CSS/modais.css";
 import { useNavigate } from "react-router-dom";
-import EsqueciSenhaModal from "../components/EsqueciSenhaModal";
+import EsqueciSenhaModal from "../components/Esquecisenhamodal";
 
 interface Toast {
   id: number;

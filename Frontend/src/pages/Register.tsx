@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
 import "./CSS/modais.css";
-import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
+import EmailVerificacaoModal from "../components/Emailverificacaomodal";
 
 interface Toast {
   id: number;

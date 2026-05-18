@@ -3,14 +3,15 @@ const cors = require('cors')
 require('dotenv').config()
 
 const authRoutes = require('./routes/authRoutes.js')//<-- mudei aqui UwU adicionei o .js
-
+const marketRoutes = require('./routes/marketRoutes.js')
 const app = express()
 const PORT = process.env.PORT || 3001
 
 app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json())
 
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', authRoutes);
+app.use('/api/mercados', marketRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Backend rodando em http://localhost:${PORT}`)

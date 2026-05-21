@@ -6,4 +6,6 @@ const {criarMercado, listarMercados, buscarMercadoPorId, atualizarMercado, delet
 
 router.post('/registerMarket', criarMercado);
 
-router.get("/showmarkets",listarMercados);
+router.get("/showmarkets", listarMercados);
+
+module.exports = router;

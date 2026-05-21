@@ -407,7 +407,8 @@ html, body {
   .logo-img { width: 120px; height: 120px; }
   .right { padding: 28px 24px; }
 }
-/* ── Toasts ─────────────────────────────────── */
+
+/* ── Toasts ── */
 #toast-container {
   position: fixed;
   top: 20px;

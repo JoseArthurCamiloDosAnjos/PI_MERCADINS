@@ -49,10 +49,10 @@ function validarTelefone(telefone) {
 // ─────────────────────────────────────────────
 
 const criarMercado = async (req, res) => {
-  const { nomeMercado, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
     req.body;
 
-  if (!nomeMercado || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
+  if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
 
   if (!validarEmailSimples(email))
@@ -84,9 +84,9 @@ const criarMercado = async (req, res) => {
       return res.status(409).json({ erro: "CNPJ ou email já cadastrado" });
 
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome_mercado, email, telefone, cnpj, cep, estado, cidade, bairro, rua)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua)
       VALUES (
-        ${nomeMercado.trim()},
+        ${nome.trim()},
         ${email.trim().toLowerCase()},
         ${telefoneLimpo},
         ${cnpjLimpo},
@@ -103,10 +103,13 @@ const criarMercado = async (req, res) => {
       mensagem: "Mercado criado com sucesso!",
       mercado: novoMercado,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao criar mercado" });
-  }
+ } catch (err) {
+  console.error("ERRO COMPLETO:", err);
+
+  res.status(500).json({
+    erro: err.message
+  });
+}
 };
 
 // ─────────────────────────────────────────────
@@ -119,14 +122,17 @@ const listarMercados = async (req, res) => {
 
     const mercados = await sql`
       SELECT * FROM mercados
-      ORDER BY criado_em DESC
+      ORDER BY data_cadastro DESC
     `;
 
     res.status(200).json({ mercados });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao buscar mercados" });
-  }
+   } catch (err) {
+  console.error("ERRO COMPLETO:", err);
+
+  res.status(500).json({
+    erro: err.message
+  });
+}
 };
 
 // ─────────────────────────────────────────────
@@ -160,7 +166,7 @@ const buscarMercadoPorId = async (req, res) => {
 
 const atualizarMercado = async (req, res) => {
   const { id } = req.params;
-  const { nomeMercado, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
     req.body;
 
   if (email && !validarEmailSimples(email))
@@ -188,7 +194,7 @@ const atualizarMercado = async (req, res) => {
 
     const [mercadoAtualizado] = await sql`
       UPDATE mercados SET
-        nome_mercado = COALESCE(${nomeMercado?.trim()              ?? null}, nome_mercado),
+        nome = COALESCE(${nome?.trim()              ?? null}, nome),
         email        = COALESCE(${email?.trim().toLowerCase()      ?? null}, email),
         telefone     = COALESCE(${telefone ? limparMascara(telefone) : null}, telefone),
         cnpj         = COALESCE(${cnpj    ? limparMascara(cnpj)     : null}, cnpj),
@@ -205,10 +211,13 @@ const atualizarMercado = async (req, res) => {
       mensagem: "Mercado atualizado com sucesso!",
       mercado: mercadoAtualizado,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao atualizar mercado" });
-  }
+} catch (err) {
+  console.error("ERRO COMPLETO:", err);
+
+  res.status(500).json({
+    erro: err.message
+  });
+}
 };
 
 // ─────────────────────────────────────────────

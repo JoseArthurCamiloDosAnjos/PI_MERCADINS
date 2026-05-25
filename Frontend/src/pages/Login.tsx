@@ -1,50 +1,21 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "../pages/CSS/Login.css";
 import "../pages/CSS/modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../components/Esquecisenhamodal";
 
-interface Toast {
-  id: number;
-  tipo: "sucesso" | "erro" | "aviso" | "info";
-  mensagem: string;
-  hiding?: boolean;
-}
+import ToastContainer, { useToast } from "../components/Toast";
 
-let toastIdCounter = 0;
-
-const tipoMap = {
-  sucesso: { cls: "toast-success", icon: "✓", titulo: "Sucesso" },
-  erro: { cls: "toast-error", icon: "✕", titulo: "Erro" },
-  aviso: { cls: "toast-warning", icon: "!", titulo: "Atenção" },
-  info: { cls: "toast-info", icon: "i", titulo: "Aviso" },
-};
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { toasts, showToast, dismissToast } = useToast();
+
   const [form, setForm] = useState({ email: "", senha: "" });
   const [showSenha, setShowSenha] = useState(false);
   const [showEsqueciModal, setShowEsqueciModal] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
-
-  function showToast(tipo: Toast["tipo"], mensagem: string) {
-    const id = ++toastIdCounter;
-    setToasts((prev) => [...prev, { id, tipo, mensagem }]);
-    const timer = setTimeout(() => dismissToast(id), 3500);
-    toastTimers.current.set(id, timer);
-  }
-
-  function dismissToast(id: number) {
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, hiding: true } : t)),
-    );
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);
-  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -60,7 +31,7 @@ export default function Login() {
       const usuario = await login(form.email, form.senha);
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/perfiUsuario.tsx");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
@@ -78,34 +49,7 @@ export default function Login() {
         <EsqueciSenhaModal onClose={() => setShowEsqueciModal(false)} />
       )}
 
-      <div id="toast-container">
-        {toasts.map((t) => {
-          const c = tipoMap[t.tipo];
-          return (
-            <div
-              key={t.id}
-              className={`toast ${c.cls} ${t.hiding ? "hide" : "show"}`}
-              onClick={() => dismissToast(t.id)}
-            >
-              <div className="toast-icon-wrap">{c.icon}</div>
-              <div className="toast-body">
-                <div className="toast-title">{c.titulo}</div>
-                <div className="toast-msg">{t.mensagem}</div>
-              </div>
-              <button
-                className="toast-close"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dismissToast(t.id);
-                }}
-              >
-                ×
-              </button>
-              <div className="toast-progress" />
-            </div>
-          );
-        })}
-      </div>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
         <div className="left-bg" />
@@ -202,7 +146,11 @@ export default function Login() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
-              <button type="button" className="toggle-senha" onClick={() => setShowSenha((v) => !v)}>
+              <button
+                type="button"
+                className="toggle-senha"
+                onClick={() => setShowSenha((v) => !v)}
+              >
                 {showSenha ? (
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />

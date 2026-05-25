@@ -8,7 +8,7 @@ router.post('/registerMarket', criarMercado);
 
 router.get("/showmarkets", listarMercados);
 
-router.put("/atualizar", atualizarMercado);
+router.put("/atualizar/:id", atualizarMercado);
 
 
 module.exports = router;

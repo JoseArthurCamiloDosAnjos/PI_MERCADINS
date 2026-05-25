@@ -4,14 +4,6 @@ const { conectar } = require('../db/neon');
 const path = require('path');
 const { signUp, signIn, verificarEmail, esqueciSenha, redefinirSenha } = require('../controllers/authController');
 
-router.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname,'../public/pages/login.html'));
-});
-
-
-router.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname,'../public/pages/register.html'));
-});
 // REGISTER
 router.post('/register', signUp);
 // LOGIN

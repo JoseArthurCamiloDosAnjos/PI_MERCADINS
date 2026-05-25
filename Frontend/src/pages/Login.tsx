@@ -60,7 +60,7 @@ export default function Login() {
       const usuario = await login(form.email, form.senha);
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/perfiUsuario.tsx");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

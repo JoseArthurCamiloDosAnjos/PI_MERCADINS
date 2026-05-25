@@ -1,0 +1,109 @@
+.sb-root {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--azul-sidebar);
+  border-right: 1px solid var(--azul-borda);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* PERFIL */
+.sb-profile {
+  padding: 1.8rem 1.4rem 1.4rem;
+  border-bottom: 1px solid var(--azul-borda);
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  font-size: 22px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.9rem;
+  animation: pulse 3s ease-in-out infinite;
+  box-shadow: 0 0 0 4px rgba(245,200,74,0.18);
+}
+
+.sb-nome  { font-size: 15px; font-weight: 800; color: var(--branco); line-height: 1.3; }
+.sb-email { font-size: 11px; color: var(--cinza-texto); margin-top: 3px; }
+
+.sb-badge {
+  align-self: flex-start;
+  margin-top: 8px;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  font-size: 9px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.8px;
+}
+
+/* NAV */
+.sb-nav {
+  padding: 1rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sb-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: var(--cinza-texto);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  transition: all 0.22s;
+  opacity: 0;
+  animation: slideLeft 0.35s ease forwards;
+  position: relative;
+}
+
+.sb-nav-btn:hover {
+  background: var(--azul-card);
+  border-color: var(--azul-item);
+  color: var(--branco);
+  transform: translateX(3px);
+}
+
+.sb-nav-btn.active {
+  background: var(--azul-medio);
+  border-color: var(--azul-claro);
+  color: var(--amarelo);
+  box-shadow: 0 4px 16px rgba(24,67,160,0.45);
+}
+
+.sb-nav-btn.active .sb-nav-label {
+  font-weight: 800;
+}
+
+.sb-nav-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.sb-nav-label { flex: 1; }
+
+.sb-nav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amarelo);
+  flex-shrink: 0;
+}

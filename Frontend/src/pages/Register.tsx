@@ -1,24 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
 import "./CSS/modais.css";
 import EmailVerificacaoModal from "../components/Emailverificacaomodal";
-
-interface Toast {
-  id: number;
-  tipo: "sucesso" | "erro" | "aviso" | "info";
-  mensagem: string;
-  hiding?: boolean;
-}
-
-let toastIdCounter = 0;
-
-const tipoMap = {
-  sucesso: { cls: "toast-success", icon: "✓", titulo: "Sucesso" },
-  erro:    { cls: "toast-error",   icon: "✕", titulo: "Erro" },
-  aviso:   { cls: "toast-warning", icon: "!", titulo: "Atenção" },
-  info:    { cls: "toast-info",    icon: "i", titulo: "Aviso" },
-};
+import ToastContainer, { useToast } from "../components/Toast";
+import PasswordStrength from "../components/PasswordStrength";
 
 interface FieldState {
   status: "" | "error" | "success";
@@ -29,6 +15,7 @@ const emptyField: FieldState = { status: "", msg: "" };
 
 export default function Register() {
   const navigate = useNavigate();
+  const { toasts, showToast, dismissToast } = useToast();
 
   const [form, setForm] = useState({
     nome: "",
@@ -51,21 +38,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showVerificacaoModal, setShowVerificacaoModal] = useState(false);
   const [emailCadastrado, setEmailCadastrado] = useState("");
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-
-  // ── Toast helpers ──
-  function showToast(tipo: Toast["tipo"], mensagem: string) {
-    const id = ++toastIdCounter;
-    setToasts((prev) => [...prev, { id, tipo, mensagem }]);
-    const timer = setTimeout(() => dismissToast(id), 3500);
-    toastTimers.current.set(id, timer);
-  }
-
-  function dismissToast(id: number) {
-    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, hiding: true } : t)));
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);
-  }
 
   // ── Field helpers ──
   function setField(name: string, status: FieldState["status"], msg: string) {
@@ -163,9 +135,9 @@ export default function Register() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nome: form.nome.trim(),
           telefone: form.telefone.trim(),
@@ -182,35 +154,17 @@ export default function Register() {
         setShowVerificacaoModal(true);
       } else {
         if (Array.isArray(data.erros)) {
-          showToast('erro', data.erros.join(' • '));
+          showToast("erro", data.erros.join(" • "));
         } else {
-          showToast('erro', data.erro || 'Erro ao cadastrar. Tente novamente.');
+          showToast("erro", data.erro || "Erro ao cadastrar. Tente novamente.");
         }
       }
     } catch {
-      showToast('erro', 'Falha na conexão com o servidor.');
+      showToast("erro", "Falha na conexão com o servidor.");
     } finally {
       setLoading(false);
     }
   }
-
-  // ── Strength meter ──
-  function senhaStrength(senha: string) {
-    let score = 0;
-    if (senha.length >= 8) score++;
-    if (/[A-Z]/.test(senha)) score++;
-    if (/[0-9]/.test(senha)) score++;
-    if (/[^A-Za-z0-9]/.test(senha)) score++;
-    const map = [
-      { pct: "25%", color: "#ef4444", label: "Fraca" },
-      { pct: "50%", color: "#f59e0b", label: "Razoável" },
-      { pct: "75%", color: "#3b82f6", label: "Boa" },
-      { pct: "100%", color: "#22c55e", label: "Forte" },
-    ];
-    return score > 0 ? map[score - 1] : null;
-  }
-
-  const strength = form.senha ? senhaStrength(form.senha) : null;
 
   return (
     <>
@@ -221,32 +175,7 @@ export default function Register() {
         />
       )}
 
-      {/* Toast container */}
-      <div id="toast-container">
-        {toasts.map((t) => {
-          const c = tipoMap[t.tipo];
-          return (
-            <div
-              key={t.id}
-              className={`toast ${c.cls} ${t.hiding ? "hide" : "show"}`}
-              onClick={() => dismissToast(t.id)}
-            >
-              <div className="toast-icon-wrap">{c.icon}</div>
-              <div className="toast-body">
-                <div className="toast-title">{c.titulo}</div>
-                <div className="toast-msg">{t.mensagem}</div>
-              </div>
-              <button
-                className="toast-close"
-                onClick={(ev) => { ev.stopPropagation(); dismissToast(t.id); }}
-              >
-                ×
-              </button>
-              <div className="toast-progress" />
-            </div>
-          );
-        })}
-      </div>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Left panel */}
       <div className="left">
@@ -368,14 +297,7 @@ export default function Register() {
                 )}
               </button>
               <span className="field-msg">{fields.senha.msg}</span>
-              {strength && (
-                <div className="senha-strength show">
-                  <div className="strength-bar">
-                    <div className="strength-fill" style={{ width: strength.pct, background: strength.color }} />
-                  </div>
-                  <span className="strength-label" style={{ color: strength.color }}>{strength.label}</span>
-                </div>
-              )}
+              {form.senha && <PasswordStrength senha={form.senha} />}
             </div>
 
             {/* Confirmar Senha */}

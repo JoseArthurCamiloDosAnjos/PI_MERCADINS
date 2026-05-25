@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
 import "./CSS/modais.css";
 import EmailVerificacaoModal from "../components/Emailverificacaomodal";
+
 import ToastContainer, { useToast } from "../components/Toast";
 import PasswordStrength from "../components/PasswordStrength";
 

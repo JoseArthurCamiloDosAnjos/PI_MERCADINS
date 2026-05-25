@@ -4,7 +4,9 @@ import "../pages/CSS/Login.css";
 import "../pages/CSS/modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../components/Esquecisenhamodal";
+
 import ToastContainer, { useToast } from "../components/Toast";
+
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,7 +31,7 @@ export default function Login() {
       const usuario = await login(form.email, form.senha);
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/perfiUsuario.tsx");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

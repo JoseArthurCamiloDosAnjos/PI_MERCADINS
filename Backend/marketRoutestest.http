@@ -1,0 +1,21 @@
+### Variáveis Globais
+@baseUrl = GET http://localhost:3001
+@name = teste2
+@email = teste2@teste.com
+@password = 123456
+
+### 1. Criar um novo usuário (Sign Up)
+POST {{baseUrl}}/api/mercados/registerMarket
+Content-Type: application/json
+
+{
+    "name": " {{name}}",
+    "email" : "{{email}}",
+    "password": "{{password}}"
+}
+
+
+### 3. Listar Usuários (Rota Protegida)
+GET {{baseUrl}}/api/mercados/showmarkets
+
+###

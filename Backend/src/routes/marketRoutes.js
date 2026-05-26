@@ -10,5 +10,7 @@ router.get("/showmarkets", listarMercados);
 
 router.put("/atualizar/:id", atualizarMercado);
 
+router.put("/procurarMercado/:id", buscarMercadoPorId);
+
 
 module.exports = router;

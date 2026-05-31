@@ -1,0 +1,63 @@
+@import './Register.css';
+
+/* Ajustes específicos da tela de mercado */
+.rm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+}
+
+.rm-grid .field {
+  margin-bottom: 14px;
+}
+
+.rm-full {
+  grid-column: 1 / -1;
+}
+
+.rm-cep-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.rm-cep-row .field {
+  flex: 1;
+}
+
+.rm-cep-btn {
+  margin-top: 2px;
+  padding: 14px 16px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.rm-cep-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
+.rm-cep-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.rm-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 8px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rm-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--input-border);
+}

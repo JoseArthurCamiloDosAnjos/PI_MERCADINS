@@ -1,3 +1,4 @@
+// App.tsx
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -7,9 +8,11 @@ import PerfilUsuario from './pages/PerfilUsuario'
 import PerfilVendedor from './pages/PerfilVendedor'
 import GerenciamentoMercado from './pages/GerenciamentoMercado'
 import LoadingOverlay from './components/LoadingOverlay'
+import RedefinirSenha from './pages/RedefinirSenha'
+import RegistrarMercado from './pages/RegistrarMercado'
 
 function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () => void }) {
-  const { usuario, carregando } = useAuth()
+  const { usuario, carregando, temMercado } = useAuth()
   const [mercadoAberto, setMercadoAberto] = useState<{ emoji: string; nome: string } | null>(null)
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
@@ -18,13 +21,17 @@ function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () 
     return <GerenciamentoMercado onVoltar={() => setMercadoAberto(null)} />
   }
 
+  const destino = usuario ? (temMercado ? '/vendedor' : '/perfil') : '/auth'
+
   return (
     <Routes>
-      <Route path="/auth"          element={!usuario ? <Login />    : <Navigate to="/perfil" />} />
-      <Route path="/auth/register" element={!usuario ? <Register /> : <Navigate to="/perfil" />} />
-      <Route path="/perfil"        element={usuario  ? <PerfilUsuario tema={tema} toggleTema={toggleTema} /> : <Navigate to="/auth" />} />
-      <Route path="/vendedor"      element={usuario  ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to="/auth" />} />
-      <Route path="*"              element={<Navigate to="/auth" />} />
+      <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+      <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
+      <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
+      <Route path="/perfil"            element={ usuario ? <PerfilUsuario tema={tema} toggleTema={toggleTema} /> : <Navigate to="/auth" />} />
+      <Route path="/vendedor"          element={ usuario ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to="/auth" />} />
+      <Route path="/registrar-mercado" element={ usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
+      <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>
   )
 }

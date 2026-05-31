@@ -1,0 +1,119 @@
+@import './Login.css';
+
+/* ── STRENGTH BAR (reutilizada do PerfilUsuario) ── */
+.senha-strength {
+  margin: -6px 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--input-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.strength-label {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 52px;
+}
+
+/* ── REQUISITOS DE SENHA ── */
+.senha-requisitos {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: -6px 0 18px 0;
+}
+
+.senha-req-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.senha-req-item.ok { color: #22c55e; }
+
+.senha-req-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--input-border);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.senha-req-item.ok .senha-req-icon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* ── TELA DE SUCESSO ── */
+.rs-sucesso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 20px 0;
+  animation: fadeUp 0.5s ease both;
+}
+
+.rs-sucesso-icon {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.12);
+  border: 2px solid rgba(34,197,94,0.3);
+  display: flex; align-items: center; justify-content: center;
+  color: #22c55e;
+}
+
+.rs-sucesso h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+.rs-sucesso p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.rs-sucesso-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.rs-sucesso-dots span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--navy);
+  opacity: 0.3;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.rs-sucesso-dots span:nth-child(2) { animation-delay: 0.2s; }
+.rs-sucesso-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.3); }
+}

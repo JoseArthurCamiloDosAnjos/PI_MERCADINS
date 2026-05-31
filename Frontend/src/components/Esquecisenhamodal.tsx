@@ -31,7 +31,7 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
     setErro("");
     setLoading(true);
     try {
-      await fetch("/api/auth/forgot-password", {
+      await fetch("/api/auth/esqueci-senha", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

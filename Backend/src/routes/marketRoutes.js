@@ -1,16 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { conectar } = require('../db/neon');
-const path = require('path');
-const {criarMercado, listarMercados, buscarMercadoPorId, atualizarMercado, deletarMercado} = require('../controllers/marketController')
+const { criarMercado, listarMercados, buscarMercadoPorId, atualizarMercado, deletarMercado } = require('../controllers/marketController');
 
-router.post('/registerMarket', criarMercado);
-
-router.get("/showmarkets", listarMercados);
-
-router.put("/atualizar/:id", atualizarMercado);
-
-router.put("/procurarMercado/:id", buscarMercadoPorId);
-
+router.post('/',           criarMercado);
+router.get('/',            listarMercados);
+router.get('/:id',         buscarMercadoPorId);
+router.put('/:id',         atualizarMercado);
+router.delete('/:id',      deletarMercado);
 
 module.exports = router;

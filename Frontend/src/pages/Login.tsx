@@ -5,8 +5,8 @@ import "../pages/CSS/modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../components/Esquecisenhamodal";
 
-import ToastContainer, { useToast } from "../components/Toast";
-
+import { useToast } from '../hooks/useToast';
+import ToastContainer from '../components/Toast';
 
 export default function Login() {
   const { login } = useAuth();

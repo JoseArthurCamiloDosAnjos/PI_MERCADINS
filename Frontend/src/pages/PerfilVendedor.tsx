@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import{ useState } from 'react';
 import Sidebar from './Sidebar';
-import './PerfilVendedor.css';
+import './CSS/PerfilVendedor.css';
 
 const STATS = [
   { val: '3',      lbl: 'Mercados Ativos' },
@@ -31,11 +31,11 @@ const AVALIACOES = [
   { loja: 'Peixaria',   n: 4, texto: '"Peixe fresco, bom atendimento."' },
 ];
 
-function Stars({ n }) {
+function Stars({ n }: { n: number }) {
   return <span className="pv-stars">{Array.from({length:5},(_,i)=>i<n?'★':'☆').join('')}</span>;
 }
 
-export default function PerfilVendedor({ onAbrirMercado }) {
+export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m: { emoji: string; nome: string }) => void }) {
   const [nav, setNav] = useState(0);
   return (
     <div className="pv-shell">

@@ -18,11 +18,14 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  register: (dados: Record<string, string>) =>
-    request('/auth/register', { method: 'POST', body: JSON.stringify(dados) }),
-  login: (dados: Record<string, string>) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify(dados) }),
-  perfil: () => request('/auth/perfil'),
-  atualizar: (dados: Record<string, string>) =>
-    request('/auth/perfil', { method: 'PUT', body: JSON.stringify(dados) }),
+  register:    (dados: Record<string, string>) =>
+    request('/auth/register',    { method: 'POST', body: JSON.stringify(dados) }),
+  login:       (dados: Record<string, string>) =>
+    request('/auth/login',       { method: 'POST', body: JSON.stringify(dados) }),
+  perfil:      () =>
+    request('/auth/perfil'),
+  atualizar:   (dados: Record<string, string>) =>
+    request('/auth/perfil',      { method: 'PUT',  body: JSON.stringify(dados) }),
+  trocarSenha: (dados: Record<string, string>) =>
+    request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
 }

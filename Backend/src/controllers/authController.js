@@ -147,8 +147,40 @@ const signIn = async (req, res) => {
     res.status(500).json({ erro: "Erro ao realizar login" });
   }
 };
+const confirmarTrocaSenha = async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ erro: 'Token não informado.' });
 
-module.exports = { signUp, signIn, verificarEmail };
+  try {
+    const sql = await conectar();
+
+    // busca pelo token (que está concatenado com a hash)
+    const [usuario] = await sql`
+      SELECT id_usuario, token_verificacao, token_expiracao
+      FROM usuarios
+      WHERE token_verificacao LIKE ${token + '|%'}
+    `;
+
+    if (!usuario) return res.status(400).json({ erro: 'Token inválido.' });
+    if (new Date() > new Date(usuario.token_expiracao))
+      return res.status(400).json({ erro: 'Token expirado.' });
+
+    const novaSenhaHash = usuario.token_verificacao.split('|')[1];
+
+    await sql`
+      UPDATE usuarios SET
+        senha             = ${novaSenhaHash},
+        token_verificacao = NULL,
+        token_expiracao   = NULL
+      WHERE id_usuario = ${usuario.id_usuario}
+    `;
+
+    res.json({ mensagem: 'Senha atualizada com sucesso!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao confirmar troca de senha.' });
+  }
+};
 
 const esqueciSenha = async (req, res) => {
 
@@ -214,7 +246,21 @@ const esqueciSenha = async (req, res) => {
     });
   }
 };
-
+const getPerfil = async (req, res) => {
+  try {
+    const sql = await conectar();
+    const [usuario] = await sql`
+      SELECT id_usuario, nome, email, telefone, email_verificado
+      FROM usuarios
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado' });
+    res.json(usuario);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao buscar perfil' });
+  }
+};
 const redefinirSenha =
   async (req, res) => {
 
@@ -319,10 +365,63 @@ const redefinirSenha =
       });
     }
 };
+const atualizarPerfil = async (req, res) => {
+  const { nome, email, telefone } = req.body;
+
+  try {
+    const sql = await conectar();
+    await sql`
+      UPDATE usuarios SET nome = ${nome}, email = ${email}, telefone = ${telefone}
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+
+    res.json({ mensagem: 'Perfil atualizado com sucesso' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao atualizar perfil' });
+  }
+};
+const solicitarTrocaSenha = async (req, res) => {
+  const { novaSenha } = req.body;
+
+  if (!novaSenha) return res.status(400).json({ erro: 'Nova senha obrigatória.' });
+
+  const errosSenha = Array.isArray(validarSenha(novaSenha)) ? validarSenha(novaSenha) : [];
+  if (errosSenha.length > 0) return res.status(400).json({ erros: errosSenha });
+
+  try {
+    const sql = await conectar();
+    const [usuario] = await sql`SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+    // guarda nova senha hasheada no token_verificacao junto com separador
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiracao = new Date(Date.now() + 60 * 60 * 1000);
+
+    // salva token + hash concatenados separados por "|"
+    await sql`
+      UPDATE usuarios SET
+        token_verificacao = ${token + '|' + novaSenhaHash},
+        token_expiracao   = ${expiracao}
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+
+    await enviarEmailRecuperacao(usuario.email, token);
+    res.json({ mensagem: 'Email de confirmação enviado.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao solicitar troca de senha.' });
+  }
+};
 module.exports = {
   signUp,
   signIn,
   verificarEmail,
   esqueciSenha,
-  redefinirSenha
+  redefinirSenha,
+  getPerfil,
+  atualizarPerfil,
+  solicitarTrocaSenha,
+  confirmarTrocaSenha
 };

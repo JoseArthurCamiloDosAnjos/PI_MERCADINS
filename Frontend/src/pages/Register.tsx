@@ -4,7 +4,8 @@ import "./CSS/register.css";
 import "./CSS/modais.css";
 import EmailVerificacaoModal from "../components/Emailverificacaomodal";
 
-import ToastContainer, { useToast } from "../components/Toast";
+import { useToast } from '../hooks/useToast';
+import ToastContainer from '../components/Toast';
 import PasswordStrength from "../components/PasswordStrength";
 
 interface FieldState {

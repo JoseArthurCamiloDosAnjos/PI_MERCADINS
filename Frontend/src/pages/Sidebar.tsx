@@ -1,5 +1,4 @@
-import React from 'react';
-import './Sidebar.css';
+import './CSS/Sidebar.css';
 
 interface NavItem {
   emoji: string;

@@ -1,35 +1,56 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
-//import Dashboard from './pages/Dashboard'
+import PerfilUsuario from './pages/PerfilUsuario'
+import PerfilVendedor from './pages/PerfilVendedor'
+import GerenciamentoMercado from './pages/GerenciamentoMercado'
+import LoadingOverlay from './components/LoadingOverlay'
 
-function Rotas() {
+function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () => void }) {
   const { usuario, carregando } = useAuth()
+  const [mercadoAberto, setMercadoAberto] = useState<{ emoji: string; nome: string } | null>(null)
 
-  if (carregando) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <p style={{ fontFamily: 'Nunito, sans-serif', color: '#8892a4' }}>Carregando...</p>
-      </div>
-    )
+  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
+
+  if (usuario && mercadoAberto) {
+    return <GerenciamentoMercado onVoltar={() => setMercadoAberto(null)} />
   }
 
   return (
     <Routes>
-      <Route path="/auth"          element={!usuario ? <Login />    : <Navigate to="/dashboard" />} />
-      <Route path="/auth/register" element={!usuario ? <Register /> : <Navigate to="/dashboard" />} />
-      {/*<Route path="/dashboard"  element={ usuario ? <Dashboard /> : <Navigate to="/auth" />} />*/}
+      <Route path="/auth"          element={!usuario ? <Login />    : <Navigate to="/perfil" />} />
+      <Route path="/auth/register" element={!usuario ? <Register /> : <Navigate to="/perfil" />} />
+      <Route path="/perfil"        element={usuario  ? <PerfilUsuario tema={tema} toggleTema={toggleTema} /> : <Navigate to="/auth" />} />
+      <Route path="/vendedor"      element={usuario  ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to="/auth" />} />
       <Route path="*"              element={<Navigate to="/auth" />} />
     </Routes>
   )
 }
 
 export default function App() {
+  const [tema, setTema] = useState<'escuro' | 'claro'>(() => {
+    return (localStorage.getItem('tema') as 'escuro' | 'claro') ?? 'escuro'
+  })
+
+  useEffect(() => {
+    const root = document.getElementById('root')
+    if (!root) return
+    if (tema === 'claro') {
+      root.classList.add('tema-claro')
+    } else {
+      root.classList.remove('tema-claro')
+    }
+    localStorage.setItem('tema', tema)
+  }, [tema])
+
+  const toggleTema = () => setTema(t => t === 'escuro' ? 'claro' : 'escuro')
+
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Rotas />
+        <Rotas tema={tema} toggleTema={toggleTema} />
       </AuthProvider>
     </BrowserRouter>
   )

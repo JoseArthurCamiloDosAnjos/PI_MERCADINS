@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import './GerenciamentoMercado.css';
+import { useState } from 'react';
+import './CSS/GerenciamentoMercado.css';
 
 const SIDEBAR_NAV = [
   { emoji: '📊', label: 'Visão Geral' },
@@ -42,11 +42,11 @@ const AVALIACOES = [
   { iniciais: 'AF', nome: 'Ana Ferreira',  n: 3, texto: '"Tomate veio um pouco machucado, o resto ok."' },
 ];
 
-function Stars({ n }) {
+function Stars({ n }: { n: number }) {
   return <span className="gm-stars">{Array.from({length:5},(_,i)=>i<n?'★':'☆').join('')}</span>;
 }
 
-export default function GerenciamentoMercado({ onVoltar }) {
+export default function GerenciamentoMercado({ onVoltar }: { onVoltar: () => void }) {
   const [nav, setNav] = useState(0);
   return (
     <div className="gm-shell">

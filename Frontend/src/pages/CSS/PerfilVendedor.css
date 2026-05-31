@@ -1,4 +1,10 @@
-.pv-shell { display: flex; min-height: 100vh; background: var(--azul-bg); font-family: var(--font); }
+.pv-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--azul-escuro);
+  font-family: var(--font);
+  width: 100%;
+}
 .pv-main  { flex: 1; display: flex; flex-direction: column; }
 
 .pv-topbar {

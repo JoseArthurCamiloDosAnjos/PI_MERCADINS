@@ -1,5 +1,5 @@
 const { Resend } = require("resend");
-const EmailDominio = "onboarding@resend.dev"
+const EmailDominio = "Suporte@mercadins.com.br"
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

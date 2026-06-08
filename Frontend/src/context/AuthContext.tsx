@@ -38,15 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ Fix 2: useCallback para estabilizar a referência e poder incluir no dep array
   const verificarMercados = useCallback(async () => {
-    try {
-      const res = await fetch("/api/mercados");
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setTemMercado((data.mercados ?? []).length > 0);
-    } catch {
-      setTemMercado(false);
-    }
-  }, []);
+  const token = localStorage.getItem("token");
+  if (!token) { setTemMercado(false); return; }
+  try {
+    const res = await fetch("/api/usuarios-mercados/meus", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    setTemMercado((data.mercados ?? []).length > 0);
+  } catch {
+    setTemMercado(false);
+  }
+}, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -80,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    // ✅ Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
+   // ✅ Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
     //    temMercado após cadastrar o primeiro mercado (App.tsx usa temMercado
     //    para decidir rota /vendedor vs /perfil)
     <AuthContext.Provider

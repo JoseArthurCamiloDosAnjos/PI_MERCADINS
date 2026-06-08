@@ -29,7 +29,7 @@ function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () 
       <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
       <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
       <Route path="/perfil"            element={ usuario ? <PerfilUsuario tema={tema} toggleTema={toggleTema} /> : <Navigate to="/auth" />} />
-      <Route path="/vendedor"          element={ usuario ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to="/auth" />} />
+      <Route path="/vendedor" element={ usuario && temMercado ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={ usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>

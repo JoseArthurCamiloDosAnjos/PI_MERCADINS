@@ -14,9 +14,10 @@ interface SidebarProps {
   badge?: string;
   navAtivo: number;
   onNav?: (index: number) => void;
+  navItems?: NavItem[]; // ✅ opcional — se não passar, usa o padrão do usuário
 }
 
-const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS_PADRAO: NavItem[] = [
   { emoji: "👤", label: "Perfil" },
   { emoji: "🔒", label: "Segurança" },
   { emoji: "📍", label: "Endereços" },
@@ -32,9 +33,13 @@ export default function Sidebar({
   badge,
   navAtivo,
   onNav,
+  navItems,
 }: SidebarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  // Usa os itens passados ou o padrão do usuário
+  const itens = navItems ?? NAV_ITEMS_PADRAO;
 
   function handleLogout() {
     logout();
@@ -51,7 +56,7 @@ export default function Sidebar({
       </div>
 
       <nav className="sb-nav">
-        {NAV_ITEMS.map((item, i) => (
+        {itens.map((item, i) => (
           <button
             key={i}
             className={`sb-nav-btn${navAtivo === i ? " active" : ""}`}
@@ -64,6 +69,7 @@ export default function Sidebar({
           </button>
         ))}
       </nav>
+
       <div className="sb-footer">
         <button
           className="sb-create-btn"
@@ -103,7 +109,6 @@ export default function Sidebar({
           Sair da conta
         </button>
       </div>
-      
     </aside>
   );
 }

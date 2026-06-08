@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';
 import './CSS/RegistrarMercado.css';
+import { useAuth } from '../context/AuthContext';
 
 interface Form {
   nome: string;
@@ -22,6 +23,7 @@ function FieldIcon({ children }: { children: React.ReactNode }) {
 
 export default function RegistrarMercado() {
   const navigate = useNavigate();
+  const { refreshMercados } = useAuth(); // ✅ corrigido: era refreshUsuario
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -85,11 +87,17 @@ export default function RegistrarMercado() {
     if (!form.nome || !form.email || !form.telefone || !form.cnpj || !form.cep || !form.estado || !form.cidade || !form.bairro || !form.rua)
       return showToast('erro', 'Preencha todos os campos.');
 
+    const token = localStorage.getItem('token');
+    if (!token) return showToast('erro', 'Sessão expirada. Faça login novamente.');
+
     setSalvando(true);
     try {
       const res = await fetch('/api/mercados', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           nome: form.nome,
           email: form.email,
@@ -104,7 +112,9 @@ export default function RegistrarMercado() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
+
       showToast('sucesso', 'Mercado cadastrado com sucesso!');
+      await refreshMercados(); // ✅ atualiza temMercado antes de navegar
       setTimeout(() => navigate('/vendedor'), 1500);
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao cadastrar.');

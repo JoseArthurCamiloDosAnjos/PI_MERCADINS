@@ -1,8 +1,28 @@
 const { conectar } = require("../db/neon");
-const express = require('express');
-const router = express.Router();
+const jwt = require("jsonwebtoken");
+
 // ─────────────────────────────────────────────
-// Helpers
+// Helper — extrai id do token JWT
+// O authController gera o token com { id, email }
+// então usamos decoded.id
+// ─────────────────────────────────────────────
+
+function pegarIdUsuario(req) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith("Bearer "))
+    return null;
+
+  const token = auth.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.id ?? null; // ← 'id', igual ao jwt.sign do authController
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Helpers de validação
 // ─────────────────────────────────────────────
 
 function limparMascara(valor) {
@@ -45,12 +65,17 @@ function validarTelefone(telefone) {
 }
 
 // ─────────────────────────────────────────────
-// POST /mercado — Criar novo mercado
+// POST /api/mercados — Criar novo mercado
+// Requer autenticação — vincula ao usuário logado
 // ─────────────────────────────────────────────
 
 const criarMercado = async (req, res) => {
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
-    req.body;
+  // Verifica autenticação primeiro
+  const id_usuario = pegarIdUsuario(req);
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado. Faça login para cadastrar um mercado." });
+
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -77,12 +102,13 @@ const criarMercado = async (req, res) => {
     // Verifica duplicidade de CNPJ ou email
     const existente = await sql`
       SELECT id_mercado FROM mercados
-      WHERE cnpj = ${cnpjLimpo} OR email = ${email}
+      WHERE cnpj = ${cnpjLimpo} OR email = ${email.trim().toLowerCase()}
     `;
 
     if (existente.length > 0)
       return res.status(409).json({ erro: "CNPJ ou email já cadastrado" });
 
+    // Cria o mercado
     const [novoMercado] = await sql`
       INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua)
       VALUES (
@@ -99,21 +125,25 @@ const criarMercado = async (req, res) => {
       RETURNING *
     `;
 
+    // ✅ Vincula o mercado ao usuário logado com papel 'dono'
+    await sql`
+      INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
+      VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
+    `;
+
     res.status(201).json({
       mensagem: "Mercado criado com sucesso!",
       mercado: novoMercado,
     });
- } catch (err) {
-  console.error("ERRO COMPLETO:", err);
-
-  res.status(500).json({
-    erro: err.message
-  });
-}
+  } catch (err) {
+    console.error("ERRO criarMercado:", err);
+    res.status(500).json({ erro: err.message });
+  }
 };
 
 // ─────────────────────────────────────────────
-// GET /mercado — Listar todos os mercados
+// GET /api/mercados — Listar todos os mercados
+// Rota pública
 // ─────────────────────────────────────────────
 
 const listarMercados = async (req, res) => {
@@ -126,17 +156,14 @@ const listarMercados = async (req, res) => {
     `;
 
     res.status(200).json({ mercados });
-   } catch (err) {
-  console.error("ERRO COMPLETO:", err);
-
-  res.status(500).json({
-    erro: err.message
-  });
-}
+  } catch (err) {
+    console.error("ERRO listarMercados:", err);
+    res.status(500).json({ erro: err.message });
+  }
 };
 
 // ─────────────────────────────────────────────
-// GET /mercado/:id — Buscar mercado por ID
+// GET /api/mercados/:id — Buscar mercado por ID
 // ─────────────────────────────────────────────
 
 const buscarMercadoPorId = async (req, res) => {
@@ -155,19 +182,23 @@ const buscarMercadoPorId = async (req, res) => {
 
     res.status(200).json({ mercado });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao buscar mercado" });
+    console.error("ERRO buscarMercadoPorId:", err);
+    res.status(500).json({ erro: err.message });
   }
 };
 
 // ─────────────────────────────────────────────
-// PUT /mercado/:id — Atualizar mercado
+// PUT /api/mercados/:id — Atualizar mercado
+// Só dono ou admin do mercado pode atualizar
 // ─────────────────────────────────────────────
 
 const atualizarMercado = async (req, res) => {
+  const id_usuario = pegarIdUsuario(req);
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado" });
+
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } =
-    req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } = req.body;
 
   if (email && !validarEmailSimples(email))
     return res.status(400).json({ erro: "Email inválido" });
@@ -184,6 +215,19 @@ const atualizarMercado = async (req, res) => {
   try {
     const sql = await conectar();
 
+    // Verifica se o usuário tem permissão neste mercado
+    const [permissao] = await sql`
+      SELECT papel FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario}
+        AND id_mercado = ${Number(id)}
+    `;
+
+    if (!permissao)
+      return res.status(403).json({ erro: "Você não tem acesso a este mercado" });
+
+    if (!["dono", "admin"].includes(permissao.papel))
+      return res.status(403).json({ erro: "Apenas o dono ou admin pode editar o mercado" });
+
     const [existente] = await sql`
       SELECT id_mercado FROM mercados
       WHERE id_mercado = ${Number(id)}
@@ -194,15 +238,15 @@ const atualizarMercado = async (req, res) => {
 
     const [mercadoAtualizado] = await sql`
       UPDATE mercados SET
-        nome = COALESCE(${nome?.trim()              ?? null}, nome),
-        email        = COALESCE(${email?.trim().toLowerCase()      ?? null}, email),
-        telefone     = COALESCE(${telefone ? limparMascara(telefone) : null}, telefone),
-        cnpj         = COALESCE(${cnpj    ? limparMascara(cnpj)     : null}, cnpj),
-        cep          = COALESCE(${cep     ? limparMascara(cep)      : null}, cep),
-        estado       = COALESCE(${estado?.trim().toUpperCase()      ?? null}, estado),
-        cidade       = COALESCE(${cidade?.trim()                    ?? null}, cidade),
-        bairro       = COALESCE(${bairro?.trim()                    ?? null}, bairro),
-        rua          = COALESCE(${rua?.trim()                       ?? null}, rua)
+        nome     = COALESCE(${nome?.trim()                       ?? null}, nome),
+        email    = COALESCE(${email?.trim().toLowerCase()        ?? null}, email),
+        telefone = COALESCE(${telefone ? limparMascara(telefone) : null}, telefone),
+        cnpj     = COALESCE(${cnpj    ? limparMascara(cnpj)      : null}, cnpj),
+        cep      = COALESCE(${cep     ? limparMascara(cep)       : null}, cep),
+        estado   = COALESCE(${estado?.trim().toUpperCase()       ?? null}, estado),
+        cidade   = COALESCE(${cidade?.trim()                     ?? null}, cidade),
+        bairro   = COALESCE(${bairro?.trim()                     ?? null}, bairro),
+        rua      = COALESCE(${rua?.trim()                        ?? null}, rua)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
     `;
@@ -211,24 +255,38 @@ const atualizarMercado = async (req, res) => {
       mensagem: "Mercado atualizado com sucesso!",
       mercado: mercadoAtualizado,
     });
-} catch (err) {
-  console.error("ERRO COMPLETO:", err);
-
-  res.status(500).json({
-    erro: err.message
-  });
-}
+  } catch (err) {
+    console.error("ERRO atualizarMercado:", err);
+    res.status(500).json({ erro: err.message });
+  }
 };
 
 // ─────────────────────────────────────────────
-// DELETE /mercado/:id — Deletar mercado
+// DELETE /api/mercados/:id — Deletar mercado
+// Só o dono pode deletar
 // ─────────────────────────────────────────────
 
 const deletarMercado = async (req, res) => {
+  const id_usuario = pegarIdUsuario(req);
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado" });
+
   const { id } = req.params;
 
   try {
     const sql = await conectar();
+
+    const [permissao] = await sql`
+      SELECT papel FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario}
+        AND id_mercado = ${Number(id)}
+    `;
+
+    if (!permissao)
+      return res.status(403).json({ erro: "Você não tem acesso a este mercado" });
+
+    if (permissao.papel !== "dono")
+      return res.status(403).json({ erro: "Apenas o dono pode deletar o mercado" });
 
     const [existente] = await sql`
       SELECT id_mercado FROM mercados
@@ -238,15 +296,14 @@ const deletarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    await sql`
-      DELETE FROM mercados
-      WHERE id_mercado = ${Number(id)}
-    `;
+    // Remove vínculos primeiro (FK), depois o mercado
+    await sql`DELETE FROM usuarios_mercados WHERE id_mercado = ${Number(id)}`;
+    await sql`DELETE FROM mercados WHERE id_mercado = ${Number(id)}`;
 
     res.status(200).json({ mensagem: "Mercado deletado com sucesso" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao deletar mercado" });
+    console.error("ERRO deletarMercado:", err);
+    res.status(500).json({ erro: err.message });
   }
 };
 

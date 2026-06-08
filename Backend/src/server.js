@@ -12,7 +12,7 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes);
 app.use('/api/mercados', marketRoutes);
-
+app.use('/api/usuarios-mercados', require('./routes/usuariosMercadosRoutes.js'));//<-- mudei aqui UwU adicionei o .js
 app.listen(PORT, () => {
   console.log(`✅ Backend rodando em http://localhost:${PORT}`)
 })

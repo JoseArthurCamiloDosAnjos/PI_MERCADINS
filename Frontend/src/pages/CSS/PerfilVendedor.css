@@ -109,3 +109,15 @@
 .pv-rev-store { font-size: 12px; font-weight: 800; color: var(--branco); margin-bottom: 5px; }
 .pv-stars     { color: var(--amarelo); font-size: 13px; letter-spacing: 2px; }
 .pv-rev-text  { font-size: 11px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.5; }
+/* Animação de troca de tela */
+.pv-tela-fade {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.pv-tela-visivel {
+  opacity: 1;
+  transform: translateY(0);
+}
+.pv-tela-oculta {
+  opacity: 0;
+  transform: translateY(6px);
+}

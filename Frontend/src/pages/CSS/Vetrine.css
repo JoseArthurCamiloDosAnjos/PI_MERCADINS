@@ -1,0 +1,363 @@
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --vt-font:          'Inter', 'Segoe UI', sans-serif;
+
+  /* Paleta — alinhada ao design do Mercadins */
+  --vt-azul-escuro:   #0d1b3e;
+  --vt-azul-medio:    #1843a0;
+  --vt-azul-claro:    #2a52a8;
+  --vt-azul-bg:       #111e42;
+  --vt-azul-card:     #112250;
+  --vt-azul-borda:    #1a2f60;
+  --vt-azul-item:     #1e3a7a;
+
+  --vt-amarelo:       #f5c84a;
+  --vt-amarelo-hover: #f7d567;
+
+  --vt-branco:        #ffffff;
+  --vt-branco-suave:  #c8d6f0;
+  --vt-cinza:         #7a94c0;
+
+  --vt-radius-sm:     6px;
+  --vt-radius-md:     10px;
+  --vt-radius-lg:     14px;
+  --vt-radius-full:   999px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes vtFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes vtPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Shell ──────────────────────────────────────────────────────────────── */
+.vt-shell {
+  min-height: 100vh;
+  background: var(--vt-azul-bg);
+  font-family: var(--vt-font);
+  color: var(--vt-branco);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.vt-header {
+  background: var(--vt-azul-escuro);
+  border-bottom: 1px solid var(--vt-azul-borda);
+  padding: 2rem 2.5rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  animation: vtFadeUp 0.4s ease both;
+}
+
+.vt-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+/* Logo */
+.vt-logo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vt-logo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px dashed var(--vt-azul-item);
+  background: var(--vt-azul-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--vt-cinza);
+  transition: border-color 0.2s, background 0.2s;
+}
+.vt-logo-btn:hover .vt-logo-placeholder {
+  border-color: var(--vt-amarelo);
+  background: var(--vt-azul-medio);
+}
+.vt-logo-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--vt-azul-item);
+}
+
+/* Nome e descrição */
+.vt-header-text { display: flex; flex-direction: column; gap: 4px; }
+.vt-nome-mercado {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--vt-branco);
+  margin: 0;
+}
+.vt-desc-mercado {
+  font-size: 13px;
+  color: var(--vt-cinza);
+  margin: 0;
+}
+
+/* Tags / banners */
+.vt-tags-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.vt-tag {
+  padding: 7px 20px;
+  border-radius: var(--vt-radius-sm);
+  border: 1.5px solid var(--vt-azul-item);
+  background: transparent;
+  color: var(--vt-branco-suave);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vt-tag:hover,
+.vt-tag.active {
+  border-color: var(--vt-amarelo);
+  color: var(--vt-amarelo);
+  background: rgba(245, 200, 74, 0.08);
+}
+
+/* ─── Main ───────────────────────────────────────────────────────────────── */
+.vt-main {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+
+/* ─── Categoria ──────────────────────────────────────────────────────────── */
+.vt-categoria {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: vtFadeUp 0.4s ease both;
+}
+.vt-categoria-titulo {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--vt-branco);
+  margin: 0;
+}
+
+/* ─── Grid de produtos ───────────────────────────────────────────────────── */
+.vt-produtos-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ─── Card de produto ────────────────────────────────────────────────────── */
+.vt-produto-card {
+  width: 140px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: vtPop 0.35s ease both;
+  display: flex;
+  flex-direction: column;
+}
+.vt-produto-card:hover {
+  border-color: var(--vt-amarelo);
+  transform: scale(1.04);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+}
+
+/* Imagem */
+.vt-produto-img {
+  width: 100%;
+  height: 90px;
+  background: var(--vt-azul-escuro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.vt-produto-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vt-produto-img-placeholder {
+  font-size: 10px;
+  color: var(--vt-cinza);
+  font-weight: 600;
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* Info */
+.vt-produto-info {
+  padding: 8px 10px 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.vt-produto-desc {
+  font-size: 10px;
+  color: var(--vt-cinza);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ─── Card de adicionar produto ──────────────────────────────────────────── */
+.vt-produto-add {
+  border-style: dashed;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  gap: 0;
+}
+.vt-produto-add:hover {
+  border-color: var(--vt-amarelo);
+  background: rgba(245, 200, 74, 0.05);
+}
+.vt-add-icon {
+  font-size: 28px;
+  color: var(--vt-cinza);
+  line-height: 1;
+  transition: color 0.2s;
+}
+.vt-produto-add:hover .vt-add-icon {
+  color: var(--vt-amarelo);
+}
+
+/* ─── FAB — nova categoria ───────────────────────────────────────────────── */
+.vt-fab-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 0.5rem;
+}
+.vt-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--vt-azul-medio);
+  border: 2px solid var(--vt-azul-claro);
+  color: var(--vt-branco);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(24, 67, 160, 0.5);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.vt-fab:hover {
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  border-color: var(--vt-amarelo);
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 6px 24px rgba(245, 200, 74, 0.4);
+}
+
+/* ─── Responsivo ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .vt-header { padding: 1.4rem 1.2rem 1.2rem; }
+  .vt-main   { padding: 1.4rem 1.2rem; }
+  .vt-nome-mercado { font-size: 18px; }
+  .vt-produto-card { width: 120px; }
+}
+.vt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.5rem;
+  background: var(--cor-superficie, #1a1f2e);
+  border-bottom: 1px solid var(--cor-borda, rgba(255,255,255,0.08));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.vt-btn-voltar {
+  background: none;
+  border: none;
+  color: var(--cor-texto-sec, #8892a4);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.3rem 0;
+  transition: color 0.2s;
+}
+
+.vt-btn-voltar:hover {
+  color: var(--cor-texto, #e2e8f0);
+}
+
+.vt-shell {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--cor-fundo, #0f1623);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.vt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.5rem;
+  background: var(--cor-superficie, #1a1f2e);
+  border-bottom: 1px solid var(--cor-borda, rgba(255,255,255,0.08));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vt-btn-voltar {
+  background: none;
+  border: none;
+  color: var(--cor-texto-sec, #8892a4);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.3rem 0;
+  transition: color 0.2s;
+}
+
+.vt-btn-voltar:hover {
+  color: var(--cor-texto, #e2e8f0);
+}
+
+.vt-topbar-label {
+  font-size: 0.8rem;
+  color: var(--cor-texto-sec, #8892a4);
+  letter-spacing: 0.04em;
+}
+
+.vt-header {
+  padding: 1.5rem 2rem 1rem;
+  background: var(--cor-superficie, #1a1f2e);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vt-main {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}

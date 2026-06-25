@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import "../pages/CSS/Login.css";
-import "../pages/CSS/modais.css";
+import "./CSS/Login.css";
+import "./CSS/modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../components/Esquecisenhamodal";
 
@@ -42,7 +42,6 @@ export default function Login() {
       }
     }
   }
-
   return (
     <>
       {showEsqueciModal && (

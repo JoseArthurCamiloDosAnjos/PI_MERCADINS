@@ -306,6 +306,26 @@ const deletarMercado = async (req, res) => {
     res.status(500).json({ erro: err.message });
   }
 };
+// GET /api/meus-mercados — mercados do usuário logado
+const meusMercados = async (req, res) => {
+  const id_usuario = pegarIdUsuario(req);
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado" });
+
+  try {
+    const sql = await conectar();
+    const mercados = await sql`
+      SELECT m.* FROM mercados m
+      INNER JOIN usuarios_mercados um ON um.id_mercado = m.id_mercado
+      WHERE um.id_usuario = ${id_usuario}
+      ORDER BY m.data_cadastro DESC
+    `;
+    res.status(200).json({ mercados });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+};
+
 
 module.exports = {
   criarMercado,
@@ -313,4 +333,5 @@ module.exports = {
   buscarMercadoPorId,
   atualizarMercado,
   deletarMercado,
+  meusMercados
 };

@@ -1,0 +1,248 @@
+/* ─── Tokens (espelha Vetrine.css) ──────────────────────────────────────── */
+:root {
+  --em-font:          'Inter', 'Segoe UI', sans-serif;
+  --em-azul-escuro:   #0d1b3e;
+  --em-azul-medio:    #1843a0;
+  --em-azul-claro:    #2a52a8;
+  --em-azul-bg:       #111e42;
+  --em-azul-card:     #112250;
+  --em-azul-borda:    #1a2f60;
+  --em-azul-item:     #1e3a7a;
+  --em-amarelo:       #f5c84a;
+  --em-branco:        #ffffff;
+  --em-branco-suave:  #c8d6f0;
+  --em-cinza:         #7a94c0;
+  --em-erro-cor:      #f87171;
+  --em-erro-bg:       rgba(248, 113, 113, 0.1);
+  --em-radius-sm:     6px;
+  --em-radius-md:     10px;
+  --em-radius-lg:     14px;
+}
+
+.em-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  animation: emFadeIn 0.2s ease both;
+}
+@keyframes emFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.em-modal {
+  background: var(--em-azul-bg);
+  border: 1.5px solid var(--em-azul-borda);
+  border-radius: var(--em-radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--em-font);
+  color: var(--em-branco);
+  overflow: hidden;
+  animation: emSlideUp 0.25s ease both;
+}
+@keyframes emSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.em-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--em-azul-borda);
+  flex-shrink: 0;
+}
+.em-titulo {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+.em-btn-fechar {
+  background: none;
+  border: none;
+  color: var(--em-cinza);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--em-radius-sm);
+  transition: color 0.2s, background 0.2s;
+}
+.em-btn-fechar:hover:not(:disabled) {
+  color: var(--em-branco);
+  background: var(--em-azul-item);
+}
+
+.em-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Logo ────────────────────────────────────────────────────────────────── */
+.em-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.em-logo-btn {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.em-logo-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--em-azul-item);
+  display: block;
+}
+.em-logo-placeholder {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px dashed var(--em-azul-item);
+  background: var(--em-azul-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--em-cinza);
+}
+.em-logo-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(13, 27, 62, 0.65);
+  color: var(--em-branco);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.em-logo-btn:hover .em-logo-overlay { opacity: 1; }
+.em-logo-btn:hover .em-logo-placeholder {
+  border-color: var(--em-amarelo);
+}
+.em-logo-hint {
+  font-size: 11px;
+  color: var(--em-cinza);
+  margin: 0;
+}
+.em-input-file { display: none; }
+
+/* ── Campos ──────────────────────────────────────────────────────────────── */
+.em-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.em-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--em-cinza);
+}
+.em-input,
+.em-textarea {
+  background: var(--em-azul-card);
+  border: 1.5px solid var(--em-azul-item);
+  border-radius: var(--em-radius-sm);
+  color: var(--em-branco);
+  font-family: var(--em-font);
+  font-size: 14px;
+  padding: 10px 14px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.em-input::placeholder,
+.em-textarea::placeholder { color: var(--em-cinza); }
+.em-input:focus,
+.em-textarea:focus {
+  border-color: var(--em-azul-claro);
+  background: var(--em-azul-escuro);
+  box-shadow: 0 0 0 3px rgba(42, 82, 168, 0.25);
+}
+.em-input--erro {
+  border-color: var(--em-erro-cor) !important;
+  background: var(--em-erro-bg) !important;
+}
+.em-char-count {
+  font-size: 11px;
+  color: var(--em-cinza);
+  text-align: right;
+}
+.em-erro {
+  font-size: 12px;
+  color: var(--em-erro-cor);
+  font-weight: 500;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.em-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--em-azul-borda);
+  flex-shrink: 0;
+}
+.em-btn {
+  font-family: var(--em-font);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: var(--em-radius-sm);
+  padding: 9px 22px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.em-btn:active:not(:disabled) { transform: scale(0.97); }
+.em-btn--secundario {
+  background: transparent;
+  border-color: var(--em-azul-item);
+  color: var(--em-branco-suave);
+}
+.em-btn--secundario:hover:not(:disabled) {
+  border-color: var(--em-cinza);
+  color: var(--em-branco);
+}
+.em-btn--primario {
+  background: var(--em-azul-medio);
+  border-color: var(--em-azul-claro);
+  color: var(--em-branco);
+}
+.em-btn--primario:hover:not(:disabled) {
+  background: var(--em-amarelo);
+  border-color: var(--em-amarelo);
+  color: var(--em-azul-escuro);
+}
+.em-btn--carregando,
+.em-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+@media (max-width: 600px) {
+  .em-overlay { align-items: flex-end; padding: 0; }
+  .em-modal   { border-radius: var(--em-radius-md) var(--em-radius-md) 0 0; max-height: 100vh; }
+}

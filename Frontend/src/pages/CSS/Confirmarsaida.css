@@ -1,0 +1,145 @@
+.cs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.8);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  animation: csFadeIn 0.18s ease both;
+}
+@keyframes csFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.cs-modal {
+  background: #111e42;
+  border: 1.5px solid #1a2f60;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: #ffffff;
+  overflow: hidden;
+  animation: csSlideUp 0.25s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  text-align: center;
+}
+@keyframes csSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Ícone ───────────────────────────────────────────────────────────────── */
+.cs-icone-wrap {
+  width: 100%;
+  padding: 2rem 2rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+.cs-icone {
+  font-size: 40px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(245, 200, 74, 0.4));
+  animation: csPulse 2s ease-in-out infinite;
+}
+@keyframes csPulse {
+  0%, 100% { filter: drop-shadow(0 0 8px  rgba(245, 200, 74, 0.3)); }
+  50%       { filter: drop-shadow(0 0 18px rgba(245, 200, 74, 0.6)); }
+}
+
+/* ── Conteúdo ────────────────────────────────────────────────────────────── */
+.cs-conteudo {
+  padding: 0 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cs-titulo {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  color: #ffffff;
+}
+.cs-descricao {
+  font-size: 13px;
+  color: #c8d6f0;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Ações ───────────────────────────────────────────────────────────────── */
+.cs-acoes {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid #1a2f60;
+}
+
+.cs-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.cs-btn + .cs-btn {
+  border-top: 1px solid #1a2f60;
+}
+.cs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Salvar e sair — destaque amarelo */
+.cs-btn--salvar {
+  background: rgba(245, 200, 74, 0.12);
+  color: #f5c84a;
+}
+.cs-btn--salvar:hover:not(:disabled) {
+  background: rgba(245, 200, 74, 0.22);
+}
+
+/* Sair sem salvar — vermelho suave */
+.cs-btn--sair {
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+}
+.cs-btn--sair:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.18);
+}
+
+/* Continuar editando — neutro */
+.cs-btn--cancelar {
+  background: transparent;
+  color: #7a94c0;
+}
+.cs-btn--cancelar:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8d6f0;
+}
+
+/* Spinner */
+.cs-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(245, 200, 74, 0.3);
+  border-top-color: #f5c84a;
+  border-radius: 50%;
+  animation: csSpinner 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes csSpinner { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+  .cs-overlay { align-items: flex-end; padding: 0; }
+  .cs-modal   { border-radius: 16px 16px 0 0; max-width: 100%; }
+}

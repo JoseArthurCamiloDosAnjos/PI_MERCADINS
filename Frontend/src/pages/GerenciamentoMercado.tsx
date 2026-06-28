@@ -415,7 +415,7 @@ export default function GerenciamentoMercado({
       <aside className="gm-sidebar">
         <div className="gm-mkt-identity">
           <div className="gm-mkt-logo">🛒</div>
-          <p className="gm-mkt-nome">MercaLins Centro</p>
+          <p className="gm-mkt-nome">Concertar Centro</p>
           <p className="gm-mkt-sub">São Paulo · SP</p>
           <span className="gm-status-open">● Aberto</span>
         </div>

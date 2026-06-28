@@ -77,8 +77,8 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
 
   const stats = [
     { val: String(mercados.length), lbl: 'Mercados Ativos' },
-    { val: '4.8 ★',                 lbl: 'Avaliação Média' },
-    { val: '1.247',                  lbl: 'Pedidos Totais' },
+    { val: '0 ★',                 lbl: 'Avaliação Média' },
+    { val: '0',                  lbl: 'Pedidos Totais' },
   ];
 
   return (

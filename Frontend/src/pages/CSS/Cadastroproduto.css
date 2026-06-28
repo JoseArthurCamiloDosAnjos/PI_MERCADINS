@@ -1,0 +1,687 @@
+/* ─── Tokens (espelha Vetrine.css) ──────────────────────────────────────── */
+:root {
+  --cp-font:           'Inter', 'Segoe UI', sans-serif;
+  --cp-azul-escuro:    #0d1b3e;
+  --cp-azul-medio:     #1843a0;
+  --cp-azul-claro:     #2a52a8;
+  --cp-azul-bg:        #111e42;
+  --cp-azul-card:      #112250;
+  --cp-azul-borda:     #1a2f60;
+  --cp-azul-item:      #1e3a7a;
+  --cp-amarelo:        #f5c84a;
+  --cp-branco:         #ffffff;
+  --cp-branco-suave:   #c8d6f0;
+  --cp-cinza:          #7a94c0;
+  --cp-cinza-claro:    #4a6090;
+  --cp-erro-cor:       #f87171;
+  --cp-erro-bg:        rgba(248, 113, 113, 0.1);
+  --cp-radius-sm:      6px;
+  --cp-radius-md:      10px;
+  --cp-radius-lg:      14px;
+}
+
+/* ─── Overlay ────────────────────────────────────────────────────────────── */
+.cp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  animation: cpFadeIn 0.2s ease both;
+}
+
+@keyframes cpFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Modal ──────────────────────────────────────────────────────────────── */
+.cp-modal {
+  background: var(--cp-azul-bg);
+  border: 1.5px solid var(--cp-azul-borda);
+  border-radius: var(--cp-radius-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--cp-font);
+  color: var(--cp-branco);
+  overflow: hidden;
+  animation: cpSlideUp 0.25s ease both;
+}
+
+@keyframes cpSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.cp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--cp-azul-borda);
+  flex-shrink: 0;
+}
+
+.cp-titulo {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.cp-btn-fechar {
+  background: none;
+  border: none;
+  color: var(--cp-cinza);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--cp-radius-sm);
+  line-height: 1;
+  transition: color 0.2s, background 0.2s;
+}
+.cp-btn-fechar:hover:not(:disabled) {
+  color: var(--cp-branco);
+  background: var(--cp-azul-item);
+}
+
+/* ─── Body ───────────────────────────────────────────────────────────────── */
+.cp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-azul-item) transparent;
+}
+.cp-body::-webkit-scrollbar       { width: 4px; }
+.cp-body::-webkit-scrollbar-thumb { background: var(--cp-azul-item); border-radius: 4px; }
+
+/* ─── Seção ──────────────────────────────────────────────────────────────── */
+.cp-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ─── Label ──────────────────────────────────────────────────────────────── */
+.cp-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cp-cinza);
+}
+
+/* ─── Área de upload ─────────────────────────────────────────────────────── */
+.cp-upload-area {
+  border: 2px dashed var(--cp-azul-item);
+  border-radius: var(--cp-radius-md);
+  background: var(--cp-azul-card);
+  padding: 1.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.cp-upload-area:hover,
+.cp-upload-area--arrastando {
+  border-color: var(--cp-amarelo);
+  background: rgba(245, 200, 74, 0.05);
+}
+
+.cp-input-file { display: none; }
+
+.cp-upload-icon {
+  font-size: 24px;
+  color: var(--cp-cinza);
+  transition: color 0.2s;
+}
+.cp-upload-area:hover .cp-upload-icon,
+.cp-upload-area--arrastando .cp-upload-icon {
+  color: var(--cp-amarelo);
+}
+
+.cp-upload-texto {
+  font-size: 13px;
+  color: var(--cp-branco-suave);
+  text-align: center;
+}
+.cp-upload-texto strong { color: var(--cp-amarelo); font-weight: 600; }
+
+.cp-upload-hint {
+  font-size: 11px;
+  color: var(--cp-cinza);
+}
+
+/* ─── Carrocel ───────────────────────────────────────────────────────────── */
+.cp-carrocel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: cpFadeIn 0.2s ease both;
+}
+
+.cp-carrocel-tela {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--cp-radius-md);
+  overflow: hidden;
+  background: var(--cp-azul-escuro);
+  border: 1.5px solid var(--cp-azul-borda);
+}
+
+.cp-carrocel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cp-carrocel-seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(13, 27, 62, 0.7);
+  border: 1px solid var(--cp-azul-borda);
+  color: var(--cp-branco);
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.cp-carrocel-seta:hover {
+  background: var(--cp-azul-medio);
+  border-color: var(--cp-amarelo);
+}
+.cp-carrocel-seta--prev { left: 10px; }
+.cp-carrocel-seta--next { right: 10px; }
+
+.cp-carrocel-remover {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(13, 27, 62, 0.8);
+  border: 1px solid var(--cp-azul-borda);
+  color: var(--cp-cinza);
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.cp-carrocel-remover:hover {
+  color: var(--cp-erro-cor);
+  border-color: var(--cp-erro-cor);
+  background: var(--cp-erro-bg);
+}
+
+.cp-carrocel-contador {
+  font-size: 11px;
+  color: var(--cp-cinza);
+  align-self: flex-end;
+}
+
+.cp-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cp-dot {
+  width: 48px;
+  height: 36px;
+  border-radius: var(--cp-radius-sm);
+  border: 2px solid var(--cp-azul-item);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  background: var(--cp-azul-escuro);
+  transition: border-color 0.2s, transform 0.15s;
+}
+.cp-dot:hover         { transform: scale(1.08); border-color: var(--cp-cinza-claro); }
+.cp-dot--ativo        { border-color: var(--cp-amarelo); }
+
+.cp-dot-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Campos ─────────────────────────────────────────────────────────────── */
+.cp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cp-campo--metade { max-width: 180px; }
+
+.cp-input,
+.cp-textarea {
+  background: var(--cp-azul-card);
+  border: 1.5px solid var(--cp-azul-item);
+  border-radius: var(--cp-radius-sm);
+  color: var(--cp-branco);
+  font-family: var(--cp-font);
+  font-size: 14px;
+  padding: 10px 14px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.cp-input::placeholder,
+.cp-textarea::placeholder { color: var(--cp-cinza); }
+
+.cp-input:focus,
+.cp-textarea:focus {
+  border-color: var(--cp-azul-claro);
+  background: var(--cp-azul-escuro);
+  box-shadow: 0 0 0 3px rgba(42, 82, 168, 0.25);
+}
+
+.cp-input--erro {
+  border-color: var(--cp-erro-cor) !important;
+  background: var(--cp-erro-bg) !important;
+}
+
+.cp-char-count {
+  font-size: 11px;
+  color: var(--cp-cinza);
+  text-align: right;
+  margin-top: -2px;
+}
+
+.cp-erro {
+  font-size: 12px;
+  color: var(--cp-erro-cor);
+  font-weight: 500;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────── */
+.cp-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--cp-azul-borda);
+  flex-shrink: 0;
+}
+
+/* ─── Botões ─────────────────────────────────────────────────────────────── */
+.cp-btn {
+  font-family: var(--cp-font);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: var(--cp-radius-sm);
+  padding: 9px 22px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.cp-btn:active:not(:disabled) { transform: scale(0.97); }
+
+.cp-btn--secundario {
+  background: transparent;
+  border-color: var(--cp-azul-item);
+  color: var(--cp-branco-suave);
+}
+.cp-btn--secundario:hover:not(:disabled) {
+  border-color: var(--cp-cinza);
+  color: var(--cp-branco);
+}
+
+.cp-btn--primario {
+  background: var(--cp-azul-medio);
+  border-color: var(--cp-azul-claro);
+  color: var(--cp-branco);
+}
+.cp-btn--primario:hover:not(:disabled) {
+  background: var(--cp-amarelo);
+  border-color: var(--cp-amarelo);
+  color: var(--cp-azul-escuro);
+}
+
+.cp-btn--carregando,
+.cp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Classes auxiliares usadas em Vitrine.tsx ───────────────────────────── */
+.vt-produto-nome {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-branco, #fff);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vt-produto-preco {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-amarelo, #f5c84a);
+  margin: 4px 0 0;
+}
+
+.vt-erro-inline {
+  font-size: 12px;
+  color: #f87171;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+/* ─── Responsivo ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cp-overlay        { align-items: flex-end; padding: 0; }
+  .cp-modal          { max-height: 100vh; border-radius: var(--cp-radius-md) var(--cp-radius-md) 0 0; }
+  .cp-campo--metade  { max-width: 100%; }
+}
+
+/* ─── Estado de carregamento (Vitrine) ───────────────────────────────────── */
+.vt-carregando {
+  font-size: 12px;
+  color: var(--vt-cinza, #7a94c0);
+  padding: 8px 0;
+  font-style: italic;
+}
+
+/* ─── Vitrine — estilos extras ───────────────────────────────────────────── */
+
+.vt-header-nome-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Botão "✎ Editar" ao lado do nome */
+.vt-btn-editar {
+  background: transparent;
+  border: 1.5px solid var(--vt-azul-item, #1e3a7a);
+  border-radius: 6px;
+  color: var(--vt-cinza, #7a94c0);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.vt-btn-editar:hover {
+  border-color: var(--vt-amarelo, #f5c84a);
+  color: var(--vt-amarelo, #f5c84a);
+  background: rgba(245, 200, 74, 0.07);
+}
+
+/* Overlay de edição sobre a logo */
+.vt-logo-edit-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(13, 27, 62, 0.65);
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.vt-logo-btn { position: relative; }
+.vt-logo-btn:hover .vt-logo-edit-overlay { opacity: 1; }
+
+/* Carregando */
+.vt-carregando {
+  font-size: 12px;
+  color: var(--vt-cinza, #7a94c0);
+  padding: 8px 0;
+  font-style: italic;
+}
+
+/* Nome e preço nos cards */
+.vt-produto-nome {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-branco, #fff);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vt-produto-preco {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-amarelo, #f5c84a);
+  margin: 4px 0 0;
+}
+.vt-erro-inline {
+  font-size: 12px;
+  color: #f87171;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+/* ─── Topbar direita (label + botão salvar) ─────────────────────────────── */
+.vt-topbar-direita {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ─── Botão Salvar vitrine ───────────────────────────────────────────────── */
+.vt-btn-salvar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: #f5c84a;
+  border: none;
+  color: #0d1b3e;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  animation: vtSalvarEntrar 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes vtSalvarEntrar {
+  from { opacity: 0; transform: scale(0.85) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.vt-btn-salvar:hover:not(:disabled) {
+  background: #f7d567;
+  transform: scale(1.04);
+}
+.vt-btn-salvar:active:not(:disabled) { transform: scale(0.97); }
+
+.vt-btn-salvar--carregando,
+.vt-btn-salvar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.vt-btn-salvar-icon {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+/* Spinner inline */
+.vt-btn-salvar-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(13, 27, 62, 0.3);
+  border-top-color: #0d1b3e;
+  border-radius: 50%;
+  animation: vtSpinner 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes vtSpinner {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Header da categoria com botão de lápis ────────────────────────────── */
+.vt-categoria-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.vt-categoria-btn-editar {
+  background: none;
+  border: none;
+  color: var(--vt-cinza, #7a94c0);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+  line-height: 1;
+}
+.vt-categoria-header:hover .vt-categoria-btn-editar {
+  opacity: 1;
+}
+.vt-categoria-btn-editar:hover {
+  color: var(--vt-amarelo, #f5c84a);
+  background: rgba(245, 200, 74, 0.1);
+}
+
+/* ─── Input inline de renomear categoria ─────────────────────────────────── */
+.vt-categoria-editar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.vt-categoria-editar-input {
+  background: var(--vt-azul-card, #112250);
+  border: 1.5px solid var(--vt-azul-claro, #2a52a8);
+  border-radius: 6px;
+  color: var(--vt-branco, #fff);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 3px 10px;
+  outline: none;
+  width: 220px;
+  box-shadow: 0 0 0 3px rgba(42, 82, 168, 0.2);
+  transition: border-color 0.2s;
+}
+.vt-categoria-editar-input:focus {
+  border-color: var(--vt-amarelo, #f5c84a);
+  box-shadow: 0 0 0 3px rgba(245, 200, 74, 0.15);
+}
+
+.vt-categoria-editar-ok,
+.vt-categoria-editar-cancel {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+  line-height: 1;
+}
+.vt-categoria-editar-ok {
+  color: #22c55e;
+}
+.vt-categoria-editar-ok:hover {
+  background: rgba(34, 197, 94, 0.12);
+}
+.vt-categoria-editar-cancel {
+  color: var(--vt-cinza, #7a94c0);
+}
+.vt-categoria-editar-cancel:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* ─── Tela vazia ─────────────────────────────────────────────────────────── */
+.vt-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4rem 2rem;
+  text-align: center;
+  animation: vtFadeUp 0.4s ease both;
+}
+
+.vt-vazio-icone {
+  font-size: 48px;
+  line-height: 1;
+  filter: grayscale(0.3) opacity(0.7);
+}
+
+.vt-vazio-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vt-branco, #fff);
+  margin: 0;
+}
+
+.vt-vazio-sub {
+  font-size: 13px;
+  color: var(--vt-cinza, #7a94c0);
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.vt-vazio-btn {
+  margin-top: 8px;
+  padding: 9px 22px;
+  background: var(--vt-azul-medio, #1843a0);
+  border: 1.5px solid var(--vt-azul-claro, #2a52a8);
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.vt-vazio-btn:hover {
+  background: var(--vt-amarelo, #f5c84a);
+  border-color: var(--vt-amarelo, #f5c84a);
+  color: var(--vt-azul-escuro, #0d1b3e);
+  transform: scale(1.03);
+}

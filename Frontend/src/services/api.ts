@@ -18,14 +18,62 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
+  // ── Auth ─────────────────────────────────────────────────────────────────────
   register:    (dados: Record<string, string>) =>
-    request('/auth/register',    { method: 'POST', body: JSON.stringify(dados) }),
+    request('/auth/register',     { method: 'POST', body: JSON.stringify(dados) }),
   login:       (dados: Record<string, string>) =>
-    request('/auth/login',       { method: 'POST', body: JSON.stringify(dados) }),
+    request('/auth/login',        { method: 'POST', body: JSON.stringify(dados) }),
   perfil:      () =>
     request('/auth/perfil'),
   atualizar:   (dados: Record<string, string>) =>
-    request('/auth/perfil',      { method: 'PUT',  body: JSON.stringify(dados) }),
+    request('/auth/perfil',       { method: 'PUT',  body: JSON.stringify(dados) }),
   trocarSenha: (dados: Record<string, string>) =>
     request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
+
+  // ── Categorias ───────────────────────────────────────────────────────────────
+  criarCategoria: (
+    mercadoId: string | number,
+    dados: { nome: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias`, {
+      method: 'POST',
+      body:   JSON.stringify(dados),
+    }),
+
+  // ── Produtos ─────────────────────────────────────────────────────────────────
+  listarProdutos: (
+    mercadoId:   string | number,
+    categoriaId: string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`),
+
+  criarProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    dados: { nome: string; descricao?: string; imagem?: string | null }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`, {
+      method: 'POST',
+      body:   JSON.stringify(dados),
+    }),
+
+  atualizarProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    dados: { nome: string; descricao?: string; imagem?: string | null }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
+      method: 'PUT',
+      body:   JSON.stringify(dados),
+    }),
+
+  deletarProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
+      method: 'DELETE',
+    }),
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import Sidebar from '../pages/Sidebar';
+import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import ModalEditarPerfil from '../components/ModalEditarPerfil';
@@ -294,7 +294,7 @@ export default function PerfilUsuario({ tema, toggleTema }: Props) {
   }, [nav]);
 
   return (
-    <div className="pu-shell">
+   <div className="pu-shell">
       <Sidebar
         iniciais={iniciais}
         nome={usuario?.nome ?? 'Carregando...'}
@@ -311,7 +311,7 @@ export default function PerfilUsuario({ tema, toggleTema }: Props) {
               <button className="pu-btn-edit" onClick={() => setModalAberto(true)}>✏️ Editar Perfil</button>
             )}
           </div>
-        </div>
+        </div> 
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
             {TELAS[telaAtiva]}

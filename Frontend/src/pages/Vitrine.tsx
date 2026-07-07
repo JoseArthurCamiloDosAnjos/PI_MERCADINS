@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import '../pages/CSS/Vetrine.css';
-import CadastroProduto  from '../components/Cadastroproduto';
-import EditarMercado    from '../components/Editarmercado';
-import CriarCategoria   from '../components/Criarcategoria';
-import ConfirmarSaida   from '../components/Confirmarsaida';
+import '../pages/CSS/Vitrine.css';
+import CadastroProduto  from '../components/CadastroProduto';
+import EditarMercado    from '../components/EditarMercado';
+import CriarCategoria   from '../components/CriarCategoria';
+import ConfirmarSaida   from '../components/ConfirmarSaida';
 import ToastContainer   from '../components/Toast';
 import { useToast }     from '../hooks/useToast';
 import { api }          from '../services/api';
@@ -35,7 +35,7 @@ interface VitrineMercado {
 }
 
 interface VitrineProps {
-  mercado?: VitrineMercado;
+  mercadoId?: number;
   onVoltar?: () => void;
 }
 
@@ -272,8 +272,8 @@ function TelaVazia({ onCriar }: { onCriar: () => void }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
-  const [dados, setDados]                         = useState<VitrineMercado>(mercado ?? MERCADO_PLACEHOLDER);
+export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
+  const [dados, setDados]                         = useState<VitrineMercado>(MERCADO_PLACEHOLDER);
   const [temAlteracoes, setTemAlteracoes]         = useState(false);
   const [salvandoVitrine, setSalvandoVitrine]     = useState(false);
   const [modalEditar, setModalEditar]             = useState(false);
@@ -281,9 +281,52 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
   const [modalSaida, setModalSaida]               = useState(false);
   const [salvandoMercado, setSalvandoMercado]     = useState(false);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
+  const [carregando, setCarregando]               = useState(!!mercadoId);
   const acaoAoSair                                = useRef<'voltar' | 'fechar' | null>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
+
+  // ── Carregar dados do banco ───────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!mercadoId) return;
+
+    async function carregarDados() {
+      try {
+        const [mercadoData, categoriasData] = await Promise.all([
+          api.buscarMercado(mercadoId!),
+          api.listarCategorias(mercadoId!),
+        ]);
+
+        // Carregar produtos de cada categoria
+        const categoriasComProdutos = await Promise.all(
+          categoriasData.map(async (cat: { id: number; nome: string }) => {
+            try {
+              const produtos = await api.listarProdutos(mercadoId!, cat.id);
+              return { ...cat, produtos };
+            } catch {
+              return { ...cat, produtos: [] };
+            }
+          })
+        );
+
+        setDados({
+          id: mercadoData.mercado.id_mercado,
+          nome: mercadoData.mercado.nome,
+          descricao: mercadoData.mercado.descricao ?? '',
+          logo: mercadoData.mercado.foto_perfil ?? undefined,
+          categorias: categoriasComProdutos,
+        });
+      } catch (err) {
+        console.error('Erro ao carregar vitrine:', err);
+        showToast('erro', 'Erro ao carregar dados da vitrine.');
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDados();
+  }, [mercadoId]);
 
   // ── Intercepta saída ─────────────────────────────────────────────────────
 
@@ -303,14 +346,12 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
   // ── Salvar vitrine ────────────────────────────────────────────────────────
 
   async function salvarVitrine(): Promise<boolean> {
-    if (dados.id === 0) {
-      await new Promise(r => setTimeout(r, 500));
-      setTemAlteracoes(false);
-      showToast('sucesso', 'Vitrine salva com sucesso!');
-      return true;
+    if (!dados.id || dados.id === 0) {
+      showToast('erro', 'Salve o mercado primeiro antes de salvar a vitrine.');
+      return false;
     }
     try {
-      await api.atualizar({ nome: dados.nome, descricao: dados.descricao });
+      await api.atualizarMercado(dados.id, { nome: dados.nome, descricao: dados.descricao });
       setTemAlteracoes(false);
       showToast('sucesso', 'Vitrine salva com sucesso!');
       return true;
@@ -342,7 +383,7 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
   // ── Editar mercado ────────────────────────────────────────────────────────
 
   async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: string }) {
-    if (dados.id === 0) {
+    if (!dados.id || dados.id === 0) {
       setDados(prev => ({ ...prev, ...form }));
       setModalEditar(false);
       setTemAlteracoes(true);
@@ -351,11 +392,11 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
     }
     setSalvandoMercado(true);
     try {
-      await api.atualizar({ nome: form.nome, descricao: form.descricao });
+      await api.atualizarMercado(dados.id, { nome: form.nome, descricao: form.descricao });
       setDados(prev => ({ ...prev, ...form }));
       setModalEditar(false);
       setTemAlteracoes(true);
-      showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
+      showToast('sucesso', 'Mercado atualizado com sucesso!');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao atualizar mercado.');
     } finally {
@@ -366,20 +407,17 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
   // ── Criar categoria ───────────────────────────────────────────────────────
 
   async function handleCriarCategoria(nome: string) {
-    if (dados.id === 0) {
-      setDados(prev => ({ ...prev, categorias: [...prev.categorias, { id: Date.now(), nome, produtos: [] }] }));
-      setModalCategoria(false);
-      setTemAlteracoes(true);
-      showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
+    if (!dados.id || dados.id === 0) {
+      showToast('erro', 'Salve o mercado primeiro antes de criar categorias.');
       return;
     }
     setSalvandoCategoria(true);
     try {
-      const nova: Categoria = await api.criarCategoria(dados.id, { nome });
-      setDados(prev => ({ ...prev, categorias: [...prev.categorias, nova] }));
+      const nova = await api.criarCategoria(dados.id, { nome });
+      setDados(prev => ({ ...prev, categorias: [...prev.categorias, { ...nova, produtos: [] }] }));
       setModalCategoria(false);
       setTemAlteracoes(true);
-      showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
+      showToast('sucesso', 'Categoria criada com sucesso!');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao criar categoria.');
     } finally {
@@ -398,17 +436,30 @@ export default function Vitrine({ mercado, onVoltar }: VitrineProps) {
       ),
     }));
     setTemAlteracoes(true);
-    showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
 
-    // TODO: chamar api.atualizarCategoria quando a rota existir
-    // try { await api.atualizarCategoria(dados.id, categoriaId, { nome: novoNome }) } catch ...
+    // Salva no banco
+    if (dados.id && dados.id !== 0) {
+      try {
+        await api.atualizarCategoria(dados.id, categoriaId, { nome: novoNome });
+        showToast('sucesso', 'Categoria renomeada!');
+      } catch (e: unknown) {
+        showToast('erro', e instanceof Error ? e.message : 'Erro ao renomear categoria.');
+      }
+    }
   }
 
   return (
     <div className="vt-shell">
 
+      {/* ── Loading ────────────────────────────────────────────────────── */}
+      {carregando && (
+        <div className="vt-loading">
+          <p>Carregando vitrine...</p>
+        </div>
+      )}
+
       {/* ── Topbar ────────────────────────────────────────────────────── */}
-      {onVoltar && (
+      {onVoltar && !carregando && (
         <div className="vt-topbar">
           <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
             ← Voltar ao Gerenciamento

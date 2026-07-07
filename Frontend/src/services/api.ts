@@ -30,7 +30,20 @@ export const api = {
   trocarSenha: (dados: Record<string, string>) =>
     request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
 
+  // ── Mercados ─────────────────────────────────────────────────────────────────
+  meusMercados: () =>
+    request('/mercados/meus'),
+  buscarMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}`),
+  atualizarMercado: (mercadoId: string | number, dados: Record<string, string>) =>
+    request(`/mercados/${mercadoId}`, { method: 'PUT', body: JSON.stringify(dados) }),
+  dashboardMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/dashboard`),
+
   // ── Categorias ───────────────────────────────────────────────────────────────
+  listarCategorias: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/categorias`),
+
   criarCategoria: (
     mercadoId: string | number,
     dados: { nome: string }
@@ -38,6 +51,24 @@ export const api = {
     request(`/mercados/${mercadoId}/categorias`, {
       method: 'POST',
       body:   JSON.stringify(dados),
+    }),
+
+  atualizarCategoria: (
+    mercadoId: string | number,
+    categoriaId: string | number,
+    dados: { nome: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}`, {
+      method: 'PUT',
+      body:   JSON.stringify(dados),
+    }),
+
+  deletarCategoria: (
+    mercadoId: string | number,
+    categoriaId: string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}`, {
+      method: 'DELETE',
     }),
 
   // ── Produtos ─────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ const authRoutes           = require('./routes/authRoutes.js')
 const marketRoutes         = require('./routes/marketRoutes.js')
 const usuariosMercadosRoutes = require('./routes/usuariosMercadosRoutes.js')
 const produtoRoutes        = require('./routes/produtoRoutes.js')
+const categoriaRoutes      = require('./routes/categoriaRoutes.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -17,11 +18,9 @@ app.use('/api/auth',            authRoutes)
 app.use('/api/mercados',        marketRoutes)
 app.use('/api/usuarios-mercados', usuariosMercadosRoutes)
 
-// Rota de produtos — aninhada sob mercados > categorias
-app.use(
-  '/api/mercados/:mercadoId/categorias/:categoriaId/produtos',
-  produtoRoutes
-)
+// Rotas aninhadas sob mercados
+app.use('/api/mercados/:mercadoId/categorias',    categoriaRoutes)
+app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos', produtoRoutes)
 
 app.listen(PORT, () => {
   console.log(`✅ Backend rodando em http://localhost:${PORT}`)

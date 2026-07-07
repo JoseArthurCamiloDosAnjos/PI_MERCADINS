@@ -1,4 +1,4 @@
-import '../pages/CSS/ThemeToggle.css';
+import './ThemeToggle.css';
 
 interface Props {
   tema: 'escuro' | 'claro';

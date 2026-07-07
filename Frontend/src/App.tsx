@@ -14,20 +14,21 @@ import Vitrine from './pages/Vitrine'
 
 function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () => void }) {
   const { usuario, carregando, temMercado } = useAuth()
-  const [mercadoAberto, setMercadoAberto] = useState<{ emoji: string; nome: string } | null>(null)
+  const [mercadoAberto, setMercadoAberto] = useState<{ id: number; emoji: string; nome: string } | null>(null)
   const [vitrineAberta, setVitrineAberta] = useState(false)
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
   if (usuario && mercadoAberto && vitrineAberta) {
     return (
-      <Vitrine onVoltar={() => setVitrineAberta(false)} />
+      <Vitrine mercadoId={mercadoAberto.id} onVoltar={() => setVitrineAberta(false)} />
     )
   }
 
   if (usuario && mercadoAberto) {
     return (
       <GerenciamentoMercado
+        mercadoId={mercadoAberto.id}
         onVoltar={() => setMercadoAberto(null)}
         onAbrirVitrine={() => setVitrineAberta(true)}
       />

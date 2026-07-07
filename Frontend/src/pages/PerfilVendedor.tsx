@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';
@@ -71,7 +71,7 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
   mercados: Mercado[];
   carregando: boolean;
-  onAbrirMercado?: (m: { emoji: string; nome: string }) => void;
+  onAbrirMercado?: (m: { id: number; emoji: string; nome: string }) => void;
 }) {
   const navigate = useNavigate();
 
@@ -106,7 +106,7 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
             <p style={{ color: 'var(--cinza-texto)', fontSize: 13 }}>Nenhum mercado cadastrado ainda.</p>
           ) : mercados.map((m, i) => (
             <div key={m.id_mercado} className="pv-mkt-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}
-              onClick={() => onAbrirMercado && onAbrirMercado({ emoji: EMOJIS[i % EMOJIS.length], nome: m.nome })}>
+              onClick={() => onAbrirMercado && onAbrirMercado({ id: m.id_mercado, emoji: EMOJIS[i % EMOJIS.length], nome: m.nome })}>
               <div className="pv-mkt-img">{EMOJIS[i % EMOJIS.length]}</div>
               <p className="pv-mkt-nome">{m.nome}</p>
               <p style={{ fontSize: 11, color: 'var(--cinza-texto)' }}>{m.cidade} · {m.estado}</p>
@@ -325,7 +325,7 @@ function TelaComunicacao() {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m: { emoji: string; nome: string }) => void }) {
+export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m: { id: number; emoji: string; nome: string }) => void }) {
   const [nav, setNav] = useState(0);
   const [telaAtiva, setTelaAtiva] = useState(0);
   const [visivel, setVisivel] = useState(true);

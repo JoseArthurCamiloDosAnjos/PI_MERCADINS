@@ -1,6 +1,6 @@
 import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
-import '../pages/CSS/Cadastroproduto.css'
+import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

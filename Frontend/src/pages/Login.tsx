@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import "./CSS/Login.css";
 import "./CSS/modais.css";
 import { useNavigate } from "react-router-dom";
-import EsqueciSenhaModal from "../components/Esquecisenhamodal";
+import EsqueciSenhaModal from "../components/EsqueciSenhaModal";
 
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';

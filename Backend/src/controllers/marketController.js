@@ -327,11 +327,65 @@ const meusMercados = async (req, res) => {
 };
 
 
+// GET /api/mercados/:id/dashboard — dados completos para o gerenciamento
+const dashboardMercado = async (req, res) => {
+  const id_usuario = pegarIdUsuario(req);
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado" });
+
+  const { id } = req.params;
+
+  try {
+    const sql = await conectar();
+
+    // Verifica permissão
+    const [permissao] = await sql`
+      SELECT papel FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario}
+        AND id_mercado = ${Number(id)}
+    `;
+    if (!permissao)
+      return res.status(403).json({ erro: "Você não tem acesso a este mercado" });
+
+    // Busca dados do mercado
+    const [mercado] = await sql`
+      SELECT * FROM mercados WHERE id_mercado = ${Number(id)}
+    `;
+    if (!mercado)
+      return res.status(404).json({ erro: "Mercado não encontrado" });
+
+    // Busca todos os produtos do mercado (via categorias)
+    const produtos = await sql`
+      SELECT p.id_produto, p.nome, p.descricao, p.imagem, c.nome AS categoria
+      FROM produtos p
+      JOIN categorias c ON c.id_categoria = p.id_categoria
+      WHERE c.id_mercado = ${Number(id)}
+      ORDER BY p.id_produto
+    `;
+
+    // Contagem de categorias
+    const [catCount] = await sql`
+      SELECT COUNT(*)::int AS total FROM categorias WHERE id_mercado = ${Number(id)}
+    `;
+
+    res.status(200).json({
+      mercado,
+      produtos,
+      totalCategorias: catCount.total,
+      totalProdutos: produtos.length,
+    });
+  } catch (err) {
+    console.error("ERRO dashboardMercado:", err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
 module.exports = {
   criarMercado,
   listarMercados,
   buscarMercadoPorId,
   atualizarMercado,
   deletarMercado,
-  meusMercados
+  meusMercados,
+  dashboardMercado,
 };

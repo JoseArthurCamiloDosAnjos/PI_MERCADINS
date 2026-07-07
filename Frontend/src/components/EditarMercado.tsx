@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import '../pages/CSS/Editarmercado.css';
+import './EditarMercado.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

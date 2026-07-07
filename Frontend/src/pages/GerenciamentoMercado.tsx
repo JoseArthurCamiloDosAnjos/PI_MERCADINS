@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import '../pages/CSS/GerenciamentoMercado.css';
+import { api } from '../services/api';
 
 // Alturas fixas para o skeleton do gráfico (evita Math.random no render)
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
@@ -7,11 +8,11 @@ const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Produto {
-  emoji?: string;
+  id_produto: number;
   nome: string;
-  preco: string;
-  stock: 'ok' | 'low' | 'out';
-  stockLabel: string;
+  descricao?: string;
+  imagem?: string;
+  categoria: string;
 }
 
 interface Pedido {
@@ -40,12 +41,24 @@ interface FinanceiroMes {
   val: number;
 }
 
+interface MercadoInfo {
+  id_mercado: number;
+  nome: string;
+  email: string;
+  telefone: string;
+  cnpj: string;
+  cep: string;
+  estado: string;
+  cidade: string;
+  bairro: string;
+  rua: string;
+}
+
 interface DadosMercado {
+  mercado: MercadoInfo | null;
   produtos: Produto[];
-  pedidos: Pedido[];
-  avaliacoes: Avaliacao[];
-  stats: Stat[];
-  financeiro: FinanceiroMes[];
+  totalCategorias: number;
+  totalProdutos: number;
   loading: boolean;
 }
 
@@ -185,16 +198,15 @@ function SecProdutos({ produtos, loading }: { produtos: Produto[]; loading: bool
         <EmptyState msg="Nenhum produto cadastrado ainda" />
       ) : (
         <div className="gm-prod-row">
-          {produtos.map((p, i) => (
-            <div key={i} className="gm-prod-card" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
-              <div className="gm-prod-img">{p.emoji ?? '📦'}</div>
+          {produtos.map((p) => (
+            <div key={p.id_produto} className="gm-prod-card">
+              <div className="gm-prod-img">
+                {p.imagem ? <img src={p.imagem} alt={p.nome} /> : '📦'}
+              </div>
               <div className="gm-prod-body">
                 <p className="gm-prod-nome">{p.nome}</p>
-                <p className="gm-prod-preco">{p.preco}</p>
-                <span className={`gm-stock ${p.stock}`}>
-                  <span className="gm-stock-dot" />
-                  {p.stockLabel}
-                </span>
+                <p className="gm-prod-preco">{p.categoria}</p>
+                {p.descricao && <p className="gm-prod-desc">{p.descricao}</p>}
               </div>
             </div>
           ))}
@@ -331,7 +343,31 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
   );
 }
 
-function SecInformacoes() {
+function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
+  if (!mercado) return <EmptyState msg="Carregando informações..." />;
+
+  const formatarTelefone = (tel: string) => {
+    if (!tel) return '—';
+    const nums = tel.replace(/\D/g, '');
+    if (nums.length === 11) return `(${nums.slice(0,2)}) ${nums.slice(2,7)}-${nums.slice(7)}`;
+    if (nums.length === 10) return `(${nums.slice(0,2)}) ${nums.slice(2,6)}-${nums.slice(6)}`;
+    return tel;
+  };
+
+  const formatarCNPJ = (cnpj: string) => {
+    if (!cnpj) return '—';
+    const nums = cnpj.replace(/\D/g, '');
+    if (nums.length === 14) return `${nums.slice(0,2)}.${nums.slice(2,5)}.${nums.slice(5,8)}/${nums.slice(8,12)}-${nums.slice(12)}`;
+    return cnpj;
+  };
+
+  const formatarCEP = (cep: string) => {
+    if (!cep) return '—';
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length === 8) return `${nums.slice(0,5)}-${nums.slice(5)}`;
+    return cep;
+  };
+
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
@@ -340,24 +376,19 @@ function SecInformacoes() {
       </div>
       <div className="gm-info-grid">
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">📍 Endereço</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">📞 Telefone</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">✉️ Email</span><span className="gm-info-val">—</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">📍 Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">📞 Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">✉️ Email</span><span className="gm-info-val">{mercado.email}</span></div>
         </div>
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">🕐 Seg–Sex</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🕐 Sábado</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🕐 Domingo</span><span className="gm-info-val">—</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">📍 Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">📮 CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">🏘️ Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
         </div>
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">🆔 CNPJ</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🏷️ Razão Social</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">📦 Entrega</span><span className="gm-info-val">—</span></div>
-        </div>
-        <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">💳 Pagamentos</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🚚 Taxa de entrega</span><span className="gm-info-val">—</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">⏱️ Tempo médio</span><span className="gm-info-val">—</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">🆔 CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">🏷️ Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl">📦 Categorias</span><span className="gm-info-val">—</span></div>
         </div>
       </div>
     </div>
@@ -367,45 +398,59 @@ function SecInformacoes() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function GerenciamentoMercado({
+  mercadoId,
   onVoltar,
   onAbrirVitrine,
 }: {
+  mercadoId: number;
   onVoltar: () => void;
   onAbrirVitrine: () => void;
 }) {
   const [nav, setNav] = useState(0);
 
   const [dados, setDados] = useState<DadosMercado>({
+    mercado: null,
     produtos: [],
-    pedidos: [],
-    avaliacoes: [],
-    financeiro: [],
-    stats: [
-      { val: '—', lbl: 'Receita do Mês' },
-      { val: '—', lbl: 'Pedidos do Mês' },
-      { val: '—', lbl: 'Avaliação Média' },
-      { val: '—', lbl: 'Produtos Ativos' },
-    ],
+    totalCategorias: 0,
+    totalProdutos: 0,
     loading: true,
   });
 
   useEffect(() => {
-    // TODO: substituir pelas chamadas reais quando o backend estiver pronto
-    const timer = setTimeout(() => {
-      setDados(prev => ({ ...prev, loading: false }));
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    async function carregarDashboard() {
+      try {
+        const data = await api.dashboardMercado(mercadoId);
+        setDados({
+          mercado: data.mercado,
+          produtos: data.produtos,
+          totalCategorias: data.totalCategorias,
+          totalProdutos: data.totalProdutos,
+          loading: false,
+        });
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err);
+        setDados(prev => ({ ...prev, loading: false }));
+      }
+    }
+    carregarDashboard();
+  }, [mercadoId]);
 
-  const { produtos, pedidos, avaliacoes, stats, financeiro, loading } = dados;
+  const { mercado, produtos, totalCategorias, totalProdutos, loading } = dados;
+
+  const stats: Stat[] = [
+    { val: String(totalProdutos), lbl: 'Produtos' },
+    { val: String(totalCategorias), lbl: 'Categorias' },
+    { val: '—', lbl: 'Pedidos' },
+    { val: '—', lbl: 'Avaliação' },
+  ];
 
   const SECTIONS = [
-    <SecDashboard stats={stats} financeiro={financeiro} loading={loading} />,
+    <SecDashboard stats={stats} financeiro={[]} loading={loading} />,
     <SecProdutos produtos={produtos} loading={loading} />,
-    <SecPedidos pedidos={pedidos} loading={loading} />,
-    <SecAvaliacoes avaliacoes={avaliacoes} loading={loading} />,
-    <SecFinanceiro financeiro={financeiro} loading={loading} />,
-    <SecInformacoes />,
+    <SecPedidos pedidos={[]} loading={loading} />,
+    <SecAvaliacoes avaliacoes={[]} loading={loading} />,
+    <SecFinanceiro financeiro={[]} loading={loading} />,
+    <SecInformacoes mercado={mercado} />,
   ];
 
   return (
@@ -415,8 +460,8 @@ export default function GerenciamentoMercado({
       <aside className="gm-sidebar">
         <div className="gm-mkt-identity">
           <div className="gm-mkt-logo">🛒</div>
-          <p className="gm-mkt-nome">Concertar Centro</p>
-          <p className="gm-mkt-sub">São Paulo · SP</p>
+          <p className="gm-mkt-nome">{mercado?.nome ?? 'Carregando...'}</p>
+          <p className="gm-mkt-sub">{mercado?.cidade ?? ''} · {mercado?.estado ?? ''}</p>
           <span className="gm-status-open">● Aberto</span>
         </div>
         <nav className="gm-nav">

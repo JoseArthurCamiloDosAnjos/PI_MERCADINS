@@ -1,4 +1,4 @@
-import '../pages/CSS/Confirmarsaida.css';
+import './ConfirmarSaida.css';
 
 interface ConfirmarSaidaProps {
   onSalvarESair: () => void;

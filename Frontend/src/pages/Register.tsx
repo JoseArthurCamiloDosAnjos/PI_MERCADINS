@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
 import "./CSS/modais.css";
-import EmailVerificacaoModal from "../components/Emailverificacaomodal";
+import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
 
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';

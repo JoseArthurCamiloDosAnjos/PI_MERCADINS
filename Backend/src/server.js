@@ -23,10 +23,10 @@ app.use('/api/usuarios-mercados', usuariosMercadosRoutes)
 app.use('/api/mercados/:mercadoId/categorias',                          categoriaRoutes)
 app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoRoutes)
 
-app.use(express.static(path.join(__dirname, '..', 'Frontend', 'dist')))
+app.use(express.static(path.join(__dirname, '..', '..', 'Frontend', 'dist')))
 
 app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'Frontend', 'dist', 'index.html'))
+  res.sendFile(path.join(__dirname, '..', '..', 'Frontend', 'dist', 'index.html'))
 })
 
 app.listen(PORT, () => {

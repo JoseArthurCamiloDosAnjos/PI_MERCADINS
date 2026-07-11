@@ -15,7 +15,7 @@ import Vitrine from './pages/Vitrine'
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
-  const [mercadoAberto, setMercadoAberto] = useState<{ id: number; emoji: string; nome: string } | null>(null)
+  const [mercadoAberto, setMercadoAberto] = useState<{ id: number; nome: string } | null>(null)
   const [vitrineAberta, setVitrineAberta] = useState(false)
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
@@ -45,7 +45,7 @@ function Rotas() {
       <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
       <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
       <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
-      <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+      <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => setMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>

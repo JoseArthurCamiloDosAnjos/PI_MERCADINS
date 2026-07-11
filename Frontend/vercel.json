@@ -1,6 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://seu-app.onrender.com/api/:path*" },
-    { "source": "/auth/:path*", "destination": "https://seu-app.onrender.com/auth/:path*" }
+    { "source": "/api/:path*", "destination": "https://pi-mercadins.onrender.com/api/:path*" }
   ]
 }

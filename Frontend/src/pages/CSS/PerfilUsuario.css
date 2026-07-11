@@ -15,6 +15,7 @@
   padding: 1rem 1.8rem;
   background: var(--azul-sidebar);
   border-bottom: 1px solid var(--azul-borda);
+  gap: 12px;
 }
 .pu-topbar-actions {
   display: flex;
@@ -25,6 +26,9 @@
 .pu-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); }
 
 .pu-btn-edit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background: var(--azul-medio);
   color: var(--amarelo);
   font-size: 12px; font-weight: 800;
@@ -32,12 +36,23 @@
   border-radius: var(--radius-full);
   border: 1.5px solid var(--azul-claro);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 .pu-btn-edit:hover { background: var(--azul-claro); color: var(--branco); }
 
 .pu-content { padding: 1.6rem 1.8rem; display: flex; flex-direction: column; gap: 1.6rem; }
 
-.pu-sec-title { font-size: 15px; font-weight: 800; color: var(--branco); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+.pu-sec-title { font-size: 15px; font-weight: 800; color: var(--branco); margin-bottom: 1rem; display: flex; align-items: center; gap: 9px; }
+
+/* Badge de ícone que acompanha todo título de seção */
+.pu-sec-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 27px; height: 27px; border-radius: 8px;
+  background: var(--azul-medio);
+  border: 1px solid var(--azul-claro);
+  color: var(--amarelo);
+  flex-shrink: 0;
+}
 
 .pu-sec-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .pu-sec-row .pu-sec-title { margin-bottom: 0; }
@@ -66,7 +81,7 @@
   background: var(--azul-card);
   border: 2px solid var(--azul-item);
   display: flex; align-items: center; justify-content: center;
-  font-size: 30px;
+  color: var(--amarelo);
   transition: all 0.22s;
   box-shadow: 0 2px 10px rgba(0,0,0,0.25);
 }
@@ -76,8 +91,43 @@
 .pu-circ-label { font-size: 11px; font-weight: 700; color: var(--cinza-texto); max-width: 74px; text-align: center; line-height: 1.3; }
 .pu-circ-muted { color: #3a4f68; }
 
+/* Mensagem discreta para estados vazios em linha (ex: favoritos) */
+.pu-empty-inline {
+  font-size: 12px;
+  color: var(--cinza-texto);
+  margin-top: 12px;
+}
+
+/* Cartão de estado vazio — usado em Histórico e Avaliações quando não há dados */
+.pu-empty {
+  background: var(--azul-card);
+  border: 1px dashed var(--azul-item);
+  border-radius: var(--radius-lg);
+  padding: 30px 22px;
+  text-align: center;
+}
+.pu-empty-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--azul-medio);
+  color: var(--amarelo);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.pu-empty p {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--branco-suave);
+  margin: 0;
+}
+.pu-empty span {
+  font-size: 11.5px;
+  color: var(--cinza-texto);
+  display: block;
+  margin-top: 4px;
+}
+
 /* HISTÓRICO GRID */
-.pu-hist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.pu-hist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .pu-hcard {
   background: var(--azul-card);
   border-radius: var(--radius-lg);
@@ -89,10 +139,10 @@
 }
 .pu-hcard:hover { border-color: var(--amarelo); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 .pu-hcard-img {
-  width: 100%; height: 80px;
+  width: 100%; height: 76px;
   background: var(--azul-bg);
+  color: var(--amarelo);
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
 }
 .pu-hcard-body { padding: 12px 14px; }
 .pu-hcard-nome  { font-size: 13px; font-weight: 800; color: var(--branco); }
@@ -110,7 +160,7 @@
 .pu-status.new     { background: var(--novo-bg);     color: var(--novo-texto); }
 
 /* AVALIAÇÕES */
-.pu-rev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.pu-rev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .pu-rev-card {
   background: var(--azul-card); border-radius: var(--radius-md); border: 1px solid var(--azul-item); padding: 14px;
   cursor: pointer; opacity: 0; animation: popIn 0.4s ease forwards;
@@ -128,6 +178,7 @@
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
   animation: fadeIn 0.2s ease;
+  padding: 16px;
 }
 
 .pu-modal {
@@ -202,6 +253,7 @@
 }
 .pu-modal-btn-cancel:hover { border-color: var(--cinza-texto); color: var(--branco); }
 .pu-modal-btn-save {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   background: var(--amarelo); color: var(--azul-escuro);
   font-size: 13px; font-weight: 900;
   padding: 9px 24px; border-radius: var(--radius-full);
@@ -209,6 +261,44 @@
 }
 .pu-modal-btn-save:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245,200,74,0.35); }
 .pu-modal-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Bloco de formulário reutilizável (ex: tela de Segurança) */
+.pu-form-block {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.pu-form-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* Cartão de confirmação (ex: "verifique seu email") */
+.pu-confirm-card {
+  margin-top: 24px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.pu-confirm-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--azul-medio);
+  color: var(--amarelo);
+  display: flex; align-items: center; justify-content: center;
+}
+.pu-confirm-title { font-size: 15px; font-weight: 800; color: var(--branco); margin: 0; }
+.pu-confirm-text { font-size: 13px; color: var(--cinza-texto); line-height: 1.6; margin: 0; }
+.pu-confirm-highlight { color: var(--amarelo); }
+
 /* FADE TRANSIÇÃO */
 .pu-tela-fade {
   transition: opacity 0.18s ease, transform 0.18s ease;
@@ -316,4 +406,23 @@
 .senha-req-item.ok .senha-req-icon {
   background: rgba(74, 222, 128, 0.15);
   color: #4ade80;
+}
+
+/* ── RESPONSIVO ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pu-topbar { padding: 0.9rem 1.2rem 0.9rem 62px; }
+  .pu-content { padding: 1.2rem 1.2rem; gap: 1.3rem; }
+}
+
+@media (max-width: 560px) {
+  .pu-topbar { flex-wrap: wrap; padding: 0.9rem 1rem 0.9rem 60px; }
+  .pu-topbar-title { font-size: 14.5px; }
+  .pu-content { padding: 1rem; }
+  .pu-btn-edit { padding: 7px 14px; font-size: 11.5px; }
+  .pu-circ { width: 62px; height: 62px; }
+  .pu-hist-grid, .pu-rev-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 380px) {
+  .pu-hist-grid, .pu-rev-grid { grid-template-columns: 1fr; }
 }

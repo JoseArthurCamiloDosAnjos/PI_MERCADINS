@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-y: auto;
 }
 
 /* PERFIL */
@@ -14,6 +15,7 @@
   border-bottom: 1px solid var(--azul-borda);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .sb-avatar {
@@ -91,11 +93,13 @@
   font-weight: 800;
 }
 
-.sb-nav-emoji {
-  font-size: 18px;
+.sb-nav-icon {
   flex-shrink: 0;
-  width: 24px;
-  text-align: center;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sb-nav-label { flex: 1; }
@@ -156,4 +160,87 @@
   color: var(--branco);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245,200,74,0.3);
+}
+
+.sb-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  margin-bottom: 10px;
+}
+
+.sb-theme-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cinza-texto);
+}
+
+/* ── HAMBÚRGUER (mobile) ─────────────────────────────────────────── */
+.sb-hamburger {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 60;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--azul-sidebar);
+  border: 1px solid var(--azul-borda);
+  color: var(--branco);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.sb-close {
+  display: none;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  color: var(--cinza-texto);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sb-close:hover { color: var(--branco); border-color: var(--azul-claro); }
+
+.sb-overlay {
+  display: none;
+}
+
+/* ── RESPONSIVO ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sb-hamburger { display: flex; }
+
+  .sb-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.4);
+  }
+  .sb-root.sb-open { transform: translateX(0); }
+
+  .sb-close { display: flex; }
+
+  .sb-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 65;
+    animation: fadeIn 0.2s ease;
+  }
 }

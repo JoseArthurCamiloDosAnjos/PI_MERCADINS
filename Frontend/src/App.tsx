@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import PerfilUsuario from './pages/PerfilUsuario'
@@ -12,7 +13,7 @@ import RegistrarMercado from './pages/RegistrarMercado'
 import MercadinsPromos from './pages/MercadinsPromo'
 import Vitrine from './pages/Vitrine'
 
-function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () => void }) {
+function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
   const [mercadoAberto, setMercadoAberto] = useState<{ id: number; emoji: string; nome: string } | null>(null)
   const [vitrineAberta, setVitrineAberta] = useState(false)
@@ -43,7 +44,7 @@ function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () 
       <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
       <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
       <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
-      <Route path="/perfil"            element={usuario ? <PerfilUsuario tema={tema} toggleTema={toggleTema} /> : <Navigate to="/auth" />} />
+      <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
       <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={setMercadoAberto} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
@@ -52,27 +53,12 @@ function Rotas({ tema, toggleTema }: { tema: 'escuro' | 'claro'; toggleTema: () 
 }
 
 export default function App() {
-  const [tema, setTema] = useState<'escuro' | 'claro'>(() => {
-    return (localStorage.getItem('tema') as 'escuro' | 'claro') ?? 'escuro'
-  })
-
-  useEffect(() => {
-    const root = document.getElementById('root')
-    if (!root) return
-    if (tema === 'claro') {
-      root.classList.add('tema-claro')
-    } else {
-      root.classList.remove('tema-claro')
-    }
-    localStorage.setItem('tema', tema)
-  }, [tema])
-
-  const toggleTema = () => setTema(t => t === 'escuro' ? 'claro' : 'escuro')
-
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Rotas tema={tema} toggleTema={toggleTema} />
+        <ThemeProvider>
+          <Rotas />
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   )

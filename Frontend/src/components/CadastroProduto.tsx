@@ -4,7 +4,7 @@ import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ImagemItem {
+interface ImagemItem { 
   url: string;
   file: File;
 }

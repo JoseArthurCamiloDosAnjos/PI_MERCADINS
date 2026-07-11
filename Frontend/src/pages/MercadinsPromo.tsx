@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import ThemeToggle from "../components/ThemeToggle";
 import "./CSS/MercadinsPromo.css";
 import logo from "../assets/logo2.png";
 
@@ -92,8 +94,10 @@ const benefits = [
 
 export default function MercadinsPromo() {
   const [billingAnnual, setBillingAnnual] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { usuario, temMercado } = useAuth();
+  const { tema, toggleTema } = useTheme();
 
   useEffect(() => {
     const sections = document.querySelectorAll(
@@ -126,17 +130,33 @@ export default function MercadinsPromo() {
   return (
     <div className="mp-root">
       {/* NAVBAR */}
-      <nav className="mp-nav">
+      <nav className={`mp-nav ${mobileMenuOpen ? "mp-nav-open" : ""}`}>
         <div className="mp-nav-inner">
           <div className="mp-logo">
             <img src={logo} alt="Mercadins" className="mp-logo-img" />
           </div>
-          <div className="mp-nav-links">
-            <a href="#beneficios">Benefícios</a>
-            <a href="#planos">Planos</a>
-            <a href="#faq">FAQ</a>
+          <div className={`mp-nav-links ${mobileMenuOpen ? "mp-nav-links--open" : ""}`}>
+            <a href="#beneficios" onClick={() => setMobileMenuOpen(false)}>Benefícios</a>
+            <a href="#planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
+            <a href="#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
+            <div className="mp-nav-mobile-actions">
+              <ThemeToggle tema={tema} onToggle={toggleTema} />
+              <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
+            </div>
           </div>
-          <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
+          <div className="mp-nav-right">
+            <ThemeToggle tema={tema} onToggle={toggleTema} />
+            <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
+          </div>
+          <button
+            className={`mp-hamburger ${mobileMenuOpen ? "mp-hamburger--open" : ""}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </nav>
 

@@ -13,5 +13,8 @@
   "type": "commonjs",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "lucide-react": "^1.24.0"
   }
 }

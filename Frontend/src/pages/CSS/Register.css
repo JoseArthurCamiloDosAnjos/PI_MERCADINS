@@ -26,6 +26,16 @@ html, body {
   overflow: hidden;
 }
 
+/* ── TEMA CLARO ── */
+.tema-claro #root { background: #f0f2f7; }
+.tema-claro .right { background: #f0f2f7; }
+.tema-claro .form-header h1 { color: #0d2a5e; }
+.tema-claro .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
+.tema-claro .field input:focus { background: #ffffff; }
+.tema-claro .btn-primary { background: #0d2a5e; color: #ffffff; }
+.tema-claro .login-link { color: #8892a4; }
+.tema-claro .login-link a { color: #1a3a7a; }
+
 /* ── LEFT PANEL ── */
 .left {
   width: 46%;
@@ -152,6 +162,13 @@ html, body {
 
 .form-header {
   margin-bottom: 28px;
+}
+
+.form-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .form-header h1 {

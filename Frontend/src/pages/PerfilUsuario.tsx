@@ -3,14 +3,26 @@ import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import ModalEditarPerfil from '../components/ModalEditarPerfil';
-import ThemeToggle from '../components/ThemeToggle';
 import ToastContainer from '../components/Toast';
 import LoadingOverlay from '../components/LoadingOverlay';
 import PasswordStrength from '../components/PasswordStrength';
 import '../pages/CSS/PerfilUsuario.css';
+import {
+  IconLock,
+  IconMapPin,
+  IconCreditCard,
+  IconReceipt,
+  IconBell,
+  IconStore,
+  IconShoppingBag,
+  IconStar,
+  IconPencil,
+  IconMail,
+  IconInbox,
+} from '../components/Icons';
 
-interface Favorito  { emoji: string; nome: string; }
-interface Historico { emoji: string; nome: string; preco: string; data: string; status: string; label: string; }
+interface Favorito  { nome: string; }
+interface Historico { nome: string; preco: string; data: string; status: string; label: string; }
 interface Avaliacao { loja: string; n: number; texto: string; }
 
 const FAVORITOS: Favorito[] = [];
@@ -18,11 +30,6 @@ const HISTORICO: Historico[] = [];
 const AVALIACOES: Avaliacao[] = [];
 
 const TITULOS = ['Meu Perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
-
-interface Props {
-  tema: 'escuro' | 'claro';
-  toggleTema: () => void;
-}
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -57,59 +64,78 @@ function TelaPerfil() {
   return (
     <>
       <section>
-        <h2 className="pu-sec-title">🏪 Mercados Favoritos</h2>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados Favoritos</h2>
         <div className="pu-circles">
-          {FAVORITOS.map((f, i) => (
-            <div key={i} className="pu-circ-item" style={{ animationDelay: `${0.3 + i * 0.07}s` }}>
-              <div className="pu-circ">{f.emoji}</div>
-              <span className="pu-circ-label">{f.nome}</span>
-            </div>
-          ))}
-          <div className="pu-circ-item" style={{ animationDelay: '0.82s' }}>
+          <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
             <div className="pu-circ pu-circ-add">+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
+          {FAVORITOS.map((f, i) => (
+            <div key={i} className="pu-circ-item" style={{ animationDelay: `${0.38 + i * 0.07}s` }}>
+              <div className="pu-circ"><IconStore size={22} /></div>
+              <span className="pu-circ-label">{f.nome}</span>
+            </div>
+          ))}
         </div>
+        {FAVORITOS.length === 0 && (
+          <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
+        )}
       </section>
 
       <div className="pu-divider" />
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title">🛍️ Histórico de Compras</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconShoppingBag size={14} /></span>Histórico de Compras</h2>
           <button className="pu-btn-link">Ver todos</button>
         </div>
-        <div className="pu-hist-grid">
-          {HISTORICO.map((p, i) => (
-            <div key={i} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
-              <div className="pu-hcard-img">{p.emoji}</div>
-              <div className="pu-hcard-body">
-                <p className="pu-hcard-nome">{p.nome}</p>
-                <p className="pu-hcard-preco">{p.preco}</p>
-                <p className="pu-hcard-data">{p.data}</p>
-                <span className={`pu-status ${p.status}`}>● {p.label}</span>
+        {HISTORICO.length === 0 ? (
+          <div className="pu-empty">
+            <div className="pu-empty-icon"><IconShoppingBag size={22} /></div>
+            <p>Nenhuma compra realizada ainda</p>
+            <span>Seus pedidos aparecerão aqui assim que você comprar em um mercado.</span>
+          </div>
+        ) : (
+          <div className="pu-hist-grid">
+            {HISTORICO.map((p, i) => (
+              <div key={i} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+                <div className="pu-hcard-img"><IconShoppingBag size={26} /></div>
+                <div className="pu-hcard-body">
+                  <p className="pu-hcard-nome">{p.nome}</p>
+                  <p className="pu-hcard-preco">{p.preco}</p>
+                  <p className="pu-hcard-data">{p.data}</p>
+                  <span className={`pu-status ${p.status}`}>● {p.label}</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="pu-divider" />
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title">⭐ Avaliações Feitas</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações Feitas</h2>
           <button className="pu-btn-link">Ver todas</button>
         </div>
-        <div className="pu-rev-grid">
-          {AVALIACOES.map((a, i) => (
-            <div key={i} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
-              <p className="pu-rev-store">{a.loja}</p>
-              <Stars n={a.n} />
-              <p className="pu-rev-text">{a.texto}</p>
-            </div>
-          ))}
-        </div>
+        {AVALIACOES.length === 0 ? (
+          <div className="pu-empty">
+            <div className="pu-empty-icon"><IconStar size={22} /></div>
+            <p>Você ainda não avaliou nenhum mercado</p>
+            <span>Suas avaliações ajudam outros compradores a escolher melhor.</span>
+          </div>
+        ) : (
+          <div className="pu-rev-grid">
+            {AVALIACOES.map((a, i) => (
+              <div key={i} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+                <p className="pu-rev-store">{a.loja}</p>
+                <Stars n={a.n} />
+                <p className="pu-rev-text">{a.texto}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
@@ -146,10 +172,10 @@ function TelaSeguranca() {
       {enviando && <LoadingOverlay mensagem="Enviando email..." />}
 
       <section>
-        <h2 className="pu-sec-title">🔒 Segurança</h2>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
 
         {etapa === 'form' ? (
-          <div style={{ maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+          <div className="pu-form-block">
             <div className="pu-modal-group">
               <label className="pu-modal-label">Nova Senha</label>
               <div className="pu-input-wrap">
@@ -178,41 +204,25 @@ function TelaSeguranca() {
               </div>
             </div>
             <button
-              className="pu-modal-btn-save"
+              className="pu-modal-btn-save pu-form-btn"
               onClick={enviarConfirmacao}
               disabled={enviando}
-              style={{ alignSelf: 'flex-start', marginTop: 4 }}
             >
-              📧 Salvar e Confirmar por Email
+              <IconMail size={15} /> Salvar e Confirmar por Email
             </button>
           </div>
         ) : (
-          <div style={{
-            marginTop: 24,
-            background: 'var(--azul-card)',
-            border: '1px solid var(--azul-item)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '2rem',
-            maxWidth: 420,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 12,
-            textAlign: 'center',
-          }}>
-            <span style={{ fontSize: 48 }}>📬</span>
-            <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--branco)' }}>
-              Verifique seu email
-            </p>
-            <p style={{ fontSize: 13, color: 'var(--cinza-texto)', lineHeight: 1.6 }}>
+          <div className="pu-confirm-card">
+            <div className="pu-confirm-icon"><IconInbox size={30} /></div>
+            <p className="pu-confirm-title">Verifique seu email</p>
+            <p className="pu-confirm-text">
               Enviamos um link de confirmação para{' '}
-              <strong style={{ color: 'var(--amarelo)' }}>{usuario?.email}</strong>.
+              <strong className="pu-confirm-highlight">{usuario?.email}</strong>.
               Clique no link para confirmar a troca de senha.
             </p>
             <button
               className="pu-modal-btn-cancel"
               onClick={() => { setEtapa('form'); setForm({ novaSenha: '', confirmarSenha: '' }); }}
-              style={{ marginTop: 8 }}
             >
               Tentar novamente
             </button>
@@ -228,7 +238,7 @@ function TelaSeguranca() {
 function TelaEnderecos() {
   return (
     <section>
-      <h2 className="pu-sec-title">📍 Endereços</h2>
+      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços</h2>
       <p className="pu-sec-desc">Gerencie seus endereços de entrega.</p>
     </section>
   );
@@ -237,7 +247,7 @@ function TelaEnderecos() {
 function TelaCartoes() {
   return (
     <section>
-      <h2 className="pu-sec-title">💳 Cartões</h2>
+      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconCreditCard size={14} /></span>Cartões</h2>
       <p className="pu-sec-desc">Gerencie seus cartões de pagamento.</p>
     </section>
   );
@@ -246,7 +256,7 @@ function TelaCartoes() {
 function TelaFatura() {
   return (
     <section>
-      <h2 className="pu-sec-title">🧾 Fatura</h2>
+      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconReceipt size={14} /></span>Fatura</h2>
       <p className="pu-sec-desc">Visualize e baixe suas faturas.</p>
     </section>
   );
@@ -255,7 +265,7 @@ function TelaFatura() {
 function TelaComunicacao() {
   return (
     <section>
-      <h2 className="pu-sec-title">🔔 Comunicação</h2>
+      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconBell size={14} /></span>Comunicação</h2>
       <p className="pu-sec-desc">Configure suas preferências de notificação.</p>
     </section>
   );
@@ -263,7 +273,7 @@ function TelaComunicacao() {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function PerfilUsuario({ tema, toggleTema }: Props) {
+export default function PerfilUsuario() {
   const [nav, setNav] = useState<number>(0);
   const [telaAtiva, setTelaAtiva] = useState(0);
   const [visivel, setVisivel] = useState(true);
@@ -306,9 +316,10 @@ export default function PerfilUsuario({ tema, toggleTema }: Props) {
         <div className="pu-topbar">
           <span className="pu-topbar-title">{TITULOS[nav]}</span>
           <div className="pu-topbar-actions">
-            <ThemeToggle tema={tema} onToggle={toggleTema} />
             {nav === 0 && (
-              <button className="pu-btn-edit" onClick={() => setModalAberto(true)}>✏️ Editar Perfil</button>
+              <button className="pu-btn-edit" onClick={() => setModalAberto(true)}>
+                <IconPencil size={14} /> Editar Perfil
+              </button>
             )}
           </div>
         </div> 

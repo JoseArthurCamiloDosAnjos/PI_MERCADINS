@@ -22,6 +22,37 @@ body {
   overflow-x: hidden;
 }
 
+/* Scrollbar personalizada — tema escuro */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--azul-medio) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--azul-medio);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--azul-claro);
+}
+
+/* Scrollbar — tema claro */
+.tema-claro * {
+  scrollbar-color: var(--azul-item) transparent;
+}
+.tema-claro *::-webkit-scrollbar-thumb {
+  background: var(--azul-item);
+}
+.tema-claro *::-webkit-scrollbar-thumb:hover {
+  background: var(--azul-claro);
+}
+
 :root {
   --azul-escuro:  #0d1b2a;
   --azul-sidebar: #112240;

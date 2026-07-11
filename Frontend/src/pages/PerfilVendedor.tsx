@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { BASE_URL } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -377,7 +378,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
       const token = localStorage.getItem('token');
       if (!token) { setCarregando(false); return; }
       try {
-        const res = await fetch('/api/usuarios-mercados/meus', {
+        const res = await fetch(`${BASE_URL}/usuarios-mercados/meus`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

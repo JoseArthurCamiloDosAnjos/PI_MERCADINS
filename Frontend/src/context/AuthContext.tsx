@@ -7,6 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { BASE_URL } from '../services/api';
 import { api } from "../services/api";
 
 interface Usuario {
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("token");
   if (!token) { setTemMercado(false); return; }
   try {
-    const res = await fetch("/api/usuarios-mercados/meus", {
+    const res = await fetch(`${BASE_URL}/usuarios-mercados/meus`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();

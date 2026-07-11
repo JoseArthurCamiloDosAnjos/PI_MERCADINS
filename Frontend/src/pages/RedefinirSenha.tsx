@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { BASE_URL } from '../services/api';
 import ToastContainer from '../components/Toast';
 import PasswordStrength from '../components/PasswordStrength';
 import './CSS/RedefinirSenha.css';
@@ -44,7 +45,7 @@ export default function RedefinirSenha() {
 
     setSalvando(true);
     try {
-      const res = await fetch('/api/auth/redefinir-senha', {
+      const res = await fetch(`${BASE_URL}/auth/redefinir-senha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, novaSenha: form.novaSenha, confirmarSenha: form.confirmarSenha }),

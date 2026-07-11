@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./CSS/register.css";
 import "./CSS/modais.css";
 import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
+import { BASE_URL } from '../services/api';
 
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/Toast';
@@ -137,7 +138,7 @@ export default function Register() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

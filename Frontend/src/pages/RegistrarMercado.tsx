@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { BASE_URL } from '../services/api';
 import ToastContainer from '../components/Toast';
 import './CSS/RegistrarMercado.css';
 import { useAuth } from '../context/AuthContext';
@@ -92,7 +93,7 @@ export default function RegistrarMercado() {
 
     setSalvando(true);
     try {
-      const res = await fetch('/api/mercados', {
+      const res = await fetch(`${BASE_URL}/mercados`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BASE_URL } from '../services/api';
 
 interface EsqueciSenhaModalProps {
   onClose: () => void;
@@ -31,7 +32,7 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
     setErro("");
     setLoading(true);
     try {
-      await fetch("/api/auth/esqueci-senha", {
+      await fetch(`${BASE_URL}/auth/esqueci-senha`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

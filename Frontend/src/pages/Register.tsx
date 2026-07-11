@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./CSS/register.css";
-import "./CSS/modais.css";
+import "./CSS/Register.css";
+import "./CSS/Modais.css";
 import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
 import { BASE_URL } from '../services/api';
 

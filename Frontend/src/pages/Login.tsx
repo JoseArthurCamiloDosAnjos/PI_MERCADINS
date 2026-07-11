@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./CSS/Login.css";
-import "./CSS/modais.css";
+import "./CSS/Modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../components/EsqueciSenhaModal";
 import { useToast } from '../hooks/useToast';

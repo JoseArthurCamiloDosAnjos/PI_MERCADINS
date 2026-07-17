@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
-import ThemeToggle from "../components/ThemeToggle";
-import "./CSS/MercadinsPromo.css";
-import logo from "../assets/logo2.png";
+import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import ThemeToggle from "../../components/ThemeToggle";
+import "./MercadinsPromo.css";
+import logo from "../../assets/logo2.png";
 
 const CheckIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">

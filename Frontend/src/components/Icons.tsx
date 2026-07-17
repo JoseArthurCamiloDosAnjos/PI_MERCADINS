@@ -1,4 +1,4 @@
-import type { SVGProps, ReactNode } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -80,6 +80,12 @@ export const IconArrowRight = makeIcon(
   <><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>
 );
 
+export const IconArrowLeft = makeIcon(
+  <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>
+);
+
+export const IconCheck = makeIcon(<polyline points="20 6 9 17 4 12" />);
+
 export const IconMail = makeIcon(
   <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 6-10 7L2 6" /></>
 );
@@ -98,4 +104,24 @@ export const IconX = makeIcon(
 
 export const IconPencil = makeIcon(
   <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+);
+
+export const IconBarChart = makeIcon(
+  <><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></>
+);
+
+export const IconZap = makeIcon(
+  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+);
+
+export const IconEye = makeIcon(
+  <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
+);
+
+export const IconPhone = makeIcon(
+  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+);
+
+export const IconInfo = makeIcon(
+  <><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></>
 );

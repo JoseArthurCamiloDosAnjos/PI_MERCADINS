@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import "./CSS/Login.css";
-import "./CSS/Modais.css";
+import { useAuth } from "../../context/AuthContext";
+import "./Login.css";
+import "../common/Modais.css";
 import { useNavigate } from "react-router-dom";
-import EsqueciSenhaModal from "../components/EsqueciSenhaModal";
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/Toast';
+import EsqueciSenhaModal from "../../components/EsqueciSenhaModal";
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast';
 
 export default function Login() {
   const { login } = useAuth();
@@ -30,7 +30,7 @@ export default function Login() {
       const usuario = await login(form.email, form.senha);
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/perfiUsuario.tsx");
+        navigate("/auth");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

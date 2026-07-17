@@ -32,7 +32,7 @@ export const api = {
 
   // ── Mercados ─────────────────────────────────────────────────────────────────
   meusMercados: () =>
-    request('/mercados/meus'),
+    request('/usuarios-mercados/meus'),
   buscarMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}`),
   atualizarMercado: (mercadoId: string | number, dados: Record<string, string>) =>
@@ -107,4 +107,9 @@ export const api = {
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
       method: 'DELETE',
     }),
+
+  // ── Usuario (Perfil) ────────────────────────────────────────────────────────
+  listarFavoritos:  () => request('/usuario/favoritos'),
+  listarAvaliacoes: () => request('/usuario/avaliacoes'),
+  listarHistorico:  () => request('/usuario/historico'),
 }

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./CSS/Register.css";
-import "./CSS/Modais.css";
-import EmailVerificacaoModal from "../components/EmailVerificacaoModal";
-import { BASE_URL } from '../services/api';
+import "./Register.css";
+import "../common/Modais.css";
+import EmailVerificacaoModal from "../../components/EmailVerificacaoModal";
+import { BASE_URL } from '../../services/api';
 
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/Toast';
-import PasswordStrength from "../components/PasswordStrength";
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast';
+import PasswordStrength from "../../components/PasswordStrength";
 
 interface FieldState {
   status: "" | "error" | "success";

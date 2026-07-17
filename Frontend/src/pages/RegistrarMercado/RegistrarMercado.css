@@ -1,4 +1,4 @@
-@import './Register.css';
+@import '../Register/Register.css';
 
 /* Ajustes específicos da tela de mercado */
 .rm-grid {

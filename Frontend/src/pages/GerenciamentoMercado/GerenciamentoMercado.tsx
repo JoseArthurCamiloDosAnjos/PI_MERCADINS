@@ -1,6 +1,24 @@
-import { useState, useEffect } from 'react';
-import '../pages/CSS/GerenciamentoMercado.css';
-import { api } from '../services/api';
+import { useState, useEffect, type ReactNode } from 'react';
+import './GerenciamentoMercado.css';
+import { api } from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import ThemeToggle from '../../components/ThemeToggle';
+import {
+  IconBarChart,
+  IconPackage,
+  IconShoppingCart,
+  IconStar,
+  IconCreditCard,
+  IconInfo,
+  IconInbox,
+  IconZap,
+  IconEye,
+  IconArrowLeft,
+  IconMapPin,
+  IconPhone,
+  IconMail,
+  IconStore,
+} from '../../components/Icons';
 
 // Alturas fixas para o skeleton do gráfico (evita Math.random no render)
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
@@ -64,13 +82,13 @@ interface DadosMercado {
 
 // ─── Sidebar nav ─────────────────────────────────────────────────────────────
 
-const SIDEBAR_NAV = [
-  { emoji: '📊', label: 'Dashboard' },
-  { emoji: '📦', label: 'Produtos' },
-  { emoji: '🛒', label: 'Pedidos' },
-  { emoji: '⭐', label: 'Avaliações' },
-  { emoji: '💰', label: 'Financeiro' },
-  { emoji: 'ℹ️', label: 'Informações' },
+const SIDEBAR_NAV: { icon: ReactNode; label: string }[] = [
+  { icon: <IconBarChart size={18} />, label: 'Dashboard' },
+  { icon: <IconPackage size={18} />, label: 'Produtos' },
+  { icon: <IconShoppingCart size={18} />, label: 'Pedidos' },
+  { icon: <IconStar size={18} />, label: 'Avaliações' },
+  { icon: <IconCreditCard size={18} />, label: 'Financeiro' },
+  { icon: <IconInfo size={18} />, label: 'Informações' },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -86,7 +104,7 @@ function Stars({ n }: { n: number }) {
 function EmptyState({ msg }: { msg: string }) {
   return (
     <div className="gm-empty">
-      <span className="gm-empty-icon">📭</span>
+      <span className="gm-empty-icon"><IconInbox size={26} /></span>
       <p>{msg}</p>
     </div>
   );
@@ -109,22 +127,30 @@ function SecDashboard({ stats, financeiro, loading }: {
   financeiro: FinanceiroMes[];
   loading: boolean;
 }) {
+  const STAT_ICONS = [IconPackage, IconStore, IconShoppingCart, IconStar];
+
   return (
     <div className="gm-section-wrap">
       <div className="gm-stats-row">
-        {stats.map((s, i) => (
-          <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
-            <p className="gm-stat-val">{loading ? '—' : s.val}</p>
-            <p className="gm-stat-lbl">{s.lbl}</p>
-          </div>
-        ))}
+        {stats.map((s, i) => {
+          const StatIcon = STAT_ICONS[i % STAT_ICONS.length];
+          return (
+            <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
+              <div className="gm-stat-icon"><StatIcon size={17} /></div>
+              <div>
+                <p className="gm-stat-val">{loading ? '—' : s.val}</p>
+                <p className="gm-stat-lbl">{s.lbl}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="gm-divider" />
 
       <div className="gm-dash-grid">
         <div className="gm-chart-card">
-          <p className="gm-sec-title">📈 Receita Mensal</p>
+          <p className="gm-sec-title"><IconBarChart size={15} /> Receita Mensal</p>
           {loading ? (
             <div className="gm-chart-loading">
               {Array.from({ length: 6 }, (_, i) => (
@@ -153,7 +179,7 @@ function SecDashboard({ stats, financeiro, loading }: {
         </div>
 
         <div className="gm-quick-card">
-          <p className="gm-sec-title">⚡ Resumo Rápido</p>
+          <p className="gm-sec-title"><IconZap size={15} /> Resumo Rápido</p>
           <div className="gm-quick-list">
             {loading ? (
               Array.from({ length: 6 }, (_, i) => <LoadingRow key={i} />)
@@ -178,7 +204,7 @@ function SecProdutos({ produtos, loading }: { produtos: Produto[]; loading: bool
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title">📦 Todos os Produtos</h2>
+        <h2 className="gm-sec-title"><IconPackage size={15} /> Todos os Produtos</h2>
         <button className="gm-btn-link">Ver todos ({produtos.length})</button>
       </div>
 
@@ -201,7 +227,7 @@ function SecProdutos({ produtos, loading }: { produtos: Produto[]; loading: bool
           {produtos.map((p) => (
             <div key={p.id_produto} className="gm-prod-card">
               <div className="gm-prod-img">
-                {p.imagem ? <img src={p.imagem} alt={p.nome} /> : '📦'}
+                {p.imagem ? <img src={p.imagem} alt={p.nome} /> : <IconPackage size={26} />}
               </div>
               <div className="gm-prod-body">
                 <p className="gm-prod-nome">{p.nome}</p>
@@ -220,7 +246,7 @@ function SecPedidos({ pedidos, loading }: { pedidos: Pedido[]; loading: boolean 
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title">🛒 Pedidos Recentes</h2>
+        <h2 className="gm-sec-title"><IconShoppingCart size={15} /> Pedidos Recentes</h2>
         <button className="gm-btn-link">Ver todos</button>
       </div>
 
@@ -249,7 +275,7 @@ function SecAvaliacoes({ avaliacoes, loading }: { avaliacoes: Avaliacao[]; loadi
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title">⭐ Avaliações</h2>
+        <h2 className="gm-sec-title"><IconStar size={15} /> Avaliações</h2>
         <button className="gm-btn-link">Ver todas</button>
       </div>
 
@@ -279,7 +305,7 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title">💰 Financeiro</h2>
+        <h2 className="gm-sec-title"><IconCreditCard size={15} /> Financeiro</h2>
         <button className="gm-btn-link">Exportar relatório</button>
       </div>
 
@@ -291,8 +317,11 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
           { val: '—', lbl: 'Margem' },
         ].map((s, i) => (
           <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
-            <p className="gm-stat-val">{s.val}</p>
-            <p className="gm-stat-lbl">{s.lbl}</p>
+            <div className="gm-stat-icon"><IconBarChart size={17} /></div>
+            <div>
+              <p className="gm-stat-val">{s.val}</p>
+              <p className="gm-stat-lbl">{s.lbl}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -300,7 +329,7 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
       <div className="gm-divider" />
 
       <div className="gm-chart-card gm-chart-card--full">
-        <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}>📊 Receita x Custo — Últimos 6 meses</p>
+        <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}><IconBarChart size={15} /> Receita x Custo — Últimos 6 meses</p>
 
         {loading ? (
           <div className="gm-chart-loading">
@@ -371,24 +400,24 @@ function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title">ℹ️ Informações do Mercado</h2>
+        <h2 className="gm-sec-title"><IconInfo size={15} /> Informações do Mercado</h2>
         <button className="gm-btn-link">Editar</button>
       </div>
       <div className="gm-info-grid">
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">📍 Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">📞 Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">✉️ Email</span><span className="gm-info-val">{mercado.email}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconPhone size={13} /> Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> Email</span><span className="gm-info-val">{mercado.email}</span></div>
         </div>
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">📍 Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">📮 CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🏘️ Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
         </div>
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl">🆔 CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">🏷️ Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl">📦 Categorias</span><span className="gm-info-val">—</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconCreditCard size={13} /> CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconStore size={13} /> Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconPackage size={13} /> Categorias</span><span className="gm-info-val">—</span></div>
         </div>
       </div>
     </div>
@@ -407,6 +436,7 @@ export default function GerenciamentoMercado({
   onAbrirVitrine: () => void;
 }) {
   const [nav, setNav] = useState(0);
+  const { tema, toggleTema } = useTheme();
 
   const [dados, setDados] = useState<DadosMercado>({
     mercado: null,
@@ -459,7 +489,7 @@ export default function GerenciamentoMercado({
       {/* SIDEBAR */}
       <aside className="gm-sidebar">
         <div className="gm-mkt-identity">
-          <div className="gm-mkt-logo">🛒</div>
+          <div className="gm-mkt-logo"><IconShoppingCart size={24} /></div>
           <p className="gm-mkt-nome">{mercado?.nome ?? 'Carregando...'}</p>
           <p className="gm-mkt-sub">{mercado?.cidade ?? ''} · {mercado?.estado ?? ''}</p>
           <span className="gm-status-open">● Aberto</span>
@@ -472,25 +502,36 @@ export default function GerenciamentoMercado({
               style={{ animationDelay: `${0.18 + i * 0.06}s` }}
               onClick={() => setNav(i)}
             >
-              <span className="gm-nav-emoji">{item.emoji}</span>
+              <span className="gm-nav-icon">{item.icon}</span>
               <span className="gm-nav-label">{item.label}</span>
               {nav === i && <span className="gm-nav-dot" />}
             </button>
           ))}
         </nav>
+
+        <div className="gm-sidebar-footer">
+          <div className="gm-theme-row">
+            <span className="gm-theme-label">Tema</span>
+            <ThemeToggle tema={tema} onToggle={toggleTema} />
+          </div>
+        </div>
       </aside>
 
       {/* MAIN */}
       <main className="gm-main">
         <div className="gm-topbar">
           <div className="gm-topbar-left">
-            <button className="gm-btn-back" onClick={onVoltar}>← Meus Mercados</button>
+            <button className="gm-btn-back" onClick={onVoltar}>
+              <IconArrowLeft size={14} /> Meus Mercados
+            </button>
             <span className="gm-topbar-title">
-              {SIDEBAR_NAV[nav].emoji} {SIDEBAR_NAV[nav].label}
+              {SIDEBAR_NAV[nav].icon} {SIDEBAR_NAV[nav].label}
             </span>
           </div>
           <div className="gm-topbar-actions">
-            <button className="gm-btn-sec" onClick={onAbrirVitrine}>👁 Ver Vitrine</button>
+            <button className="gm-btn-sec" onClick={onAbrirVitrine}>
+              <IconEye size={14} /> Ver Vitrine
+            </button>
           </div>
         </div>
 

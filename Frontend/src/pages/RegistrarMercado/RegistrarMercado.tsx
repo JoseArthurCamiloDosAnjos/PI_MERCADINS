@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../hooks/useToast';
-import { BASE_URL } from '../services/api';
-import ToastContainer from '../components/Toast';
-import './CSS/RegistrarMercado.css';
-import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../hooks/useToast';
+import { BASE_URL } from '../../services/api';
+import ToastContainer from '../../components/Toast';
+import './RegistrarMercado.css';
+import { useAuth } from '../../context/AuthContext';
 
 interface Form {
   nome: string;

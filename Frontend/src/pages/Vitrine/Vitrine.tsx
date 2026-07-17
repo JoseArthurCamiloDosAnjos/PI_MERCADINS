@@ -1,12 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import '../pages/CSS/Vitrine.css';
-import CadastroProduto  from '../components/CadastroProduto';
-import EditarMercado    from '../components/EditarMercado';
-import CriarCategoria   from '../components/CriarCategoria';
-import ConfirmarSaida   from '../components/ConfirmarSaida';
-import ToastContainer   from '../components/Toast';
-import { useToast }     from '../hooks/useToast';
-import { api }          from '../services/api';
+import './Vitrine.css';
+import CadastroProduto  from '../../components/CadastroProduto';
+import EditarMercado    from '../../components/EditarMercado';
+import CriarCategoria   from '../../components/CriarCategoria';
+import ConfirmarSaida   from '../../components/ConfirmarSaida';
+import ToastContainer   from '../../components/Toast';
+import { useToast }     from '../../hooks/useToast';
+import { api }          from '../../services/api';
+import { useTheme }     from '../../context/ThemeContext';
+import ThemeToggle      from '../../components/ThemeToggle';
+import {
+  IconStore,
+  IconPlus,
+  IconPencil,
+  IconCheck,
+  IconX,
+  IconArrowLeft,
+} from '../../components/Icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,7 +121,7 @@ function ProdutoCard({ produto }: { produto: Produto }) {
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
     <button className="vt-produto-card vt-produto-add" onClick={onAdd}>
-      <span className="vt-add-icon">+</span>
+      <span className="vt-add-icon"><IconPlus size={24} /></span>
     </button>
   );
 }
@@ -149,8 +159,12 @@ function EditarNomeCategoria({ nome, onSalvar, onCancelar }: EditarNomeCategoria
           if (e.key === 'Escape') onCancelar();
         }}
       />
-      <button className="vt-categoria-editar-ok" onClick={confirmar} title="Confirmar">✓</button>
-      <button className="vt-categoria-editar-cancel" onClick={onCancelar} title="Cancelar">✕</button>
+      <button className="vt-categoria-editar-ok" onClick={confirmar} title="Confirmar">
+        <IconCheck size={14} />
+      </button>
+      <button className="vt-categoria-editar-cancel" onClick={onCancelar} title="Cancelar">
+        <IconX size={14} />
+      </button>
     </div>
   );
 }
@@ -227,7 +241,7 @@ function CategoriaSection({
                   onClick={() => setEditandoNome(true)}
                   title="Renomear categoria"
                 >
-                  ✎
+                  <IconPencil size={13} />
                 </button>
               </>
             )
@@ -262,10 +276,12 @@ function CategoriaSection({
 function TelaVazia({ onCriar }: { onCriar: () => void }) {
   return (
     <div className="vt-vazio">
-      <span className="vt-vazio-icone">🏪</span>
+      <span className="vt-vazio-icone"><IconStore size={26} /></span>
       <p className="vt-vazio-titulo">Sua vitrine está vazia</p>
       <p className="vt-vazio-sub">Crie uma categoria para começar a adicionar produtos</p>
-      <button className="vt-vazio-btn" onClick={onCriar}>+ Nova categoria</button>
+      <button className="vt-vazio-btn" onClick={onCriar}>
+        <IconPlus size={15} /> Nova categoria
+      </button>
     </div>
   );
 }
@@ -285,6 +301,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const acaoAoSair                                = useRef<'voltar' | 'fechar' | null>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
+  const { tema, toggleTema } = useTheme();
 
   // ── Carregar dados do banco ───────────────────────────────────────────────
 
@@ -462,10 +479,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       {onVoltar && !carregando && (
         <div className="vt-topbar">
           <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
-            ← Voltar ao Gerenciamento
+            <IconArrowLeft size={15} /> Voltar ao Gerenciamento
           </button>
 
           <div className="vt-topbar-direita">
+            <ThemeToggle tema={tema} onToggle={toggleTema} />
             <span className="vt-topbar-label">Pré-visualização da Vitrine</span>
 
             {temAlteracoes && (
@@ -476,7 +494,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
               >
                 {salvandoVitrine
                   ? <><span className="vt-btn-salvar-spinner" /> Salvando…</>
-                  : <><span className="vt-btn-salvar-icon">✓</span> Salvar vitrine</>
+                  : <><IconCheck size={14} /> Salvar vitrine</>
                 }
               </button>
             )}
@@ -490,15 +508,17 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           <button className="vt-logo-btn" onClick={() => setModalEditar(true)} title="Alterar logo">
             {dados.logo
               ? <img src={dados.logo} alt={dados.nome} className="vt-logo-img" />
-              : <div className="vt-logo-placeholder"><span>+</span></div>
+              : <div className="vt-logo-placeholder"><IconPlus size={22} /></div>
             }
-            <span className="vt-logo-edit-overlay">✎</span>
+            <span className="vt-logo-edit-overlay"><IconPencil size={12} /></span>
           </button>
 
           <div className="vt-header-text">
             <div className="vt-header-nome-wrap">
               <h1 className="vt-nome-mercado">{dados.nome}</h1>
-              <button className="vt-btn-editar" onClick={() => setModalEditar(true)}>✎ Editar</button>
+              <button className="vt-btn-editar" onClick={() => setModalEditar(true)}>
+                <IconPencil size={12} /> Editar
+              </button>
             </div>
             <p className="vt-desc-mercado">{dados.descricao}</p>
           </div>
@@ -529,7 +549,9 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         {dados.categorias.length > 0 && (
           <div className="vt-fab-wrap">
-            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Adicionar categoria">+</button>
+            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Adicionar categoria">
+              <IconPlus size={24} />
+            </button>
           </div>
         )}
       </main>

@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import { useAuth } from '../context/AuthContext';
-import { BASE_URL } from '../services/api';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/Toast';
-import LoadingOverlay from '../components/LoadingOverlay';
-import PasswordStrength from '../components/PasswordStrength';
-import './CSS/PerfilVendedor.css';
-import './CSS/PerfilUsuario.css'; // ✅ importa os estilos do usuário para reutilizar
+import Sidebar from '../../components/Sidebar';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast';
+import LoadingOverlay from '../../components/LoadingOverlay';
+import PasswordStrength from '../../components/PasswordStrength';
+import './PerfilVendedor.css';
+import '../PerfilUsuario/PerfilUsuario.css';
 import {
   IconUser,
   IconLock,
@@ -25,7 +25,7 @@ import {
   IconArrowRight,
   IconMail,
   IconInbox,
-} from '../components/Icons';
+} from '../../components/Icons';
 
 interface Mercado {
   id_mercado: number;
@@ -36,13 +36,9 @@ interface Mercado {
   papel: string;
 }
 
-interface Favorito { nome: string; }
-interface Historico { nome: string; preco: string; data: string; status: string; label: string; }
-interface Avaliacao { loja: string; n: number; texto: string; }
-
-const FAVORITOS: Favorito[] = [];
-const HISTORICO: Historico[] = [];
-const AVALIACOES: Avaliacao[] = [];
+interface Favorito { id: number; id_mercado: number; nome: string; data_cadastro: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
+interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
 // ícones que giram nos cards de mercado (na falta de uma imagem real da loja)
 const MKT_ICONS = [IconShoppingCart, IconStore, IconShoppingBag, IconPackage];
@@ -87,10 +83,13 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
+function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico, avaliacoes }: {
   mercados: Mercado[];
   carregando: boolean;
   onAbrirMercado?: (m: { id: number; nome: string }) => void;
+  favoritos: Favorito[];
+  historico: Historico[];
+  avaliacoes: Avaliacao[];
 }) {
   const navigate = useNavigate();
 
@@ -161,14 +160,14 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
             <div className="pu-circ pu-circ-add">+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
-          {FAVORITOS.map((f, i) => (
-            <div key={i} className="pu-circ-item" style={{ animationDelay: `${0.38 + i * 0.08}s` }}>
+          {favoritos.map((f, i) => (
+            <div key={f.id} className="pu-circ-item" style={{ animationDelay: `${0.38 + i * 0.08}s` }}>
               <div className="pu-circ"><IconStore size={22} /></div>
               <span className="pu-circ-label">{f.nome}</span>
             </div>
           ))}
         </div>
-        {FAVORITOS.length === 0 && (
+        {favoritos.length === 0 && (
           <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
         )}
       </section>
@@ -180,7 +179,7 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconShoppingBag size={14} /></span>Histórico de Compras</h2>
           <button className="pu-btn-link">Ver todos</button>
         </div>
-        {HISTORICO.length === 0 ? (
+        {historico.length === 0 ? (
           <div className="pu-empty">
             <div className="pu-empty-icon"><IconShoppingBag size={22} /></div>
             <p>Nenhuma compra realizada ainda</p>
@@ -188,14 +187,14 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
           </div>
         ) : (
           <div className="pu-hist-grid">
-            {HISTORICO.map((p, i) => (
-              <div key={i} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+            {historico.map((p, i) => (
+              <div key={p.id} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
                 <div className="pu-hcard-img"><IconShoppingBag size={26} /></div>
                 <div className="pu-hcard-body">
-                  <p className="pu-hcard-nome">{p.nome}</p>
-                  <p className="pu-hcard-preco">{p.preco}</p>
-                  <p className="pu-hcard-data">{p.data}</p>
-                  <span className={`pu-status ${p.status}`}>● {p.label}</span>
+                  <p className="pu-hcard-nome">{p.mercado}</p>
+                  <p className="pu-hcard-preco">R$ {p.valor_total}</p>
+                  <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
+                  <span className={`pu-status ${p.status}`}>● {p.status}</span>
                 </div>
               </div>
             ))}
@@ -210,7 +209,7 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações Feitas</h2>
           <button className="pu-btn-link">Ver todas</button>
         </div>
-        {AVALIACOES.length === 0 ? (
+        {avaliacoes.length === 0 ? (
           <div className="pu-empty">
             <div className="pu-empty-icon"><IconStar size={22} /></div>
             <p>Você ainda não avaliou nenhum mercado</p>
@@ -218,10 +217,10 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado }: {
           </div>
         ) : (
           <div className="pu-rev-grid">
-            {AVALIACOES.map((a, i) => (
-              <div key={i} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+            {avaliacoes.map((a, i) => (
+              <div key={a.id} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
                 <p className="pu-rev-store">{a.loja}</p>
-                <Stars n={a.n} />
+                <Stars n={a.nota} />
                 <p className="pu-rev-text">{a.texto}</p>
               </div>
             ))}
@@ -248,7 +247,7 @@ function TelaSeguranca() {
 
     setEnviando(true);
     try {
-      const { api } = await import('../services/api');
+      const { api } = await import('../../services/api');
       await api.trocarSenha({ novaSenha: form.novaSenha });
       setEtapa('enviado');
     } catch (e: unknown) {
@@ -368,28 +367,29 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
   const anteriorNav = useRef(0);
   const [mercados, setMercados] = useState<Mercado[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [favoritos, setFavoritos] = useState<Favorito[]>([]);
+  const [historico, setHistorico] = useState<Historico[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const { usuario } = useAuth();
   const navigate = useNavigate();
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
   useEffect(() => {
-    async function carregarMercados() {
-      const token = localStorage.getItem('token');
-      if (!token) { setCarregando(false); return; }
-      try {
-        const res = await fetch(`${BASE_URL}/usuarios-mercados/meus`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setMercados(data.mercados ?? []);
-      } catch {
-        console.error('Erro ao carregar mercados');
-      } finally {
-        setCarregando(false);
-      }
+    async function carregarDados() {
+      const [mercadosRes, favRes, histRes, avalRes] = await Promise.allSettled([
+        api.meusMercados(),
+        api.listarFavoritos(),
+        api.listarHistorico(),
+        api.listarAvaliacoes(),
+      ]);
+      if (mercadosRes.status === 'fulfilled') setMercados(mercadosRes.value.mercados ?? []);
+      if (favRes.status === 'fulfilled') setFavoritos(favRes.value.favoritos ?? []);
+      if (histRes.status === 'fulfilled') setHistorico(histRes.value.historico ?? []);
+      if (avalRes.status === 'fulfilled') setAvaliacoes(avalRes.value.avaliacoes ?? []);
+      setCarregando(false);
     }
-    carregarMercados();
+    carregarDados();
   }, []);
 
   // ✅ Troca de tela com animação — igual ao PerfilUsuario
@@ -405,7 +405,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
   }, [nav]);
 
   const TELAS = [
-    <TelaPerfil mercados={mercados} carregando={carregando} onAbrirMercado={onAbrirMercado} />,
+    <TelaPerfil mercados={mercados} carregando={carregando} onAbrirMercado={onAbrirMercado} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} />,
     <TelaSeguranca />,
     <TelaEnderecos />,
     <TelaCartoes />,

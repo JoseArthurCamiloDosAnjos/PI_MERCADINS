@@ -162,7 +162,7 @@
 }
 .gm-topbar-left  { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .gm-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.gm-topbar-actions { display: flex; gap: 10px; }
+.gm-topbar-actions { display: flex; align-items: center; gap: 10px; }
 
 .gm-btn-back {
   display: flex; align-items: center; gap: 6px;
@@ -217,6 +217,57 @@
   border-radius: var(--radius-full); cursor: pointer; transition: all 0.2s;
 }
 .gm-btn-link:hover { color: var(--amarelo); border-color: var(--amarelo); background: rgba(245,200,74,0.07); }
+
+/* ─── Banner de URL da loja (copiar link) ───────────────────────────────── */
+.gm-url-banner {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, var(--azul-medio), var(--azul-claro));
+  border: 1.5px solid var(--amarelo);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: 0 4px 20px rgba(245,200,74,0.15), 0 4px 18px rgba(24,67,160,0.3);
+  opacity: 0; animation: popIn 0.4s ease forwards;
+}
+
+.gm-url-banner-icon {
+  width: 42px; height: 42px; flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--amarelo);
+  color: var(--azul-sidebar);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.gm-url-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.gm-url-banner-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.4px;
+  color: var(--branco-suave);
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+.gm-url-banner-link {
+  font-size: 14px; font-weight: 700; color: var(--branco);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin: 0;
+}
+
+.gm-url-banner-btn {
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0;
+  background: var(--amarelo); color: var(--azul-sidebar);
+  font-size: 12.5px; font-weight: 800;
+  padding: 10px 18px; border-radius: var(--radius-full);
+  border: none; cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.gm-url-banner-btn:hover { background: var(--amarelo-hover); transform: translateY(-1px); }
+.gm-url-banner-btn:active { transform: translateY(0); }
+.gm-url-banner-btn.copiado {
+  background: var(--verde-texto); color: var(--azul-sidebar);
+}
 
 /* ─── Stats ─────────────────────────────────────────────────────────────── */
 .gm-stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -507,4 +558,8 @@
   .gm-stats-row { flex-direction: column; }
   .gm-prod-card { width: calc(50% - 6px); }
   .gm-prod-row { justify-content: space-between; }
+
+  .gm-url-banner { flex-wrap: wrap; }
+  .gm-url-banner-body { order: 3; width: 100%; }
+  .gm-url-banner-btn { margin-left: auto; }
 }

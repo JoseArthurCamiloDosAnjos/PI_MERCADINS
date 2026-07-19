@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { api } from './services/api'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import PerfilUsuario from './pages/PerfilUsuario/PerfilUsuario'
@@ -12,6 +13,29 @@ import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha'
 import RegistrarMercado from './pages/RegistrarMercado/RegistrarMercado'
 import MercadinsPromos from './pages/MercadinsPromo/MercadinsPromo'
 import Vitrine from './pages/Vitrine/Vitrine'
+import VitrineCliente from './pages/VitrineCliente/Vitrinecliente'
+
+function VitrineClienteWrapper() {
+  const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
+  const [mercadoId, setMercadoId] = useState<number | null>(null)
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (!slug) {
+      navigate('/')
+      return
+    }
+    api.buscarMercadoPorSlug(slug)
+      .then(data => setMercadoId(data.mercado.id_mercado))
+      .catch(() => navigate('/'))
+      .finally(() => setCarregando(false))
+  }, [slug, navigate])
+
+  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
+  if (!mercadoId) return null
+  return <VitrineCliente mercadoId={mercadoId} onVoltar={() => navigate(-1)} />
+}
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
@@ -47,6 +71,7 @@ function Rotas() {
       <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
       <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => setMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
+      <Route path="/vitrine/:slug" element={<VitrineClienteWrapper />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>
   )

@@ -255,6 +255,22 @@ html, body {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
+.login-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(13,42,94,0.2);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: login-spin 0.6s linear infinite;
+}
+.btn-secondary .login-spinner {
+  border-color: rgba(13,42,94,0.2);
+  border-top-color: var(--navy);
+}
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
 .btn-primary {
   background: var(--navy);
   color: var(--white);

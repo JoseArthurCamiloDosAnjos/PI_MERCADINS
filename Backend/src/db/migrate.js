@@ -38,6 +38,17 @@ async function migrate() {
     )
   `;
 
+  // Adiciona coluna slug se não existir
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE
+  `;
+
+  // Atualiza slug para mercados existentes
+  await sql`
+    UPDATE mercados SET slug = LOWER(REPLACE(REPLACE(REPLACE(nome, ' ', '-'), '.', ''), ',', ''))
+    WHERE slug IS NULL
+  `;
+
   console.log('✅ Tabelas criadas com sucesso!');
 }
 

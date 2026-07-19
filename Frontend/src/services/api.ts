@@ -35,6 +35,10 @@ export const api = {
     request('/usuarios-mercados/meus'),
   buscarMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}`),
+  buscarMercadoPorSlug: (slug: string) =>
+    request(`/mercados/slug/${slug}`),
+  listarMercados: (busca?: string) =>
+    request(`/mercados${busca ? `?busca=${encodeURIComponent(busca)}` : ''}`),
   atualizarMercado: (mercadoId: string | number, dados: Record<string, string>) =>
     request(`/mercados/${mercadoId}`, { method: 'PUT', body: JSON.stringify(dados) }),
   dashboardMercado: (mercadoId: string | number) =>
@@ -106,6 +110,24 @@ export const api = {
   ) =>
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
       method: 'DELETE',
+    }),
+
+  // ── Vitrine (visão do cliente) ─────────────────────────────────────────────
+  favoritarMercado: (
+    mercadoId: string | number,
+    favoritado: boolean
+  ) =>
+    request(`/mercados/${mercadoId}/favoritar`, {
+      method: favoritado ? 'POST' : 'DELETE',
+    }),
+
+  criarPedido: (
+    mercadoId: string | number,
+    dados: { itens: { id_produto: number; quantidade: number }[] }
+  ) =>
+    request(`/mercados/${mercadoId}/pedidos`, {
+      method: 'POST',
+      body:   JSON.stringify(dados),
     }),
 
   // ── Usuario (Perfil) ────────────────────────────────────────────────────────

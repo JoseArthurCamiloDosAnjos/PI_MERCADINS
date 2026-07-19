@@ -15,6 +15,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", senha: "" });
   const [showSenha, setShowSenha] = useState(false);
   const [showEsqueciModal, setShowEsqueciModal] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -26,6 +27,7 @@ export default function Login() {
       showToast("erro", "Preencha email e senha.");
       return;
     }
+    setCarregando(true);
     try {
       const usuario = await login(form.email, form.senha);
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
@@ -39,6 +41,8 @@ export default function Login() {
       } else {
         showToast("erro", msg || "Email ou senha incorretos.");
       }
+    } finally {
+      setCarregando(false);
     }
   }
   return (
@@ -171,8 +175,12 @@ export default function Login() {
               Esqueci Minha Senha
             </button>
 
-            <button type="submit" className="btn btn-secondary">
-              Login
+            <button type="submit" className="btn btn-secondary" disabled={carregando}>
+              {carregando ? (
+                <span className="login-spinner" />
+              ) : (
+                "Login"
+              )}
             </button>
 
             <div className="divider">ou</div>

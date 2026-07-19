@@ -61,6 +61,7 @@ interface FinanceiroMes {
 
 interface MercadoInfo {
   id_mercado: number;
+  slug: string;
   nome: string;
   email: string;
   telefone: string;
@@ -120,17 +121,79 @@ function LoadingRow() {
   );
 }
 
+// ─── Caixa de URL da loja (copiar link) ────────────────────────────────────────
+
+function montarUrlVitrine(slug: string) {
+  return `${window.location.origin}/vitrine/${slug}`;
+}
+
+function CaixaUrlLoja({ slug }: { slug: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const url = montarUrlVitrine(slug);
+
+  async function copiarUrl() {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // fallback para navegadores/contextos sem permissão de clipboard
+      const el = document.createElement('textarea');
+      el.value = url;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  return (
+    <div className="gm-url-banner">
+      <div className="gm-url-banner-icon">
+        <IconStore size={20} />
+      </div>
+      <div className="gm-url-banner-body">
+        <p className="gm-url-banner-label">Link da sua loja</p>
+        <p className="gm-url-banner-link">{url}</p>
+      </div>
+      <button className={`gm-url-banner-btn${copiado ? ' copiado' : ''}`} onClick={copiarUrl}>
+        {copiado ? (
+          <>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Copiado!
+          </>
+        ) : (
+          <>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copiar link
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
-function SecDashboard({ stats, financeiro, loading }: {
+function SecDashboard({ stats, financeiro, loading, slug }: {
   stats: Stat[];
   financeiro: FinanceiroMes[];
   loading: boolean;
+  slug?: string;
 }) {
   const STAT_ICONS = [IconPackage, IconStore, IconShoppingCart, IconStar];
 
   return (
     <div className="gm-section-wrap">
+      {slug && <CaixaUrlLoja slug={slug} />}
+
       <div className="gm-stats-row">
         {stats.map((s, i) => {
           const StatIcon = STAT_ICONS[i % STAT_ICONS.length];
@@ -403,6 +466,7 @@ function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
         <h2 className="gm-sec-title"><IconInfo size={15} /> Informações do Mercado</h2>
         <button className="gm-btn-link">Editar</button>
       </div>
+
       <div className="gm-info-grid">
         <div className="gm-info-card">
           <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
@@ -475,7 +539,7 @@ export default function GerenciamentoMercado({
   ];
 
   const SECTIONS = [
-    <SecDashboard stats={stats} financeiro={[]} loading={loading} />,
+    <SecDashboard stats={stats} financeiro={[]} loading={loading} slug={mercado?.slug} />,
     <SecProdutos produtos={produtos} loading={loading} />,
     <SecPedidos pedidos={[]} loading={loading} />,
     <SecAvaliacoes avaliacoes={[]} loading={loading} />,

@@ -7,6 +7,7 @@ import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
+import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import './PerfilUsuario.css';
 import {
   IconLock,
@@ -57,18 +58,28 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-function TelaPerfil({ favoritos, historico, avaliacoes }: {
+function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
   favoritos: Favorito[];
   historico: Historico[];
   avaliacoes: Avaliacao[];
+  onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
+  const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
+
   return (
     <>
       <section>
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados Favoritos</h2>
         <div className="pu-circles">
           <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
-            <div className="pu-circ pu-circ-add">+</div>
+            <div
+              className="pu-circ pu-circ-add"
+              onClick={() => setModalFavoritoAberto(true)}
+              role="button"
+              tabIndex={0}
+              title="Adicionar mercado favorito"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setModalFavoritoAberto(true); }}
+            >+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           {favoritos.map((f, i) => (
@@ -82,6 +93,14 @@ function TelaPerfil({ favoritos, historico, avaliacoes }: {
           <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
         )}
       </section>
+
+      {modalFavoritoAberto && (
+        <AdicionarMercadoFavorito
+          favoritosAtuais={favoritos}
+          onAtualizarFavoritos={onAtualizarFavoritos}
+          onFechar={() => setModalFavoritoAberto(false)}
+        />
+      )}
 
       <div className="pu-divider" />
 
@@ -303,7 +322,7 @@ export default function PerfilUsuario() {
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
   const TELAS = [
-    <TelaPerfil favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} />,
+    <TelaPerfil favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
     <TelaEnderecos />,
     <TelaCartoes />,

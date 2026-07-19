@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
+import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
 import {
@@ -83,15 +84,17 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico, avaliacoes }: {
+function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
   mercados: Mercado[];
   carregando: boolean;
   onAbrirMercado?: (m: { id: number; nome: string }) => void;
   favoritos: Favorito[];
   historico: Historico[];
   avaliacoes: Avaliacao[];
+  onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
   const navigate = useNavigate();
+  const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
 
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados Ativos' },
@@ -157,7 +160,14 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconHeart size={14} /></span>Mercados Favoritos</h2>
         <div className="pu-circles">
           <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
-            <div className="pu-circ pu-circ-add">+</div>
+            <div
+              className="pu-circ pu-circ-add"
+              onClick={() => setModalFavoritoAberto(true)}
+              role="button"
+              tabIndex={0}
+              title="Adicionar mercado favorito"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setModalFavoritoAberto(true); }}
+            >+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           {favoritos.map((f, i) => (
@@ -171,6 +181,14 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico
           <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
         )}
       </section>
+
+      {modalFavoritoAberto && (
+        <AdicionarMercadoFavorito
+          favoritosAtuais={favoritos}
+          onAtualizarFavoritos={onAtualizarFavoritos}
+          onFechar={() => setModalFavoritoAberto(false)}
+        />
+      )}
 
       <div className="pu-divider" />
 
@@ -405,7 +423,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
   }, [nav]);
 
   const TELAS = [
-    <TelaPerfil mercados={mercados} carregando={carregando} onAbrirMercado={onAbrirMercado} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} />,
+    <TelaPerfil mercados={mercados} carregando={carregando} onAbrirMercado={onAbrirMercado} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
     <TelaEnderecos />,
     <TelaCartoes />,

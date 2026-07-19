@@ -1,0 +1,195 @@
+/* Reaproveita a paleta padrão do Mercadins (navy + amarelo) */
+.amf-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 12, 28, 0.65);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1.5rem;
+  animation: amfFade 0.18s ease both;
+}
+
+@keyframes amfFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes amfPop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.amf-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 82vh;
+  background: #0d1b3e;
+  border: 1.5px solid #1a2f60;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: amfPop 0.22s ease both;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.amf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid #1a2f60;
+}
+.amf-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.amf-fechar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #112250;
+  border: 1px solid #1e3a7a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.amf-fechar:hover { border-color: #f5c84a; color: #f5c84a; }
+
+.amf-busca-wrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 1rem 1.3rem 0.6rem;
+  background: #112250;
+  border: 1.5px solid #1e3a7a;
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: #7a94c0;
+  transition: border-color 0.2s;
+}
+.amf-busca-wrap:focus-within { border-color: #f5c84a; }
+.amf-busca-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+}
+.amf-busca-input::placeholder { color: #7a94c0; }
+
+.amf-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.6rem 1.3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 180px;
+}
+
+.amf-msg {
+  color: #7a94c0;
+  font-size: 13px;
+  text-align: center;
+  padding: 2rem 0.5rem;
+  margin: 0;
+}
+
+.amf-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #112250;
+  border: 1.5px solid #1a2f60;
+  border-radius: 10px;
+  padding: 9px 12px;
+  transition: border-color 0.2s;
+}
+.amf-item:hover { border-color: #2a52a8; }
+
+.amf-item-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #1843a0;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.amf-item-icone img { width: 100%; height: 100%; object-fit: cover; }
+
+.amf-item-info { flex: 1; min-width: 0; }
+.amf-item-nome {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.amf-item-loc {
+  font-size: 11.5px;
+  color: #7a94c0;
+  margin: 2px 0 0;
+}
+
+.amf-item-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid #1e3a7a;
+  color: #7a94c0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.amf-item-btn:hover { border-color: #f26b6b; color: #f26b6b; }
+.amf-item-btn--ativo {
+  border-color: #f26b6b;
+  color: #f26b6b;
+  background: rgba(242, 107, 107, 0.1);
+}
+.amf-item-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.amf-footer {
+  padding: 0.9rem 1.3rem 1.1rem;
+  border-top: 1px solid #1a2f60;
+}
+.amf-btn-concluir {
+  width: 100%;
+  background: #f5c84a;
+  color: #0d1b3e;
+  border: none;
+  border-radius: 999px;
+  padding: 11px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.amf-btn-concluir:hover { background: #f7d567; }
+
+@media (max-width: 480px) {
+  .amf-modal { max-height: 88vh; }
+}

@@ -22,6 +22,21 @@ function pegarIdUsuario(req) {
 }
 
 // ─────────────────────────────────────────────
+// Helper — gera slug a partir do nome
+// ─────────────────────────────────────────────
+
+function gerarSlug(nome) {
+  return nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+// ─────────────────────────────────────────────
 // Helpers de validação
 // ─────────────────────────────────────────────
 
@@ -108,9 +123,18 @@ const criarMercado = async (req, res) => {
     if (existente.length > 0)
       return res.status(409).json({ erro: "CNPJ ou email já cadastrado" });
 
+    // Gera slug único
+    let slug = gerarSlug(nome);
+    const slugExistente = await sql`
+      SELECT id_mercado FROM mercados WHERE slug = ${slug}
+    `;
+    if (slugExistente.length > 0) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -120,7 +144,8 @@ const criarMercado = async (req, res) => {
         ${estado.trim().toUpperCase()},
         ${cidade.trim()},
         ${bairro.trim()},
-        ${rua.trim()}
+        ${rua.trim()},
+        ${slug}
       )
       RETURNING *
     `;
@@ -188,6 +213,31 @@ const buscarMercadoPorId = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
+// GET /api/mercados/slug/:slug — Buscar mercado por slug
+// ─────────────────────────────────────────────
+
+const buscarMercadoPorSlug = async (req, res) => {
+  const { slug } = req.params;
+
+  try {
+    const sql = await conectar();
+
+    const [mercado] = await sql`
+      SELECT * FROM mercados
+      WHERE slug = ${slug}
+    `;
+
+    if (!mercado)
+      return res.status(404).json({ erro: "Mercado não encontrado" });
+
+    res.status(200).json({ mercado });
+  } catch (err) {
+    console.error("ERRO buscarMercadoPorSlug:", err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
 // PUT /api/mercados/:id — Atualizar mercado
 // Só dono ou admin do mercado pode atualizar
 // ─────────────────────────────────────────────
@@ -236,6 +286,18 @@ const atualizarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
+    let slugAtualizado = undefined;
+    if (nome?.trim()) {
+      let slug = gerarSlug(nome);
+      const slugExistente = await sql`
+        SELECT id_mercado FROM mercados WHERE slug = ${slug} AND id_mercado != ${Number(id)}
+      `;
+      if (slugExistente.length > 0) {
+        slug = `${slug}-${Date.now()}`;
+      }
+      slugAtualizado = slug;
+    }
+
     const [mercadoAtualizado] = await sql`
       UPDATE mercados SET
         nome     = COALESCE(${nome?.trim()                       ?? null}, nome),
@@ -246,7 +308,8 @@ const atualizarMercado = async (req, res) => {
         estado   = COALESCE(${estado?.trim().toUpperCase()       ?? null}, estado),
         cidade   = COALESCE(${cidade?.trim()                     ?? null}, cidade),
         bairro   = COALESCE(${bairro?.trim()                     ?? null}, bairro),
-        rua      = COALESCE(${rua?.trim()                        ?? null}, rua)
+        rua      = COALESCE(${rua?.trim()                        ?? null}, rua),
+        slug     = COALESCE(${slugAtualizado ?? null}, slug)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
     `;
@@ -384,6 +447,7 @@ module.exports = {
   criarMercado,
   listarMercados,
   buscarMercadoPorId,
+  buscarMercadoPorSlug,
   atualizarMercado,
   deletarMercado,
   meusMercados,

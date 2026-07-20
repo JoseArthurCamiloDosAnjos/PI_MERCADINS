@@ -47,6 +47,7 @@
   flex-direction: column;
   overflow-x: hidden;
   position: relative;
+  transition: background 0.3s ease;
 }
 
 .vtc-loading {

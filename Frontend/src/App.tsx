@@ -13,7 +13,10 @@ import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha'
 import RegistrarMercado from './pages/RegistrarMercado/RegistrarMercado'
 import MercadinsPromos from './pages/MercadinsPromo/MercadinsPromo'
 import Vitrine from './pages/Vitrine/Vitrine'
-import VitrineCliente from './pages/VitrineCliente/Vitrinecliente'
+import VitrineCliente from './pages/VitrineCliente/VitrineCliente'
+import ProdutoTelaContainer from './pages/ProdutoTela/ProdutoTelaContainer'
+
+// ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
 function VitrineClienteWrapper() {
   const { slug } = useParams<{ slug: string }>()
@@ -34,8 +37,44 @@ function VitrineClienteWrapper() {
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
   if (!mercadoId) return null
-  return <VitrineCliente mercadoId={mercadoId} onVoltar={() => navigate(-1)} />
+  return <VitrineCliente mercadoId={mercadoId} slug={slug} onVoltar={() => navigate(-1)} />
 }
+
+// ─── Wrapper: resolve slug -> mercadoId e renderiza a tela cheia do produto ────
+
+function ProdutoTelaWrapper() {
+  const { slug, categoriaId, produtoId } = useParams<{ slug: string; categoriaId: string; produtoId: string }>()
+  const navigate = useNavigate()
+  const [mercadoId, setMercadoId] = useState<number | null>(null)
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (!slug) {
+      navigate('/')
+      return
+    }
+    api.buscarMercadoPorSlug(slug)
+      .then(data => setMercadoId(data.mercado.id_mercado))
+      .catch(() => navigate('/'))
+      .finally(() => setCarregando(false))
+  }, [slug, navigate])
+
+  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
+  if (!mercadoId || !categoriaId || !produtoId) return null
+
+  return (
+    <ProdutoTelaContainer
+      mercadoId={mercadoId}
+      categoriaId={Number(categoriaId)}
+      produtoId={Number(produtoId)}
+      onVoltar={() => navigate(-1)}
+      onAbrirCarrinho={() => navigate(`/vitrine/${slug}`)}
+      onAbrirProduto={(catId, prodId) => navigate(`/vitrine/${slug}/produto/${catId}/${prodId}`)}
+    />
+  )
+}
+
+// ─── Rotas ──────────────────────────────────────────────────────────────────
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
@@ -71,7 +110,8 @@ function Rotas() {
       <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
       <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => setMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
-      <Route path="/vitrine/:slug" element={<VitrineClienteWrapper />} />
+      <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
+      <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>
   )

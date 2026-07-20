@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import './Vitrine.css';
 import CadastroProduto  from '../../components/CadastroProduto';
 import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import ToastContainer   from '../../components/Toast';
+import EscolherPaleta, { encontrarPaleta, IconPaleta } from '../../components/Escolherpaleta';
 import { useToast }     from '../../hooks/useToast';
 import { api }          from '../../services/api';
 import { useTheme }     from '../../context/ThemeContext';
@@ -17,6 +19,17 @@ import {
   IconX,
   IconArrowLeft,
 } from '../../components/Icons';
+
+// ─── Ícones locais (mesmos usados na VitrineCliente) ──────────────────────────
+
+function IconSearch({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,10 +51,11 @@ interface Categoria {
 interface VitrineMercado {
   id: number;
   logo?: string;
+  banner?: string;
   nome: string;
   descricao: string;
+  paleta: string;
   categorias: Categoria[];
-  banner?: string;
 }
 
 interface VitrineProps {
@@ -63,6 +77,7 @@ const MERCADO_PLACEHOLDER: VitrineMercado = {
   id: 0,
   nome: 'Nome do mercado',
   descricao: 'Descrição do mercado',
+  paleta: 'classico',
   categorias: [],
 };
 
@@ -98,6 +113,12 @@ function useProdutos(mercadoId: number, categoriaId: number, inicial: Produto[])
   return { produtos, setProdutos, carregando, erro };
 }
 
+function formatarPreco(valor?: string) {
+  const n = Number(valor ?? 0);
+  if (Number.isNaN(n)) return valor ?? '0,00';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // ─── ProdutoCard ──────────────────────────────────────────────────────────────
 
 function ProdutoCard({ produto }: { produto: Produto }) {
@@ -106,13 +127,12 @@ function ProdutoCard({ produto }: { produto: Produto }) {
       <div className="vt-produto-img">
         {produto.imagem
           ? <img src={produto.imagem} alt={produto.nome} />
-          : <span className="vt-produto-img-placeholder">Imagem do produto</span>
+          : <span className="vt-produto-img-placeholder">Sem imagem</span>
         }
       </div>
       <div className="vt-produto-info">
         <p className="vt-produto-nome">{produto.nome}</p>
-        <p className="vt-produto-desc">{produto.descricao || 'Sem descrição'}</p>
-        {produto.preco && <p className="vt-produto-preco">R$ {produto.preco}</p>}
+        {produto.preco && <p className="vt-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
     </div>
   );
@@ -121,7 +141,7 @@ function ProdutoCard({ produto }: { produto: Produto }) {
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
     <button className="vt-produto-card vt-produto-add" onClick={onAdd}>
-      <span className="vt-add-icon"><IconPlus size={24} /></span>
+      <span className="vt-add-icon"><IconPlus size={20} /></span>
     </button>
   );
 }
@@ -174,13 +194,15 @@ function EditarNomeCategoria({ nome, onSalvar, onCancelar }: EditarNomeCategoria
 interface CategoriaSectionProps {
   categoria: Categoria;
   mercadoId: number;
+  filtro: string;
   onAlterado: () => void;
   onErroProduto: (msg: string) => void;
   onRenomear: (categoriaId: number, novoNome: string) => void;
+  sectionRef: (el: HTMLElement | null) => void;
 }
 
 function CategoriaSection({
-  categoria, mercadoId, onAlterado, onErroProduto, onRenomear,
+  categoria, mercadoId, filtro, onAlterado, onErroProduto, onRenomear, sectionRef,
 }: CategoriaSectionProps) {
   const { produtos, setProdutos, carregando, erro } =
     useProdutos(mercadoId, categoria.id, categoria.produtos);
@@ -220,9 +242,17 @@ function CategoriaSection({
     onRenomear(categoria.id, novoNome);
   }
 
+  const termo = filtro.trim().toLowerCase();
+  const produtosFiltrados = termo
+    ? produtos.filter(p => p.nome.toLowerCase().includes(termo))
+    : produtos;
+
+  // Esconde a categoria inteira se estiver buscando e nada bater
+  if (termo && !carregando && produtosFiltrados.length === 0) return null;
+
   return (
     <>
-      <section className="vt-categoria">
+      <section className="vt-categoria" ref={sectionRef}>
 
         {/* Título com botão de editar */}
         <div className="vt-categoria-header">
@@ -253,9 +283,9 @@ function CategoriaSection({
         <div className="vt-produtos-grid">
           {carregando
             ? <span className="vt-carregando">Carregando produtos…</span>
-            : produtos.map(p => <ProdutoCard key={p.id_produto} produto={p} />)
+            : produtosFiltrados.map(p => <ProdutoCard key={p.id_produto} produto={p} />)
           }
-          <ProdutoAddCard onAdd={() => setModalAberto(true)} />
+          {!termo && <ProdutoAddCard onAdd={() => setModalAberto(true)} />}
         </div>
       </section>
 
@@ -295,10 +325,14 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const [modalEditar, setModalEditar]             = useState(false);
   const [modalCategoria, setModalCategoria]       = useState(false);
   const [modalSaida, setModalSaida]               = useState(false);
+  const [modalPaleta, setModalPaleta]             = useState(false);
   const [salvandoMercado, setSalvandoMercado]     = useState(false);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
   const [carregando, setCarregando]               = useState(!!mercadoId);
+  const [busca, setBusca]                         = useState('');
+  const [categoriaAtiva, setCategoriaAtiva]       = useState<number | null>(null);
   const acaoAoSair                                = useRef<'voltar' | 'fechar' | null>(null);
+  const refsCategoria                             = useRef<Record<number, HTMLElement | null>>({});
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema, toggleTema } = useTheme();
@@ -332,6 +366,8 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           nome: mercadoData.mercado.nome,
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
+          banner: mercadoData.mercado.banner ?? undefined,
+          paleta: mercadoData.mercado.paleta ?? 'classico',
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -344,6 +380,20 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
     carregarDados();
   }, [mercadoId]);
+
+  const paletaAtual = useMemo(() => encontrarPaleta(dados.paleta), [dados.paleta]);
+
+  const estiloPaleta = {
+    '--vt-azul-escuro': paletaAtual.cores.azulEscuro,
+    '--vt-azul-medio': paletaAtual.cores.azulMedio,
+    '--vt-azul-claro': paletaAtual.cores.azulClaro,
+    '--vt-azul-bg': paletaAtual.cores.azulBg,
+    '--vt-azul-card': paletaAtual.cores.azulCard,
+    '--vt-azul-borda': paletaAtual.cores.azulBorda,
+    '--vt-azul-item': paletaAtual.cores.azulItem,
+    '--vt-amarelo': paletaAtual.cores.amarelo,
+    '--vt-amarelo-hover': paletaAtual.cores.amareloHover,
+  } as CSSProperties;
 
   // ── Intercepta saída ─────────────────────────────────────────────────────
 
@@ -360,6 +410,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     if (acao === 'voltar' && onVoltar) onVoltar();
   }
 
+  function irParaCategoria(id: number) {
+    setCategoriaAtiva(id);
+    refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   // ── Salvar vitrine ────────────────────────────────────────────────────────
 
   async function salvarVitrine(): Promise<boolean> {
@@ -368,7 +423,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       return false;
     }
     try {
-      await api.atualizarMercado(dados.id, { nome: dados.nome, descricao: dados.descricao });
+      await api.atualizarMercado(dados.id, { nome: dados.nome, descricao: dados.descricao, paleta: dados.paleta });
       setTemAlteracoes(false);
       showToast('sucesso', 'Vitrine salva com sucesso!');
       return true;
@@ -397,6 +452,13 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     executarSaida(acaoAoSair.current ?? 'voltar');
   }
 
+  // ── Paleta de cores ───────────────────────────────────────────────────────
+
+  function handleSelecionarPaleta(paletaId: string) {
+    setDados(prev => ({ ...prev, paleta: paletaId }));
+    setTemAlteracoes(true);
+  }
+
   // ── Editar mercado ────────────────────────────────────────────────────────
 
   async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: string }) {
@@ -409,7 +471,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }
     setSalvandoMercado(true);
     try {
-      await api.atualizarMercado(dados.id, { nome: form.nome, descricao: form.descricao });
+      await api.atualizarMercado(dados.id, { nome: form.nome, descricao: form.descricao, paleta: dados.paleta });
       setDados(prev => ({ ...prev, ...form }));
       setModalEditar(false);
       setTemAlteracoes(true);
@@ -445,7 +507,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   // ── Renomear categoria ────────────────────────────────────────────────────
 
   async function handleRenomear(categoriaId: number, novoNome: string) {
-    // Atualiza localmente primeiro (otimista)
     setDados(prev => ({
       ...prev,
       categorias: prev.categorias.map(c =>
@@ -454,7 +515,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }));
     setTemAlteracoes(true);
 
-    // Salva no banco
     if (dados.id && dados.id !== 0) {
       try {
         await api.atualizarCategoria(dados.id, categoriaId, { nome: novoNome });
@@ -465,42 +525,65 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }
   }
 
-  return (
-    <div className="vt-shell">
+  if (carregando) {
+    return (
+      <div className="vt-shell">
+        <div className="vt-loading"><p>Carregando vitrine...</p></div>
+      </div>
+    );
+  }
 
-      {/* ── Loading ────────────────────────────────────────────────────── */}
-      {carregando && (
-        <div className="vt-loading">
-          <p>Carregando vitrine...</p>
-        </div>
-      )}
+  return (
+    <div className="vt-shell" style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
-      {onVoltar && !carregando && (
-        <div className="vt-topbar">
-          <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
-            <IconArrowLeft size={15} /> Voltar ao Gerenciamento
+      <div className="vt-topbar">
+        {onVoltar
+          ? (
+            <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
+              <IconArrowLeft size={15} /> Voltar ao Gerenciamento
+            </button>
+          )
+          : <span />
+        }
+
+        <div className="vt-topbar-direita">
+          <div className="vt-topbar-mercado">
+            {dados.logo
+              ? <img src={dados.logo} alt={dados.nome} className="vt-topbar-mercado-logo" />
+              : <span className="vt-topbar-mercado-logo vt-topbar-mercado-logo--placeholder"><IconStore size={13} /></span>
+            }
+            <span className="vt-topbar-mercado-nome">{dados.nome}</span>
+          </div>
+
+          <ThemeToggle tema={tema} onToggle={toggleTema} />
+
+          <button className="vt-btn-paleta" onClick={() => setModalPaleta(true)} title="Personalizar cores">
+            <IconPaleta size={14} /> Cores
           </button>
 
-          <div className="vt-topbar-direita">
-            <ThemeToggle tema={tema} onToggle={toggleTema} />
-            <span className="vt-topbar-label">Pré-visualização da Vitrine</span>
-
-            {temAlteracoes && (
-              <button
-                className={`vt-btn-salvar ${salvandoVitrine ? 'vt-btn-salvar--carregando' : ''}`}
-                onClick={handleSalvarVitrine}
-                disabled={salvandoVitrine}
-              >
-                {salvandoVitrine
-                  ? <><span className="vt-btn-salvar-spinner" /> Salvando…</>
-                  : <><IconCheck size={14} /> Salvar vitrine</>
-                }
-              </button>
-            )}
-          </div>
+          {temAlteracoes && (
+            <button
+              className={`vt-btn-salvar ${salvandoVitrine ? 'vt-btn-salvar--carregando' : ''}`}
+              onClick={handleSalvarVitrine}
+              disabled={salvandoVitrine}
+            >
+              {salvandoVitrine
+                ? <><span className="vt-btn-salvar-spinner" /> Salvando…</>
+                : <><IconCheck size={14} /> Salvar vitrine</>
+              }
+            </button>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Banner ────────────────────────────────────────────────────── */}
+      <div className="vt-banner">
+        {dados.banner
+          ? <img src={dados.banner} alt="" className="vt-banner-img" />
+          : <div className="vt-banner-fallback" />
+        }
+      </div>
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <header className="vt-header">
@@ -524,11 +607,31 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           </div>
         </div>
 
-        <div className="vt-tags-row">
-          {Array.from({ length: 5 }, (_, i) => (
-            <button key={i} className="vt-tag">dropbox</button>
-          ))}
+        {/* Busca */}
+        <div className="vt-busca-wrap">
+          <IconSearch size={15} />
+          <input
+            className="vt-busca-input"
+            placeholder="Buscar produtos na sua vitrine..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
         </div>
+
+        {/* Tags de categoria — navegação rápida */}
+        {dados.categorias.length > 0 && (
+          <div className="vt-tags-row">
+            {dados.categorias.map(cat => (
+              <button
+                key={cat.id}
+                className={`vt-tag ${categoriaAtiva === cat.id ? 'active' : ''}`}
+                onClick={() => irParaCategoria(cat.id)}
+              >
+                {cat.nome}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* ── Categorias ────────────────────────────────────────────────── */}
@@ -540,9 +643,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                 key={cat.id}
                 categoria={cat}
                 mercadoId={dados.id}
+                filtro={busca}
                 onAlterado={() => setTemAlteracoes(true)}
                 onErroProduto={(msg) => showToast('erro', msg)}
                 onRenomear={handleRenomear}
+                sectionRef={el => { refsCategoria.current[cat.id] = el; }}
               />
             ))
         }
@@ -582,6 +687,14 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           onSalvarESair={handleSalvarESair}
           onSairSemSalvar={handleSairSemSalvar}
           onCancelar={() => setModalSaida(false)}
+        />
+      )}
+
+      {modalPaleta && (
+        <EscolherPaleta
+          paletaAtual={dados.paleta}
+          onSelecionar={handleSelecionarPaleta}
+          onFechar={() => setModalPaleta(false)}
         />
       )}
 

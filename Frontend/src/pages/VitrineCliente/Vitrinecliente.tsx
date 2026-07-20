@@ -1,10 +1,14 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import type { CSSProperties } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
 import { useToast } from '../../hooks/useToast';
+import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ThemeToggle from '../../components/ThemeToggle';
+import { encontrarPaleta } from '../../components/Escolherpaleta';
 import {
   IconStore,
   IconPlus,
@@ -54,14 +58,9 @@ function IconMinus({ size = 14 }: { size?: number }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Produto {
-  id_produto: number;
-  imagem?: string;
-  nome: string;
-  descricao: string;
-  preco?: string;
-  id_categoria: number;
-}
+// Produto reaproveita o mesmo shape usado pelo carrinho compartilhado
+// (hooks/useCarrinho.ts), pra não haver dois tipos divergentes do mesmo objeto.
+type Produto = ProdutoCarrinho;
 
 interface Categoria {
   id: number;
@@ -77,76 +76,26 @@ interface VitrineMercado {
   descricao: string;
   avaliacao?: number;
   favoritado?: boolean;
+  paleta?: string;
   categorias: Categoria[];
 }
 
 interface VitrineClienteProps {
   mercadoId: number;
   onVoltar?: () => void;
-}
-
-interface ItemCarrinho {
-  produto: Produto;
-  quantidade: number;
+  /**
+   * Slug do mercado (ex.: vindo da rota /vitrine/:slug). Quando presente,
+   * os cards de produto navegam pra tela cheia (/vitrine/:slug/produto/...).
+   * Quando ausente (ex.: preview do vendedor sem rota própria), os cards
+   * abrem o modal rápido como fallback.
+   */
+  slug?: string;
 }
 
 function formatarPreco(valor?: string) {
   const n = Number(valor ?? 0);
   if (Number.isNaN(n)) return valor ?? '0,00';
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ─── useCarrinho — persistido por mercado ─────────────────────────────────────
-
-function useCarrinho(mercadoId: number) {
-  const chave = `mercadins_carrinho_${mercadoId}`;
-  const [itens, setItens] = useState<ItemCarrinho[]>(() => {
-    try {
-      const salvo = localStorage.getItem(chave);
-      return salvo ? JSON.parse(salvo) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(chave, JSON.stringify(itens)); } catch { /* ignora */ }
-  }, [itens, chave]);
-
-  function adicionar(produto: Produto, quantidade: number) {
-    setItens(prev => {
-      const existente = prev.find(i => i.produto.id_produto === produto.id_produto);
-      if (existente) {
-        return prev.map(i =>
-          i.produto.id_produto === produto.id_produto
-            ? { ...i, quantidade: i.quantidade + quantidade }
-            : i
-        );
-      }
-      return [...prev, { produto, quantidade }];
-    });
-  }
-
-  function alterarQuantidade(idProduto: number, delta: number) {
-    setItens(prev =>
-      prev
-        .map(i => (i.produto.id_produto === idProduto ? { ...i, quantidade: i.quantidade + delta } : i))
-        .filter(i => i.quantidade > 0)
-    );
-  }
-
-  function remover(idProduto: number) {
-    setItens(prev => prev.filter(i => i.produto.id_produto !== idProduto));
-  }
-
-  function limpar() {
-    setItens([]);
-  }
-
-  const totalItens = itens.reduce((acc, i) => acc + i.quantidade, 0);
-  const totalValor = itens.reduce((acc, i) => acc + i.quantidade * Number(i.produto.preco ?? 0), 0);
-
-  return { itens, adicionar, alterarQuantidade, remover, limpar, totalItens, totalValor };
 }
 
 // ─── ProdutoCard (cliente) ─────────────────────────────────────────────────────
@@ -169,7 +118,7 @@ function ProdutoCardCliente({ produto, onAbrir }: { produto: Produto; onAbrir: (
   );
 }
 
-// ─── Modal de produto ──────────────────────────────────────────────────────────
+// ─── Modal de produto (fallback quando não há slug/rota) ──────────────────────
 
 function ModalProduto({
   produto, onFechar, onAdicionar,
@@ -224,7 +173,7 @@ function CarrinhoDrawer({
   aberto, itens, totalValor, onFechar, onAlterarQuantidade, onRemover, onFinalizar, finalizando,
 }: {
   aberto: boolean;
-  itens: ItemCarrinho[];
+  itens: { produto: Produto; quantidade: number }[];
   totalValor: number;
   onFechar: () => void;
   onAlterarQuantidade: (id: number, delta: number) => void;
@@ -296,7 +245,7 @@ function CarrinhoDrawer({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
+export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca]           = useState('');
@@ -309,6 +258,7 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
   const { toasts, showToast, dismissToast } = useToast();
   const { tema, toggleTema } = useTheme();
   const carrinho = useCarrinho(mercadoId);
+  const navigate = useNavigate();
   const refsCategoria = useRef<Record<number, HTMLElement | null>>({});
 
   useEffect(() => {
@@ -338,6 +288,7 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
           banner: mercadoData.mercado.banner ?? undefined,
           avaliacao: mercadoData.mercado.avaliacao ?? 0,
           favoritado: mercadoData.mercado.favoritado ?? false,
+          paleta: mercadoData.mercado.paleta ?? 'classico',
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -366,6 +317,14 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
   function irParaCategoria(id: number) {
     setCategoriaAtiva(id);
     refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function handleAbrirProduto(produto: Produto) {
+    if (slug) {
+      navigate(`/vitrine/${slug}/produto/${produto.id_categoria}/${produto.id_produto}`);
+    } else {
+      setProdutoAberto(produto);
+    }
   }
 
   function handleAdicionarAoCarrinho(produto: Produto, quantidade: number) {
@@ -413,8 +372,21 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
     );
   }
 
+  const paletaAtual = encontrarPaleta(dados.paleta);
+  const estiloPaleta = {
+    '--vt-azul-escuro': paletaAtual.cores.azulEscuro,
+    '--vt-azul-medio': paletaAtual.cores.azulMedio,
+    '--vt-azul-claro': paletaAtual.cores.azulClaro,
+    '--vt-azul-bg': paletaAtual.cores.azulBg,
+    '--vt-azul-card': paletaAtual.cores.azulCard,
+    '--vt-azul-borda': paletaAtual.cores.azulBorda,
+    '--vt-azul-item': paletaAtual.cores.azulItem,
+    '--vt-amarelo': paletaAtual.cores.amarelo,
+    '--vt-amarelo-hover': paletaAtual.cores.amareloHover,
+  } as CSSProperties;
+
   return (
-    <div className="vtc-shell">
+    <div className="vtc-shell" style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
@@ -523,7 +495,7 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
               <h2 className="vtc-categoria-titulo">{cat.nome}</h2>
               <div className="vtc-produtos-grid">
                 {cat.produtos.map(p => (
-                  <ProdutoCardCliente key={p.id_produto} produto={p} onAbrir={() => setProdutoAberto(p)} />
+                  <ProdutoCardCliente key={p.id_produto} produto={p} onAbrir={() => handleAbrirProduto(p)} />
                 ))}
               </div>
             </section>
@@ -531,7 +503,7 @@ export default function VitrineCliente({ mercadoId }: VitrineClienteProps) {
         )}
       </main>
 
-      {/* ── Modal de produto ──────────────────────────────────────────── */}
+      {/* ── Modal de produto (fallback sem slug/rota) ───────────────────── */}
       {produtoAberto && (
         <ModalProduto
           produto={produtoAberto}

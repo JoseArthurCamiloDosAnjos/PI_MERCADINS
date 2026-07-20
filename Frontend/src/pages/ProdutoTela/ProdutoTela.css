@@ -1,0 +1,289 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   ProdutoTela — usa as mesmas CSS vars (--vt-*) definidas em VitrineCliente.css.
+   Se este componente for usado isolado, copie o bloco :root de lá para cá.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@keyframes vtpFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vtp-shell {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--vt-azul-bg);
+  font-family: var(--vt-font);
+  color: var(--vt-branco);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 92px; /* espaço pra barra fixa */
+  box-sizing: border-box;
+}
+
+/* ─── Topbar ─────────────────────────────────────────────────────────────── */
+.vtp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.4rem;
+  background: var(--vt-azul-escuro);
+  border-bottom: 1px solid var(--vt-azul-borda);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.vtp-btn-voltar,
+.vtp-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  color: var(--vt-branco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  position: relative;
+}
+.vtp-btn-voltar:hover { border-color: var(--vt-amarelo); color: var(--vt-amarelo); }
+
+.vtp-topbar-acoes { display: flex; align-items: center; gap: 10px; }
+
+.vtp-icon-btn:hover { border-color: var(--vt-amarelo); color: var(--vt-amarelo); }
+.vtp-icon-btn--ativo { border-color: #f26b6b; color: #f26b6b; background: rgba(242, 107, 107, 0.1); }
+
+.vtp-carrinho-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--vt-radius-full);
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Galeria ────────────────────────────────────────────────────────────── */
+.vtp-galeria {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 1.2rem 1.4rem 0;
+  animation: vtpFadeUp 0.35s ease both;
+}
+
+.vtp-galeria-principal {
+  width: 100%;
+  height: 300px;
+  border-radius: var(--vt-radius-lg);
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-borda);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vtp-galeria-principal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.vtp-galeria-placeholder { color: var(--vt-cinza); display: flex; align-items: center; justify-content: center; }
+
+.vtp-galeria-miniaturas { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.vtp-miniatura {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--vt-radius-sm);
+  overflow: hidden;
+  border: 1.5px solid var(--vt-azul-item);
+  background: var(--vt-azul-card);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+.vtp-miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vtp-miniatura--ativa,
+.vtp-miniatura:hover { border-color: var(--vt-amarelo); }
+
+/* ─── Conteúdo ───────────────────────────────────────────────────────────── */
+.vtp-conteudo {
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: vtpFadeUp 0.4s ease both;
+}
+
+.vtp-tag-categoria {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: var(--vt-radius-full);
+  background: rgba(245, 200, 74, 0.1);
+  border: 1px solid var(--vt-amarelo);
+  color: var(--vt-amarelo);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.vtp-nome { font-size: 21px; font-weight: 800; color: var(--vt-branco); margin: 0; line-height: 1.3; }
+
+.vtp-avaliacao {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--vt-amarelo);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.vtp-avaliacao span { color: var(--vt-branco-suave); margin-left: 5px; }
+.vtp-avaliacao-total { color: var(--vt-cinza) !important; font-weight: 500 !important; }
+
+.vtp-preco { font-size: 24px; font-weight: 800; color: var(--vt-amarelo); margin: 10px 0 4px; }
+
+.vtp-secao { margin-top: 1.2rem; display: flex; flex-direction: column; gap: 8px; }
+.vtp-secao-titulo { font-size: 14px; font-weight: 800; color: var(--vt-branco); margin: 0; }
+.vtp-descricao { font-size: 13.5px; color: var(--vt-branco-suave); line-height: 1.6; margin: 0; }
+
+.vtp-aviso-estoque {
+  margin-top: 1rem;
+  padding: 10px 14px;
+  border-radius: var(--vt-radius-md);
+  background: rgba(242, 107, 107, 0.1);
+  border: 1px solid #f26b6b;
+  color: #f26b6b;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.vtp-espaco-rodape { height: 8px; }
+
+/* ─── Relacionados ───────────────────────────────────────────────────────── */
+.vtp-relacionados-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+
+.vtp-relacionado-card {
+  flex-shrink: 0;
+  width: 130px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font-family: var(--vt-font);
+  transition: border-color 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.vtp-relacionado-card:hover { border-color: var(--vt-amarelo); transform: scale(1.03); }
+
+.vtp-relacionado-img {
+  width: 100%;
+  height: 84px;
+  background: var(--vt-azul-escuro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.vtp-relacionado-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.vtp-relacionado-nome { font-size: 12px; font-weight: 700; color: var(--vt-branco); margin: 8px 10px 2px; line-height: 1.3; }
+.vtp-relacionado-preco { font-size: 12.5px; font-weight: 800; color: var(--vt-amarelo); margin: 0 10px 8px; }
+
+/* ─── Barra fixa de compra ───────────────────────────────────────────────── */
+.vtp-barra-fixa {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.9rem 1.4rem;
+  background: var(--vt-azul-escuro);
+  border-top: 1px solid var(--vt-azul-borda);
+  z-index: 30;
+}
+
+.vtp-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-full);
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+.vtp-stepper-btn {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--vt-azul-item); border: none; color: var(--vt-branco);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.2s;
+}
+.vtp-stepper-btn:hover:not(:disabled) { background: var(--vt-amarelo); color: var(--vt-azul-escuro); }
+.vtp-stepper-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.vtp-stepper-valor { font-size: 13.5px; font-weight: 800; color: var(--vt-branco); min-width: 16px; text-align: center; }
+
+.vtp-btn-adicionar {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--vt-amarelo); color: var(--vt-azul-escuro);
+  border: none; border-radius: var(--vt-radius-full);
+  padding: 13px 18px; font-size: 13.5px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vtp-btn-adicionar:hover:not(:disabled) { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
+.vtp-btn-adicionar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ─── Responsivo (telas maiores: imagem + conteúdo lado a lado) ─────────── */
+@media (min-width: 780px) {
+  .vtp-shell { padding-bottom: 0; }
+
+  .vtp-topbar { padding: 0.9rem 2.5rem; }
+
+  .vtp-corpo-desktop-wrap { display: flex; }
+
+  .vtp-galeria {
+    padding: 2rem 1.5rem 2rem 2.5rem;
+    width: 46%;
+    box-sizing: border-box;
+  }
+  .vtp-galeria-principal { height: 420px; }
+
+  .vtp-conteudo {
+    padding: 2rem 2.5rem 2rem 1.5rem;
+    width: 54%;
+    box-sizing: border-box;
+  }
+
+  .vtp-barra-fixa {
+    position: sticky;
+    max-width: 460px;
+    margin-top: 1.5rem;
+    border-radius: var(--vt-radius-lg);
+    border: 1.5px solid var(--vt-azul-borda);
+  }
+}
+
+@media (min-width: 780px) {
+  .vtp-shell { flex-direction: row; flex-wrap: wrap; }
+  .vtp-topbar { width: 100%; }
+}

@@ -24,7 +24,7 @@
 .pv-btn-new:hover { background: var(--amarelo-hover); transform: scale(1.04); }
 
 .pv-content { padding: 1.6rem 1.8rem; display: flex; flex-direction: column; gap: 1.6rem; overflow-y: auto; flex: 1; }
-.pv-divider { height: 1px; background: var(--azul-borda); }
+.pv-divider { height: 1px; background: var(--azul-borda); margin: 28px 0;}
 
 .pv-sec-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .pv-sec-title { font-size: 15px; font-weight: 800; color: var(--branco); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
@@ -66,7 +66,7 @@
 .pv-stat-lbl { font-size: 10.5px; color: var(--branco-suave); font-weight: 700; margin-top: 5px; }
 
 /* MERCADOS GERENCIADOS */
-.pv-mkt-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.pv-mkt-row { display: flex; gap: 24px; flex-wrap: wrap; }
 .pv-mkt-loading { color: var(--cinza-texto); font-size: 13px; }
 
 .pv-mkt-card {
@@ -112,6 +112,9 @@
 
 /* Animação de troca de tela */
 .pv-tela-fade {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .pv-tela-visivel {

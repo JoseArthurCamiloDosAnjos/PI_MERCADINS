@@ -382,8 +382,20 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
   }
 
   if (carregando || !dados) {
+    const paletaPadrao = resolverPaleta();
+    const estiloPaletaPadrao = {
+      '--vt-azul-escuro': paletaPadrao.cores.azulEscuro,
+      '--vt-azul-medio': paletaPadrao.cores.azulMedio,
+      '--vt-azul-claro': paletaPadrao.cores.azulClaro,
+      '--vt-azul-bg': paletaPadrao.cores.azulBg,
+      '--vt-azul-card': paletaPadrao.cores.azulCard,
+      '--vt-azul-borda': paletaPadrao.cores.azulBorda,
+      '--vt-azul-item': paletaPadrao.cores.azulItem,
+      '--vt-amarelo': paletaPadrao.cores.amarelo,
+      '--vt-amarelo-hover': paletaPadrao.cores.amareloHover,
+    } as CSSProperties;
     return (
-      <div className="vtc-shell">
+      <div className="vtc-shell" data-tema={tema} style={estiloPaletaPadrao}>
         <div className="vtc-loading"><p>Carregando vitrine...</p></div>
       </div>
     );
@@ -408,13 +420,6 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
         <div className="vtc-topbar-direita">
-          <div className="vtc-topbar-mercado">
-            {dados.logo
-              ? <img src={dados.logo} alt={dados.nome} className="vtc-topbar-mercado-logo" />
-              : <span className="vtc-topbar-mercado-logo vtc-topbar-mercado-logo--placeholder"><IconStore size={13} /></span>
-            }
-            <span className="vtc-topbar-mercado-nome">{dados.nome}</span>
-          </div>
           <ThemeToggle tema={tema} onToggle={toggleTema} />
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}

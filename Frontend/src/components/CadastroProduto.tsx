@@ -26,6 +26,7 @@ interface Erros {
 interface CadastroProdutoProps {
   categoriaId: number;
   salvando?: boolean;
+  produto?: { id_produto: number; nome: string; descricao?: string; preco?: string; imagem?: string; imagens?: string[] };
   onSalvar: (produto: ProdutoForm) => void;
   onCancelar: () => void;
 }
@@ -35,18 +36,33 @@ interface CadastroProdutoProps {
 export default function CadastroProduto({
   categoriaId,
   salvando = false,
+  produto,
   onSalvar,
   onCancelar,
 }: CadastroProdutoProps) {
-  const [nome, setNome]               = useState('');
-  const [descricao, setDescricao]     = useState('');
-  const [preco, setPreco]             = useState('');
-  const [imagens, setImagens]         = useState<ImagemItem[]>([]);
+  const [nome, setNome]               = useState(produto?.nome ?? '');
+  const [descricao, setDescricao]     = useState(produto?.descricao ?? '');
+  const [preco, setPreco]             = useState(() => {
+    if (!produto?.preco) return '';
+    const valor = Number(produto.preco);
+    if (Number.isNaN(valor)) return '';
+    return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  });
+  const [imagens, setImagens]         = useState<ImagemItem[]>(() => {
+    if (produto?.imagens && produto.imagens.length > 0) {
+      return produto.imagens.map(url => ({ url, file: null as unknown as File }));
+    }
+    if (produto?.imagem) {
+      return [{ url: produto.imagem, file: null as unknown as File }];
+    }
+    return [];
+  });
   const [slideAtual, setSlideAtual]   = useState(0);
   const [erros, setErros]             = useState<Erros>({});
   const [arrastando, setArrastando]   = useState(false);
 
   const inputFileRef = useRef<HTMLInputElement>(null);
+  const editando = !!produto;
 
   // ── Upload ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +111,32 @@ export default function CadastroProduto({
   // ── Preço ───────────────────────────────────────────────────────────────────
 
   function formatarPreco(valor: string) {
-    setPreco(valor.replace(/[^\d.,]/g, ''));
+    let apenasNumeros = valor.replace(/\D/g, '');
+
+    if (apenasNumeros.length === 0) {
+      setPreco('');
+      return;
+    }
+
+    if (apenasNumeros.length > 1 && apenasNumeros[0] === '0') {
+      apenasNumeros = apenasNumeros.replace(/^0+/, '');
+    }
+
+    if (apenasNumeros.length > 7) {
+      apenasNumeros = apenasNumeros.slice(0, 7);
+    }
+
+    if (apenasNumeros.length <= 2) {
+      if (apenasNumeros.length === 1) {
+        setPreco(`0,0${apenasNumeros}`);
+      } else {
+        setPreco(`0,${apenasNumeros}`);
+      }
+    } else {
+      const parteInteira = apenasNumeros.slice(0, -2);
+      const parteDecimal = apenasNumeros.slice(-2);
+      setPreco(`${Number(parteInteira).toLocaleString('pt-BR')},${parteDecimal}`);
+    }
   }
 
   // ── Validação ───────────────────────────────────────────────────────────────
@@ -128,7 +169,7 @@ export default function CadastroProduto({
 
         {/* Header */}
         <div className="cp-header">
-          <h2 className="cp-titulo">Novo produto</h2>
+          <h2 className="cp-titulo">{editando ? 'Editar produto' : 'Novo produto'}</h2>
           <button
             className="cp-btn-fechar"
             onClick={onCancelar}
@@ -261,9 +302,9 @@ export default function CadastroProduto({
               <input
                 id="cp-preco"
                 type="text"
-                inputMode="decimal"
-                className={`cp-input ${erros.preco ? 'cp-input--erro' : ''}`}
-                placeholder="Ex: 12,90"
+                inputMode="numeric"
+                className={`cp-input cp-input--preco ${erros.preco ? 'cp-input--erro' : ''}`}
+                placeholder="0,00"
                 value={preco}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   formatarPreco(e.target.value);
@@ -290,7 +331,7 @@ export default function CadastroProduto({
             onClick={handleSalvar}
             disabled={salvando}
           >
-            {salvando ? 'Salvando…' : 'Salvar produto'}
+            {salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Salvar produto'}
           </button>
         </div>
 

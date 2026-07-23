@@ -23,6 +23,9 @@ export default function ProdutoTelaContainer({
   const [categoriaNome, setCategoriaNome] = useState<string | undefined>(undefined);
   const [mercadoNome, setMercadoNome] = useState('');
   const [mercadoLogo, setMercadoLogo] = useState<string | undefined>(undefined);
+  const [paleta, setPaleta] = useState<string>('classico');
+  const [corBase, setCorBase] = useState<string | undefined>(undefined);
+  const [corDestaque, setCorDestaque] = useState<string | undefined>(undefined);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -35,6 +38,9 @@ export default function ProdutoTelaContainer({
 
         setMercadoNome(mercadoData.mercado.nome);
         setMercadoLogo(mercadoData.mercado.foto_perfil ?? undefined);
+        setPaleta(mercadoData.mercado.paleta ?? 'classico');
+        setCorBase(mercadoData.mercado.cor_base ?? undefined);
+        setCorDestaque(mercadoData.mercado.cor_destaque ?? undefined);
 
         const encontrado = (produtosData as ProdutoDetalhe[]).find(
           (p) => p.id_produto === produtoId
@@ -80,6 +86,9 @@ export default function ProdutoTelaContainer({
       produto={produto}
       categoriaNome={categoriaNome}
       mercado={{ id: mercadoId, nome: mercadoNome, logo: mercadoLogo }}
+      paleta={paleta}
+      corBase={corBase}
+      corDestaque={corDestaque}
       onVoltar={onVoltar}
       onIrParaCarrinho={onAbrirCarrinho}
     />

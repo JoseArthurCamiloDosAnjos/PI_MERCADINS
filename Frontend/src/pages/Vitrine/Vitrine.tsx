@@ -124,7 +124,14 @@ function formatarPreco(valor?: string) {
 
 // ─── ProdutoCard ──────────────────────────────────────────────────────────────
 
-function ProdutoCard({ produto }: { produto: Produto }) {
+interface ProdutoCardProps {
+  produto: Produto;
+  mercadoId: number;
+  categoriaId: number;
+  onEditar: (produto: Produto) => void;
+}
+
+function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
   return (
     <div className="vt-produto-card">
       <div className="vt-produto-img">
@@ -137,6 +144,9 @@ function ProdutoCard({ produto }: { produto: Produto }) {
         <p className="vt-produto-nome">{produto.nome}</p>
         {produto.preco && <p className="vt-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
+      <button className="vt-produto-btn-editar" onClick={() => onEditar(produto)} title="Editar produto">
+        <IconPencil size={12} />
+      </button>
     </div>
   );
 }
@@ -213,6 +223,7 @@ function CategoriaSection({
   const [modalAberto, setModalAberto]   = useState(false);
   const [salvando, setSalvando]         = useState(false);
   const [editandoNome, setEditandoNome] = useState(false);
+  const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
 
   async function handleSalvar(dados: ProdutoForm) {
     if (mercadoId === 0) {
@@ -247,6 +258,28 @@ function CategoriaSection({
   function handleRenomear(novoNome: string) {
     setEditandoNome(false);
     onRenomear(categoria.id, novoNome);
+  }
+
+  async function handleSalvarEdicao(dados: ProdutoForm) {
+    if (!produtoEditando) return;
+    setSalvando(true);
+    try {
+      const precoNum = Number(dados.preco.replace(/\./g, '').replace(',', '.'));
+      const atualizado: Produto = await api.atualizarProduto(mercadoId, categoria.id, produtoEditando.id_produto, {
+        nome: dados.nome,
+        descricao: dados.descricao,
+        imagem: dados.imagens[0] ?? null,
+        imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
+        preco: Number.isFinite(precoNum) ? precoNum : 0,
+      });
+      setProdutos(prev => prev.map(p => p.id_produto === atualizado.id_produto ? atualizado : p));
+      setProdutoEditando(null);
+      onAlterado();
+    } catch (e: unknown) {
+      onErroProduto(e instanceof Error ? e.message : 'Erro ao atualizar produto.');
+    } finally {
+      setSalvando(false);
+    }
   }
 
   const termo = filtro.trim().toLowerCase();
@@ -290,7 +323,15 @@ function CategoriaSection({
         <div className="vt-produtos-grid">
           {carregando
             ? <span className="vt-carregando">Carregando produtos…</span>
-            : produtosFiltrados.map(p => <ProdutoCard key={p.id_produto} produto={p} />)
+            : produtosFiltrados.map(p => (
+                <ProdutoCard
+                  key={p.id_produto}
+                  produto={p}
+                  mercadoId={mercadoId}
+                  categoriaId={categoria.id}
+                  onEditar={setProdutoEditando}
+                />
+              ))
           }
           {!termo && <ProdutoAddCard onAdd={() => setModalAberto(true)} />}
         </div>
@@ -302,6 +343,16 @@ function CategoriaSection({
           salvando={salvando}
           onSalvar={handleSalvar}
           onCancelar={() => setModalAberto(false)}
+        />
+      )}
+
+      {produtoEditando && (
+        <CadastroProduto
+          categoriaId={categoria.id}
+          salvando={salvando}
+          produto={produtoEditando}
+          onSalvar={handleSalvarEdicao}
+          onCancelar={() => setProdutoEditando(null)}
         />
       )}
     </>
@@ -556,7 +607,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
   if (carregando) {
     return (
-      <div className="vt-shell">
+      <div className="vt-shell" data-tema={tema} style={estiloPaleta}>
         <div className="vt-loading"><p>Carregando vitrine...</p></div>
       </div>
     );
@@ -577,14 +628,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
         }
 
         <div className="vt-topbar-direita">
-          <div className="vt-topbar-mercado">
-            {dados.logo
-              ? <img src={dados.logo} alt={dados.nome} className="vt-topbar-mercado-logo" />
-              : <span className="vt-topbar-mercado-logo vt-topbar-mercado-logo--placeholder"><IconStore size={13} /></span>
-            }
-            <span className="vt-topbar-mercado-nome">{dados.nome}</span>
-          </div>
-
           <ThemeToggle tema={tema} onToggle={toggleTema} />
 
           <button className="vt-btn-paleta" onClick={() => setModalPaleta(true)} title="Personalizar cores">

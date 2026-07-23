@@ -141,7 +141,7 @@
 /* ─── Main / layout em duas colunas ──────────────────────────────────────── */
 .pd-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
   gap: 2.4rem;
   padding: 1.6rem 2.5rem 2.5rem;
   width: 100%;
@@ -164,8 +164,8 @@
   flex-shrink: 0;
 }
 .pd-miniatura {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--vt-radius-sm);
   overflow: hidden;
   background: var(--vt-azul-card);
@@ -180,9 +180,9 @@
 
 .pd-imagem-principal {
   flex: 1;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
   background: var(--vt-azul-card);
-  border: 1.5px solid var(--vt-azul-item);
+  border: 1.5px solid var(--vt-azul-borda);
   border-radius: var(--vt-radius-lg);
   display: flex;
   align-items: center;
@@ -259,14 +259,19 @@
 .pd-avaliacao-valor { color: var(--vt-branco-suave); margin-left: 6px; }
 .pd-avaliacao-total { color: var(--vt-cinza); font-weight: 500; margin-left: 4px; }
 
+.pd-descricao-inline {
+  font-size: 13px;
+  color: var(--vt-branco-suave);
+  margin: 0;
+  line-height: 1.5;
+}
+
 .pd-preco-bloco {
   display: flex;
   align-items: baseline;
   gap: 10px;
   flex-wrap: wrap;
   padding: 14px 0;
-  border-top: 1px solid var(--vt-azul-borda);
-  border-bottom: 1px solid var(--vt-azul-borda);
 }
 .pd-preco-atual { font-size: 26px; font-weight: 800; color: var(--vt-amarelo); }
 .pd-preco-original { font-size: 14px; color: var(--vt-cinza); text-decoration: line-through; }
@@ -349,15 +354,6 @@
 }
 .pd-caixa-lista svg { flex-shrink: 0; color: var(--vt-amarelo); }
 
-/* ─── Descrição completa ─────────────────────────────────────────────────── */
-.pd-descricao {
-  padding: 0 2.5rem 3rem;
-  max-width: 900px;
-  animation: pdFadeUp 0.45s ease both;
-}
-.pd-descricao-titulo { font-size: 15px; font-weight: 800; color: var(--vt-branco); margin: 0 0 10px; }
-.pd-descricao-texto { font-size: 13.5px; color: var(--vt-cinza); line-height: 1.7; margin: 0; }
-
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .pd-main { grid-template-columns: 1fr; }
@@ -370,7 +366,6 @@
   .pd-busca-wrap { display: none; }
   .pd-breadcrumb { padding: 0.8rem 1.2rem 0; }
   .pd-main { padding: 1.2rem 1.2rem 2rem; gap: 1.6rem; }
-  .pd-descricao { padding: 0 1.2rem 2.5rem; }
   .pd-galeria { flex-direction: column-reverse; }
   .pd-miniaturas { flex-direction: row; overflow-x: auto; }
   .pd-nome { font-size: 19px; }
@@ -382,8 +377,7 @@
 }
 
 /* ─── Modo claro (mesma convenção usada em Vitrine/VitrineCliente) ───────── */
-.pd-shell[data-tema="claro"] .pd-main,
-.pd-shell[data-tema="claro"] .pd-descricao {
+.pd-shell[data-tema="claro"] .pd-main {
   --vt-azul-bg:      #f3f5fa;
   --vt-azul-card:    #ffffff;
   --vt-azul-borda:   #e3e7f0;

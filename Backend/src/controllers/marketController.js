@@ -90,7 +90,7 @@ const criarMercado = async (req, res) => {
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado. Faça login para cadastrar um mercado." });
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -134,7 +134,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -145,7 +145,10 @@ const criarMercado = async (req, res) => {
         ${cidade.trim()},
         ${bairro.trim()},
         ${rua.trim()},
-        ${slug}
+        ${slug},
+        ${paleta ?? 'classico'},
+        ${cor_base ?? ''},
+        ${cor_destaque ?? ''}
       )
       RETURNING *
     `;
@@ -248,7 +251,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque } = req.body;
 
   if (email && !validarEmailSimples(email))
     return res.status(400).json({ erro: "Email inválido" });
@@ -300,16 +303,19 @@ const atualizarMercado = async (req, res) => {
 
     const [mercadoAtualizado] = await sql`
       UPDATE mercados SET
-        nome     = COALESCE(${nome?.trim()                       ?? null}, nome),
-        email    = COALESCE(${email?.trim().toLowerCase()        ?? null}, email),
-        telefone = COALESCE(${telefone ? limparMascara(telefone) : null}, telefone),
-        cnpj     = COALESCE(${cnpj    ? limparMascara(cnpj)      : null}, cnpj),
-        cep      = COALESCE(${cep     ? limparMascara(cep)       : null}, cep),
-        estado   = COALESCE(${estado?.trim().toUpperCase()       ?? null}, estado),
-        cidade   = COALESCE(${cidade?.trim()                     ?? null}, cidade),
-        bairro   = COALESCE(${bairro?.trim()                     ?? null}, bairro),
-        rua      = COALESCE(${rua?.trim()                        ?? null}, rua),
-        slug     = COALESCE(${slugAtualizado ?? null}, slug)
+        nome        = COALESCE(${nome?.trim()                       ?? null}, nome),
+        email       = COALESCE(${email?.trim().toLowerCase()        ?? null}, email),
+        telefone    = COALESCE(${telefone ? limparMascara(telefone) : null}, telefone),
+        cnpj        = COALESCE(${cnpj    ? limparMascara(cnpj)      : null}, cnpj),
+        cep         = COALESCE(${cep     ? limparMascara(cep)       : null}, cep),
+        estado      = COALESCE(${estado?.trim().toUpperCase()       ?? null}, estado),
+        cidade      = COALESCE(${cidade?.trim()                     ?? null}, cidade),
+        bairro      = COALESCE(${bairro?.trim()                     ?? null}, bairro),
+        rua         = COALESCE(${rua?.trim()                        ?? null}, rua),
+        slug        = COALESCE(${slugAtualizado ?? null}, slug),
+        paleta      = COALESCE(${paleta ?? null}, paleta),
+        cor_base    = COALESCE(${cor_base ?? null}, cor_base),
+        cor_destaque = COALESCE(${cor_destaque ?? null}, cor_destaque)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
     `;

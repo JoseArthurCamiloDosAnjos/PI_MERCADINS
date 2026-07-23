@@ -1,9 +1,11 @@
 import { useState, useMemo, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import './ProdutoTela.css';
 import ToastContainer from '../../components/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useTheme } from '../../context/ThemeContext';
 import ThemeToggle from '../../components/ThemeToggle';
+import { resolverPaleta } from '../../components/EscolherPaleta';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import {
   IconStore,
@@ -92,6 +94,9 @@ interface ProdutoTelaProps {
   produto: ProdutoDetalhe;
   categoriaNome?: string;
   mercado: { id: number; nome: string; logo?: string };
+  paleta?: string;
+  corBase?: string;
+  corDestaque?: string;
   onVoltar: () => void;
   onIrParaCarrinho?: () => void;
 }
@@ -105,11 +110,28 @@ function formatarPreco(valor?: string) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ProdutoTela({
-  produto, categoriaNome, mercado, onVoltar, onIrParaCarrinho,
+  produto, categoriaNome, mercado, paleta, corBase, corDestaque, onVoltar, onIrParaCarrinho,
 }: ProdutoTelaProps) {
   const { toasts, showToast, dismissToast } = useToast();
   const { tema, toggleTema } = useTheme();
   const carrinho = useCarrinho(mercado.id);
+
+  const paletaAtual = useMemo(
+    () => resolverPaleta(paleta, corBase, corDestaque),
+    [paleta, corBase, corDestaque]
+  );
+
+  const estiloPaleta = {
+    '--vt-azul-escuro': paletaAtual.cores.azulEscuro,
+    '--vt-azul-medio': paletaAtual.cores.azulMedio,
+    '--vt-azul-claro': paletaAtual.cores.azulClaro,
+    '--vt-azul-bg': paletaAtual.cores.azulBg,
+    '--vt-azul-card': paletaAtual.cores.azulCard,
+    '--vt-azul-borda': paletaAtual.cores.azulBorda,
+    '--vt-azul-item': paletaAtual.cores.azulItem,
+    '--vt-amarelo': paletaAtual.cores.amarelo,
+    '--vt-amarelo-hover': paletaAtual.cores.amareloHover,
+  } as CSSProperties;
 
   const imagens = useMemo(
     () => (produto.imagens && produto.imagens.length > 0 ? produto.imagens : produto.imagem ? [produto.imagem] : []),
@@ -152,7 +174,7 @@ export default function ProdutoTela({
   }
 
   return (
-    <div className="pd-shell" data-tema={tema}>
+    <div className="pd-shell" data-tema={tema} style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="pd-topbar">
@@ -247,17 +269,15 @@ export default function ProdutoTela({
         <section className="pd-info">
           <h1 className="pd-nome">{produto.nome}</h1>
 
-          {typeof produto.avaliacao === 'number' && (
-            <div className="pd-avaliacao">
-              {Array.from({ length: 5 }, (_, i) => (
-                <IconStar key={i} size={13} filled={i < Math.round(produto.avaliacao ?? 0)} />
-              ))}
-              <span className="pd-avaliacao-valor">{produto.avaliacao.toFixed(1)}</span>
-              {typeof produto.numAvaliacoes === 'number' && (
-                <span className="pd-avaliacao-total">({produto.numAvaliacoes} avaliações)</span>
-              )}
-            </div>
-          )}
+          <p className="pd-descricao-inline">{produto.descricao || 'Sem descrição disponível.'}</p>
+
+          <div className="pd-avaliacao">
+            <span className="pd-avaliacao-valor">{(produto.avaliacao ?? 0).toFixed(1)}</span>
+            {Array.from({ length: 5 }, (_, i) => (
+              <IconStar key={i} size={14} filled={i < Math.round(produto.avaliacao ?? 0)} />
+            ))}
+            <span className="pd-avaliacao-total">({produto.numAvaliacoes ?? 0})</span>
+          </div>
 
           <div className="pd-preco-bloco">
             <span className="pd-preco-atual">R$ {formatarPreco(produto.preco)}</span>
@@ -318,12 +338,6 @@ export default function ProdutoTela({
           </div>
         </section>
       </main>
-
-      {/* ── Descrição completa ────────────────────────────────────────── */}
-      <section className="pd-descricao">
-        <h2 className="pd-descricao-titulo">Descrição do produto</h2>
-        <p className="pd-descricao-texto">{produto.descricao || 'Sem descrição disponível.'}</p>
-      </section>
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>

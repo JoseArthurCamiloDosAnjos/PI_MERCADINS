@@ -38,6 +38,17 @@ async function migrate() {
     )
   `;
 
+  // Adiciona colunas de paleta de cores se não existirem
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS paleta TEXT DEFAULT 'classico'
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_base TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_destaque TEXT DEFAULT ''
+  `;
+
   // Adiciona coluna slug se não existir
   await sql`
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE

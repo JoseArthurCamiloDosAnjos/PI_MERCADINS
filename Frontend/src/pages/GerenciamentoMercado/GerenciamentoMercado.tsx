@@ -3,6 +3,8 @@ import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ThemeToggle from '../../components/ThemeToggle';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
   IconPackage,
@@ -30,6 +32,8 @@ interface Produto {
   nome: string;
   descricao?: string;
   imagem?: string;
+  preco?: number;
+  id_categoria: number;
   categoria: string;
 }
 
@@ -117,6 +121,137 @@ function LoadingRow() {
       <div className="gm-skeleton" style={{ width: '60%' }} />
       <div className="gm-skeleton" style={{ width: '40%' }} />
       <div className="gm-skeleton" style={{ width: '50%' }} />
+    </div>
+  );
+}
+
+// ─── Modal de edição de produto ──────────────────────────────────────────────
+
+function EditarProdutoModal({
+  produto,
+  mercadoId,
+  onFechar,
+  onSalvo,
+}: {
+  produto: Produto;
+  mercadoId: number;
+  onFechar: () => void;
+  onSalvo: (atualizado: Produto) => void;
+}) {
+  const [nome, setNome] = useState(produto.nome);
+  const [descricao, setDescricao] = useState(produto.descricao ?? '');
+  const [preco, setPreco] = useState(() => {
+    const num = Number(produto.preco ?? 0);
+    if (Number.isNaN(num) || num <= 0) return '';
+    const [reais, centavos = '00'] = num.toFixed(2).split('.');
+    const reaisFmt = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${reaisFmt},${centavos}`;
+  });
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  function handleChangePreco(valor: string) {
+    const apenasDigitos = valor.replace(/\D/g, '');
+    if (!apenasDigitos) { setPreco(''); return; }
+    setPreco(apenasDigitos);
+  }
+
+  function handleBlurPreco() {
+    if (!preco) return;
+    const apenasDigitos = preco.replace(/\D/g, '');
+    if (!apenasDigitos) { setPreco(''); return; }
+    const centavos = apenasDigitos.padStart(3, '0');
+    const reais = centavos.slice(0, -2);
+    const centavosFinal = centavos.slice(-2);
+    const reaisFormatado = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    setPreco(`${reaisFormatado},${centavosFinal}`);
+  }
+
+  async function handleSalvar() {
+    if (!nome.trim()) {
+      setErro('O nome é obrigatório.');
+      return;
+    }
+    if (!preco || preco === '0,00') {
+      setErro('O preço é obrigatório.');
+      return;
+    }
+
+    setSalvando(true);
+    setErro('');
+    try {
+      const dados = {
+        nome: nome.trim(),
+        descricao: descricao.trim() || undefined,
+        preco: Number(preco.replace(/\./g, '').replace(',', '.')),
+      };
+      const atualizado = await api.atualizarProduto(
+        mercadoId,
+        produto.id_categoria,
+        produto.id_produto,
+        dados
+      );
+      onSalvo({ ...produto, ...atualizado });
+    } catch (err: unknown) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar produto.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="gm-modal-overlay" onClick={onFechar}>
+      <div className="gm-modal" onClick={e => e.stopPropagation()}>
+        <div className="gm-modal-header">
+          <h3>Editar Produto</h3>
+          <button className="gm-modal-close" onClick={onFechar}>✕</button>
+        </div>
+
+        <div className="gm-modal-body">
+          <label className="gm-modal-label">
+            Nome
+            <input
+              className="gm-modal-input"
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              placeholder="Nome do produto"
+            />
+          </label>
+
+          <label className="gm-modal-label">
+            Descrição
+            <textarea
+              className="gm-modal-textarea"
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+              placeholder="Descrição (opcional)"
+              rows={3}
+            />
+          </label>
+
+          <label className="gm-modal-label">
+            Preço (R$)
+            <input
+              className="gm-modal-input"
+              value={preco}
+              onChange={e => handleChangePreco(e.target.value)}
+              onBlur={handleBlurPreco}
+              placeholder="0,00"
+            />
+          </label>
+
+          {erro && <p className="gm-modal-erro">{erro}</p>}
+        </div>
+
+        <div className="gm-modal-footer">
+          <button className="gm-btn-sec" onClick={onFechar} disabled={salvando}>
+            Cancelar
+          </button>
+          <button className="gm-btn-primary" onClick={handleSalvar} disabled={salvando}>
+            {salvando ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,7 +398,7 @@ function SecDashboard({ stats, financeiro, loading, slug }: {
   );
 }
 
-function SecProdutos({ produtos, loading }: { produtos: Produto[]; loading: boolean }) {
+function SecProdutos({ produtos, loading, mercadoId, onEditar }: { produtos: Produto[]; loading: boolean; mercadoId: number; onEditar: (p: Produto) => void }) {
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
@@ -294,9 +429,13 @@ function SecProdutos({ produtos, loading }: { produtos: Produto[]; loading: bool
               </div>
               <div className="gm-prod-body">
                 <p className="gm-prod-nome">{p.nome}</p>
-                <p className="gm-prod-preco">{p.categoria}</p>
+                {p.preco != null && <p className="gm-prod-preco">R$ {Number(p.preco).toFixed(2)}</p>}
+                <p className="gm-prod-categoria">{p.categoria}</p>
                 {p.descricao && <p className="gm-prod-desc">{p.descricao}</p>}
               </div>
+              <button className="gm-prod-editar" onClick={() => onEditar(p)} title="Editar produto">
+                ✎
+              </button>
             </div>
           ))}
         </div>
@@ -501,6 +640,8 @@ export default function GerenciamentoMercado({
 }) {
   const [nav, setNav] = useState(0);
   const { tema, toggleTema } = useTheme();
+  const { toasts, showToast, dismissToast } = useToast();
+  const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
 
   const [dados, setDados] = useState<DadosMercado>({
     mercado: null,
@@ -531,6 +672,17 @@ export default function GerenciamentoMercado({
 
   const { mercado, produtos, totalCategorias, totalProdutos, loading } = dados;
 
+  function handleProdutoSalvo(atualizado: Produto) {
+    setDados(prev => ({
+      ...prev,
+      produtos: prev.produtos.map(p =>
+        p.id_produto === atualizado.id_produto ? { ...p, ...atualizado } : p
+      ),
+    }));
+    setProdutoEditando(null);
+    showToast('sucesso', 'Produto atualizado com sucesso!');
+  }
+
   const stats: Stat[] = [
     { val: String(totalProdutos), lbl: 'Produtos' },
     { val: String(totalCategorias), lbl: 'Categorias' },
@@ -540,7 +692,7 @@ export default function GerenciamentoMercado({
 
   const SECTIONS = [
     <SecDashboard stats={stats} financeiro={[]} loading={loading} slug={mercado?.slug} />,
-    <SecProdutos produtos={produtos} loading={loading} />,
+    <SecProdutos produtos={produtos} loading={loading} mercadoId={mercadoId} onEditar={setProdutoEditando} />,
     <SecPedidos pedidos={[]} loading={loading} />,
     <SecAvaliacoes avaliacoes={[]} loading={loading} />,
     <SecFinanceiro financeiro={[]} loading={loading} />,
@@ -603,6 +755,17 @@ export default function GerenciamentoMercado({
           {SECTIONS[nav]}
         </div>
       </main>
+
+      {produtoEditando && (
+        <EditarProdutoModal
+          produto={produtoEditando}
+          mercadoId={mercadoId}
+          onFechar={() => setProdutoEditando(null)}
+          onSalvo={handleProdutoSalvo}
+        />
+      )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

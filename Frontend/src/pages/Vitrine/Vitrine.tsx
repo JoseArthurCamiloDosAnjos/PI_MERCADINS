@@ -6,7 +6,7 @@ import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import ToastContainer   from '../../components/Toast';
-import EscolherPaleta, { encontrarPaleta, IconPaleta } from '../../components/Escolherpaleta';
+import EscolherPaleta, { resolverPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
 import { api }          from '../../services/api';
 import { useTheme }     from '../../context/ThemeContext';
@@ -36,6 +36,7 @@ function IconSearch({ size = 15 }: { size?: number }) {
 interface Produto {
   id_produto: number;
   imagem?: string;
+  imagens?: string[];
   nome: string;
   descricao: string;
   preco?: string;
@@ -55,6 +56,8 @@ interface VitrineMercado {
   nome: string;
   descricao: string;
   paleta: string;
+  corBase?: string;
+  corDestaque?: string;
   categorias: Categoria[];
 }
 
@@ -224,8 +227,12 @@ function CategoriaSection({
 
     setSalvando(true);
     try {
+      const precoNum = Number(dados.preco.replace(/\./g, '').replace(',', '.'));
       const novo: Produto = await api.criarProduto(mercadoId, categoria.id, {
-        nome: dados.nome, descricao: dados.descricao, imagem: dados.imagens[0] ?? null,
+        nome: dados.nome, descricao: dados.descricao,
+        imagem: dados.imagens[0] ?? null,
+        imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
+        preco: Number.isFinite(precoNum) ? precoNum : 0,
       });
       setProdutos(prev => [...prev, novo]);
       setModalAberto(false);
@@ -368,6 +375,8 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           logo: mercadoData.mercado.foto_perfil ?? undefined,
           banner: mercadoData.mercado.banner ?? undefined,
           paleta: mercadoData.mercado.paleta ?? 'classico',
+          corBase: mercadoData.mercado.cor_base ?? undefined,
+          corDestaque: mercadoData.mercado.cor_destaque ?? undefined,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -381,7 +390,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     carregarDados();
   }, [mercadoId]);
 
-  const paletaAtual = useMemo(() => encontrarPaleta(dados.paleta), [dados.paleta]);
+  const paletaAtual = useMemo(
+    () => resolverPaleta(dados.paleta, dados.corBase, dados.corDestaque),
+    [dados.paleta, dados.corBase, dados.corDestaque]
+  );
 
   const estiloPaleta = {
     '--vt-azul-escuro': paletaAtual.cores.azulEscuro,
@@ -423,7 +435,13 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       return false;
     }
     try {
-      await api.atualizarMercado(dados.id, { nome: dados.nome, descricao: dados.descricao, paleta: dados.paleta });
+      await api.atualizarMercado(dados.id, {
+        nome: dados.nome,
+        descricao: dados.descricao,
+        paleta: dados.paleta,
+        cor_base: dados.corBase ?? '',
+        cor_destaque: dados.corDestaque ?? '',
+      });
       setTemAlteracoes(false);
       showToast('sucesso', 'Vitrine salva com sucesso!');
       return true;
@@ -459,6 +477,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     setTemAlteracoes(true);
   }
 
+  function handleSelecionarPaletaPersonalizada(corBase: string, corDestaque: string) {
+    setDados(prev => ({ ...prev, paleta: 'personalizada', corBase, corDestaque }));
+    setTemAlteracoes(true);
+  }
+
   // ── Editar mercado ────────────────────────────────────────────────────────
 
   async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: string }) {
@@ -471,7 +494,13 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }
     setSalvandoMercado(true);
     try {
-      await api.atualizarMercado(dados.id, { nome: form.nome, descricao: form.descricao, paleta: dados.paleta });
+      await api.atualizarMercado(dados.id, {
+        nome: form.nome,
+        descricao: form.descricao,
+        paleta: dados.paleta,
+        cor_base: dados.corBase ?? '',
+        cor_destaque: dados.corDestaque ?? '',
+      });
       setDados(prev => ({ ...prev, ...form }));
       setModalEditar(false);
       setTemAlteracoes(true);
@@ -534,7 +563,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   }
 
   return (
-    <div className="vt-shell" style={estiloPaleta}>
+    <div className="vt-shell" data-tema={tema} style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vt-topbar">
@@ -693,7 +722,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       {modalPaleta && (
         <EscolherPaleta
           paletaAtual={dados.paleta}
+          corBaseAtual={dados.corBase}
+          corDestaqueAtual={dados.corDestaque}
           onSelecionar={handleSelecionarPaleta}
+          onSelecionarPersonalizada={handleSelecionarPaletaPersonalizada}
           onFechar={() => setModalPaleta(false)}
         />
       )}

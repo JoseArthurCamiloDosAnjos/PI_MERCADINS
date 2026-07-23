@@ -49,6 +49,16 @@ async function migrate() {
     WHERE slug IS NULL
   `;
 
+  // Adiciona coluna preco na tabela produtos se não existir
+  await sql`
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS preco NUMERIC(10,2) DEFAULT 0
+  `;
+
+  // Adiciona coluna imagens (array de URLs) na tabela produtos se não existir
+  await sql`
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagens TEXT[] DEFAULT '{}'
+  `;
+
   console.log('✅ Tabelas criadas com sucesso!');
 }
 

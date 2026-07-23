@@ -7,6 +7,7 @@ export interface ProdutoCarrinho {
   descricao?: string;
   preco?: string;
   imagem?: string;
+  imagens?: string[];
 }
 
 interface ItemCarrinho {

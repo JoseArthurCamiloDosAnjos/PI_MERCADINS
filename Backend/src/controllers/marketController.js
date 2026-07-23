@@ -419,7 +419,7 @@ const dashboardMercado = async (req, res) => {
 
     // Busca todos os produtos do mercado (via categorias)
     const produtos = await sql`
-      SELECT p.id_produto, p.nome, p.descricao, p.imagem, c.nome AS categoria
+      SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.id_categoria, c.nome AS categoria
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
       WHERE c.id_mercado = ${Number(id)}

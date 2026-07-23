@@ -29,6 +29,7 @@
   overflow: hidden;
   animation: epPop 0.22s ease both;
   font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: #ffffff;
 }
 
 .ep-header {
@@ -69,12 +70,15 @@
   line-height: 1.5;
 }
 
+.ep-scroll {
+  overflow-y: auto;
+  padding: 0 1.3rem 0.4rem;
+}
+
 .ep-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  padding: 0 1.3rem 0.4rem;
-  overflow-y: auto;
 }
 
 .ep-item {
@@ -129,12 +133,96 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
+.ep-item-check--inline { position: static; }
+
+/* ─── Divisor ────────────────────────────────────────────────────────────── */
+.ep-divisor {
+  height: 1px;
+  background: #1a2f60;
+  margin: 16px 0 14px;
+}
+
+/* ─── Personalizada ──────────────────────────────────────────────────────── */
+.ep-custom {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px dashed #1a2f60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ep-custom--ativo { border-style: solid; border-color: #f5c84a; }
+
+.ep-custom-topo { display: flex; align-items: center; justify-content: space-between; }
+.ep-custom-titulo { font-size: 12.5px; font-weight: 800; color: #ffffff; }
+
+.ep-custom-swatch {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 7px;
+  transition: background 0.2s;
+}
+
+.ep-custom-campos { display: flex; gap: 12px; }
+.ep-custom-campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7a94c0;
+}
+.ep-custom-cor-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #112250;
+  border: 1.5px solid #1e3a7a;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.ep-custom-cor-wrap input[type="color"] {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ep-custom-cor-wrap span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c8d6f0;
+  text-transform: uppercase;
+}
+
+.ep-btn-aplicar-custom {
+  background: #1843a0;
+  color: #ffffff;
+  border: 1.5px solid #1e3a7a;
+  border-radius: 999px;
+  padding: 9px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ep-btn-aplicar-custom:hover { border-color: #f5c84a; color: #f5c84a; }
 
 .ep-footer {
   padding: 1rem 1.3rem 1.2rem;
   border-top: 1px solid #1a2f60;
   margin-top: 0.8rem;
+  flex-shrink: 0;
 }
 .ep-btn-concluir {
   width: 100%;

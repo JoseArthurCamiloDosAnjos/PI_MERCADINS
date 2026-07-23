@@ -130,6 +130,17 @@ export const api = {
       body:   JSON.stringify(dados),
     }),
 
+  // ── Carrinho ────────────────────────────────────────────────────────────────
+  buscarCarrinho: (mercadoId: string | number) =>
+    request(`/carrinho/${mercadoId}`),
+  salvarCarrinho: (mercadoId: string | number, itens: { id_produto: number; quantidade: number }[]) =>
+    request(`/carrinho/${mercadoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ itens }),
+    }),
+  limparCarrinho: (mercadoId: string | number) =>
+    request(`/carrinho/${mercadoId}`, { method: 'DELETE' }),
+
   // ── Usuario (Perfil) ────────────────────────────────────────────────────────
   listarFavoritos:  () => request('/usuario/favoritos'),
   listarAvaliacoes: () => request('/usuario/avaliacoes'),

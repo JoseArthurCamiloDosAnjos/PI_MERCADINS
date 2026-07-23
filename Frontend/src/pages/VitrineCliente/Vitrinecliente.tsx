@@ -13,6 +13,7 @@ import {
   IconPlus,
   IconX,
 } from '../../components/Icons';
+import { useCarrinho, type ItemCarrinho } from '../../hooks/useCarrinho';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -93,68 +94,10 @@ interface VitrineClienteProps {
   onVoltar?: () => void;
 }
 
-interface ItemCarrinho {
-  produto: Produto;
-  quantidade: number;
-}
-
 function formatarPreco(valor?: string) {
   const n = Number(valor ?? 0);
   if (Number.isNaN(n)) return valor ?? '0,00';
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ─── useCarrinho — persistido por mercado ─────────────────────────────────────
-
-function useCarrinho(mercadoId: number) {
-  const chave = `mercadins_carrinho_${mercadoId}`;
-  const [itens, setItens] = useState<ItemCarrinho[]>(() => {
-    try {
-      const salvo = localStorage.getItem(chave);
-      return salvo ? JSON.parse(salvo) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(chave, JSON.stringify(itens)); } catch { /* ignora */ }
-  }, [itens, chave]);
-
-  function adicionar(produto: Produto, quantidade: number) {
-    setItens(prev => {
-      const existente = prev.find(i => i.produto.id_produto === produto.id_produto);
-      if (existente) {
-        return prev.map(i =>
-          i.produto.id_produto === produto.id_produto
-            ? { ...i, quantidade: i.quantidade + quantidade }
-            : i
-        );
-      }
-      return [...prev, { produto, quantidade }];
-    });
-  }
-
-  function alterarQuantidade(idProduto: number, delta: number) {
-    setItens(prev =>
-      prev
-        .map(i => (i.produto.id_produto === idProduto ? { ...i, quantidade: i.quantidade + delta } : i))
-        .filter(i => i.quantidade > 0)
-    );
-  }
-
-  function remover(idProduto: number) {
-    setItens(prev => prev.filter(i => i.produto.id_produto !== idProduto));
-  }
-
-  function limpar() {
-    setItens([]);
-  }
-
-  const totalItens = itens.reduce((acc, i) => acc + i.quantidade, 0);
-  const totalValor = itens.reduce((acc, i) => acc + i.quantidade * Number(i.produto.preco ?? 0), 0);
-
-  return { itens, adicionar, alterarQuantidade, remover, limpar, totalItens, totalValor };
 }
 
 // ─── ProdutoCard (cliente) ─────────────────────────────────────────────────────

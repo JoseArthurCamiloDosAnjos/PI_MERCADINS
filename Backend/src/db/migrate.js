@@ -70,6 +70,19 @@ async function migrate() {
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagens TEXT[] DEFAULT '{}'
   `;
 
+  // Tabela de carrinho por usuário
+  await sql`
+    CREATE TABLE IF NOT EXISTS carrinho (
+      id SERIAL PRIMARY KEY,
+      id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+      id_mercado INTEGER NOT NULL REFERENCES mercados(id_mercado) ON DELETE CASCADE,
+      id_produto INTEGER NOT NULL REFERENCES produtos(id_produto) ON DELETE CASCADE,
+      quantidade INTEGER NOT NULL DEFAULT 1,
+      data_cadastro TIMESTAMP DEFAULT NOW(),
+      UNIQUE(id_usuario, id_mercado, id_produto)
+    )
+  `;
+
   console.log('✅ Tabelas criadas com sucesso!');
 }
 

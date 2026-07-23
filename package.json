@@ -7,14 +7,17 @@
     "dev": "concurrently \"npm run dev --prefix Backend\" \"npm run dev --prefix Frontend\"",
     "build": "npm install --prefix Backend",
     "start": "npm start --prefix Backend",
-    "install:all": "npm install && npm install --prefix Backend && npm install --prefix Frontend"
+    "install:all": "npm install && npm install --prefix Backend && npm install --prefix Frontend",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "wrangler": "^4.114.0"
   },
   "dependencies": {
     "lucide-react": "^1.24.0"

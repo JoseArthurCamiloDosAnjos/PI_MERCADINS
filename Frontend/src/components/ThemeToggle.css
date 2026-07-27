@@ -37,5 +37,8 @@
   justify-content: space-between;
   padding: 0 6px;
   pointer-events: none;
-  font-size: 12px;
 }
+
+.tt-icons svg { transition: color 0.35s ease; }
+.tt-root[data-tema="escuro"] .tt-icons svg { color: #fff; }
+.tt-root[data-tema="claro"] .tt-icons svg { color: #1a1a1a; }

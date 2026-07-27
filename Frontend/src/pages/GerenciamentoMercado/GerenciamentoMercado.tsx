@@ -398,7 +398,7 @@ function SecDashboard({ stats, financeiro, loading, slug }: {
   );
 }
 
-function SecProdutos({ produtos, loading, mercadoId, onEditar }: { produtos: Produto[]; loading: boolean; mercadoId: number; onEditar: (p: Produto) => void }) {
+function SecProdutos({ produtos, loading, mercadoId: _mercadoId, onEditar }: { produtos: Produto[]; loading: boolean; mercadoId: number; onEditar: (p: Produto) => void }) {
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">

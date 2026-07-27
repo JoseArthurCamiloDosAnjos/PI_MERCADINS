@@ -49,10 +49,19 @@ function debounceSalvar(mercadoId: number, itens: ItemCarrinho[]) {
 export function useCarrinho(mercadoId: number) {
   const [itens, setItens] = useState<ItemCarrinho[]>(() => loadCarrinhoLocal(mercadoId));
   const carregouBanco = useRef(false);
+  const mercadoIdAnterior = useRef(mercadoId);
+
+  useEffect(() => {
+    if (mercadoIdAnterior.current !== mercadoId && mercadoId > 0) {
+      setItens(loadCarrinhoLocal(mercadoId));
+      carregouBanco.current = false;
+      mercadoIdAnterior.current = mercadoId;
+    }
+  }, [mercadoId]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token || carregouBanco.current) return;
+    if (!token || carregouBanco.current || mercadoId <= 0) return;
 
     api.buscarCarrinho(mercadoId)
       .then(res => {

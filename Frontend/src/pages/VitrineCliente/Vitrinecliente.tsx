@@ -115,6 +115,14 @@ function ProdutoCardCliente({
 }) {
   const navigate = useNavigate();
 
+  const imagens = useMemo(() => {
+    if (produto.imagens && produto.imagens.length > 0) return produto.imagens;
+    if (produto.imagem) return [produto.imagem];
+    return [];
+  }, [produto.imagens, produto.imagem]);
+
+  const [imgIdx, setImgIdx] = useState(0);
+
   function handleClick() {
     if (slug) {
       navigate(`/vitrine/${slug}/produto/${categoriaId}/${produto.id_produto}`);
@@ -123,11 +131,30 @@ function ProdutoCardCliente({
     }
   }
 
+  function slide(dir: 'prev' | 'next') {
+    setImgIdx(prev =>
+      dir === 'prev'
+        ? (prev - 1 + imagens.length) % imagens.length
+        : (prev + 1) % imagens.length
+    );
+  }
+
   return (
     <button className="vtc-produto-card" onClick={handleClick}>
       <div className="vtc-produto-img">
-        {produto.imagem
-          ? <img src={produto.imagem} alt={produto.nome} />
+        {imagens.length > 0
+          ? (
+            <>
+              <img src={imagens[imgIdx]} alt={produto.nome} />
+              {imagens.length > 1 && (
+                <>
+                  <button className="vtc-card-seta vtc-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} aria-label="Imagem anterior">‹</button>
+                  <button className="vtc-card-seta vtc-card-seta--next" onClick={(e) => { e.stopPropagation(); slide('next'); }} aria-label="Próxima imagem">›</button>
+                  <span className="vtc-card-counter">{imgIdx + 1}/{imagens.length}</span>
+                </>
+              )}
+            </>
+          )
           : <span className="vtc-produto-img-placeholder">Sem imagem</span>
         }
       </div>
@@ -135,7 +162,6 @@ function ProdutoCardCliente({
         <p className="vtc-produto-nome">{produto.nome}</p>
         {produto.preco && <p className="vtc-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
-      <span className="vtc-produto-add-icon" title="Ver produto"><IconPlus size={15} /></span>
     </button>
   );
 }
@@ -219,12 +245,13 @@ function CarrinhoDrawer({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
+  const navigate = useNavigate();
+  const shellRef = useRef<HTMLDivElement>(null);
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca]           = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
-  const [finalizando, setFinalizando]       = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
 
   const { toasts, showToast, dismissToast } = useToast();
@@ -274,6 +301,27 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
     carregarDados();
   }, [mercadoId]);
 
+  // Garante que a tela sempre comece do topo depois que os dados (e categorias)
+  // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
+  // topbar quando o navegador reancora o scroll com múltiplas categorias/imagens.
+  // Usamos requestAnimationFrame (duas vezes) em vez de rodar direto, porque o
+  // reset precisa acontecer DEPOIS que o navegador termina de calcular o layout
+  // final da página — inclusive em navegadores como Safari, que não têm a
+  // propriedade overflow-anchor e por isso não respeitam esse CSS sozinho.
+  useEffect(() => {
+    if (carregando || !dados) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        shellRef.current?.scrollTo({ top: 0 });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [carregando, dados]);
+
   const categoriasFiltradas = useMemo(() => {
     if (!dados) return [];
     const termo = busca.trim().toLowerCase();
@@ -308,20 +356,9 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
   }
 
   async function handleFinalizarPedido() {
-    if (!dados) return;
-    setFinalizando(true);
-    try {
-      await api.criarPedido(dados.id, {
-        itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
-      });
-      showToast('sucesso', 'Pedido enviado com sucesso!');
-      carrinho.limpar();
-      setCarrinhoAberto(false);
-    } catch (e: unknown) {
-      showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.');
-    } finally {
-      setFinalizando(false);
-    }
+    if (!slug) return;
+    setCarrinhoAberto(false);
+    navigate(`/vitrine/${slug}/carrinho`);
   }
 
   if (carregando || !dados) {
@@ -338,7 +375,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       '--vt-amarelo-hover': paletaPadrao.cores.amareloHover,
     } as CSSProperties;
     return (
-      <div className="vtc-shell" data-tema={tema} style={estiloPaletaPadrao}>
+      <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaletaPadrao}>
         <div className="vtc-loading"><p>Carregando vitrine...</p></div>
       </div>
     );
@@ -358,12 +395,17 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
   } as CSSProperties;
 
   return (
-    <div className="vtc-shell" data-tema={tema} style={estiloPaleta}>
+    <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
         <div className="vtc-topbar-direita">
-          <ThemeToggle tema={tema} onToggle={toggleTema} />
+          <ThemeToggle
+            tema={tema}
+            onToggle={toggleTema}
+            corEscura={paletaAtual.cores.azulEscuro}
+            corClara={paletaAtual.cores.amarelo}
+          />
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}
             onClick={() => setCarrinhoAberto(true)}
@@ -482,7 +524,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
         onAlterarQuantidade={carrinho.alterarQuantidade}
         onRemover={carrinho.remover}
         onFinalizar={handleFinalizarPedido}
-        finalizando={finalizando}
+        finalizando={false}
       />
 
       {/* ── FAB carrinho (mobile) ────────────────────────────────────── */}

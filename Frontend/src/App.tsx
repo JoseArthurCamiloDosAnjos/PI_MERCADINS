@@ -15,6 +15,10 @@ import MercadinsPromos from './pages/MercadinsPromo/MercadinsPromo'
 import Vitrine from './pages/Vitrine/Vitrine'
 import VitrineCliente from './pages/VitrineCliente/VitrineCliente'
 import ProdutoTelaContainer from './pages/ProdutoTela/ProdutoTelaContainer'
+import CartScreen from './pages/Carrrinho/Cart'
+import { useCarrinho } from './hooks/useCarrinho'
+import { useToast } from './hooks/useToast'
+import ToastContainer from './components/Toast'
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
@@ -74,6 +78,75 @@ function ProdutoTelaWrapper() {
   )
 }
 
+// ─── Wrapper: resolve slug -> mercadoId e renderiza a tela de carrinho ───────
+
+function CartWrapper() {
+  const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
+  const [mercadoId, setMercadoId] = useState<number | null>(null)
+  const [mercadoNome, setMercadoNome] = useState<string>('')
+  const [carregando, setCarregando] = useState(true)
+  const [finalizando, setFinalizando] = useState(false)
+  const { toasts, showToast, dismissToast } = useToast()
+  const carrinho = useCarrinho(mercadoId ?? 0)
+
+  useEffect(() => {
+    if (!slug) {
+      navigate('/')
+      return
+    }
+    api.buscarMercadoPorSlug(slug)
+      .then(data => {
+        setMercadoId(data.mercado.id_mercado)
+        setMercadoNome(data.mercado.nome)
+      })
+      .catch(() => navigate('/'))
+      .finally(() => setCarregando(false))
+  }, [slug, navigate])
+
+  const itensConvertidos = carrinho.itens.map(item => ({
+    id: String(item.produto.id_produto),
+    name: item.produto.nome,
+    category: String(item.produto.id_categoria),
+    unitPrice: Number(item.produto.preco ?? 0),
+    quantity: item.quantidade,
+    imageUrl: item.produto.imagem ?? item.produto.imagens?.[0] ?? '',
+  }))
+
+  async function handleCheckout() {
+    if (!mercadoId) return
+    setFinalizando(true)
+    try {
+      await api.criarPedido(mercadoId, {
+        itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
+      })
+      showToast('sucesso', 'Pedido enviado com sucesso!')
+      carrinho.limpar()
+      navigate(`/vitrine/${slug}`)
+    } catch (e: unknown) {
+      showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.')
+    } finally {
+      setFinalizando(false)
+    }
+  }
+
+  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
+  if (!mercadoId) return null
+
+  return (
+    <>
+      <CartScreen
+        storeName={mercadoNome}
+        initialItems={itensConvertidos}
+        onBack={() => navigate(`/vitrine/${slug}`)}
+        onCheckout={handleCheckout}
+        finalizando={finalizando}
+      />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </>
+  )
+}
+
 // ─── Rotas ──────────────────────────────────────────────────────────────────
 
 function Rotas() {
@@ -111,6 +184,7 @@ function Rotas() {
       <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => setMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
       <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
+      <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
       <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
       <Route path="*"                  element={<Navigate to={destino} />} />
     </Routes>

@@ -91,9 +91,17 @@ function useProdutos(mercadoId: number, categoriaId: number, inicial: Produto[])
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro]             = useState<string | null>(null);
   const abortRef                    = useRef(false);
+  // O componente pai (Vitrine) já carrega os produtos de todas as categorias
+  // antes de montar o CategoriaSection. Se recebemos um `inicial` com dados,
+  // não há motivo para buscar de novo — e essa rebusca redundante era o que
+  // causava o "flicker" (grid de produtos -> texto "Carregando produtos…" ->
+  // grid de novo) que empurrava o scroll pra baixo depois da tela já ter
+  // sido resetada pro topo, cortando a logo/nome atrás da topbar.
+  const jaTinhaDadosIniciais        = useRef(inicial.length > 0);
 
   useEffect(() => {
     if (mercadoId === 0) return;
+    if (jaTinhaDadosIniciais.current) return; // já veio pronto do pai, não rebusca
     abortRef.current = false;
 
     const carregar = async () => {
@@ -132,11 +140,38 @@ interface ProdutoCardProps {
 }
 
 function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
+  const imagens = useMemo(() => {
+    if (produto.imagens && produto.imagens.length > 0) return produto.imagens;
+    if (produto.imagem) return [produto.imagem];
+    return [];
+  }, [produto.imagens, produto.imagem]);
+
+  const [imgIdx, setImgIdx] = useState(0);
+
+  function slide(dir: 'prev' | 'next') {
+    setImgIdx(prev =>
+      dir === 'prev'
+        ? (prev - 1 + imagens.length) % imagens.length
+        : (prev + 1) % imagens.length
+    );
+  }
+
   return (
     <div className="vt-produto-card">
       <div className="vt-produto-img">
-        {produto.imagem
-          ? <img src={produto.imagem} alt={produto.nome} />
+        {imagens.length > 0
+          ? (
+            <>
+              <img src={imagens[imgIdx]} alt={produto.nome} />
+              {imagens.length > 1 && (
+                <>
+                  <button className="vt-card-seta vt-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} aria-label="Imagem anterior">‹</button>
+                  <button className="vt-card-seta vt-card-seta--next" onClick={(e) => { e.stopPropagation(); slide('next'); }} aria-label="Próxima imagem">›</button>
+                  <span className="vt-card-counter">{imgIdx + 1}/{imagens.length}</span>
+                </>
+              )}
+            </>
+          )
           : <span className="vt-produto-img-placeholder">Sem imagem</span>
         }
       </div>
@@ -391,6 +426,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const [categoriaAtiva, setCategoriaAtiva]       = useState<number | null>(null);
   const acaoAoSair                                = useRef<'voltar' | 'fechar' | null>(null);
   const refsCategoria                             = useRef<Record<number, HTMLElement | null>>({});
+  const shellRef                                  = useRef<HTMLDivElement>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema, toggleTema } = useTheme();
@@ -440,6 +476,27 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
     carregarDados();
   }, [mercadoId]);
+
+  // Garante que a tela sempre comece do topo depois que os dados (e categorias)
+  // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
+  // topbar quando o navegador reancora o scroll com múltiplas categorias/imagens.
+  // Usamos requestAnimationFrame (duas vezes) em vez de rodar direto, porque o
+  // reset precisa acontecer DEPOIS que o navegador termina de calcular o layout
+  // final da página — inclusive em navegadores como Safari, que não têm a
+  // propriedade overflow-anchor e por isso não respeitam esse CSS sozinho.
+  useEffect(() => {
+    if (carregando) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        shellRef.current?.scrollTo({ top: 0 });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [carregando, dados]);
 
   const paletaAtual = useMemo(
     () => resolverPaleta(dados.paleta, dados.corBase, dados.corDestaque),
@@ -607,14 +664,14 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
   if (carregando) {
     return (
-      <div className="vt-shell" data-tema={tema} style={estiloPaleta}>
+      <div className="vt-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
         <div className="vt-loading"><p>Carregando vitrine...</p></div>
       </div>
     );
   }
 
   return (
-    <div className="vt-shell" data-tema={tema} style={estiloPaleta}>
+    <div className="vt-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vt-topbar">

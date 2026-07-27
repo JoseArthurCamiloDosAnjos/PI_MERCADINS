@@ -188,7 +188,12 @@ export default function ProdutoTela({
         </div>
 
         <div className="pd-topbar-direita">
-          <ThemeToggle tema={tema} onToggle={toggleTema} />
+          <ThemeToggle
+            tema={tema}
+            onToggle={toggleTema}
+            corEscura={paletaAtual.cores.azulEscuro}
+            corClara={paletaAtual.cores.amarelo}
+          />
           <button
             className={`pd-btn-carrinho ${carrinho.totalItens > 0 ? 'pd-btn-carrinho--ativo' : ''}`}
             onClick={onIrParaCarrinho}

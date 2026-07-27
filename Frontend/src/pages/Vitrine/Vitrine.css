@@ -35,15 +35,16 @@
 
 /* ─── Shell ──────────────────────────────────────────────────────────────── */
 .vt-shell {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   width: 100%;
   background: var(--vt-azul-bg);
   font-family: var(--vt-font);
   color: var(--vt-branco);
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
   position: relative;
+  overflow: hidden;
   transition: background 0.3s ease;
 }
 
@@ -179,7 +180,8 @@
 .vt-banner {
   width: 100%;
   height: 160px;
-  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 .vt-banner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .vt-banner-fallback {
@@ -199,6 +201,9 @@
   animation: vtFadeUp 0.4s ease both;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
 }
 
 .vt-header-identity {
@@ -352,6 +357,8 @@
   width: 100%;
   box-sizing: border-box;
   background: var(--vt-azul-bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Categoria ──────────────────────────────────────────────────────────── */
@@ -472,6 +479,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
 }
 .vt-produto-img img { width: 100%; height: 100%; object-fit: cover; }
 .vt-produto-img-placeholder { font-size: 10px; color: var(--vt-cinza); font-weight: 600; text-align: center; padding: 0 8px; }
@@ -479,7 +487,7 @@
 .vt-produto-info { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .vt-produto-nome { font-size: 12.5px; font-weight: 800; color: var(--vt-branco); margin: 0; line-height: 1.3; }
 .vt-produto-preco { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo); margin: 0; }
-.vt-produto-desc { font-size: 11px; color: var(--vt-cinza); margin: 2px 0 0; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vt-produto-desc { font-size: 11px; color: var(--vt-cinza); margin: 2px 0 0; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
 
 /* Botão editar produto */
 .vt-produto-btn-editar {
@@ -590,6 +598,46 @@
   box-shadow: 0 6px 24px rgba(245, 200, 74, 0.4);
 }
 
+/* ─── Carousel nos cards de produto ──────────────────────────────────────── */
+.vt-card-seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  z-index: 3;
+  line-height: 1;
+  padding: 0;
+}
+.vt-produto-card:hover .vt-card-seta { opacity: 1; }
+.vt-card-seta:hover { background: rgba(0, 0, 0, 0.8); }
+.vt-card-seta--prev { left: 4px; }
+.vt-card-seta--next { right: 4px; }
+
+.vt-card-counter {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  z-index: 3;
+}
+
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 780px) {
   .vt-header { padding: 0 1.4rem 1.2rem; }
@@ -606,12 +654,17 @@
   .vt-nome-mercado { font-size: 17px; }
   .vt-produto-card { width: calc(50% - 6px); }
   .vt-produtos-grid { justify-content: space-between; }
+  .vt-main { padding: 1.2rem 1rem; gap: 1.6rem; }
+  .vt-banner { height: 120px; }
+  .vt-tags-row { gap: 6px; }
+  .vt-tag { padding: 5px 12px; font-size: 11.5px; }
+  .vt-header { padding: 0 1rem 1rem; }
 }
 
-@media (max-width: 420px) {
-  .vt-produto-card { width: calc(50% - 6px); }
-  .vt-produtos-grid { justify-content: space-between; }
-  .vt-btn-paleta span { display: none; }
+@media (max-width: 400px) {
+  .vt-produto-card { width: 100%; }
+  .vt-header { padding: 0 0.8rem 0.8rem; }
+  .vt-busca-wrap { padding: 8px 12px; }
 }
 
 /* ─── Modo claro ─────────────────────────────────────────────────────────── */

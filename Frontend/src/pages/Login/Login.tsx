@@ -84,6 +84,9 @@ export default function Login() {
 
       <div className="right">
         <div className="form-card">
+          <div className="mobile-logo">
+            <img className="mobile-logo-img" src={logoImg} alt="Mercadins" />
+          </div>
           <div className="form-header">
             <h1>
               Bem Vindo

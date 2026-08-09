@@ -119,6 +119,11 @@ html, body {
   text-transform: uppercase;
 }
 
+/* ── MOBILE LOGO (inside card) ── */
+.mobile-logo {
+  display: none;
+}
+
 /* ── BACK BUTTON ── */
 .btn-back {
   position: absolute;
@@ -442,25 +447,25 @@ html, body {
     overflow-y: auto;
     background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
   }
-  .left {
-    width: 100%;
-    height: auto;
-    padding: 20px 0 8px;
-    background: rgba(255,255,255,0.95);
-    position: relative;
+  .left { display: none; }
+  .mobile-logo {
     display: flex;
-    align-items: center;
     justify-content: center;
-    border-radius: 24px 24px 0 0;
+    margin-bottom: 16px;
   }
-  .left-bg, .circle, .btn-back, .logo-tagline { display: none; }
-  .logo-img { width: 72px; height: 72px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-  .logo-wrap { gap: 0; animation: none; }
+  .mobile-logo-img {
+    width: 68px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
   .right {
-    padding: 16px 20px;
+    padding: 28px 24px;
     overflow-y: auto;
     min-height: auto;
     background: rgba(255,255,255,0.95);
+    border-radius: 24px 24px 0 0;
   }
   .form-card { animation: none; padding: 0; }
   .form-header { margin-bottom: 12px; }
@@ -480,9 +485,8 @@ html, body {
 }
 
 @media (max-width: 480px) {
-  .left { padding: 14px 0 6px; border-radius: 20px 20px 0 0; }
-  .logo-img { width: 58px; height: 58px; border-radius: 14px; }
-  .right { padding: 14px 14px; }
+  .mobile-logo-img { width: 56px; height: 56px; border-radius: 14px; }
+  .right { padding: 20px 16px; border-radius: 20px 20px 0 0; }
   .form-header { margin-bottom: 10px; }
   .form-header h1 { font-size: 20px; }
   .form-header p { font-size: 11px; }

@@ -205,6 +205,9 @@ export default function Register() {
       {/* Right panel */}
       <div className="right">
         <div className="form-card">
+          <div className="mobile-logo">
+            <img className="mobile-logo-img" src={logoImg} alt="Mercadins" />
+          </div>
           <div className="form-header">
             <h1>Vamos<br />Começar! 🚀</h1>
             <p>Crie a sua conta aqui abaixo!</p>

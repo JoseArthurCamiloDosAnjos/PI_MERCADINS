@@ -7,6 +7,7 @@ import EsqueciSenhaModal from "../../components/EsqueciSenhaModal";
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import logoImg from "../../assets/logo.jpeg";
+import logo2Img from "../../assets/logo2.png";
 
 export default function Login() {
   const { login } = useAuth();
@@ -85,7 +86,7 @@ export default function Login() {
       <div className="right">
         <div className="form-card">
           <div className="mobile-logo">
-            <img className="mobile-logo-img" src={logoImg} alt="Mercadins" />
+            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
           </div>
           <div className="form-header">
             <h1>

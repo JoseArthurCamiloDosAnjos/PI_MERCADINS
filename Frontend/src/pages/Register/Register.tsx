@@ -9,6 +9,7 @@ import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
 import logoImg from "../../assets/logo.jpeg";
+import logo2Img from "../../assets/logo2.png";
 
 interface FieldState {
   status: "" | "error" | "success";
@@ -206,7 +207,7 @@ export default function Register() {
       <div className="right">
         <div className="form-card">
           <div className="mobile-logo">
-            <img className="mobile-logo-img" src={logoImg} alt="Mercadins" />
+            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
           </div>
           <div className="form-header">
             <h1>Vamos<br />Começar! 🚀</h1>

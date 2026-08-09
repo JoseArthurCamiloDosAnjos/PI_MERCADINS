@@ -348,6 +348,42 @@
   font-weight: 500;
 }
 
+/* ── Code inputs (verificação por código) ── */
+.modal-code-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.modal-code-input {
+  width: 48px;
+  height: 56px;
+  border: 2px solid #dde3ef;
+  border-radius: 14px;
+  text-align: center;
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0d2a5e;
+  background: #f0f2f7;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+
+.modal-code-input:focus {
+  border-color: #1a3a7a;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(26, 58, 122, 0.1);
+}
+
+.modal-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e05252;
+  margin-bottom: 12px;
+}
+
 .modal-link {
   background: none;
   border: none;
@@ -399,6 +435,13 @@
   .modal-desc { font-size: 13px; }
   .modal-steps { gap: 4px; }
   .modal-step span { font-size: 10px; }
+  .modal-code-input {
+    width: 42px;
+    height: 48px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+  .modal-code-inputs { gap: 8px; }
   .modal-field input {
     padding: 12px 14px 12px 42px;
     font-size: 14px;

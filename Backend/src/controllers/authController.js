@@ -42,16 +42,16 @@ const signUp = async (req, res) => {
       return res.status(409).json({ erro: "Email já cadastrado" });
 
     const senhaHash = await bcrypt.hash(senha, 10);
-    const token = crypto.randomBytes(32).toString("hex");
+    const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // ✅ Salva direto no banco com email_verificado = FALSE
     await sql`
       INSERT INTO usuarios (nome, email, senha, telefone, email_verificado, token_verificacao, token_expiracao)
-      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, FALSE, ${token}, ${expiracao})
+      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, FALSE, ${codigoVerificacao}, ${expiracao})
     `;
 
-    await enviarEmailVerificacao(email, token);
+    await enviarEmailVerificacao(email, codigoVerificacao);
     console.log("✅ Email enviado para:", email);
 
     res
@@ -63,26 +63,26 @@ const signUp = async (req, res) => {
   }
 };
 
-// verificarEmail — busca no banco
+// verificarEmail — busca no banco por código
 const verificarEmail = async (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ erro: "Token não informado" });
+  const { codigo } = req.body;
+  if (!codigo) return res.status(400).json({ erro: "Código não informado" });
 
   try {
     const sql = await conectar();
 
     const [usuario] = await sql`
       SELECT id_usuario, token_expiracao FROM usuarios
-      WHERE token_verificacao = ${token} AND email_verificado = FALSE
+      WHERE token_verificacao = ${codigo} AND email_verificado = FALSE
     `;
 
     if (!usuario)
-      return res.status(400).json({ erro: "Token inválido ou expirado" });
+      return res.status(400).json({ erro: "Código inválido ou expirado" });
 
     if (new Date() > new Date(usuario.token_expiracao)) {
       return res
         .status(400)
-        .json({ erro: "Token expirado. Faça o cadastro novamente." });
+        .json({ erro: "Código expirado. Faça o cadastro novamente." });
     }
 
     await sql`

@@ -19,7 +19,7 @@ function autenticar(req, res, next) {
 router.post('/register',        signUp);
 router.post('/login',           signIn);
 router.get('/perfil',           autenticar, getPerfil);
-router.get('/verificar-email',  verificarEmail);
+router.post('/verificar-email',  verificarEmail);
 router.post('/esqueci-senha',   esqueciSenha);
 router.post('/redefinir-senha', redefinirSenha);
 router.post('/trocar-senha', autenticar, solicitarTrocaSenha);

@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
-import ThemeToggle from "../../components/ThemeToggle";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -97,7 +95,6 @@ export default function MercadinsPromo() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { usuario, temMercado } = useAuth();
-  const { tema, toggleTema } = useTheme();
 
   useEffect(() => {
     const sections = document.querySelectorAll(
@@ -140,13 +137,11 @@ export default function MercadinsPromo() {
             <a href="#planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
             <a href="#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
             <div className="mp-nav-mobile-actions">
-              <ThemeToggle tema={tema} onToggle={toggleTema} />
               <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
               <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
             </div>
           </div>
           <div className="mp-nav-right">
-            <ThemeToggle tema={tema} onToggle={toggleTema} />
             <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
             <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
           </div>

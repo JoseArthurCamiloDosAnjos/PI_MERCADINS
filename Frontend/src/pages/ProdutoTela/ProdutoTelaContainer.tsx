@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ProdutoTela from './ProdutoTela';
 import type { ProdutoDetalhe } from './ProdutoTela';
 import { api } from '../../services/api';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 interface ProdutoTelaContainerProps {
   mercadoId: number;
@@ -65,18 +66,21 @@ export default function ProdutoTelaContainer({
   }, [mercadoId, categoriaId, produtoId]);
 
   if (carregando) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <p>Carregando produto...</p>
-      </div>
-    );
+    return <LoadingOverlay mensagem="Carregando produto..." />;
   }
 
   if (!produto) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: 12 }}>
-        <p>Produto não encontrado.</p>
-        <button onClick={onVoltar}>Voltar</button>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: 16, background: 'var(--azul-bg)', color: 'var(--branco)', fontFamily: 'var(--font)' }}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+        <p style={{ fontSize: 16, fontWeight: 700 }}>Produto não encontrado</p>
+        <button onClick={onVoltar} style={{ padding: '10px 24px', borderRadius: 12, border: 'none', background: 'var(--amarelo)', color: 'var(--azul-escuro)', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
+          Voltar
+        </button>
       </div>
     );
   }

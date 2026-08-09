@@ -547,7 +547,7 @@
   .gm-nav-label { display: none; }
   .gm-nav-btn { padding: 9px; }
   .gm-sidebar-footer { margin-top: 0; border-top: none; padding: 0; }
-  .gm-main { min-height: 0; }
+  .gm-main { min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .gm-content { padding: 1.2rem; }
   .gm-info-grid { grid-template-columns: 1fr; }
 }

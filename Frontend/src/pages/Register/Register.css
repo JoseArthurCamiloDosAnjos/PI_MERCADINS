@@ -148,7 +148,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 40px;
+  padding: 24px 48px;
   background: var(--white);
   position: relative;
   overflow-y: auto;
@@ -169,7 +169,7 @@ html, body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   animation: fadeUp 0.9s 0.15s ease both;
   padding: 8px 0;
 }
@@ -187,11 +187,12 @@ html, body {
 
 .form-header h1 {
   font-family: 'Sora', sans-serif;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--navy);
   line-height: 1.2;
   margin-bottom: 4px;
+  overflow-wrap: break-word;
 }
 
 .form-header p {

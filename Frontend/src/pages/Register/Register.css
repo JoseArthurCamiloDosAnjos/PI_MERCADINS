@@ -433,6 +433,51 @@ html, body {
   .right { padding: 28px 24px; }
 }
 
+@media (max-width: 480px) {
+  .left {
+    height: 180px;
+  }
+  .logo-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+  }
+  .logo-tagline {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+  }
+  .right {
+    padding: 20px 16px;
+  }
+  .form-header h1 {
+    font-size: 24px;
+  }
+  .form-header p {
+    font-size: 13px;
+  }
+  .field input {
+    padding: 12px 42px 12px 42px;
+    font-size: 14px;
+  }
+  .btn {
+    padding: 13px;
+    font-size: 15px;
+  }
+  .toast {
+    min-width: auto;
+    max-width: calc(100vw - 40px);
+  }
+}
+
+@media (max-width: 380px) {
+  .form-header h1 {
+    font-size: 22px;
+  }
+  .form-card {
+    max-width: 100%;
+  }
+}
+
 /* ── Toasts ── */
 #toast-container {
   position: fixed;

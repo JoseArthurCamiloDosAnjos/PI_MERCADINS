@@ -61,3 +61,17 @@
   height: 1px;
   background: var(--input-border);
 }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .rm-grid {
+    grid-template-columns: 1fr;
+  }
+  .rm-cep-row {
+    flex-direction: column;
+  }
+  .rm-cep-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+}

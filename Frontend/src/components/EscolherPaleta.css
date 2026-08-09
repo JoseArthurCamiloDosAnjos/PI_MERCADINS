@@ -237,3 +237,30 @@
   transition: background 0.2s;
 }
 .ep-btn-concluir:hover { background: #f7d567; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+  .ep-modal {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px;
+  }
+  .ep-grid {
+    grid-template-columns: 1fr;
+  }
+  .ep-header {
+    padding: 0.9rem 1rem 0.5rem;
+  }
+  .ep-sub {
+    margin: 0 1rem 0.8rem;
+  }
+  .ep-scroll {
+    padding: 0 1rem 0.3rem;
+  }
+  .ep-footer {
+    padding: 0.8rem 1rem 1rem;
+  }
+  .ep-custom-campos {
+    flex-direction: column;
+  }
+}

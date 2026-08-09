@@ -1,0 +1,9 @@
+services:
+  - type: static_site
+    name: mercadins-frontend
+    runtime: static
+    buildCommand: cd Frontend && npm install && npm run build
+    staticPublishPath: Frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://pi-mercadins.onrender.com/api

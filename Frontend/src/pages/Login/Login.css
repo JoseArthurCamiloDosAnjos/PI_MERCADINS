@@ -420,6 +420,20 @@ html, body {
   .form-card { max-width: 100%; }
 }
 
+/* ── XIAOMI / POCO (viewport ~393-412px, tela 20:9 alta) ── */
+@media (max-width: 412px) and (min-width: 381px) {
+  .login-page { min-height: 100dvh; }
+  .mobile-logo { margin-bottom: 12px; }
+  .mobile-logo-img { width: 110px; height: 110px; }
+  .right { padding: 24px 20px; }
+  .form-header { margin-bottom: 16px; }
+  .form-header h1 { font-size: 24px; }
+  .field { margin-bottom: 10px; }
+  .field input { padding: 12px 14px 12px 40px; font-size: 13px; }
+  .btn { padding: 12px; font-size: 14px; }
+  .forgot { margin-bottom: 16px; }
+}
+
 /* ── TOASTS ── */
 #toast-container {
   position: fixed;

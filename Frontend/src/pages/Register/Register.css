@@ -502,6 +502,23 @@ html, body {
   .form-card { max-width: 100%; }
 }
 
+/* ── XIAOMI / POCO (viewport ~393-412px, tela 20:9 alta) ── */
+@media (max-width: 412px) and (min-width: 381px) {
+  .register-page { min-height: 100dvh; }
+  .mobile-logo { margin-bottom: 12px; }
+  .mobile-logo-img { width: 100px; height: 100px; }
+  .right { padding: 20px 18px; }
+  .form-header { margin-bottom: 14px; }
+  .form-header h1 { font-size: 24px; }
+  .field { margin-bottom: 8px; }
+  .field input { padding: 11px 36px 11px 36px; font-size: 13px; }
+  .btn { padding: 11px; font-size: 13px; }
+  .field-msg { font-size: 10px; }
+  .senha-strength .strength-label { font-size: 10px; min-width: 45px; }
+  .login-link { margin-top: 10px; font-size: 12px; }
+  .badge { margin-top: 10px; font-size: 10px; }
+}
+
 /* ── Toasts ── */
 #toast-container {
   position: fixed;

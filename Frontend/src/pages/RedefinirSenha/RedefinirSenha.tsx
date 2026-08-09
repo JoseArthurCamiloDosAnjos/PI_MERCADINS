@@ -45,7 +45,7 @@ export default function RedefinirSenha() {
 
     setSalvando(true);
     try {
-      const res = await fetch(`${BASE_URL}/auth/redefinir-senha`, {
+      const res = await fetch(`${BASE_URL}/api/auth/redefinir-senha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, novaSenha: form.novaSenha, confirmarSenha: form.confirmarSenha }),

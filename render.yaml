@@ -1,7 +1,24 @@
 services:
+  - type: web
+    name: mercadins-backend
+    runtime: node
+    plan: free
+    buildCommand: cd Backend && npm install
+    startCommand: cd Backend && node src/server.js
+    envVars:
+      - key: FRONTEND_URL
+        value: https://mercadins.com.br
+      - key: DATABASE_URL_NEON
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
   - type: static_site
     name: mercadins-frontend
     runtime: static
+    plan: free
     buildCommand: cd Frontend && npm install && npm run build
     staticPublishPath: ./Frontend/dist
     routes:
@@ -10,4 +27,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://pi-mercadins.onrender.com/api
+        value: https://pi-mercadins.onrender.com

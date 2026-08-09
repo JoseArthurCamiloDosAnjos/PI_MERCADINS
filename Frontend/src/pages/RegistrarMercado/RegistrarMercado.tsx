@@ -93,7 +93,7 @@ export default function RegistrarMercado() {
 
     setSalvando(true);
     try {
-      const res = await fetch(`${BASE_URL}/mercados`, {
+      const res = await fetch(`${BASE_URL}/api/mercados`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

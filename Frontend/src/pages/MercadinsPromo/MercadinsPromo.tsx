@@ -141,11 +141,13 @@ export default function MercadinsPromo() {
             <a href="#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
             <div className="mp-nav-mobile-actions">
               <ThemeToggle tema={tema} onToggle={toggleTema} />
+              <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
               <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
             </div>
           </div>
           <div className="mp-nav-right">
             <ThemeToggle tema={tema} onToggle={toggleTema} />
+            <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
             <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
           </div>
           <button

@@ -98,6 +98,17 @@
 }
 .mp-btn-nav:hover { background: #FFD740; transform: translateY(-1px); }
 
+.mp-btn-login {
+  background: transparent;
+  color: #ffffff;
+  border: 1.5px solid rgba(255,255,255,0.4);
+}
+.mp-btn-login:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: #F5C000;
+  color: #F5C000;
+}
+
 /* ── HERO ───────────────────────────────────────────────── */
 .mp-hero {
   position: relative;
@@ -1575,3 +1586,5 @@
 .tema-claro .mp-nav-links { background: #ffffff; }
 .tema-claro .mp-nav-links a { color: rgba(13,34,81,0.75); border-bottom-color: rgba(13,34,81,0.08); }
 .tema-claro .mp-nav-links a:hover { color: #F5C000; }
+.tema-claro .mp-btn-login { color: #0D2251; border-color: rgba(13,34,81,0.3); }
+.tema-claro .mp-btn-login:hover { background: rgba(13,34,81,0.06); border-color: #F5C000; color: #0D2251; }

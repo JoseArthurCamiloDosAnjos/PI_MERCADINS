@@ -8,6 +8,7 @@ import { BASE_URL } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
+import logoImg from "../../assets/logo.jpeg";
 
 interface FieldState {
   status: "" | "error" | "success";
@@ -170,7 +171,7 @@ export default function Register() {
   }
 
   return (
-    <>
+    <div className="register-page">
       {showVerificacaoModal && (
         <EmailVerificacaoModal
           email={emailCadastrado}
@@ -194,11 +195,8 @@ export default function Register() {
         <div className="logo-wrap">
           <img
             className="logo-img"
-            src="../src/assets/logo.jpeg"
+            src={logoImg}
             alt="Mercadins Logo"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -355,6 +353,6 @@ export default function Register() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

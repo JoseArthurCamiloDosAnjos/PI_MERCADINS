@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../../components/EsqueciSenhaModal";
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
+import logoImg from "../../assets/logo.jpeg";
 
 export default function Login() {
   const { login } = useAuth();
@@ -46,7 +47,7 @@ export default function Login() {
     }
   }
   return (
-    <>
+    <div className="login-page">
       {showEsqueciModal && (
         <EsqueciSenhaModal onClose={() => setShowEsqueciModal(false)} />
       )}
@@ -74,11 +75,8 @@ export default function Login() {
         <div className="logo-wrap">
           <img
             className="logo-img"
-            src="../src/assets/logo.jpeg"
+            src={logoImg}
             alt="Mercadins Logo"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -200,6 +198,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

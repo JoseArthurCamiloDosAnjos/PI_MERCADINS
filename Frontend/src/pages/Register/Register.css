@@ -19,22 +19,24 @@ html, body {
   font-family: 'Nunito', sans-serif;
 }
 
-#root {
+.register-page {
   display: flex;
+  width: 100%;
   min-height: 100vh;
-  background: var(--white);
   overflow: hidden;
+  flex-direction: row;
 }
 
 @media (max-width: 768px) {
-  #root {
+  .register-page {
     flex-direction: column;
     overflow-y: auto;
+    background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
   }
 }
 
 /* ── TEMA CLARO ── */
-.tema-claro #root { background: #f0f2f7; }
+.tema-claro .register-page { background: #f0f2f7; }
 .tema-claro .right { background: #f0f2f7; }
 .tema-claro .form-header h1 { color: #0d2a5e; }
 .tema-claro .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
@@ -435,7 +437,7 @@ html, body {
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   body { flex-direction: column; overflow: auto; }
-  #root {
+  .register-page {
     flex-direction: column;
     overflow-y: auto;
     background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);

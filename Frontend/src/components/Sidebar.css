@@ -224,14 +224,26 @@
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
+    height: 100dvh;
     width: 260px;
     z-index: 70;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     box-shadow: 10px 0 30px rgba(0,0,0,0.4);
+    overflow-y: auto;
   }
   .sb-root.sb-open { transform: translateX(0); }
+
+  .sb-profile { padding: 1.2rem 1.2rem 1rem; }
+  .sb-avatar { width: 50px; height: 50px; font-size: 18px; margin-bottom: 0.6rem; }
+  .sb-nome { font-size: 14px; }
+  .sb-email { font-size: 10px; }
+  .sb-nav { padding: 0.6rem 0.6rem; gap: 2px; }
+  .sb-nav-btn { padding: 9px 12px; font-size: 12px; }
+  .sb-footer { padding: 0.8rem 0.6rem; }
+  .sb-create-btn { padding: 9px 12px; font-size: 12px; margin-bottom: 6px; }
+  .sb-logout-btn { padding: 9px 12px; font-size: 12px; }
+  .sb-theme-row { margin-bottom: 8px; }
 
   .sb-close { display: flex; }
 

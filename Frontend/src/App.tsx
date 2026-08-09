@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
@@ -193,12 +193,12 @@ function Rotas() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AuthProvider>
         <ThemeProvider>
           <Rotas />
         </ThemeProvider>
       </AuthProvider>
-    </HashRouter>
+    </BrowserRouter>
   )
 }

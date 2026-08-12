@@ -47,7 +47,7 @@ const enviarEmailVerificacao = async (email, codigo) => {
 
 
 const enviarEmailRecuperacao = async (email, token) => {
-  const link = `${process.env.Mercadins_URL}/redefinir-senha?token=${token}`;
+  const link = `${process.env.BASE_URL}/redefinir-senha?token=${token}`;
 
 
   await resend.emails.send({

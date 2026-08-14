@@ -23,7 +23,7 @@ router.post('/verificar-email',  verificarEmail);
 router.post('/esqueci-senha',   esqueciSenha);
 router.post('/redefinir-senha', redefinirSenha);
 router.post('/trocar-senha', autenticar, solicitarTrocaSenha);
-router.get('/confirmar-troca-senha', confirmarTrocaSenha);
+router.post('/confirmar-troca-senha', confirmarTrocaSenha);
 router.put('/perfil', autenticar, atualizarPerfil);
 
 module.exports = router;

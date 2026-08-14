@@ -148,22 +148,22 @@ const signIn = async (req, res) => {
   }
 };
 const confirmarTrocaSenha = async (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ erro: 'Token não informado.' });
+  const { codigo } = req.body;
+  if (!codigo) return res.status(400).json({ erro: 'Código não informado.' });
 
   try {
     const sql = await conectar();
 
-    // busca pelo token (que está concatenado com a hash)
+    // busca pelo código (que está concatenado com a hash)
     const [usuario] = await sql`
       SELECT id_usuario, token_verificacao, token_expiracao
       FROM usuarios
-      WHERE token_verificacao LIKE ${token + '|%'}
+      WHERE token_verificacao LIKE ${codigo + '|%'}
     `;
 
-    if (!usuario) return res.status(400).json({ erro: 'Token inválido.' });
+    if (!usuario) return res.status(400).json({ erro: 'Código inválido.' });
     if (new Date() > new Date(usuario.token_expiracao))
-      return res.status(400).json({ erro: 'Token expirado.' });
+      return res.status(400).json({ erro: 'Código expirado.' });
 
     const novaSenhaHash = usuario.token_verificacao.split('|')[1];
 
@@ -209,26 +209,26 @@ const esqueciSenha = async (req, res) => {
       });
     }
 
-    // gera token
-    const token =
-      crypto.randomBytes(32).toString("hex");
+    // gera código numérico de 6 dígitos
+    const codigo =
+      Math.floor(100000 + Math.random() * 900000).toString();
 
-    // expira em 1 hora
+    // expira em 15 minutos
     const expiracao =
-      new Date(Date.now() + 60 * 60 * 1000);
+      new Date(Date.now() + 15 * 60 * 1000);
 
-    // salva token
+    // salva código
     await sql`
       UPDATE usuarios
-      SET token_verificacao = ${token},
+      SET token_verificacao = ${codigo},
           token_expiracao = ${expiracao}
       WHERE email = ${email}
     `;
 
-    // envia email
+    // envia email com código
     await enviarEmailRecuperacao(
       email,
-      token
+      codigo
     );
 
     res.json({
@@ -265,13 +265,13 @@ const redefinirSenha =
   async (req, res) => {
 
     const {
-      token,
+      codigo,
       novaSenha,
       confirmarSenha
     } = req.body;
 
     if (
-      !token ||
+      !codigo ||
       !novaSenha ||
       !confirmarSenha
     ) {
@@ -311,26 +311,26 @@ const redefinirSenha =
           id_usuario,
           token_expiracao
         FROM usuarios
-        WHERE token_verificacao = ${token}
+        WHERE token_verificacao = ${codigo}
       `;
 
       if (usuario.length === 0) {
 
         return res.status(400).json({
-          erro: "Token inválido"
+          erro: "Código inválido"
         });
       }
 
       const user = usuario[0];
 
-      // token expirado
+      // código expirado
       if (
         new Date() >
         new Date(user.token_expiracao)
       ) {
 
         return res.status(400).json({
-          erro: "Token expirado"
+          erro: "Código expirado. Solicite um novo código."
         });
       }
 
@@ -394,21 +394,21 @@ const solicitarTrocaSenha = async (req, res) => {
     const [usuario] = await sql`SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
-    // guarda nova senha hasheada no token_verificacao junto com separador
+    // gera código numérico de 6 dígitos
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
     const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiracao = new Date(Date.now() + 60 * 60 * 1000);
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000);
 
-    // salva token + hash concatenados separados por "|"
+    // salva código + hash concatenados separados por "|"
     await sql`
       UPDATE usuarios SET
-        token_verificacao = ${token + '|' + novaSenhaHash},
+        token_verificacao = ${codigo + '|' + novaSenhaHash},
         token_expiracao   = ${expiracao}
       WHERE id_usuario = ${req.usuarioId}
     `;
 
-    await enviarEmailRecuperacao(usuario.email, token);
-    res.json({ mensagem: 'Email de confirmação enviado.' });
+    await enviarEmailRecuperacao(usuario.email, codigo);
+    res.json({ mensagem: 'Código de confirmação enviado para seu email.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao solicitar troca de senha.' });

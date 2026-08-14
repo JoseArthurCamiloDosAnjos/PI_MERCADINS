@@ -26,7 +26,7 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') ?? '';
+  const codigo = searchParams.get('codigo') ?? '';
   const navigate = useNavigate();
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -41,14 +41,14 @@ export default function RedefinirSenha() {
     if (!form.novaSenha) return showToast('erro', 'Digite a nova senha.');
     if (form.novaSenha.length < 6) return showToast('erro', 'Mínimo 6 caracteres.');
     if (form.novaSenha !== form.confirmarSenha) return showToast('erro', 'As senhas não coincidem.');
-    if (!token) return showToast('erro', 'Token inválido. Solicite um novo link.');
+    if (!codigo) return showToast('erro', 'Código inválido. Solicite um novo código.');
 
     setSalvando(true);
     try {
       const res = await fetch(`${BASE_URL}/api/auth/redefinir-senha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, novaSenha: form.novaSenha, confirmarSenha: form.confirmarSenha }),
+        body: JSON.stringify({ codigo, novaSenha: form.novaSenha, confirmarSenha: form.confirmarSenha }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.erro || 'Erro ao redefinir senha.');

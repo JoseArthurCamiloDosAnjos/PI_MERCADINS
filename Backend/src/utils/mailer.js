@@ -46,13 +46,11 @@ const enviarEmailVerificacao = async (email, codigo) => {
 
 
 
-const enviarEmailRecuperacao = async (email, token) => {
-  const link = `${process.env.BASE_URL}/redefinir-senha?token=${token}`;
-
+const enviarEmailRecuperacao = async (email, codigo) => {
   await resend.emails.send({
     from: EmailDominio,
     to: email,
-    subject: "Recuperação de senha — Mercadins",
+    subject: "Código de recuperação de senha — Mercadins",
     html: `
       <!DOCTYPE html>
       <html>
@@ -64,34 +62,19 @@ const enviarEmailRecuperacao = async (email, token) => {
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
           </div>
 
-          <div style="padding: 36px 32px;">
+          <div style="padding: 36px 32px; text-align: center;">
             <p style="color: #0d2a5e; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Olá!</p>
             <p style="color: #8892a4; font-size: 14px; line-height: 1.6; margin: 0 0 28px;">
-              Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha.
+              Recebemos uma solicitação para redefinir a senha da sua conta. Use o código abaixo para criar uma nova senha.
             </p>
 
-            <div style="text-align: center; margin: 0 0 28px;">
-              <a href="${link}" style="
-                display: inline-block;
-                background: #0d2a5e;
-                color: #ffffff;
-                text-decoration: none;
-                padding: 14px 32px;
-                border-radius: 12px;
-                font-size: 15px;
-                font-weight: 700;
-                letter-spacing: 0.3px;
-              ">Redefinir minha senha</a>
+            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 28px;">
+              <span style="font-size: 36px; font-weight: 800; color: #0d2a5e; letter-spacing: 8px;">${codigo}</span>
             </div>
-
-            <p style="color: #8892a4; font-size: 13px; line-height: 1.6; margin: 0 0 8px;">
-              Se o botão não funcionar, copie e cole o link abaixo no seu navegador:
-            </p>
-            <p style="background: #f0f2f7; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #1a3a7a; word-break: break-all; margin: 0 0 24px;">${link}</p>
 
             <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
               <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
-                ⏱ Este link expira em <strong>1 hora</strong>.<br/>
+                ⏱ Este código expira em <strong>15 minutos</strong>.<br/>
                 Se você não solicitou a redefinição, ignore este email — sua senha permanece a mesma.
               </p>
             </div>

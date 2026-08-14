@@ -164,9 +164,10 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
 function TelaSeguranca() {
   const { usuario } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
-  const [etapa, setEtapa] = useState<'form' | 'enviado'>('form');
+  const [etapa, setEtapa] = useState<'form' | 'codigo' | 'sucesso'>('form');
   const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState({ novaSenha: '', confirmarSenha: '' });
+  const [codigo, setCodigo] = useState('');
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
 
@@ -179,7 +180,7 @@ function TelaSeguranca() {
     try {
       const { api } = await import('../../services/api');
       await api.trocarSenha({ novaSenha: form.novaSenha });
-      setEtapa('enviado');
+      setEtapa('codigo');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar email.');
     } finally {
@@ -187,9 +188,25 @@ function TelaSeguranca() {
     }
   }
 
+  async function confirmarCodigo() {
+    if (!codigo) return showToast('erro', 'Digite o código.');
+    if (codigo.length !== 6) return showToast('erro', 'O código deve ter 6 dígitos.');
+
+    setEnviando(true);
+    try {
+      const { api } = await import('../../services/api');
+      await api.confirmarTrocaSenha({ codigo });
+      setEtapa('sucesso');
+    } catch (e: unknown) {
+      showToast('erro', e instanceof Error ? e.message : 'Erro ao confirmar código.');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   return (
     <>
-      {enviando && <LoadingOverlay mensagem="Enviando email..." />}
+      {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
 
       <section>
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
@@ -228,23 +245,54 @@ function TelaSeguranca() {
               onClick={enviarConfirmacao}
               disabled={enviando}
             >
-              <IconMail size={15} /> Salvar e Confirmar por Email
+              <IconMail size={15} /> Enviar Código de Confirmação
+            </button>
+          </div>
+        ) : etapa === 'codigo' ? (
+          <div className="pu-confirm-card">
+            <div className="pu-confirm-icon"><IconInbox size={30} /></div>
+            <p className="pu-confirm-title">Verifique seu email</p>
+            <p className="pu-confirm-text">
+              Enviamos um código de 6 dígitos para{' '}
+              <strong className="pu-confirm-highlight">{usuario?.email}</strong>.
+              Digite o código abaixo para confirmar a troca de senha.
+            </p>
+            <div className="pu-modal-group">
+              <input
+                className="pu-modal-input"
+                type="text"
+                placeholder="Digite o código de 6 dígitos"
+                value={codigo}
+                onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+              />
+            </div>
+            <button
+              className="pu-modal-btn-save pu-form-btn"
+              onClick={confirmarCodigo}
+              disabled={enviando}
+            >
+              Confirmar Código
+            </button>
+            <button
+              className="pu-modal-btn-cancel"
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '' }); }}
+            >
+              Tentar novamente
             </button>
           </div>
         ) : (
           <div className="pu-confirm-card">
             <div className="pu-confirm-icon"><IconInbox size={30} /></div>
-            <p className="pu-confirm-title">Verifique seu email</p>
+            <p className="pu-confirm-title">Senha atualizada!</p>
             <p className="pu-confirm-text">
-              Enviamos um link de confirmação para{' '}
-              <strong className="pu-confirm-highlight">{usuario?.email}</strong>.
-              Clique no link para confirmar a troca de senha.
+              Sua senha foi alterada com sucesso. Use a nova senha no próximo login.
             </p>
             <button
-              className="pu-modal-btn-cancel"
-              onClick={() => { setEtapa('form'); setForm({ novaSenha: '', confirmarSenha: '' }); }}
+              className="pu-modal-btn-save pu-form-btn"
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '' }); }}
             >
-              Tentar novamente
+              Alterar novamente
             </button>
           </div>
         )}

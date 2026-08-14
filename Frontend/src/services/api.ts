@@ -29,6 +29,8 @@ export const api = {
     request('/auth/perfil',       { method: 'PUT',  body: JSON.stringify(dados) }),
   trocarSenha: (dados: Record<string, string>) =>
     request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
+  confirmarTrocaSenha: (dados: Record<string, string>) =>
+    request('/auth/confirmar-troca-senha', { method: 'POST', body: JSON.stringify(dados) }),
 
   // ── Mercados ─────────────────────────────────────────────────────────────────
   meusMercados: () =>

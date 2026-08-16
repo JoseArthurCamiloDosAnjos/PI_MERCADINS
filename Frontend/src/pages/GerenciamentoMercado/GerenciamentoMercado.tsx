@@ -35,6 +35,7 @@ interface Produto {
   preco?: number;
   id_categoria: number;
   categoria: string;
+  estoque?: number;
 }
 
 interface Pedido {
@@ -147,6 +148,7 @@ function EditarProdutoModal({
     const reaisFmt = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     return `${reaisFmt},${centavos}`;
   });
+  const [estoque, setEstoque] = useState(produto.estoque ?? 0);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -184,6 +186,7 @@ function EditarProdutoModal({
         nome: nome.trim(),
         descricao: descricao.trim() || undefined,
         preco: Number(preco.replace(/\./g, '').replace(',', '.')),
+        estoque,
       };
       const atualizado = await api.atualizarProduto(
         mercadoId,
@@ -237,6 +240,18 @@ function EditarProdutoModal({
               onChange={e => handleChangePreco(e.target.value)}
               onBlur={handleBlurPreco}
               placeholder="0,00"
+            />
+          </label>
+
+          <label className="gm-modal-label">
+            Estoque
+            <input
+              className="gm-modal-input"
+              type="number"
+              value={estoque}
+              min={0}
+              onChange={e => setEstoque(Number(e.target.value) || 0)}
+              placeholder="0"
             />
           </label>
 

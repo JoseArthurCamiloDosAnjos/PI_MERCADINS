@@ -41,6 +41,7 @@ interface Produto {
   descricao: string;
   preco?: string;
   id_categoria: number;
+  estoque?: number;
 }
 
 interface Categoria {
@@ -72,6 +73,7 @@ interface ProdutoForm {
   preco: string;
   imagens: string[];
   categoriaId: number;
+  estoque: number;
 }
 
 // ─── Placeholder — sem categoria de exemplo ───────────────────────────────────
@@ -265,6 +267,7 @@ function CategoriaSection({
       setProdutos(prev => [...prev, {
         id_produto: Date.now(), nome: dados.nome, descricao: dados.descricao,
         preco: dados.preco, imagem: dados.imagens[0] ?? undefined, id_categoria: dados.categoriaId,
+        estoque: dados.estoque,
       }]);
       setModalAberto(false);
       onAlterado();
@@ -279,6 +282,7 @@ function CategoriaSection({
         imagem: dados.imagens[0] ?? null,
         imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
+        estoque: dados.estoque,
       });
       setProdutos(prev => [...prev, novo]);
       setModalAberto(false);
@@ -306,6 +310,7 @@ function CategoriaSection({
         imagem: dados.imagens[0] ?? null,
         imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
+        estoque: dados.estoque,
       });
       setProdutos(prev => prev.map(p => p.id_produto === atualizado.id_produto ? atualizado : p));
       setProdutoEditando(null);

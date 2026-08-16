@@ -15,6 +15,7 @@ interface ProdutoForm {
   preco: string;
   imagens: string[];
   categoriaId: number;
+  estoque: number;
 }
 
 interface Erros {
@@ -26,7 +27,7 @@ interface Erros {
 interface CadastroProdutoProps {
   categoriaId: number;
   salvando?: boolean;
-  produto?: { id_produto: number; nome: string; descricao?: string; preco?: string; imagem?: string; imagens?: string[] };
+  produto?: { id_produto: number; nome: string; descricao?: string; preco?: string; imagem?: string; imagens?: string[]; estoque?: number };
   onSalvar: (produto: ProdutoForm) => void;
   onCancelar: () => void;
 }
@@ -57,6 +58,7 @@ export default function CadastroProduto({
     }
     return [];
   });
+  const [estoque, setEstoque]         = useState(produto?.estoque ?? 0);
   const [slideAtual, setSlideAtual]   = useState(0);
   const [erros, setErros]             = useState<Erros>({});
   const [arrastando, setArrastando]   = useState(false);
@@ -158,6 +160,7 @@ export default function CadastroProduto({
       preco,
       imagens: imagens.map(i => i.url),
       categoriaId,
+      estoque,
     });
   }
 
@@ -312,6 +315,22 @@ export default function CadastroProduto({
                 }}
               />
               {erros.preco && <span className="cp-erro">{erros.preco}</span>}
+            </div>
+
+            <div className="cp-campo cp-campo--metade">
+              <label htmlFor="cp-estoque" className="cp-label">Estoque</label>
+              <input
+                id="cp-estoque"
+                type="number"
+                inputMode="numeric"
+                className="cp-input cp-input--preco"
+                placeholder="0"
+                min={0}
+                value={estoque}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setEstoque(Number(e.target.value) || 0);
+                }}
+              />
             </div>
 
           </section>

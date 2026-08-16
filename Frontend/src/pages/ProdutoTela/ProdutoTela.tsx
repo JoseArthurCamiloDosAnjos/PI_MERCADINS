@@ -88,6 +88,8 @@ export interface ProdutoDetalhe extends ProdutoCarrinho {
   /** Nota média de 0 a 5 */
   avaliacao?: number;
   numAvaliacoes?: number;
+  /** Quantidade em estoque */
+  estoque?: number;
 }
 
 interface ProdutoTelaProps {
@@ -290,6 +292,16 @@ export default function ProdutoTela({
               <span className="pd-preco-original">R$ {formatarPreco(produto.precoOriginal)}</span>
             )}
             {desconto !== null && <span className="pd-desconto-badge">-{desconto}%</span>}
+          </div>
+
+          <div className="pd-estoque">
+            {produto.estoque != null && produto.estoque > 0 ? (
+              <span className="pd-estoque-disponivel">
+                Estoque disponível: <strong>{produto.estoque}</strong> unidade{produto.estoque !== 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span className="pd-estoque-esgotado">Produto sem estoque</span>
+            )}
           </div>
 
           <div className="pd-quantidade-row">

@@ -59,7 +59,7 @@ const criarProduto = async (req, res) => {
     return res.status(401).json({ erro: 'Não autenticado.' })
 
   const { mercadoId, categoriaId } = req.params
-  const { nome, descricao, imagem, preco, imagens } = req.body
+  const { nome, descricao, imagem, preco, imagens, estoque } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -90,14 +90,15 @@ const criarProduto = async (req, res) => {
       : (imagem ? [imagem] : []);
 
     const [novoProduto] = await sql`
-      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria)
+      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque)
       VALUES (
         ${nome.trim()},
         ${descricao?.trim() ?? null},
         ${imagem ?? null},
         ${parsePreco(preco)},
         ${imagensArray},
-        ${Number(categoriaId)}
+        ${Number(categoriaId)},
+        ${Number(estoque) || 0}
       )
       RETURNING *
     `
@@ -119,7 +120,7 @@ const atualizarProduto = async (req, res) => {
     return res.status(401).json({ erro: 'Não autenticado.' })
 
   const { mercadoId, categoriaId, produtoId } = req.params
-  const { nome, descricao, imagem, preco, imagens } = req.body
+  const { nome, descricao, imagem, preco, imagens, estoque } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -153,7 +154,8 @@ const atualizarProduto = async (req, res) => {
           descricao = ${descricao?.trim() ?? null},
           imagem    = ${imagem ?? null},
           preco     = ${parsePreco(preco)},
-          imagens   = ${imagensArray}
+          imagens   = ${imagensArray},
+          estoque   = ${Number(estoque) || 0}
       WHERE id_produto   = ${Number(produtoId)}
         AND id_categoria = ${Number(categoriaId)}
       RETURNING *

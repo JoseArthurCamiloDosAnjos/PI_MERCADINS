@@ -87,7 +87,7 @@ export const api = {
   criarProduto: (
     mercadoId:   string | number,
     categoriaId: string | number,
-    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number }
+    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number; estoque?: number }
   ) =>
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`, {
       method: 'POST',
@@ -98,7 +98,7 @@ export const api = {
     mercadoId:   string | number,
     categoriaId: string | number,
     produtoId:   string | number,
-    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number }
+    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number; estoque?: number }
   ) =>
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
       method: 'PUT',

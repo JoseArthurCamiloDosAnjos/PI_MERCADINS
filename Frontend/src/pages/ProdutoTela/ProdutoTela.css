@@ -284,6 +284,23 @@
   border-radius: var(--vt-radius-sm);
 }
 
+.pd-estoque {
+  padding: 8px 0;
+}
+.pd-estoque-disponivel {
+  font-size: 13px;
+  color: var(--vt-branco-suave);
+}
+.pd-estoque-disponivel strong {
+  color: var(--vt-amarelo);
+  font-weight: 800;
+}
+.pd-estoque-esgotado {
+  font-size: 13px;
+  color: #f26b6b;
+  font-weight: 600;
+}
+
 .pd-quantidade-row { display: flex; align-items: center; gap: 14px; }
 .pd-quantidade-label { font-size: 13px; color: var(--vt-branco-suave); font-weight: 600; }
 

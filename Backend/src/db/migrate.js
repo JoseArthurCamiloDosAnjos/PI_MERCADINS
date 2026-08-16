@@ -70,6 +70,11 @@ async function migrate() {
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagens TEXT[] DEFAULT '{}'
   `;
 
+  // Adiciona coluna estoque na tabela produtos se não existir
+  await sql`
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque INTEGER DEFAULT 0
+  `;
+
   // Tabela de carrinho por usuário
   await sql`
     CREATE TABLE IF NOT EXISTS carrinho (

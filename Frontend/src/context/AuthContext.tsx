@@ -16,6 +16,7 @@ interface Usuario {
   email: string;
   telefone?: string;
   email_verificado: boolean;
+  foto_perfil?: string;
 }
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ interface AuthContextType {
   login: (email: string, senha: string) => Promise<Usuario>;
   logout: () => void;
   refreshMercados: () => Promise<void>;
+  refreshUsuario: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -84,12 +86,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTemMercado(false);
   }
 
+  async function refreshUsuario() {
+    try {
+      const u = await api.perfil();
+      setUsuario(u);
+    } catch { /* ignore */ }
+  }
+
   return (
    // ✅ Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
     //    temMercado após cadastrar o primeiro mercado (App.tsx usa temMercado
     //    para decidir rota /vendedor vs /perfil)
     <AuthContext.Provider
-      value={{ usuario, carregando, temMercado, login, logout, refreshMercados: verificarMercados }}
+      value={{ usuario, carregando, temMercado, login, logout, refreshMercados: verificarMercados, refreshUsuario }}
     >
       {children}
     </AuthContext.Provider>

@@ -85,6 +85,9 @@ interface VitrineMercado {
   paleta?: string;
   corBase?: string;
   corDestaque?: string;
+  corTexto?: string;
+  corTextoSec?: string;
+  corIcones?: string;
   categorias: Categoria[];
 }
 
@@ -289,6 +292,9 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
           paleta: mercadoData.mercado.paleta ?? 'classico',
           corBase: mercadoData.mercado.cor_base ?? undefined,
           corDestaque: mercadoData.mercado.cor_destaque ?? undefined,
+          corTexto: mercadoData.mercado.cor_texto ?? undefined,
+          corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
+          corIcones: mercadoData.mercado.cor_icones ?? undefined,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -373,6 +379,9 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       '--vt-azul-item': paletaPadrao.cores.azulItem,
       '--vt-amarelo': paletaPadrao.cores.amarelo,
       '--vt-amarelo-hover': paletaPadrao.cores.amareloHover,
+      '--vt-cor-texto': paletaPadrao.cores.corTexto,
+      '--vt-cor-texto-sec': paletaPadrao.cores.corTextoSec,
+      '--vt-cor-icones': paletaPadrao.cores.corIcones,
     } as CSSProperties;
     return (
       <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaletaPadrao}>
@@ -381,7 +390,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
     );
   }
 
-  const paletaAtual = resolverPaleta(dados.paleta, dados.corBase, dados.corDestaque);
+  const paletaAtual = resolverPaleta(dados.paleta, dados.corBase, dados.corDestaque, dados.corTexto, dados.corTextoSec, dados.corIcones);
   const estiloPaleta = {
     '--vt-azul-escuro': paletaAtual.cores.azulEscuro,
     '--vt-azul-medio': paletaAtual.cores.azulMedio,
@@ -392,6 +401,9 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
     '--vt-azul-item': paletaAtual.cores.azulItem,
     '--vt-amarelo': paletaAtual.cores.amarelo,
     '--vt-amarelo-hover': paletaAtual.cores.amareloHover,
+    '--vt-cor-texto': paletaAtual.cores.corTexto,
+    '--vt-cor-texto-sec': paletaAtual.cores.corTextoSec,
+    '--vt-cor-icones': paletaAtual.cores.corIcones,
   } as CSSProperties;
 
   return (

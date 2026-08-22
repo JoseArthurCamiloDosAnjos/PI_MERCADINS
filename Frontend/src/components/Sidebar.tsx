@@ -14,6 +14,7 @@ import {
   IconPlus,
   IconMenu,
   IconX,
+  IconPencil,
 } from "./Icons";
 
 interface NavItem {
@@ -28,7 +29,9 @@ interface SidebarProps {
   badge?: string;
   navAtivo: number;
   onNav?: (index: number) => void;
-  navItems?: NavItem[]; // ✅ opcional — se não passar, usa o padrão do usuário
+  navItems?: NavItem[];
+  onEditarPerfil?: () => void;
+  foto?: string;
 }
 
 const NAV_ITEMS_PADRAO: NavItem[] = [
@@ -48,6 +51,8 @@ export default function Sidebar({
   navAtivo,
   onNav,
   navItems,
+  onEditarPerfil,
+  foto,
 }: SidebarProps) {
   const { logout } = useAuth();
   const { tema, toggleTema } = useTheme();
@@ -89,10 +94,20 @@ export default function Sidebar({
         </button>
 
         <div className="sb-profile">
-          <div className="sb-avatar">{iniciais}</div>
+          <div className="sb-avatar">
+            {foto
+              ? <img src={foto} alt={nome} className="sb-avatar-img" />
+              : iniciais
+            }
+          </div>
           <p className="sb-nome">{nome}</p>
           <p className="sb-email">{email}</p>
           {badge && <span className="sb-badge">{badge}</span>}
+          {onEditarPerfil && (
+            <button className="sb-edit-btn" onClick={() => { onEditarPerfil(); setOpen(false); }}>
+              <IconPencil size={13} /> Editar Perfil
+            </button>
+          )}
         </div>
 
         <nav className="sb-nav">

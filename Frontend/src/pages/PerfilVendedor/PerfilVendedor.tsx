@@ -8,6 +8,7 @@ import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
+import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
 import {
@@ -388,6 +389,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
   const [favoritos, setFavoritos] = useState<Favorito[]>([]);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const { usuario } = useAuth();
   const navigate = useNavigate();
 
@@ -441,6 +443,8 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
         navAtivo={nav}
         onNav={setNav}
         navItems={NAV_ITEMS}
+        onEditarPerfil={() => setModalEditarAberto(true)}
+        foto={usuario?.foto_perfil}
       />
       <main className="pv-main">
         <div className="pv-topbar">
@@ -453,6 +457,8 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
           </div>
         </div>
       </main>
+
+      {modalEditarAberto && <ModalEditarPerfil onFechar={() => setModalEditarAberto(false)} />}
     </div>
   );
 }

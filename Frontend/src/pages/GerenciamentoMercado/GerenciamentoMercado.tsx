@@ -76,6 +76,7 @@ interface MercadoInfo {
   cidade: string;
   bairro: string;
   rua: string;
+  foto_perfil?: string;
 }
 
 interface DadosMercado {
@@ -720,7 +721,12 @@ export default function GerenciamentoMercado({
       {/* SIDEBAR */}
       <aside className="gm-sidebar">
         <div className="gm-mkt-identity">
-          <div className="gm-mkt-logo"><IconShoppingCart size={24} /></div>
+          <div className="gm-mkt-logo">
+            {mercado?.foto_perfil
+              ? <img src={mercado.foto_perfil} alt={mercado.nome} className="gm-mkt-logo-img" />
+              : <IconShoppingCart size={24} />
+            }
+          </div>
           <p className="gm-mkt-nome">{mercado?.nome ?? 'Carregando...'}</p>
           <p className="gm-mkt-sub">{mercado?.cidade ?? ''} · {mercado?.estado ?? ''}</p>
           <span className="gm-status-open">● Aberto</span>

@@ -262,6 +262,54 @@
 .pu-modal-btn-save:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245,200,74,0.35); }
 .pu-modal-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.pu-modal-photo-wrap {
+  position: relative;
+  width: 110px; height: 110px;
+}
+.pu-modal-photo-img {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--amarelo);
+  image-rendering: -webkit-optimize-contrast;
+}
+.pu-modal-photo-btn {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border: 2px solid var(--azul-sidebar);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.pu-modal-photo-btn:hover { transform: scale(1.1); }
+
+.pu-status-section {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--azul-sidebar);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--azul-item);
+}
+.pu-status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pu-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--cinza-texto);
+}
+.pu-status-ok { color: #4ade80; }
+.pu-status-fail { color: #f87171; }
+
 /* Bloco de formulário reutilizável (ex: tela de Segurança) */
 .pu-form-block {
   max-width: 420px;

@@ -61,7 +61,7 @@
   transition: all 0.2s;
   flex-shrink: 0;
 }
-.ep-fechar:hover { border-color: #f5c84a; color: #f5c84a; }
+.ep-fechar:hover { border-color: var(--vt-cor-icones, #f5c84a); color: var(--vt-cor-icones, #f5c84a); }
 
 .ep-sub {
   margin: 0 1.3rem 1rem;
@@ -97,7 +97,7 @@
   font-family: inherit;
 }
 .ep-item:hover { border-color: #2a52a8; transform: translateY(-1px); }
-.ep-item--ativo { border-color: #f5c84a; box-shadow: 0 0 0 1px #f5c84a inset; }
+.ep-item--ativo { border-color: var(--vt-cor-icones, #f5c84a); box-shadow: 0 0 0 1px var(--vt-cor-icones, #f5c84a) inset; }
 
 .ep-swatch {
   width: 100%;
@@ -128,7 +128,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #f5c84a;
+  background: var(--vt-cor-icones, #f5c84a);
   color: #0d1b3e;
   display: flex;
   align-items: center;
@@ -216,7 +216,7 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.ep-btn-aplicar-custom:hover { border-color: #f5c84a; color: #f5c84a; }
+.ep-btn-aplicar-custom:hover { border-color: var(--vt-cor-icones, #f5c84a); color: var(--vt-cor-icones, #f5c84a); }
 
 .ep-footer {
   padding: 1rem 1.3rem 1.2rem;
@@ -226,7 +226,7 @@
 }
 .ep-btn-concluir {
   width: 100%;
-  background: #f5c84a;
+  background: var(--vt-cor-icones, #f5c84a);
   color: #0d1b3e;
   border: none;
   border-radius: 999px;
@@ -236,7 +236,153 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.ep-btn-concluir:hover { background: #f7d567; }
+.ep-btn-concluir:hover { background: var(--vt-amarelo-hover, #f7d567); }
+
+/* ─── Aviso de contraste ──────────────────────────────────────────────────── */
+.ep-aviso-contraste {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1.5px solid rgba(248, 113, 113, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ep-aviso-texto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f87171;
+  line-height: 1.4;
+}
+
+.ep-aviso-icone {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+/* ─── Preview de cores ────────────────────────────────────────────────────── */
+.ep-preview-paleta-pre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ep-preview-paleta-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7a94c0;
+}
+
+.ep-preview-cores {
+  display: flex;
+  gap: 8px;
+}
+
+.ep-preview-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s;
+}
+
+/* ─── Modal de confirmação de contraste ───────────────────────────────────── */
+.ep-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 12, 28, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1.5rem;
+  animation: epFade 0.18s ease both;
+}
+
+.ep-confirm-modal {
+  width: 100%;
+  max-width: 380px;
+  background: #0d1b3e;
+  border: 1.5px solid #f87171;
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  animation: epPop 0.22s ease both;
+}
+
+.ep-confirm-icone {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.ep-confirm-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #f87171;
+}
+
+.ep-confirm-texto {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #7a94c0;
+  line-height: 1.5;
+}
+
+.ep-confirm-botoes {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.ep-confirm-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.ep-confirm-btn--voltar {
+  background: #112250;
+  border-color: #1e3a7a;
+  color: #ffffff;
+}
+.ep-confirm-btn--voltar:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.ep-confirm-btn--continuar {
+  background: #f87171;
+  color: #0d1b3e;
+  border: none;
+}
+.ep-confirm-btn--continuar:hover {
+  background: #fca5a5;
+}
 
 /* ── RESPONSIVE ── */
 @media (max-width: 480px) {

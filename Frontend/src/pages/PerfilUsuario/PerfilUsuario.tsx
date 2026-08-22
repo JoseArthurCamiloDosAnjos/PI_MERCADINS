@@ -18,7 +18,6 @@ import {
   IconStore,
   IconShoppingBag,
   IconStar,
-  IconPencil,
   IconMail,
   IconInbox,
 } from '../../components/Icons';
@@ -397,17 +396,12 @@ export default function PerfilUsuario() {
         email={usuario?.email ?? ''}
         navAtivo={nav}
         onNav={setNav}
+        onEditarPerfil={() => setModalAberto(true)}
+        foto={usuario?.foto_perfil}
       />
       <main className="pu-main">
         <div className="pu-topbar">
           <span className="pu-topbar-title">{TITULOS[nav]}</span>
-          <div className="pu-topbar-actions">
-            {nav === 0 && (
-              <button className="pu-btn-edit" onClick={() => setModalAberto(true)}>
-                <IconPencil size={14} /> Editar Perfil
-              </button>
-            )}
-          </div>
         </div> 
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>

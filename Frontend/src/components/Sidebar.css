@@ -19,12 +19,12 @@
 }
 
 .sb-avatar {
-  width: 62px;
-  height: 62px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: var(--amarelo);
   color: var(--azul-escuro);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -32,6 +32,13 @@
   margin-bottom: 0.9rem;
   animation: pulse 3s ease-in-out infinite;
   box-shadow: 0 0 0 4px rgba(245,200,74,0.18);
+  overflow: hidden;
+}
+.sb-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .sb-nome  { font-size: 15px; font-weight: 800; color: var(--branco); line-height: 1.3; }
@@ -47,6 +54,27 @@
   padding: 3px 10px;
   border-radius: var(--radius-full);
   letter-spacing: 0.8px;
+}
+
+.sb-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  color: var(--cinza-texto);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: fit-content;
+}
+.sb-edit-btn:hover {
+  border-color: var(--amarelo);
+  color: var(--amarelo);
 }
 
 /* NAV */

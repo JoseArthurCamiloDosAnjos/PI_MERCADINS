@@ -90,7 +90,7 @@ const criarMercado = async (req, res) => {
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado. Faça login para cadastrar um mercado." });
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -134,7 +134,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -148,7 +148,10 @@ const criarMercado = async (req, res) => {
         ${slug},
         ${paleta ?? 'classico'},
         ${cor_base ?? ''},
-        ${cor_destaque ?? ''}
+        ${cor_destaque ?? ''},
+        ${cor_texto ?? ''},
+        ${cor_icones ?? ''},
+        ${cor_texto_sec ?? ''}
       )
       RETURNING *
     `;
@@ -251,7 +254,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner, foto_perfil } = req.body;
 
   if (email && !validarEmailSimples(email))
     return res.status(400).json({ erro: "Email inválido" });
@@ -315,7 +318,12 @@ const atualizarMercado = async (req, res) => {
         slug        = COALESCE(${slugAtualizado ?? null}, slug),
         paleta      = COALESCE(${paleta ?? null}, paleta),
         cor_base    = COALESCE(${cor_base ?? null}, cor_base),
-        cor_destaque = COALESCE(${cor_destaque ?? null}, cor_destaque)
+        cor_destaque = COALESCE(${cor_destaque ?? null}, cor_destaque),
+        cor_texto   = COALESCE(${cor_texto ?? null}, cor_texto),
+        cor_icones  = COALESCE(${cor_icones ?? null}, cor_icones),
+        cor_texto_sec = COALESCE(${cor_texto_sec ?? null}, cor_texto_sec),
+        banner       = COALESCE(${banner ?? null}, banner),
+        foto_perfil  = COALESCE(${foto_perfil ?? null}, foto_perfil)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
     `;

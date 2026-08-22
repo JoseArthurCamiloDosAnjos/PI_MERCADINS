@@ -48,10 +48,30 @@ async function migrate() {
   await sql`
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_destaque TEXT DEFAULT ''
   `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_texto TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_icones TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS cor_texto_sec TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS banner TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS foto_perfil TEXT DEFAULT ''
+  `;
 
   // Adiciona coluna slug se não existir
   await sql`
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE
+  `;
+
+  // Adiciona coluna foto_perfil na tabela usuarios se não existir
+  await sql`
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT DEFAULT ''
   `;
 
   // Atualiza slug para mercados existentes

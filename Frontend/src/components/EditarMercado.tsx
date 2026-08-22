@@ -8,8 +8,9 @@ interface EditarMercadoProps {
   nome: string;
   descricao: string;
   logo?: string;
+  banner?: string;
   salvando?: boolean;
-  onSalvar: (dados: { nome: string; descricao: string; logo?: string }) => void;
+  onSalvar: (dados: { nome: string; descricao: string; logo?: string; banner?: string }) => void;
   onCancelar: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function EditarMercado({
   nome: nomeInicial,
   descricao: descricaoInicial,
   logo: logoInicial,
+  banner: bannerInicial,
   salvando = false,
   onSalvar,
   onCancelar,
@@ -26,8 +28,10 @@ export default function EditarMercado({
   const [nome, setNome]         = useState(nomeInicial);
   const [descricao, setDescricao] = useState(descricaoInicial);
   const [logo, setLogo]         = useState<string | undefined>(logoInicial);
+  const [banner, setBanner]     = useState<string | undefined>(bannerInicial);
   const [erros, setErros]       = useState<{ nome?: string }>({});
   const inputLogoRef            = useRef<HTMLInputElement>(null);
+  const inputBannerRef          = useRef<HTMLInputElement>(null);
 
   function handleLogo(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -36,6 +40,17 @@ export default function EditarMercado({
     reader.onload = (ev) => {
       const url = ev.target?.result;
       if (typeof url === 'string') setLogo(url);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleBanner(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result;
+      if (typeof url === 'string') setBanner(url);
     };
     reader.readAsDataURL(file);
   }
@@ -49,7 +64,7 @@ export default function EditarMercado({
 
   function handleSalvar() {
     if (!validar()) return;
-    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo });
+    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo, banner });
   }
 
   return (
@@ -85,6 +100,43 @@ export default function EditarMercado({
               onChange={handleLogo}
             />
             <p className="em-logo-hint">Clique na imagem para trocar a logo</p>
+            <p className="em-recomendacao">📐 Tamanho recomendado para a foto de perfil: <strong>300×300px</strong> (formato quadrado, ideal para visualização nítida)</p>
+          </div>
+
+          {/* ── Banner ─────────────────────────────────────────────────── */}
+          <div className="em-banner-wrap">
+            <label className="em-label">Imagem de fundo (banner)</label>
+            <button
+              className="em-banner-btn"
+              onClick={() => inputBannerRef.current?.click()}
+              title="Alterar banner"
+              type="button"
+            >
+              {banner
+                ? <img src={banner} alt="Banner" className="em-banner-img" />
+                : <div className="em-banner-placeholder">
+                    <span className="em-banner-placeholder-text">Clique para adicionar uma imagem de fundo</span>
+                  </div>
+              }
+              <span className="em-banner-overlay">Alterar</span>
+            </button>
+            <input
+              ref={inputBannerRef}
+              type="file"
+              accept="image/*"
+              className="em-input-file"
+              onChange={handleBanner}
+            />
+            {banner && (
+              <button
+                type="button"
+                className="em-banner-remover"
+                onClick={() => setBanner(undefined)}
+              >
+                Remover banner
+              </button>
+            )}
+            <p className="em-recomendacao">📐 Tamanho recomendado para a imagem de fundo: <strong>1200×400px</strong> (proporção 3:1, preenche toda a área)</p>
           </div>
 
           {/* ── Nome ─────────────────────────────────────────────────── */}

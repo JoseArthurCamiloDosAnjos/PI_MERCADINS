@@ -383,9 +383,14 @@ const atualizarPerfil = async (req, res) => {
   }
 };
 const solicitarTrocaSenha = async (req, res) => {
-  const { novaSenha } = req.body;
+  const { novaSenha, emailConfirmacao } = req.body;
 
   if (!novaSenha) return res.status(400).json({ erro: 'Nova senha obrigatória.' });
+  if (!emailConfirmacao) return res.status(400).json({ erro: 'Email de confirmação obrigatório.' });
+
+  const emailConfirmacaoValido = await validarEmail(emailConfirmacao);
+  if (!emailConfirmacaoValido)
+    return res.status(400).json({ erro: 'Email de confirmação inválido ou domínio inexistente.' });
 
   const errosSenha = Array.isArray(validarSenha(novaSenha)) ? validarSenha(novaSenha) : [];
   if (errosSenha.length > 0) return res.status(400).json({ erros: errosSenha });
@@ -394,6 +399,10 @@ const solicitarTrocaSenha = async (req, res) => {
     const sql = await conectar();
     const [usuario] = await sql`SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+    if (emailConfirmacao.toLowerCase() !== usuario.email.toLowerCase()) {
+      return res.status(400).json({ erro: 'O email de confirmação deve ser o mesmo da sua conta.' });
+    }
 
     // gera código numérico de 6 dígitos
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();

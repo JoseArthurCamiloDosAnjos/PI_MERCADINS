@@ -165,7 +165,7 @@ function TelaSeguranca() {
   const { toasts, showToast, dismissToast } = useToast();
   const [etapa, setEtapa] = useState<'form' | 'codigo' | 'sucesso'>('form');
   const [enviando, setEnviando] = useState(false);
-  const [form, setForm] = useState({ novaSenha: '', confirmarSenha: '' });
+  const [form, setForm] = useState({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' });
   const [codigo, setCodigo] = useState('');
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
@@ -174,11 +174,13 @@ function TelaSeguranca() {
     if (!form.novaSenha) return showToast('erro', 'Digite a nova senha.');
     if (form.novaSenha.length < 6) return showToast('erro', 'A senha deve ter ao menos 6 caracteres.');
     if (form.novaSenha !== form.confirmarSenha) return showToast('erro', 'As senhas não coincidem.');
+    if (!form.emailConfirmacao) return showToast('erro', 'Digite o email de confirmação.');
+    if (form.emailConfirmacao !== usuario?.email) return showToast('erro', 'O email digitado deve ser o mesmo da sua conta.');
 
     setEnviando(true);
     try {
       const { api } = await import('../../services/api');
-      await api.trocarSenha({ novaSenha: form.novaSenha });
+      await api.trocarSenha({ novaSenha: form.novaSenha, emailConfirmacao: form.emailConfirmacao });
       setEtapa('codigo');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar email.');
@@ -194,7 +196,7 @@ function TelaSeguranca() {
     setEnviando(true);
     try {
       const { api } = await import('../../services/api');
-      await api.confirmarTrocaSenha({ codigo });
+      await api.confirmarTrocaSenha({ codigo, emailConfirmacao: form.emailConfirmacao });
       setEtapa('sucesso');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao confirmar código.');
@@ -239,6 +241,17 @@ function TelaSeguranca() {
                 <BtnOlho visivel={mostrarConfirmar} onToggle={() => setMostrarConfirmar(v => !v)} />
               </div>
             </div>
+            <div className="pu-modal-group">
+              <label className="pu-modal-label">Email de Confirmação</label>
+              <input
+                className="pu-modal-input"
+                type="email"
+                value={form.emailConfirmacao}
+                onChange={e => setForm(f => ({ ...f, emailConfirmacao: e.target.value }))}
+                placeholder="Digite o email da sua conta"
+              />
+              <span className="pu-input-hint">Digite o email da sua conta para confirmar a alteração de senha.</span>
+            </div>
             <button
               className="pu-modal-btn-save pu-form-btn"
               onClick={enviarConfirmacao}
@@ -254,9 +267,10 @@ function TelaSeguranca() {
             <p className="pu-confirm-text">
               Enviamos um código de 6 dígitos para{' '}
               <strong className="pu-confirm-highlight">{usuario?.email}</strong>.
-              Digite o código abaixo para confirmar a troca de senha.
+              Digite o código e o email da sua conta para confirmar a troca de senha.
             </p>
             <div className="pu-modal-group">
+              <label className="pu-modal-label">Código de Confirmação</label>
               <input
                 className="pu-modal-input"
                 type="text"
@@ -264,6 +278,15 @@ function TelaSeguranca() {
                 value={codigo}
                 onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
+              />
+            </div>
+            <div className="pu-modal-group">
+              <label className="pu-modal-label">Email de Confirmação</label>
+              <input
+                className="pu-modal-input"
+                type="email"
+                value={form.emailConfirmacao}
+                readOnly
               />
             </div>
             <button
@@ -275,7 +298,7 @@ function TelaSeguranca() {
             </button>
             <button
               className="pu-modal-btn-cancel"
-              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '' }); }}
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
             >
               Tentar novamente
             </button>
@@ -289,7 +312,7 @@ function TelaSeguranca() {
             </p>
             <button
               className="pu-modal-btn-save pu-form-btn"
-              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '' }); }}
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
             >
               Alterar novamente
             </button>

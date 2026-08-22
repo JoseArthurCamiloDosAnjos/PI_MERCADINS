@@ -176,6 +176,11 @@ function Rotas() {
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
+  if (!temMercado && mercadoAberto) {
+    handleSetMercadoAberto(null)
+    handleSetVitrineAberta(false)
+  }
+
   if (usuario && mercadoAberto && vitrineAberta) {
     return (
       <Vitrine mercadoId={mercadoAberto.id} onVoltar={() => handleSetVitrineAberta(false)} />

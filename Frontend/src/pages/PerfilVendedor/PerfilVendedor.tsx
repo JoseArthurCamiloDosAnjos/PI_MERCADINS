@@ -100,7 +100,7 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados Ativos' },
     { Icon: IconStar, cls: 'gold', val: '0 ★', lbl: 'Avaliação Média' },
-    { Icon: IconPackage, cls: 'green', val: '0', lbl: 'Pedidos Totais' },
+    { Icon: IconPackage, cls: 'gold', val: '0', lbl: 'Pedidos Totais' },
   ];
 
   return (

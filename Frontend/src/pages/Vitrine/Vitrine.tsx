@@ -76,6 +76,7 @@ interface ProdutoForm {
   descricao: string;
   preco: string;
   imagens: string[];
+  files: File[];
   categoriaId: number;
   estoque: number;
 }

@@ -10,7 +10,7 @@ interface EditarMercadoProps {
   logo?: string;
   banner?: string;
   salvando?: boolean;
-  onSalvar: (dados: { nome: string; descricao: string; logo?: string; banner?: string }) => void;
+  onSalvar: (dados: { nome: string; descricao: string; logo?: File; banner?: File }) => void;
   onCancelar: () => void;
 }
 
@@ -29,6 +29,8 @@ export default function EditarMercado({
   const [descricao, setDescricao] = useState(descricaoInicial);
   const [logo, setLogo]         = useState<string | undefined>(logoInicial);
   const [banner, setBanner]     = useState<string | undefined>(bannerInicial);
+  const [logoFile, setLogoFile] = useState<File | undefined>();
+  const [bannerFile, setBannerFile] = useState<File | undefined>();
   const [erros, setErros]       = useState<{ nome?: string }>({});
   const inputLogoRef            = useRef<HTMLInputElement>(null);
   const inputBannerRef          = useRef<HTMLInputElement>(null);
@@ -36,6 +38,7 @@ export default function EditarMercado({
   function handleLogo(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
+    setLogoFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const url = ev.target?.result;
@@ -47,6 +50,7 @@ export default function EditarMercado({
   function handleBanner(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
+    setBannerFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const url = ev.target?.result;
@@ -64,7 +68,7 @@ export default function EditarMercado({
 
   function handleSalvar() {
     if (!validar()) return;
-    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo, banner });
+    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo: logoFile, banner: bannerFile });
   }
 
   return (

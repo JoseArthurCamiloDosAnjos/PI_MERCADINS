@@ -28,6 +28,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
   const [foto, setFoto] = useState<string | undefined>(
     usuario?.foto_perfil ?? undefined
   );
+  const [fotoFile, setFotoFile] = useState<File | undefined>();
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
@@ -38,6 +39,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
       showToast('erro', 'Imagem muito grande. Máximo 5MB.');
       return;
     }
+    setFotoFile(file);
     const canvas = document.createElement('canvas');
     const img = new Image();
     const reader = new FileReader();
@@ -68,13 +70,12 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
     setSalvando(true);
     try {
       const { api } = await import('../services/api');
-      const dados: Record<string, string> = {
+      await api.atualizar({
         nome: form.nome,
         email: form.email,
         telefone: form.telefone,
-      };
-      if (foto) dados.foto_perfil = foto;
-      await api.atualizar(dados);
+        foto_perfil: fotoFile,
+      });
       await refreshUsuario();
       showToast('sucesso', 'Perfil atualizado com sucesso!');
       setTimeout(() => onFechar(), 1200);

@@ -282,10 +282,9 @@ function CategoriaSection({
       const precoNum = Number(dados.preco.replace(/\./g, '').replace(',', '.'));
       const novo: Produto = await api.criarProduto(mercadoId, categoria.id, {
         nome: dados.nome, descricao: dados.descricao,
-        imagem: dados.imagens[0] ?? null,
-        imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
         estoque: dados.estoque,
+        files: dados.files,
       });
       setProdutos(prev => [...prev, novo]);
       setModalAberto(false);
@@ -310,10 +309,9 @@ function CategoriaSection({
       const atualizado: Produto = await api.atualizarProduto(mercadoId, categoria.id, produtoEditando.id_produto, {
         nome: dados.nome,
         descricao: dados.descricao,
-        imagem: dados.imagens[0] ?? null,
-        imagens: dados.imagens.length > 0 ? dados.imagens : undefined,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
         estoque: dados.estoque,
+        files: dados.files,
       });
       setProdutos(prev => prev.map(p => p.id_produto === atualizado.id_produto ? atualizado : p));
       setProdutoEditando(null);
@@ -616,9 +614,9 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
   // ── Editar mercado ────────────────────────────────────────────────────────
 
-  async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: string; banner?: string }) {
+  async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: File; banner?: File }) {
     if (!dados.id || dados.id === 0) {
-      setDados(prev => ({ ...prev, ...form }));
+      setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
       setModalEditar(false);
       setTemAlteracoes(true);
       showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
@@ -629,16 +627,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       await api.atualizarMercado(dados.id, {
         nome: form.nome,
         descricao: form.descricao,
-        foto_perfil: form.logo ?? '',
-        banner: form.banner ?? '',
-        paleta: dados.paleta,
-        cor_base: dados.corBase ?? '',
-        cor_destaque: dados.corDestaque ?? '',
-        cor_texto: dados.corTexto ?? '',
-        cor_icones: dados.corIcones ?? '',
-        cor_texto_sec: dados.corTextoSec ?? '',
+        logo: form.logo,
+        banner: form.banner,
       });
-      setDados(prev => ({ ...prev, ...form }));
+      setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
       setModalEditar(false);
       setTemAlteracoes(true);
       showToast('sucesso', 'Mercado atualizado com sucesso!');

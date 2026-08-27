@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const upload = require('../middleware/upload');
 const { signUp, signIn, verificarEmail, esqueciSenha,confirmarTrocaSenha,redefinirSenha,solicitarTrocaSenha, getPerfil, atualizarPerfil } = require('../controllers/authController');
 
 function autenticar(req, res, next) {
@@ -24,6 +25,6 @@ router.post('/esqueci-senha',   esqueciSenha);
 router.post('/redefinir-senha', redefinirSenha);
 router.post('/trocar-senha', autenticar, solicitarTrocaSenha);
 router.post('/confirmar-troca-senha', confirmarTrocaSenha);
-router.put('/perfil', autenticar, atualizarPerfil);
+router.put('/perfil', autenticar, upload.single('foto_perfil'), atualizarPerfil);
 
 module.exports = router;

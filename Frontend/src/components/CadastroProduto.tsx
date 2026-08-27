@@ -14,6 +14,7 @@ interface ProdutoForm {
   descricao: string;
   preco: string;
   imagens: string[];
+  files: File[];
   categoriaId: number;
   estoque: number;
 }
@@ -154,11 +155,15 @@ export default function CadastroProduto({
 
   function handleSalvar() {
     if (!validar()) return;
+    const files = imagens
+      .map(i => i.file)
+      .filter((f): f is File => f !== null && f !== undefined);
     onSalvar({
       nome,
       descricao,
       preco,
-      imagens: imagens.map(i => i.url),
+      imagens: imagens.map(i => i.url).filter(u => !u.startsWith('data:')),
+      files,
       categoriaId,
       estoque,
     });

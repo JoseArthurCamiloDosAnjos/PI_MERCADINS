@@ -59,7 +59,7 @@ const criarProduto = async (req, res) => {
     return res.status(401).json({ erro: 'Não autenticado.' })
 
   const { mercadoId, categoriaId } = req.params
-  const { nome, descricao, imagem, preco, imagens, estoque } = req.body
+  const { nome, descricao, preco, estoque } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -67,7 +67,6 @@ const criarProduto = async (req, res) => {
   try {
     const sql = await conectar()
 
-    // Verifica se o usuário tem acesso ao mercado
     const [permissao] = await sql`
       SELECT papel FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario}
@@ -76,7 +75,6 @@ const criarProduto = async (req, res) => {
     if (!permissao)
       return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
 
-    // Verifica se a categoria pertence ao mercado
     const [categoria] = await sql`
       SELECT id_categoria FROM categorias
       WHERE id_categoria = ${Number(categoriaId)}
@@ -85,18 +83,18 @@ const criarProduto = async (req, res) => {
     if (!categoria)
       return res.status(404).json({ erro: 'Categoria não encontrada neste mercado.' })
 
-    const imagensArray = Array.isArray(imagens) && imagens.length > 0
-      ? imagens
-      : (imagem ? [imagem] : []);
+    const files = req.files || []
+    const imagensPaths = files.map(f => `/uploads/produtos/${f.filename}`)
+    const imagem = imagensPaths[0] || null
 
     const [novoProduto] = await sql`
       INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque)
       VALUES (
         ${nome.trim()},
         ${descricao?.trim() ?? null},
-        ${imagem ?? null},
+        ${imagem},
         ${parsePreco(preco)},
-        ${imagensArray},
+        ${imagensPaths},
         ${Number(categoriaId)},
         ${Number(estoque) || 0}
       )
@@ -120,7 +118,7 @@ const atualizarProduto = async (req, res) => {
     return res.status(401).json({ erro: 'Não autenticado.' })
 
   const { mercadoId, categoriaId, produtoId } = req.params
-  const { nome, descricao, imagem, preco, imagens, estoque } = req.body
+  const { nome, descricao, preco, estoque } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -144,17 +142,21 @@ const atualizarProduto = async (req, res) => {
     if (!categoria)
       return res.status(404).json({ erro: 'Categoria não encontrada neste mercado.' })
 
-    const imagensArray = Array.isArray(imagens) && imagens.length > 0
-      ? imagens
-      : (imagem ? [imagem] : []);
+    const files = req.files || []
+    let imagensPaths = []
+    if (files.length > 0) {
+      imagensPaths = files.map(f => `/uploads/produtos/${f.filename}`)
+    }
+
+    const imagem = imagensPaths.length > 0 ? imagensPaths[0] : undefined
 
     const [produtoAtualizado] = await sql`
       UPDATE produtos
       SET nome      = ${nome.trim()},
           descricao = ${descricao?.trim() ?? null},
-          imagem    = ${imagem ?? null},
+          imagem    = COALESCE(${imagem ?? null}, imagem),
           preco     = ${parsePreco(preco)},
-          imagens   = ${imagensArray},
+          imagens   = CASE WHEN ${imagensPaths.length} > 0 THEN ${imagensPaths} ELSE imagens END,
           estoque   = ${Number(estoque) || 0}
       WHERE id_produto   = ${Number(produtoId)}
         AND id_categoria = ${Number(categoriaId)}

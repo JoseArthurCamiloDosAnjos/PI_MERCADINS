@@ -1,5 +1,6 @@
 const express = require('express')
 const cors    = require('cors')
+const path    = require('path')
 require('dotenv').config()
 
 const authRoutes             = require('./routes/authRoutes.js')
@@ -13,7 +14,7 @@ const carrinhoRoutes         = require('./routes/carrinhoRoutes.js')
 const app  = express()
 const PORT = process.env.PORT || 3001
 
-const allowedOrigins = [
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:5173',
   'https://mercadins.com.br',
   'https://www.mercadins.com.br',
@@ -24,12 +25,18 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
+      console.error(`CORS blocked: ${origin}`)
       callback(new Error('Not allowed by CORS'))
     }
   },
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-Total-Count'],
+  credentials: true,
+  maxAge: 86400
 }))
 app.use(express.json({ limit: '10mb' }))
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'API Mercadins funcionando' })

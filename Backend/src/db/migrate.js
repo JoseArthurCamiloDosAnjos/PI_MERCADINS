@@ -74,6 +74,11 @@ async function migrate() {
     ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT DEFAULT ''
   `;
 
+  // Adiciona coluna cpf na tabela usuarios se não existir
+  await sql`
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf TEXT DEFAULT ''
+  `;
+
   // Atualiza slug para mercados existentes
   await sql`
     UPDATE mercados SET slug = LOWER(REPLACE(REPLACE(REPLACE(nome, ' ', '-'), '.', ''), ',', ''))

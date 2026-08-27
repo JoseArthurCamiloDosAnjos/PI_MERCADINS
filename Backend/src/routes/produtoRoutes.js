@@ -1,5 +1,6 @@
 const express = require('express')
 const router  = express.Router({ mergeParams: true })
+const upload  = require('../middleware/upload')
 
 const {
   criarProduto,
@@ -8,10 +9,9 @@ const {
   deletarProduto,
 } = require('../controllers/produtoController')
 
-// Mesmo padrão do marketController — sem middleware, auth feita dentro do controller
 router.get('/',              listarProdutos)
-router.post('/',             criarProduto)
-router.put('/:produtoId',    atualizarProduto)
+router.post('/',             upload.array('imagens', 10), criarProduto)
+router.put('/:produtoId',    upload.array('imagens', 10), atualizarProduto)
 router.delete('/:produtoId', deletarProduto)
 
 module.exports = router

@@ -25,6 +25,7 @@ export default function Register() {
   const [form, setForm] = useState({
     nome: "",
     telefone: "",
+    cpf: "",
     email: "",
     senha: "",
     confirmar: "",
@@ -33,6 +34,7 @@ export default function Register() {
   const [fields, setFields] = useState({
     nome:      { ...emptyField },
     telefone:  { ...emptyField },
+    cpf:       { ...emptyField },
     email:     { ...emptyField },
     senha:     { ...emptyField },
     confirmar: { ...emptyField },
@@ -78,6 +80,40 @@ export default function Register() {
     setField("telefone", "", "");
   }
 
+  function formatCPF(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+
+  function handleCPF(e: React.ChangeEvent<HTMLInputElement>) {
+    const formatted = formatCPF(e.target.value);
+    setForm((prev) => ({ ...prev, cpf: formatted }));
+    setField("cpf", "", "");
+  }
+
+  function validarCPF(cpf: string): boolean {
+    const numeros = cpf.replace(/\D/g, "");
+    if (numeros.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(numeros)) return false;
+
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(numeros[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    if (resto !== parseInt(numeros[9])) return false;
+
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(numeros[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    if (resto !== parseInt(numeros[10])) return false;
+
+    return true;
+  }
+
   function validate() {
     let ok = true;
 
@@ -100,6 +136,17 @@ export default function Register() {
       ok = false;
     } else {
       setField("telefone", "success", "");
+    }
+
+    const cpfDigitos = form.cpf.replace(/\D/g, "");
+    if (!cpfDigitos) {
+      setField("cpf", "error", "CPF é obrigatório.");
+      ok = false;
+    } else if (!validarCPF(form.cpf)) {
+      setField("cpf", "error", "CPF inválido.");
+      ok = false;
+    } else {
+      setField("cpf", "success", "");
     }
 
     if (!form.email) {
@@ -146,6 +193,7 @@ export default function Register() {
         body: JSON.stringify({
           nome: form.nome.trim(),
           telefone: form.telefone.trim(),
+          cpf: form.cpf.trim(),
           email: form.email.trim(),
           senha: form.senha,
           confirmarSenha: form.confirmar,
@@ -251,6 +299,26 @@ export default function Register() {
                 </svg>
               </span>
               <span className="field-msg">{fields.telefone.msg}</span>
+            </div>
+
+            {/* CPF */}
+            <div className={fieldClass("cpf")}>
+              <input
+                type="text"
+                name="cpf"
+                placeholder="CPF"
+                autoComplete="off"
+                value={form.cpf}
+                onChange={handleCPF}
+                maxLength={14}
+              />
+              <span className="field-icon-register">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </span>
+              <span className="field-msg">{fields.cpf.msg}</span>
             </div>
 
             {/* Email */}

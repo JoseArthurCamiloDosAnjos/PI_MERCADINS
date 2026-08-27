@@ -254,7 +254,13 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner, foto_perfil } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec } = req.body;
+
+  const files = req.files || {}
+  const bannerFile = files.banner?.[0]
+  const fotoPerfilFile = files.foto_perfil?.[0]
+  const banner = bannerFile ? `/uploads/mercados/${bannerFile.filename}` : undefined
+  const foto_perfil = fotoPerfilFile ? `/uploads/mercados/${fotoPerfilFile.filename}` : undefined
 
   if (email && !validarEmailSimples(email))
     return res.status(400).json({ erro: "Email inválido" });

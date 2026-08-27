@@ -6,6 +6,7 @@ const {
   validarSenha,
   validarEmail,
   validarTelefone,
+  validarCPF,
 } = require("../utils/validators");
 const { enviarEmailVerificacao, enviarEmailRecuperacao } = require("../utils/mailer");
 
@@ -13,10 +14,10 @@ const { enviarEmailVerificacao, enviarEmailRecuperacao } = require("../utils/mai
 const cadastrosPendentes = new Map();
 
 const signUp = async (req, res) => {
-  const { nome, email, senha, telefone, confirmarSenha } = req.body;
+  const { nome, email, senha, telefone, cpf, confirmarSenha } = req.body;
 
   if (!req.body) return res.status(400).json({ erro: "Body inválido" });
-  if (!nome || !email || !senha || !telefone || !confirmarSenha)
+  if (!nome || !email || !senha || !telefone || !cpf || !confirmarSenha)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
   const emailValido = await validarEmail(email);
   if (!emailValido)
@@ -25,6 +26,8 @@ const signUp = async (req, res) => {
       .json({ erro: "Email inválido ou domínio inexistente" });
   if (!validarTelefone(telefone))
     return res.status(400).json({ erro: "Telefone inválido" });
+  if (!validarCPF(cpf))
+    return res.status(400).json({ erro: "CPF inválido" });
   if (senha !== confirmarSenha)
     return res.status(400).json({ erro: "As senhas não coincidem" });
 
@@ -41,14 +44,19 @@ const signUp = async (req, res) => {
     if (existente.length > 0)
       return res.status(409).json({ erro: "Email já cadastrado" });
 
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    const existenteCpf =
+      await sql`SELECT id_usuario FROM usuarios WHERE cpf = ${cpfLimpo}`;
+    if (existenteCpf.length > 0)
+      return res.status(409).json({ erro: "CPF já cadastrado" });
+
     const senhaHash = await bcrypt.hash(senha, 10);
     const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // ✅ Salva direto no banco com email_verificado = FALSE
     await sql`
-      INSERT INTO usuarios (nome, email, senha, telefone, email_verificado, token_verificacao, token_expiracao)
-      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, FALSE, ${codigoVerificacao}, ${expiracao})
+      INSERT INTO usuarios (nome, email, senha, telefone, cpf, email_verificado, token_verificacao, token_expiracao)
+      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, FALSE, ${codigoVerificacao}, ${expiracao})
     `;
 
     await enviarEmailVerificacao(email, codigoVerificacao);
@@ -367,12 +375,16 @@ const redefinirSenha =
     }
 };
 const atualizarPerfil = async (req, res) => {
-  const { nome, email, telefone, foto_perfil } = req.body;
+  const { nome, email, telefone } = req.body;
+
+  const file = req.file
+  const foto_perfil = file ? `/uploads/usuarios/${file.filename}` : undefined
 
   try {
     const sql = await conectar();
     await sql`
-      UPDATE usuarios SET nome = ${nome}, email = ${email}, telefone = ${telefone}, foto_perfil = ${foto_perfil ?? ''}
+      UPDATE usuarios SET nome = ${nome}, email = ${email}, telefone = ${telefone},
+        foto_perfil = COALESCE(${foto_perfil ?? null}, foto_perfil)
       WHERE id_usuario = ${req.usuarioId}
     `;
 

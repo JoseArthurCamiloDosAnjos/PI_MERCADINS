@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { removeEmojis } from '../hooks/useBlockEmojis';
+import { api } from '../services/api';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';

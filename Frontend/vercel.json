@@ -1,6 +1,6 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://pi-mercadins.onrender.com/api/$1" },
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

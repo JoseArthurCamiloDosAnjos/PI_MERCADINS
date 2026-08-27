@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
@@ -217,7 +218,7 @@ function EditarProdutoModal({
             <input
               className="gm-modal-input"
               value={nome}
-              onChange={e => setNome(e.target.value)}
+              onChange={e => setNome(removeEmojis(e.target.value))}
               placeholder="Nome do produto"
             />
           </label>
@@ -227,7 +228,7 @@ function EditarProdutoModal({
             <textarea
               className="gm-modal-textarea"
               value={descricao}
-              onChange={e => setDescricao(e.target.value)}
+              onChange={e => setDescricao(removeEmojis(e.target.value))}
               placeholder="Descrição (opcional)"
               rows={3}
             />

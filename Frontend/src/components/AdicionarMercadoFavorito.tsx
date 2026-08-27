@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { useToast } from '../hooks/useToast';
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import ToastContainer from './Toast';
 import { IconStore, IconX, IconHeart } from './Icons';
 import './AdicionarMercadoFavorito.css';
@@ -103,7 +104,7 @@ export default function AdicionarMercadoFavorito({
             className="amf-busca-input"
             placeholder="Buscar mercado por nome ou cidade..."
             value={busca}
-            onChange={e => handleBusca(e.target.value)}
+            onChange={e => handleBusca(removeEmojis(e.target.value))}
           />
         </div>
 

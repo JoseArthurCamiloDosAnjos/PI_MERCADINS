@@ -1,5 +1,6 @@
 import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -280,7 +281,7 @@ export default function CadastroProduto({
                 value={nome}
                 maxLength={150}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  setNome(e.target.value);
+                  setNome(removeEmojis(e.target.value));
                   setErros(p => ({ ...p, nome: undefined }));
                 }}
               />
@@ -297,7 +298,7 @@ export default function CadastroProduto({
                 rows={3}
                 maxLength={500}
                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-                  setDescricao(e.target.value);
+                  setDescricao(removeEmojis(e.target.value));
                   setErros(p => ({ ...p, descricao: undefined }));
                 }}
               />

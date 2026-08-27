@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import ThemeToggle from '../../components/ThemeToggle';
@@ -474,7 +475,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
             className="vtc-busca-input"
             placeholder="Buscar produtos nesta loja..."
             value={busca}
-            onChange={e => setBusca(e.target.value)}
+            onChange={e => setBusca(removeEmojis(e.target.value))}
           />
         </div>
 

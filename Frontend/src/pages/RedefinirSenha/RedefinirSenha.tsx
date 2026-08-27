@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from '../../components/PasswordStrength';
@@ -106,7 +107,7 @@ export default function RedefinirSenha() {
                     type={mostrarNova ? 'text' : 'password'}
                     placeholder="Nova senha"
                     value={form.novaSenha}
-                    onChange={e => setForm(f => ({ ...f, novaSenha: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, novaSenha: removeEmojis(e.target.value) }))}
                   />
                   <span className="field-icon-login">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -124,7 +125,7 @@ export default function RedefinirSenha() {
                     type={mostrarConfirmar ? 'text' : 'password'}
                     placeholder="Confirmar nova senha"
                     value={form.confirmarSenha}
-                    onChange={e => setForm(f => ({ ...f, confirmarSenha: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, confirmarSenha: removeEmojis(e.target.value) }))}
                   />
                   <span className="field-icon-login">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

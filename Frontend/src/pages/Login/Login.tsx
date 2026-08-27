@@ -5,6 +5,7 @@ import "../common/Modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../../components/EsqueciSenhaModal";
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import logoImg from "../../assets/logo.jpeg";
 import logo2Img from "../../assets/logo2.png";
@@ -20,7 +21,7 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: removeEmojis(e.target.value) }));
   }
 
   async function handleSubmit(e: React.FormEvent) {

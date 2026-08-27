@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import './CriarCategoria.css';
 
 interface CriarCategoriaProps {
@@ -41,7 +42,7 @@ export default function CriarCategoria({
               maxLength={100}
               placeholder="Ex: Laticínios, Bebidas, Hortifruti…"
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setNome(e.target.value);
+                setNome(removeEmojis(e.target.value));
                 setErro('');
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleSalvar()}

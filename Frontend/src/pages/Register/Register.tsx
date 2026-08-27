@@ -6,6 +6,7 @@ import EmailVerificacaoModal from "../../components/EmailVerificacaoModal";
 import { BASE_URL } from '../../services/api';
 
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
 import logoImg from "../../assets/logo.jpeg";
@@ -61,7 +62,7 @@ export default function Register() {
   // ── Handlers ──
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: removeEmojis(value) }));
     setField(name, "", "");
   }
 
@@ -75,7 +76,7 @@ export default function Register() {
   }
 
   function handleTelefone(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatTelefone(e.target.value);
+    const formatted = formatTelefone(removeEmojis(e.target.value));
     setForm((prev) => ({ ...prev, telefone: formatted }));
     setField("telefone", "", "");
   }
@@ -89,7 +90,7 @@ export default function Register() {
   }
 
   function handleCPF(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatCPF(e.target.value);
+    const formatted = formatCPF(removeEmojis(e.target.value));
     setForm((prev) => ({ ...prev, cpf: formatted }));
     setField("cpf", "", "");
   }

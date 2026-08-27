@@ -8,6 +8,8 @@ services:
     envVars:
       - key: FRONTEND_URL
         value: https://mercadins.com.br
+      - key: ALLOWED_ORIGINS
+        value: https://mercadins.com.br,https://www.mercadins.com.br
       - key: DATABASE_URL_NEON
         sync: false
       - key: JWT_SECRET

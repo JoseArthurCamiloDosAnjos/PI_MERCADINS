@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import './EditarMercado.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ export default function EditarMercado({
               className={`em-input ${erros.nome ? 'em-input--erro' : ''}`}
               value={nome}
               maxLength={150}
-              onChange={(e) => { setNome(e.target.value); setErros({}); }}
+              onChange={(e) => { setNome(removeEmojis(e.target.value)); setErros({}); }}
               placeholder="Ex: Mercado do João"
             />
             {erros.nome && <span className="em-erro">{erros.nome}</span>}
@@ -167,7 +168,7 @@ export default function EditarMercado({
               value={descricao}
               rows={3}
               maxLength={300}
-              onChange={(e) => setDescricao(e.target.value)}
+              onChange={(e) => setDescricao(removeEmojis(e.target.value))}
               placeholder="Uma frase curta sobre o seu mercado"
             />
             <span className="em-char-count">{descricao.length}/300</span>

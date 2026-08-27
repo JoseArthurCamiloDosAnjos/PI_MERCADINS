@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
@@ -158,7 +159,7 @@ export default function RegistrarMercado() {
 
             <div className="field">
               <input placeholder="Nome do mercado" value={form.nome}
-                onChange={e => set('nome', e.target.value)} />
+                onChange={e => set('nome', removeEmojis(e.target.value))} />
               <FieldIcon>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
@@ -168,7 +169,7 @@ export default function RegistrarMercado() {
 
             <div className="field">
               <input placeholder="Email do mercado" type="email" value={form.email}
-                onChange={e => set('email', e.target.value)} />
+                onChange={e => set('email', removeEmojis(e.target.value))} />
               <FieldIcon>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -218,7 +219,7 @@ export default function RegistrarMercado() {
             <div className="rm-grid">
               <div className="field">
                 <input placeholder="Estado (UF)" value={form.estado}
-                  onChange={e => set('estado', e.target.value)} maxLength={2} />
+                  onChange={e => set('estado', removeEmojis(e.target.value))} maxLength={2} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="3 11 22 2 13 21 11 13 3 11"/>
@@ -228,7 +229,7 @@ export default function RegistrarMercado() {
 
               <div className="field">
                 <input placeholder="Cidade" value={form.cidade}
-                  onChange={e => set('cidade', e.target.value)} />
+                  onChange={e => set('cidade', removeEmojis(e.target.value))} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -238,7 +239,7 @@ export default function RegistrarMercado() {
 
               <div className="field">
                 <input placeholder="Bairro" value={form.bairro}
-                  onChange={e => set('bairro', e.target.value)} />
+                  onChange={e => set('bairro', removeEmojis(e.target.value))} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -248,7 +249,7 @@ export default function RegistrarMercado() {
 
               <div className="field">
                 <input placeholder="Rua" value={form.rua}
-                  onChange={e => set('rua', e.target.value)} />
+                  onChange={e => set('rua', removeEmojis(e.target.value))} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/>

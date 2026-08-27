@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';
@@ -125,17 +126,17 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
             <div className="pu-modal-group">
               <label className="pu-modal-label">Nome</label>
               <input className="pu-modal-input" value={form.nome}
-                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Seu nome" />
+                onChange={e => setForm(f => ({ ...f, nome: removeEmojis(e.target.value) }))} placeholder="Seu nome" />
             </div>
             <div className="pu-modal-group">
               <label className="pu-modal-label">Email</label>
               <input className="pu-modal-input" value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" />
+                onChange={e => setForm(f => ({ ...f, email: removeEmojis(e.target.value) }))} placeholder="seu@email.com" />
             </div>
             <div className="pu-modal-group">
               <label className="pu-modal-label">Telefone</label>
               <input className="pu-modal-input" value={form.telefone}
-                onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 99999-9999" />
+                onChange={e => setForm(f => ({ ...f, telefone: removeEmojis(e.target.value) }))} placeholder="(11) 99999-9999" />
             </div>
 
             <div className="pu-status-section">

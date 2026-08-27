@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { removeEmojis } from '../hooks/useBlockEmojis';
 import { BASE_URL } from '../services/api';
 
 interface EsqueciSenhaModalProps {
@@ -95,7 +96,7 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
                 type="email"
                 placeholder="Seu e-mail cadastrado"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setErro(""); }}
+                onChange={(e) => { setEmail(removeEmojis(e.target.value)); setErro(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleEnviar()}
                 autoFocus
               />

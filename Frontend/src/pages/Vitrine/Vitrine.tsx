@@ -8,6 +8,7 @@ import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import ToastContainer   from '../../components/Toast';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api }          from '../../services/api';
 import { useTheme }     from '../../context/ThemeContext';
 import ThemeToggle      from '../../components/ThemeToggle';
@@ -226,7 +227,7 @@ function EditarNomeCategoria({ nome, onSalvar, onCancelar }: EditarNomeCategoria
         className="vt-categoria-editar-input"
         value={valor}
         maxLength={100}
-        onChange={e => setValor(e.target.value)}
+        onChange={e => setValor(removeEmojis(e.target.value))}
         onKeyDown={e => {
           if (e.key === 'Enter') confirmar();
           if (e.key === 'Escape') onCancelar();
@@ -764,7 +765,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
             className="vt-busca-input"
             placeholder="Buscar produtos na sua vitrine..."
             value={busca}
-            onChange={e => setBusca(e.target.value)}
+            onChange={e => setBusca(removeEmojis(e.target.value))}
           />
         </div>
 

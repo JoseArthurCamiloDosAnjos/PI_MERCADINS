@@ -3,6 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
@@ -221,7 +222,7 @@ function TelaSeguranca() {
                   className="pu-modal-input"
                   type={mostrarNovaSenha ? 'text' : 'password'}
                   value={form.novaSenha}
-                  onChange={e => setForm(f => ({ ...f, novaSenha: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, novaSenha: removeEmojis(e.target.value) }))}
                   placeholder="••••••••"
                 />
                 <BtnOlho visivel={mostrarNovaSenha} onToggle={() => setMostrarNovaSenha(v => !v)} />
@@ -235,7 +236,7 @@ function TelaSeguranca() {
                   className="pu-modal-input"
                   type={mostrarConfirmar ? 'text' : 'password'}
                   value={form.confirmarSenha}
-                  onChange={e => setForm(f => ({ ...f, confirmarSenha: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, confirmarSenha: removeEmojis(e.target.value) }))}
                   placeholder="••••••••"
                 />
                 <BtnOlho visivel={mostrarConfirmar} onToggle={() => setMostrarConfirmar(v => !v)} />
@@ -247,7 +248,7 @@ function TelaSeguranca() {
                 className="pu-modal-input"
                 type="email"
                 value={form.emailConfirmacao}
-                onChange={e => setForm(f => ({ ...f, emailConfirmacao: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, emailConfirmacao: removeEmojis(e.target.value) }))}
                 placeholder="Digite o email da sua conta"
               />
               <span className="pu-input-hint">Digite o email da sua conta para confirmar a alteração de senha.</span>

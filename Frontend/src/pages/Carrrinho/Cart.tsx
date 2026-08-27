@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { removeEmojis } from "../../hooks/useBlockEmojis";
 import "./Cart.css";
 
 // ---------------------------------------------------------------
@@ -288,7 +289,7 @@ export default function CartScreen({
               type="text"
               placeholder="Cupom de desconto"
               value={coupon}
-              onChange={(e) => setCoupon(e.target.value)}
+              onChange={(e) => setCoupon(removeEmojis(e.target.value))}
             />
             <button type="button">Aplicar</button>
           </div>

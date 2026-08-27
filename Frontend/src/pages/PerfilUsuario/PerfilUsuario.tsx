@@ -180,7 +180,6 @@ function TelaSeguranca() {
 
     setEnviando(true);
     try {
-      const { api } = await import('../../services/api');
       await api.trocarSenha({ novaSenha: form.novaSenha, emailConfirmacao: form.emailConfirmacao });
       setEtapa('codigo');
     } catch (e: unknown) {
@@ -196,7 +195,6 @@ function TelaSeguranca() {
 
     setEnviando(true);
     try {
-      const { api } = await import('../../services/api');
       await api.confirmarTrocaSenha({ codigo, emailConfirmacao: form.emailConfirmacao });
       setEtapa('sucesso');
     } catch (e: unknown) {

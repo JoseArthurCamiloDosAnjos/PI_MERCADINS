@@ -70,7 +70,6 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
 
     setSalvando(true);
     try {
-      const { api } = await import('../services/api');
       await api.atualizar({
         nome: form.nome,
         email: form.email,

@@ -117,7 +117,7 @@ const signIn = async (req, res) => {
     const sql = await conectar(); // ← ADICIONE ISSO
 
     const resultado = await sql`
-      SELECT id_usuario, nome, email, senha, email_verificado, foto_perfil
+      SELECT id_usuario, nome, email, cpf, senha, email_verificado, foto_perfil
       FROM usuarios WHERE email = ${email}
     `;
 
@@ -146,6 +146,7 @@ const signIn = async (req, res) => {
         id_usuario: usuario.id_usuario,
         nome: usuario.nome,
         email: usuario.email,
+        cpf: usuario.cpf ?? '',
         email_verificado: usuario.email_verificado,
         foto_perfil: usuario.foto_perfil ?? '',
       },
@@ -259,7 +260,7 @@ const getPerfil = async (req, res) => {
   try {
     const sql = await conectar();
     const [usuario] = await sql`
-      SELECT id_usuario, nome, email, telefone, email_verificado, foto_perfil
+      SELECT id_usuario, nome, email, cpf, telefone, email_verificado, foto_perfil
       FROM usuarios
       WHERE id_usuario = ${req.usuarioId}
     `;

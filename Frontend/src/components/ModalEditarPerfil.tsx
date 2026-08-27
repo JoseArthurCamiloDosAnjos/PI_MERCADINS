@@ -15,6 +15,12 @@ function getIniciais(nome: string) {
   return nome.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
 }
 
+function formatarCPF(cpf: string) {
+  const nums = cpf.replace(/\D/g, '');
+  if (nums.length !== 11) return cpf;
+  return `${nums.slice(0,3)}.${nums.slice(3,6)}.${nums.slice(6,9)}-${nums.slice(9)}`;
+}
+
 export default function ModalEditarPerfil({ onFechar }: Props) {
   const { usuario, refreshUsuario } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
@@ -125,18 +131,48 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
           <div className="pu-modal-body">
             <div className="pu-modal-group">
               <label className="pu-modal-label">Nome</label>
-              <input className="pu-modal-input" value={form.nome}
-                onChange={e => setForm(f => ({ ...f, nome: removeEmojis(e.target.value) }))} placeholder="Seu nome" />
+              <input
+                className="pu-modal-input"
+                value={form.nome}
+                onChange={e => setForm(f => ({ ...f, nome: removeEmojis(e.target.value) }))}
+                placeholder="Seu nome completo"
+                maxLength={150}
+                autoComplete="name"
+              />
             </div>
             <div className="pu-modal-group">
               <label className="pu-modal-label">Email</label>
-              <input className="pu-modal-input" value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: removeEmojis(e.target.value) }))} placeholder="seu@email.com" />
+              <input
+                className="pu-modal-input"
+                type="email"
+                value={form.email}
+                readOnly
+                placeholder="seu@email.com"
+                autoComplete="email"
+              />
+              <span className="pu-input-hint">O email não pode ser alterado</span>
+            </div>
+            <div className="pu-modal-group">
+              <label className="pu-modal-label">CPF</label>
+              <input
+                className="pu-modal-input"
+                value={usuario?.cpf ? formatarCPF(usuario.cpf) : 'Não informado'}
+                readOnly
+                placeholder="000.000.000-00"
+              />
+              <span className="pu-input-hint">O CPF não pode ser alterado</span>
             </div>
             <div className="pu-modal-group">
               <label className="pu-modal-label">Telefone</label>
-              <input className="pu-modal-input" value={form.telefone}
-                onChange={e => setForm(f => ({ ...f, telefone: removeEmojis(e.target.value) }))} placeholder="(11) 99999-9999" />
+              <input
+                className="pu-modal-input"
+                type="tel"
+                value={form.telefone}
+                onChange={e => setForm(f => ({ ...f, telefone: removeEmojis(e.target.value) }))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+                autoComplete="tel"
+              />
             </div>
 
             <div className="pu-status-section">

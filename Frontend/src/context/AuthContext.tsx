@@ -14,6 +14,7 @@ interface Usuario {
   id_usuario: number;
   nome: string;
   email: string;
+  cpf?: string;
   telefone?: string;
   email_verificado: boolean;
   foto_perfil?: string;

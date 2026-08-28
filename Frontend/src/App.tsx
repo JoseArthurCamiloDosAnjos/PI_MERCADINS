@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
@@ -151,6 +151,7 @@ function CartWrapper() {
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
+  const location = useLocation()
   const [mercadoAberto, setMercadoAberto] = useState<{ id: number; nome: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('mercadoAberto')
@@ -176,18 +177,20 @@ function Rotas() {
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
-  if (!temMercado && mercadoAberto) {
+  const isRotaPublica = location.pathname === '/' || location.pathname.startsWith('/vitrine/')
+
+  if (!isRotaPublica && !temMercado && mercadoAberto) {
     handleSetMercadoAberto(null)
     handleSetVitrineAberta(false)
   }
 
-  if (usuario && mercadoAberto && vitrineAberta) {
+  if (!isRotaPublica && usuario && mercadoAberto && vitrineAberta) {
     return (
       <Vitrine mercadoId={mercadoAberto.id} onVoltar={() => handleSetVitrineAberta(false)} />
     )
   }
 
-  if (usuario && mercadoAberto) {
+  if (!isRotaPublica && usuario && mercadoAberto) {
     return (
       <GerenciamentoMercado
         mercadoId={mercadoAberto.id}

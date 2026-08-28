@@ -233,6 +233,17 @@
 .vtc-btn-favoritar--ativo { border-color: #f26b6b; color: #f26b6b; background: rgba(242, 107, 107, 0.1); }
 
 .vtc-desc-mercado { font-size: 13px; color: var(--vt-cinza); margin: 0; }
+.vtc-btn-leia-mais {
+  background: none;
+  border: none;
+  color: var(--vt-cor-icones);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+.vtc-btn-leia-mais:hover { opacity: 0.8; }
 
 .vtc-avaliacao {
   display: flex;

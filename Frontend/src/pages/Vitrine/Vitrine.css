@@ -299,6 +299,17 @@
   color: var(--vt-cinza);
   margin: 0;
 }
+.vt-btn-leia-mais {
+  background: none;
+  border: none;
+  color: var(--vt-cor-icones);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+.vt-btn-leia-mais:hover { opacity: 0.8; }
 
 /* Busca */
 .vt-busca-wrap {

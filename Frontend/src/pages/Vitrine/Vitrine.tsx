@@ -5,6 +5,7 @@ import CadastroProduto  from '../../components/CadastroProduto';
 import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
+import DescricaoModal   from '../../components/DescricaoModal';
 import ToastContainer   from '../../components/Toast';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
@@ -427,6 +428,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const [modalCategoria, setModalCategoria]       = useState(false);
   const [modalSaida, setModalSaida]               = useState(false);
   const [modalPaleta, setModalPaleta]             = useState(false);
+  const [modalDescricao, setModalDescricao]       = useState(false);
   const [salvandoMercado, setSalvandoMercado]     = useState(false);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
   const [carregando, setCarregando]               = useState(!!mercadoId);
@@ -755,7 +757,12 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                 <IconPencil size={12} /> Editar
               </button>
             </div>
-            <p className="vt-desc-mercado">{dados.descricao}</p>
+            <p className="vt-desc-mercado">
+              {dados.descricao && dados.descricao.length > 100
+                ? <>{dados.descricao.slice(0, 100)}... <button className="vt-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
+                : dados.descricao
+              }
+            </p>
           </div>
         </div>
 
@@ -854,6 +861,14 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           onSelecionar={handleSelecionarPaleta}
           onSelecionarPersonalizada={handleSelecionarPaletaPersonalizada}
           onFechar={() => setModalPaleta(false)}
+        />
+      )}
+
+      {modalDescricao && (
+        <DescricaoModal
+          titulo={dados.nome}
+          descricao={dados.descricao}
+          onFechar={() => setModalDescricao(false)}
         />
       )}
 

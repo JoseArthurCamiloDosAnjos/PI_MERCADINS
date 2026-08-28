@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
+import DescricaoModal from '../../components/DescricaoModal';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
@@ -257,6 +258,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
+  const [modalDescricao, setModalDescricao] = useState(false);
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema, toggleTema } = useTheme();
@@ -458,7 +460,12 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
                 <IconHeart size={16} filled={!!dados.favoritado} />
               </button>
             </div>
-            <p className="vtc-desc-mercado">{dados.descricao}</p>
+            <p className="vtc-desc-mercado">
+              {dados.descricao && dados.descricao.length > 100
+                ? <>{dados.descricao.slice(0, 100)}... <button className="vtc-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
+                : dados.descricao
+              }
+            </p>
             <div className="vtc-avaliacao">
               {Array.from({ length: 5 }, (_, i) => (
                 <IconStar key={i} size={13} filled={i < Math.round(dados.avaliacao ?? 0)} />
@@ -549,6 +556,14 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {modalDescricao && (
+        <DescricaoModal
+          titulo={dados.nome}
+          descricao={dados.descricao}
+          onFechar={() => setModalDescricao(false)}
+        />
+      )}
     </div>
   );
 }

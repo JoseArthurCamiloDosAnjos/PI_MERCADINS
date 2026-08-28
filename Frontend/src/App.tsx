@@ -177,20 +177,20 @@ function Rotas() {
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
-  const isRotaPublica = location.pathname === '/' || location.pathname.startsWith('/vitrine/')
+  const isRotaVendedor = location.pathname === '/vendedor'
 
-  if (!isRotaPublica && !temMercado && mercadoAberto) {
+  if (!isRotaVendedor && !temMercado && mercadoAberto) {
     handleSetMercadoAberto(null)
     handleSetVitrineAberta(false)
   }
 
-  if (!isRotaPublica && usuario && mercadoAberto && vitrineAberta) {
+  if (isRotaVendedor && usuario && mercadoAberto && vitrineAberta) {
     return (
       <Vitrine mercadoId={mercadoAberto.id} onVoltar={() => handleSetVitrineAberta(false)} />
     )
   }
 
-  if (!isRotaPublica && usuario && mercadoAberto) {
+  if (isRotaVendedor && usuario && mercadoAberto) {
     return (
       <GerenciamentoMercado
         mercadoId={mercadoAberto.id}

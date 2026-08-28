@@ -213,9 +213,9 @@ const esqueciSenha = async (req, res) => {
     `;
 
     if (usuario.length === 0) {
-
-      return res.status(404).json({
-        erro: "Usuário não encontrado"
+      return res.json({
+        mensagem:
+          "Se o email estiver cadastrado, você receberá um código de recuperação."
       });
     }
 

@@ -32,6 +32,7 @@ interface SidebarProps {
   navItems?: NavItem[];
   onEditarPerfil?: () => void;
   foto?: string;
+  showCriarMercado?: boolean;
 }
 
 const NAV_ITEMS_PADRAO: NavItem[] = [
@@ -53,6 +54,7 @@ export default function Sidebar({
   navItems,
   onEditarPerfil,
   foto,
+  showCriarMercado = true,
 }: SidebarProps) {
   const { logout } = useAuth();
   const { tema, toggleTema } = useTheme();
@@ -130,13 +132,15 @@ export default function Sidebar({
             <span className="sb-theme-label">Tema</span>
             <ThemeToggle tema={tema} onToggle={toggleTema} />
           </div>
-          <button
-            className="sb-create-btn"
-            onClick={() => { navigate("/registrar-mercado"); setOpen(false); }}
-          >
-            <IconPlus size={16} />
-            Criar Mercado
-          </button>
+          {showCriarMercado && (
+            <button
+              className="sb-create-btn"
+              onClick={() => { navigate("/registrar-mercado"); setOpen(false); }}
+            >
+              <IconPlus size={16} />
+              Criar Mercado
+            </button>
+          )}
 
           <button className="sb-logout-btn" onClick={handleLogout}>
             <svg

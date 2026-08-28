@@ -515,6 +515,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
         navItems={NAV_ITEMS}
         onEditarPerfil={() => setModalEditarAberto(true)}
         foto={usuario?.foto_perfil}
+        showCriarMercado={false}
       />
       <main className="pv-main">
         <div className="pv-topbar">

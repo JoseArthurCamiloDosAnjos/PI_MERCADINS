@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { removeEmojis } from '../hooks/useBlockEmojis';
+import { supabase } from '../services/supabase';
 import './EditarMercado.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -11,7 +12,7 @@ interface EditarMercadoProps {
   logo?: string;
   banner?: string;
   salvando?: boolean;
-  onSalvar: (dados: { nome: string; descricao: string; logo?: File; banner?: File }) => void;
+  onSalvar: (dados: { nome: string; descricao: string; logo_url?: string; banner_url?: string }) => void;
   onCancelar: () => void;
 }
 
@@ -67,9 +68,45 @@ export default function EditarMercado({
     return Object.keys(e).length === 0;
   }
 
-  function handleSalvar() {
+  async function uploadParaSupabase(file: File, pasta: string): Promise<string | null> {
+    const ext = file.name.split('.').pop() || 'png';
+    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const caminho = `${pasta}/${nomeArquivo}`;
+
+    const { error } = await supabase.storage
+      .from('imagens')
+      .upload(caminho, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Erro ao enviar imagem:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('imagens')
+      .getPublicUrl(caminho);
+
+    return data.publicUrl;
+  }
+
+  async function handleSalvar() {
     if (!validar()) return;
-    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo: logoFile, banner: bannerFile });
+
+    let logo_url: string | undefined;
+    let banner_url: string | undefined;
+
+    if (logoFile) {
+      logo_url = await uploadParaSupabase(logoFile, 'mercados') ?? undefined;
+    }
+
+    if (bannerFile) {
+      banner_url = await uploadParaSupabase(bannerFile, 'mercados') ?? undefined;
+    }
+
+    onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo_url, banner_url });
   }
 
   return (

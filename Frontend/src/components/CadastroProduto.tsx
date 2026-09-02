@@ -1,13 +1,16 @@
 import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
 import { removeEmojis } from '../hooks/useBlockEmojis';
+import { supabase } from '../services/supabase';
 import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ImagemItem { 
   url: string;
-  file: File;
+  file: File | null;
+  uploading?: boolean;
+  progress?: number;
 }
 
 interface ProdutoForm {
@@ -64,11 +67,36 @@ export default function CadastroProduto({
   const [slideAtual, setSlideAtual]   = useState(0);
   const [erros, setErros]             = useState<Erros>({});
   const [arrastando, setArrastando]   = useState(false);
+  const [enviando, setEnviando]       = useState(false);
 
   const inputFileRef = useRef<HTMLInputElement>(null);
   const editando = !!produto;
 
   // ── Upload ──────────────────────────────────────────────────────────────────
+
+  async function uploadParaSupabase(file: File): Promise<string | null> {
+    const ext = file.name.split('.').pop() || 'png';
+    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const caminho = `produtos/${nomeArquivo}`;
+
+    const { error } = await supabase.storage
+      .from('imagens')
+      .upload(caminho, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Erro ao enviar imagem:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('imagens')
+      .getPublicUrl(caminho);
+
+    return data.publicUrl;
+  }
 
   function lerArquivos(files: FileList | null) {
     if (!files) return;
@@ -81,7 +109,7 @@ export default function CadastroProduto({
         const url = e.target?.result;
         if (typeof url !== 'string') return;
         setImagens(prev => {
-          const novas = [...prev, { url, file }];
+          const novas = [...prev, { url, file, uploading: false, progress: 0 }];
           setSlideAtual(novas.length - 1);
           return novas;
         });
@@ -154,20 +182,48 @@ export default function CadastroProduto({
     return Object.keys(e).length === 0;
   }
 
-  function handleSalvar() {
+  async function handleSalvar() {
     if (!validar()) return;
-    const files = imagens
-      .map(i => i.file)
-      .filter((f): f is File => f !== null && f !== undefined);
-    onSalvar({
-      nome,
-      descricao,
-      preco,
-      imagens: imagens.map(i => i.url).filter(u => !u.startsWith('data:')),
-      files,
-      categoriaId,
-      estoque,
-    });
+
+    setEnviando(true);
+
+    try {
+      const urlsSupabase: string[] = [];
+
+      for (let i = 0; i < imagens.length; i++) {
+        const img = imagens[i];
+        if (img.file) {
+          setImagens(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, uploading: true } : item
+          ));
+
+          const url = await uploadParaSupabase(img.file);
+          if (url) {
+            urlsSupabase.push(url);
+          }
+
+          setImagens(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, uploading: false, progress: 100 } : item
+          ));
+        } else {
+          urlsSupabase.push(img.url);
+        }
+      }
+
+      onSalvar({
+        nome,
+        descricao,
+        preco,
+        imagens: urlsSupabase,
+        files: [],
+        categoriaId,
+        estoque,
+      });
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -347,16 +403,16 @@ export default function CadastroProduto({
           <button
             className="cp-btn cp-btn--secundario"
             onClick={onCancelar}
-            disabled={salvando}
+            disabled={salvando || enviando}
           >
             Cancelar
           </button>
           <button
-            className={`cp-btn cp-btn--primario ${salvando ? 'cp-btn--carregando' : ''}`}
+            className={`cp-btn cp-btn--primario ${(salvando || enviando) ? 'cp-btn--carregando' : ''}`}
             onClick={handleSalvar}
-            disabled={salvando}
+            disabled={salvando || enviando}
           >
-            {salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Salvar produto'}
+            {enviando ? 'Enviando imagens…' : salvando ? 'Salvando…' : editando ? 'Salvar alterações' : 'Salvar produto'}
           </button>
         </div>
 

@@ -17,20 +17,6 @@ async function request(path: string, options: RequestInit = {}) {
   return data
 }
 
-async function requestFormData(path: string, formData: FormData, method: string = 'POST') {
-  const token = getToken()
-  const res = await fetch(`${BASE_URL}/api${path}`, {
-    method,
-    headers: {
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-    body: formData,
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.erro || 'Erro na requisição')
-  return data
-}
-
 export const api = {
   // ── Auth ─────────────────────────────────────────────────────────────────────
   register:    (dados: Record<string, string>) =>
@@ -39,13 +25,11 @@ export const api = {
     request('/auth/login',        { method: 'POST', body: JSON.stringify(dados) }),
   perfil:      () =>
     request('/auth/perfil'),
-  atualizar:   (dados: { nome?: string; email?: string; telefone?: string; foto_perfil?: File }) => {
-    const formData = new FormData()
-    if (dados.nome) formData.append('nome', dados.nome)
-    if (dados.email) formData.append('email', dados.email)
-    if (dados.telefone) formData.append('telefone', dados.telefone)
-    if (dados.foto_perfil) formData.append('foto_perfil', dados.foto_perfil)
-    return requestFormData('/auth/perfil', formData, 'PUT')
+  atualizar:   (dados: { nome?: string; email?: string; telefone?: string; foto_perfil_url?: string }) => {
+    return request('/auth/perfil', {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    })
   },
   trocarSenha: (dados: Record<string, string>) =>
     request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
@@ -61,13 +45,11 @@ export const api = {
     request(`/mercados/slug/${slug}`),
   listarMercados: (busca?: string) =>
     request(`/mercados${busca ? `?busca=${encodeURIComponent(busca)}` : ''}`),
-  atualizarMercado: (mercadoId: string | number, dados: { nome?: string; descricao?: string; logo?: File; banner?: File; [key: string]: unknown }) => {
-    const formData = new FormData()
-    if (dados.nome) formData.append('nome', dados.nome)
-    if (dados.descricao) formData.append('descricao', dados.descricao)
-    if (dados.logo) formData.append('foto_perfil', dados.logo)
-    if (dados.banner) formData.append('banner', dados.banner)
-    return requestFormData(`/mercados/${mercadoId}`, formData, 'PUT')
+  atualizarMercado: (mercadoId: string | number, dados: { nome?: string; descricao?: string; banner_url?: string; foto_perfil_url?: string; [key: string]: unknown }) => {
+    return request(`/mercados/${mercadoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    })
   },
   dashboardMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/dashboard`),
@@ -113,34 +95,36 @@ export const api = {
   criarProduto: (
     mercadoId:   string | number,
     categoriaId: string | number,
-    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number; estoque?: number; files?: File[] }
+    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number }
   ) => {
-    const formData = new FormData()
-    formData.append('nome', dados.nome)
-    if (dados.descricao) formData.append('descricao', dados.descricao)
-    if (dados.preco !== undefined) formData.append('preco', String(dados.preco))
-    if (dados.estoque !== undefined) formData.append('estoque', String(dados.estoque))
-    if (dados.files) {
-      dados.files.forEach(f => formData.append('imagens', f))
-    }
-    return requestFormData(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`, formData)
+    return request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`, {
+      method: 'POST',
+      body: JSON.stringify({
+        nome: dados.nome,
+        descricao: dados.descricao,
+        imagens: dados.imagens ?? [],
+        preco: dados.preco,
+        estoque: dados.estoque,
+      }),
+    })
   },
 
   atualizarProduto: (
     mercadoId:   string | number,
     categoriaId: string | number,
     produtoId:   string | number,
-    dados: { nome: string; descricao?: string; imagem?: string | null; imagens?: string[]; preco?: number; estoque?: number; files?: File[] }
+    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number }
   ) => {
-    const formData = new FormData()
-    formData.append('nome', dados.nome)
-    if (dados.descricao) formData.append('descricao', dados.descricao)
-    if (dados.preco !== undefined) formData.append('preco', String(dados.preco))
-    if (dados.estoque !== undefined) formData.append('estoque', String(dados.estoque))
-    if (dados.files) {
-      dados.files.forEach(f => formData.append('imagens', f))
-    }
-    return requestFormData(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, formData, 'PUT')
+    return request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        nome: dados.nome,
+        descricao: dados.descricao,
+        imagens: dados.imagens ?? [],
+        preco: dados.preco,
+        estoque: dados.estoque,
+      }),
+    })
   },
 
   deletarProduto: (

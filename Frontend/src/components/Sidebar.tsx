@@ -70,7 +70,7 @@ export default function Sidebar({
   }
 
   function handleNav(i: number) {
-    onNav && onNav(i);
+    onNav?.(i);
     setOpen(false);
   }
 

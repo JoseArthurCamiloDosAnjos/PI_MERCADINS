@@ -77,7 +77,6 @@ interface ProdutoForm {
   descricao: string;
   preco: string;
   imagens: string[];
-  files: File[];
   categoriaId: number;
   estoque: number;
 }
@@ -287,7 +286,7 @@ function CategoriaSection({
         nome: dados.nome, descricao: dados.descricao,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
         estoque: dados.estoque,
-        files: dados.files,
+        imagens: dados.imagens,
       });
       setProdutos(prev => [...prev, novo]);
       setModalAberto(false);
@@ -314,7 +313,7 @@ function CategoriaSection({
         descricao: dados.descricao,
         preco: Number.isFinite(precoNum) ? precoNum : 0,
         estoque: dados.estoque,
-        files: dados.files,
+        imagens: dados.imagens,
       });
       setProdutos(prev => prev.map(p => p.id_produto === atualizado.id_produto ? atualizado : p));
       setProdutoEditando(null);
@@ -618,7 +617,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
   // ── Editar mercado ────────────────────────────────────────────────────────
 
-  async function handleSalvarMercado(form: { nome: string; descricao: string; logo?: File; banner?: File }) {
+  async function handleSalvarMercado(form: { nome: string; descricao: string; logo_url?: string; banner_url?: string }) {
     if (!dados.id || dados.id === 0) {
       setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
       setModalEditar(false);
@@ -631,8 +630,8 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       await api.atualizarMercado(dados.id, {
         nome: form.nome,
         descricao: form.descricao,
-        logo: form.logo,
-        banner: form.banner,
+        logo_url: form.logo_url,
+        banner_url: form.banner_url,
       });
       setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
       setModalEditar(false);

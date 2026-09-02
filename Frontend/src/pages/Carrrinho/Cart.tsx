@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import "./Cart.css";
 
@@ -124,10 +124,6 @@ export default function CartScreen({
 }: CartScreenProps) {
   const [items, setItems] = useState<CartItem[]>(initialItems);
   const [coupon, setCoupon] = useState("");
-
-  useEffect(() => {
-    setItems(initialItems);
-  }, [initialItems]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = useMemo(

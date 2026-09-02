@@ -46,6 +46,16 @@ function debounceSalvar(mercadoId: number, itens: ItemCarrinho[]) {
   }, 500);
 }
 
+interface ItemCarrinhoBanco {
+  id_produto: number;
+  id_categoria: number;
+  nome: string;
+  descricao?: string;
+  preco?: string;
+  imagem?: string;
+  quantidade: number;
+}
+
 export function useCarrinho(mercadoId: number) {
   const [itens, setItens] = useState<ItemCarrinho[]>(() => loadCarrinhoLocal(mercadoId));
   const carregouBanco = useRef(false);
@@ -66,7 +76,7 @@ export function useCarrinho(mercadoId: number) {
     api.buscarCarrinho(mercadoId)
       .then(res => {
         if (res.itens && res.itens.length > 0) {
-          const itensBanco: ItemCarrinho[] = res.itens.map((i: any) => ({
+          const itensBanco: ItemCarrinho[] = res.itens.map((i: ItemCarrinhoBanco) => ({
             produto: {
               id_produto: i.id_produto,
               id_categoria: i.id_categoria,

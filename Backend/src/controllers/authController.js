@@ -376,10 +376,9 @@ const redefinirSenha =
     }
 };
 const atualizarPerfil = async (req, res) => {
-  const { nome, email, telefone } = req.body;
+  const { nome, email, telefone, foto_perfil_url } = req.body;
 
-  const file = req.file
-  const foto_perfil = file ? `/uploads/usuarios/${file.filename}` : undefined
+  const foto_perfil = foto_perfil_url || undefined
 
   try {
     const sql = await conectar();

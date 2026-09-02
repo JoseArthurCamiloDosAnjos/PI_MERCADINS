@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { removeEmojis } from '../hooks/useBlockEmojis';
 import { api } from '../services/api';
+import { supabase } from '../services/supabase';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';
@@ -77,11 +78,39 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
 
     setSalvando(true);
     try {
+      let foto_perfil_url: string | undefined;
+
+      if (fotoFile) {
+        const ext = fotoFile.name.split('.').pop() || 'webp';
+        const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const caminho = `usuarios/${nomeArquivo}`;
+
+        const { error } = await supabase.storage
+          .from('imagens')
+          .upload(caminho, fotoFile, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (error) {
+          console.error('Erro ao enviar foto:', error);
+          showToast('erro', 'Erro ao enviar foto de perfil.');
+          setSalvando(false);
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from('imagens')
+          .getPublicUrl(caminho);
+
+        foto_perfil_url = data.publicUrl;
+      }
+
       await api.atualizar({
         nome: form.nome,
         email: form.email,
         telefone: form.telefone,
-        foto_perfil: fotoFile,
+        foto_perfil_url,
       });
       await refreshUsuario();
       showToast('sucesso', 'Perfil atualizado com sucesso!');

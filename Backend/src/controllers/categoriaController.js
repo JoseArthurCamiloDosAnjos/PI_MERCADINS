@@ -1,17 +1,4 @@
 const { conectar } = require('../db/neon')
-const jwt = require('jsonwebtoken')
-
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization
-  if (!auth || !auth.startsWith('Bearer ')) return null
-  const token = auth.split(' ')[1]
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    return decoded.id ?? null
-  } catch {
-    return null
-  }
-}
 
 const listarCategorias = async (req, res) => {
   const { mercadoId } = req.params
@@ -32,9 +19,7 @@ const listarCategorias = async (req, res) => {
 }
 
 const criarCategoria = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId } = req.params
   const { nome } = req.body
@@ -67,9 +52,7 @@ const criarCategoria = async (req, res) => {
 }
 
 const atualizarCategoria = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId } = req.params
   const { nome } = req.body
@@ -107,9 +90,7 @@ const atualizarCategoria = async (req, res) => {
 }
 
 const deletarCategoria = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId } = req.params
 

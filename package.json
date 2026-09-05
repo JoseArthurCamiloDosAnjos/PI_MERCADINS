@@ -15,9 +15,5 @@
   "type": "commonjs",
   "devDependencies": {
     "concurrently": "^9.2.1"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.112.4",
-    "lucide-react": "^1.24.0"
   }
 }

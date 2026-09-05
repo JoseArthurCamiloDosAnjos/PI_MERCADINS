@@ -1,25 +1,4 @@
 const { conectar } = require("../db/neon");
-const jwt = require("jsonwebtoken");
-
-// ─────────────────────────────────────────────
-// Helper — extrai id do token JWT
-// O authController gera o token com { id, email }
-// então usamos decoded.id
-// ─────────────────────────────────────────────
-
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer "))
-    return null;
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.id ?? null; // ← 'id', igual ao jwt.sign do authController
-  } catch {
-    return null;
-  }
-}
 
 // ─────────────────────────────────────────────
 // Helper — gera slug a partir do nome
@@ -85,10 +64,7 @@ function validarTelefone(telefone) {
 // ─────────────────────────────────────────────
 
 const criarMercado = async (req, res) => {
-  // Verifica autenticação primeiro
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado. Faça login para cadastrar um mercado." });
+  const id_usuario = req.usuarioId;
 
   const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec } = req.body;
 
@@ -174,19 +150,35 @@ const criarMercado = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // GET /api/mercados — Listar todos os mercados
-// Rota pública
+// Rota pública — suporta paginação via query params ?page=1&limit=20
 // ─────────────────────────────────────────────
 
 const listarMercados = async (req, res) => {
   try {
     const sql = await conectar();
 
-    const mercados = await sql`
-      SELECT * FROM mercados
-      ORDER BY data_cadastro DESC
-    `;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
 
-    res.status(200).json({ mercados });
+    const [mercados, [{ total }]] = await Promise.all([
+      sql`
+        SELECT * FROM mercados
+        ORDER BY data_cadastro DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `,
+      sql`SELECT COUNT(*)::int AS total FROM mercados`
+    ]);
+
+    res.status(200).json({
+      mercados,
+      paginacao: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     console.error("ERRO listarMercados:", err);
     res.status(500).json({ erro: err.message });
@@ -249,7 +241,7 @@ const buscarMercadoPorSlug = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const atualizarMercado = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
+  const id_usuario = req.usuarioId;
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado" });
 
@@ -346,7 +338,7 @@ const atualizarMercado = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const deletarMercado = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
+  const id_usuario = req.usuarioId;
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado" });
 
@@ -387,7 +379,7 @@ const deletarMercado = async (req, res) => {
 };
 // GET /api/meus-mercados — mercados do usuário logado
 const meusMercados = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
+  const id_usuario = req.usuarioId;
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado" });
 
@@ -408,7 +400,7 @@ const meusMercados = async (req, res) => {
 
 // GET /api/mercados/:id/dashboard — dados completos para o gerenciamento
 const dashboardMercado = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
+  const id_usuario = req.usuarioId;
   if (!id_usuario)
     return res.status(401).json({ erro: "Não autenticado" });
 

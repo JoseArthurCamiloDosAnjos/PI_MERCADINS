@@ -12,6 +12,7 @@ module.exports = (req, res, next) => {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET)
     req.usuario = payload
+    req.usuarioId = payload.id
     next()
   } catch {
     res.status(401).json({ erro: 'Token inválido ou expirado' })

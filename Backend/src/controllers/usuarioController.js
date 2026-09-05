@@ -1,25 +1,8 @@
 const { conectar } = require("../db/neon");
-const jwt = require("jsonwebtoken");
-
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer "))
-    return null;
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // GET /api/usuario/favoritos
 const listarFavoritos = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();
@@ -41,9 +24,7 @@ const listarFavoritos = async (req, res) => {
 
 // GET /api/usuario/avaliacoes
 const listarAvaliacoes = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();
@@ -65,9 +46,7 @@ const listarAvaliacoes = async (req, res) => {
 
 // GET /api/usuario/historico
 const listarHistorico = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();

@@ -1,25 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
-import Login from './pages/Login/Login'
-import Register from './pages/Register/Register'
-import PerfilUsuario from './pages/PerfilUsuario/PerfilUsuario'
-import PerfilVendedor from './pages/PerfilVendedor/PerfilVendedor'
-import GerenciamentoMercado from './pages/GerenciamentoMercado/GerenciamentoMercado'
 import LoadingOverlay from './components/LoadingOverlay'
-import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha'
-import VerificarEmail from './pages/VerificarEmail/VerificarEmail'
-import RegistrarMercado from './pages/RegistrarMercado/RegistrarMercado'
-import MercadinsPromos from './pages/MercadinsPromo/MercadinsPromo'
-import Vitrine from './pages/Vitrine/Vitrine'
-import VitrineCliente from './pages/VitrineCliente/VitrineCliente'
-import ProdutoTelaContainer from './pages/ProdutoTela/ProdutoTelaContainer'
-import CartScreen from './pages/Carrrinho/Cart'
 import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
+
+const Login = lazy(() => import('./pages/Login/Login'))
+const Register = lazy(() => import('./pages/Register/Register'))
+const PerfilUsuario = lazy(() => import('./pages/PerfilUsuario/PerfilUsuario'))
+const PerfilVendedor = lazy(() => import('./pages/PerfilVendedor/PerfilVendedor'))
+const GerenciamentoMercado = lazy(() => import('./pages/GerenciamentoMercado/GerenciamentoMercado'))
+const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha/RedefinirSenha'))
+const VerificarEmail = lazy(() => import('./pages/VerificarEmail/VerificarEmail'))
+const RegistrarMercado = lazy(() => import('./pages/RegistrarMercado/RegistrarMercado'))
+const MercadinsPromos = lazy(() => import('./pages/MercadinsPromo/MercadinsPromo'))
+const Vitrine = lazy(() => import('./pages/Vitrine/Vitrine'))
+const VitrineCliente = lazy(() => import('./pages/VitrineCliente/VitrineCliente'))
+const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaContainer'))
+const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
@@ -204,20 +205,22 @@ function Rotas() {
   const destino = usuario ? (temMercado ? '/vendedor' : '/perfil') : '/auth'
 
   return (
-    <Routes>
-      <Route path="/"                  element={<MercadinsPromos />} />
-      <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
-      <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
-      <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
-      <Route path="/verificar-email"   element={<VerificarEmail />} />
-      <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
-      <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => handleSetMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
-      <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
-      <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
-      <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
-      <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
-      <Route path="*"                  element={<Navigate to={destino} />} />
-    </Routes>
+    <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
+      <Routes>
+        <Route path="/"                  element={<MercadinsPromos />} />
+        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
+        <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
+        <Route path="/verificar-email"   element={<VerificarEmail />} />
+        <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
+        <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => handleSetMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+        <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
+        <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
+        <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
+        <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
+        <Route path="*"                  element={<Navigate to={destino} />} />
+      </Routes>
+    </Suspense>
   )
 }
 

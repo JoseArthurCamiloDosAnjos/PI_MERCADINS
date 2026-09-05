@@ -1,25 +1,4 @@
 const { conectar } = require("../db/neon");
-const jwt = require("jsonwebtoken");
-
-// ─────────────────────────────────────────────
-// Helper — extrai id do token JWT
-// O authController gera o token com { id, email }
-// então usamos decoded.id
-// ─────────────────────────────────────────────
-
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer "))
-    return null;
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.id ?? null; // ← 'id', igual ao jwt.sign do authController
-  } catch {
-    return null;
-  }
-}
 
 // ─────────────────────────────────────────────
 // GET /api/usuarios-mercados/meus
@@ -27,9 +6,7 @@ function pegarIdUsuario(req) {
 // ─────────────────────────────────────────────
 
 const meusMercados = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();
@@ -55,9 +32,7 @@ const meusMercados = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const listarMembros = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_usuario = req.usuarioId;
 
   const { id_mercado } = req.params;
 
@@ -96,9 +71,7 @@ const listarMembros = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const vincularUsuario = async (req, res) => {
-  const id_solicitante = pegarIdUsuario(req);
-  if (!id_solicitante)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_solicitante = req.usuarioId;
 
   const { id_mercado } = req.params;
   const { id_usuario, papel = "funcionario" } = req.body;
@@ -150,9 +123,7 @@ const vincularUsuario = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const desvincularUsuario = async (req, res) => {
-  const id_solicitante = pegarIdUsuario(req);
-  if (!id_solicitante)
-    return res.status(401).json({ erro: "Não autenticado" });
+  const id_solicitante = req.usuarioId;
 
   const { id_mercado, id_usuario } = req.params;
 

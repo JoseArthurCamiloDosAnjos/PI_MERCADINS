@@ -15,6 +15,14 @@
 /* RESET & BASE */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  scroll-behavior: smooth;
+}
+
+[id] {
+  scroll-margin-top: 80px;
+}
+
 .mp-root {
   font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
   color: #0D2251;

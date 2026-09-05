@@ -96,6 +96,12 @@ export default function MercadinsPromo() {
   const navigate = useNavigate();
   const { usuario, temMercado } = useAuth();
 
+  function scrollTo(id: string) {
+    setMobileMenuOpen(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   useEffect(() => {
     const sections = document.querySelectorAll(
       ".mp-about, .mp-benefits, .mp-plans, .mp-testimonials, .mp-cta-final"
@@ -133,9 +139,9 @@ export default function MercadinsPromo() {
             <img src={logo} alt="Mercadins" className="mp-logo-img" />
           </div>
           <div className={`mp-nav-links ${mobileMenuOpen ? "mp-nav-links--open" : ""}`}>
-            <a href="#beneficios" onClick={() => setMobileMenuOpen(false)}>Benefícios</a>
-            <a href="#planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
-            <a href="#faq" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
+            <a href="#sobre" onClick={(e) => { e.preventDefault(); scrollTo('sobre'); }}>Sobre</a>
+            <a href="#beneficios" onClick={(e) => { e.preventDefault(); scrollTo('beneficios'); }}>Benefícios</a>
+            <a href="#planos" onClick={(e) => { e.preventDefault(); scrollTo('planos'); }}>Planos</a>
             <div className="mp-nav-mobile-actions">
               <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
               <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
@@ -183,7 +189,7 @@ export default function MercadinsPromo() {
             </div>
             <div className="mp-hero-actions">
               <button className="mp-btn-primary" onClick={handleCTA}>Criar mercado grátis</button>
-              <button className="mp-btn-ghost">Ver como funciona →</button>
+              <button className="mp-btn-ghost" onClick={() => scrollTo('beneficios')}>Ver como funciona →</button>
             </div>
           </div>
           <div className="mp-hero-visual">

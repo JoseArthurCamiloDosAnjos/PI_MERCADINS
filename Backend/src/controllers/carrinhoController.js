@@ -1,22 +1,8 @@
 const { conectar } = require('../db/neon');
-const jwt = require('jsonwebtoken');
-
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return null;
-  const token = auth.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // GET /api/carrinho/:mercadoId — busca carrinho do usuário logado
 const buscarCarrinho = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario) return res.status(401).json({ erro: 'Não autenticado' });
+  const id_usuario = req.usuarioId;
 
   const { mercadoId } = req.params;
 
@@ -40,8 +26,7 @@ const buscarCarrinho = async (req, res) => {
 
 // PUT /api/carrinho/:mercadoId — salva carrinho completo (substitui tudo)
 const salvarCarrinho = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario) return res.status(401).json({ erro: 'Não autenticado' });
+  const id_usuario = req.usuarioId;
 
   const { mercadoId } = req.params;
   const { itens } = req.body;
@@ -53,22 +38,24 @@ const salvarCarrinho = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Remove todos os itens atuais deste usuário/mercado
-    await sql`
-      DELETE FROM carrinho
-      WHERE id_usuario = ${id_usuario}
-        AND id_mercado = ${Number(mercadoId)}
-    `;
+    await sql.transaction(async (tx) => {
+      // Remove todos os itens atuais deste usuário/mercado
+      await tx`
+        DELETE FROM carrinho
+        WHERE id_usuario = ${id_usuario}
+          AND id_mercado = ${Number(mercadoId)}
+      `;
 
-    // Insere os novos itens (se houver)
-    for (const item of itens) {
-      if (item.quantidade > 0) {
-        await sql`
-          INSERT INTO carrinho (id_usuario, id_mercado, id_produto, quantidade)
-          VALUES (${id_usuario}, ${Number(mercadoId)}, ${item.id_produto}, ${item.quantidade})
-        `;
+      // Insere os novos itens (se houver)
+      for (const item of itens) {
+        if (item.quantidade > 0) {
+          await tx`
+            INSERT INTO carrinho (id_usuario, id_mercado, id_produto, quantidade)
+            VALUES (${id_usuario}, ${Number(mercadoId)}, ${item.id_produto}, ${item.quantidade})
+          `;
+        }
       }
-    }
+    });
 
     res.status(200).json({ mensagem: 'Carrinho salvo com sucesso' });
   } catch (err) {
@@ -79,8 +66,7 @@ const salvarCarrinho = async (req, res) => {
 
 // DELETE /api/carrinho/:mercadoId — limpa carrinho do usuário
 const limparCarrinho = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req);
-  if (!id_usuario) return res.status(401).json({ erro: 'Não autenticado' });
+  const id_usuario = req.usuarioId;
 
   const { mercadoId } = req.params;
 

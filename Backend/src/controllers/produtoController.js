@@ -1,18 +1,4 @@
 const { conectar } = require('../db/neon')
-const jwt = require('jsonwebtoken')
-
-// ── Mesmo helper do marketController ─────────────────────────────────────────
-function pegarIdUsuario(req) {
-  const auth = req.headers.authorization
-  if (!auth || !auth.startsWith('Bearer ')) return null
-  const token = auth.split(' ')[1]
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    return decoded.id ?? null
-  } catch {
-    return null
-  }
-}
 
 function parsePreco(valor) {
   if (typeof valor === 'number') return valor;
@@ -54,9 +40,7 @@ const listarProdutos = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const criarProduto = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId } = req.params
   const { nome, descricao, preco, estoque, imagens } = req.body
@@ -112,9 +96,7 @@ const criarProduto = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const atualizarProduto = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId, produtoId } = req.params
   const { nome, descricao, preco, estoque, imagens } = req.body
@@ -172,9 +154,7 @@ const atualizarProduto = async (req, res) => {
 // ─────────────────────────────────────────────
 
 const deletarProduto = async (req, res) => {
-  const id_usuario = pegarIdUsuario(req)
-  if (!id_usuario)
-    return res.status(401).json({ erro: 'Não autenticado.' })
+  const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId, produtoId } = req.params
 

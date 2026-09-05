@@ -256,12 +256,14 @@ function TelaSeguranca() {
   const { toasts, showToast, dismissToast } = useToast();
   const [etapa, setEtapa] = useState<'form' | 'codigo' | 'sucesso'>('form');
   const [enviando, setEnviando] = useState(false);
-  const [form, setForm] = useState({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' });
+  const [form, setForm] = useState({ senhaAtual: '', novaSenha: '', confirmarSenha: '', emailConfirmacao: '' });
   const [codigo, setCodigo] = useState('');
+  const [mostrarAtual, setMostrarAtual] = useState(false);
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
 
   async function enviarConfirmacao() {
+    if (!form.senhaAtual) return showToast('erro', 'Digite a senha atual.');
     if (!form.novaSenha) return showToast('erro', 'Digite a nova senha.');
     if (form.novaSenha.length < 6) return showToast('erro', 'A senha deve ter ao menos 6 caracteres.');
     if (form.novaSenha !== form.confirmarSenha) return showToast('erro', 'As senhas não coincidem.');
@@ -270,7 +272,7 @@ function TelaSeguranca() {
 
     setEnviando(true);
     try {
-      await api.trocarSenha({ novaSenha: form.novaSenha, emailConfirmacao: form.emailConfirmacao });
+      await api.trocarSenha({ senhaAtual: form.senhaAtual, novaSenha: form.novaSenha, emailConfirmacao: form.emailConfirmacao });
       setEtapa('codigo');
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar email.');
@@ -301,6 +303,19 @@ function TelaSeguranca() {
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
         {etapa === 'form' ? (
           <div className="pu-form-block">
+            <div className="pu-modal-group">
+              <label className="pu-modal-label">Senha Atual</label>
+              <div className="pu-input-wrap">
+                <input
+                  className="pu-modal-input"
+                  type={mostrarAtual ? 'text' : 'password'}
+                  value={form.senhaAtual}
+                  onChange={e => setForm(f => ({ ...f, senhaAtual: removeEmojis(e.target.value) }))}
+                  placeholder="••••••••"
+                />
+                <BtnOlho visivel={mostrarAtual} onToggle={() => setMostrarAtual(v => !v)} />
+              </div>
+            </div>
             <div className="pu-modal-group">
               <label className="pu-modal-label">Nova Senha</label>
               <div className="pu-input-wrap">
@@ -385,7 +400,7 @@ function TelaSeguranca() {
             </button>
             <button
               className="pu-modal-btn-cancel"
-              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
             >
               Tentar novamente
             </button>
@@ -399,7 +414,7 @@ function TelaSeguranca() {
             </p>
             <button
               className="pu-modal-btn-save pu-form-btn"
-              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
+              onClick={() => { setEtapa('form'); setCodigo(''); setForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '', emailConfirmacao: '' }); }}
             >
               Alterar novamente
             </button>

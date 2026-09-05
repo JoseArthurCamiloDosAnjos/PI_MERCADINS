@@ -16,6 +16,7 @@ interface Usuario {
   email: string;
   cpf?: string;
   telefone?: string;
+  data_nascimento?: string;
   email_verificado: boolean;
   foto_perfil?: string;
 }

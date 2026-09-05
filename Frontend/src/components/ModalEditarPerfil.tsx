@@ -32,6 +32,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
     nome: usuario?.nome ?? '',
     email: usuario?.email ?? '',
     telefone: usuario?.telefone ?? '',
+    data_nascimento: usuario?.data_nascimento ?? '',
   });
 
   const [foto, setFoto] = useState<string | undefined>(
@@ -110,6 +111,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
         nome: form.nome,
         email: form.email,
         telefone: form.telefone,
+        data_nascimento: form.data_nascimento || null,
         foto_perfil_url,
       });
       await refreshUsuario();
@@ -202,6 +204,19 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
                 maxLength={15}
                 autoComplete="tel"
               />
+            </div>
+            <div className="pu-modal-group">
+              <label className="pu-modal-label">Data de Aniversário</label>
+              <input
+                className="pu-modal-input"
+                value={form.data_nascimento ? (() => {
+                  const raw = form.data_nascimento.slice(0, 10);
+                  const [y, m, d] = raw.split("-");
+                  return `${d}/${m}/${y}`;
+                })() : 'Não informado'}
+                readOnly
+              />
+              <span className="pu-input-hint">A data de nascimento não pode ser alterada</span>
             </div>
 
             <div className="pu-status-section">

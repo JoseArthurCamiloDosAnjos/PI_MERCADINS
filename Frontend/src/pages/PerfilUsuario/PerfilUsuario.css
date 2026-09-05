@@ -232,6 +232,9 @@
 }
 .pu-modal-input:focus { border-color: var(--azul-claro); }
 .pu-modal-input::placeholder { color: #3a4f68; }
+.pu-modal-input[type="date"] {
+  color-scheme: dark;
+}
 .pu-input-hint { font-size: 11px; color: var(--cinza-texto); margin-top: 2px; }
 
 .pu-modal-divider { height: 1px; background: var(--azul-borda); margin: 32px 0; }

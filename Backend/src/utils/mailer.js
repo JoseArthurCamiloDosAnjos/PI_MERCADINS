@@ -3,7 +3,7 @@ const EmailDominio = "Suporte@mercadins.com.br"
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const enviarEmailVerificacao = async (email, codigo) => {
+const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
   await resend.emails.send({
     from: EmailDominio,
     to: email,
@@ -29,9 +29,16 @@ const enviarEmailVerificacao = async (email, codigo) => {
               <span style="font-size: 36px; font-weight: 800; color: #0d2a5e; letter-spacing: 8px;">${codigo}</span>
             </div>
 
+            ${linkVerificacao ? `
+            <a href="${linkVerificacao}" style="display: inline-block; background: #0d2a5e; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 28px;">
+              Verificar meu email
+            </a>
+            ` : ''}
+
             <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
               <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
                 ⏱ Este código expira em <strong>24 horas</strong>.<br/>
+                ${linkVerificacao ? `Você também pode <a href="${linkVerificacao}" style="color: #0d2a5e; font-weight: 600;">clicando aqui</a>.<br/>` : ''}
                 Se você não solicitou o cadastro, ignore este email.
               </p>
             </div>

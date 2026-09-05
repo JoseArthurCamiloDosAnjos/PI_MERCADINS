@@ -57,21 +57,22 @@ function SenhaRequisitos({ senha }: { senha: string }) {
 
 export default function PasswordStrength({ senha }: PasswordStrengthProps) {
   const strength = getSenhaStrength(senha);
-  if (!strength) return null;
 
   return (
     <>
-      <div className="senha-strength show">
-        <div className="strength-bar">
-          <div
-            className="strength-fill"
-            style={{ width: strength.pct, background: strength.color }}
-          />
+      {strength && (
+        <div className="senha-strength show">
+          <div className="strength-bar">
+            <div
+              className="strength-fill"
+              style={{ width: strength.pct, background: strength.color }}
+            />
+          </div>
+          <span className="senha-strength-label" style={{ color: strength.color }}>
+            {strength.label}
+          </span>
         </div>
-        <span className="senha-strength-label" style={{ color: strength.color }}>
-          {strength.label}
-        </span>
-      </div>
+      )}
       <SenhaRequisitos senha={senha} />
     </>
   );

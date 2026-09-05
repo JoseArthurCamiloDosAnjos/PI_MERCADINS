@@ -10,6 +10,7 @@ import PerfilVendedor from './pages/PerfilVendedor/PerfilVendedor'
 import GerenciamentoMercado from './pages/GerenciamentoMercado/GerenciamentoMercado'
 import LoadingOverlay from './components/LoadingOverlay'
 import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha'
+import VerificarEmail from './pages/VerificarEmail/VerificarEmail'
 import RegistrarMercado from './pages/RegistrarMercado/RegistrarMercado'
 import MercadinsPromos from './pages/MercadinsPromo/MercadinsPromo'
 import Vitrine from './pages/Vitrine/Vitrine'
@@ -208,6 +209,7 @@ function Rotas() {
       <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
       <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
       <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
+      <Route path="/verificar-email"   element={<VerificarEmail />} />
       <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
       <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => handleSetMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
       <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />

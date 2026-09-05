@@ -1,9 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { ptBR } from "date-fns/locale/pt-BR";
+import "react-datepicker/dist/react-datepicker.css";
 import "./Register.css";
 import "../common/Modais.css";
-import EmailVerificacaoModal from "../../components/EmailVerificacaoModal";
 import { BASE_URL } from '../../services/api';
+
+registerLocale("pt-BR", ptBR);
+
+function parseDateSafe(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  const str = String(dateStr).slice(0, 10);
+  const d = new Date(str + "T00:00:00");
+  return isNaN(d.getTime()) ? null : d;
+}
 
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
@@ -27,6 +38,7 @@ export default function Register() {
     nome: "",
     telefone: "",
     cpf: "",
+    data_nascimento: "",
     email: "",
     senha: "",
     confirmar: "",
@@ -36,6 +48,7 @@ export default function Register() {
     nome:      { ...emptyField },
     telefone:  { ...emptyField },
     cpf:       { ...emptyField },
+    data_nascimento: { ...emptyField },
     email:     { ...emptyField },
     senha:     { ...emptyField },
     confirmar: { ...emptyField },
@@ -44,8 +57,6 @@ export default function Register() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmar, setShowConfirmar] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showVerificacaoModal, setShowVerificacaoModal] = useState(false);
-  const [emailCadastrado, setEmailCadastrado] = useState("");
 
   // ── Field helpers ──
   function setField(name: string, status: FieldState["status"], msg: string) {
@@ -150,6 +161,21 @@ export default function Register() {
       setField("cpf", "success", "");
     }
 
+    if (!form.data_nascimento) {
+      setField("data_nascimento", "error", "Data de aniversário é obrigatória.");
+      ok = false;
+    } else {
+      const data = new Date(form.data_nascimento);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      if (isNaN(data.getTime()) || data >= hoje) {
+        setField("data_nascimento", "error", "Data de aniversário inválida.");
+        ok = false;
+      } else {
+        setField("data_nascimento", "success", "");
+      }
+    }
+
     if (!form.email) {
       setField("email", "error", "Email é obrigatório.");
       ok = false;
@@ -195,6 +221,7 @@ export default function Register() {
           nome: form.nome.trim(),
           telefone: form.telefone.trim(),
           cpf: form.cpf.trim(),
+          data_nascimento: form.data_nascimento || null,
           email: form.email.trim(),
           senha: form.senha,
           confirmarSenha: form.confirmar,
@@ -204,8 +231,7 @@ export default function Register() {
       const data = await res.json();
 
       if (res.ok) {
-        setEmailCadastrado(form.email.trim());
-        setShowVerificacaoModal(true);
+        navigate(`/verificar-email?email=${encodeURIComponent(form.email.trim())}`);
       } else {
         if (Array.isArray(data.erros)) {
           showToast("erro", data.erros.join(" • "));
@@ -222,13 +248,6 @@ export default function Register() {
 
   return (
     <div className="register-page">
-      {showVerificacaoModal && (
-        <EmailVerificacaoModal
-          email={emailCadastrado}
-          onClose={() => { setShowVerificacaoModal(false); navigate("/auth"); }}
-        />
-      )}
-
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Left panel */}
@@ -322,6 +341,48 @@ export default function Register() {
               <span className="field-msg">{fields.cpf.msg}</span>
             </div>
 
+            {/* Data de Nascimento */}
+            <div className={fieldClass("data_nascimento")}>
+              <DatePicker
+                selected={parseDateSafe(form.data_nascimento)}
+                onChange={(date: Date | null) => {
+                  const value = date
+                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                    : "";
+                  setForm((prev) => ({ ...prev, data_nascimento: value }));
+                  setField("data_nascimento", "", "");
+                }}
+                onChangeRaw={(e) => {
+                  if (!e) return;
+                  const input = e.target as HTMLInputElement;
+                  let value = input.value.replace(/\D/g, "").slice(0, 8);
+                  if (value.length > 2) value = value.slice(0, 2) + "/" + value.slice(2);
+                  if (value.length > 5) value = value.slice(0, 5) + "/" + value.slice(5);
+                  input.value = value;
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Data de nascimento"
+                autoComplete="bday"
+                locale="pt-BR"
+                maxDate={new Date()}
+                showYearDropdown
+                showMonthDropdown
+                dropdownMode="select"
+                className="date-input"
+                calendarClassName="date-calendar"
+                strictParsing
+              />
+              <span className="field-icon-register">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </span>
+              <span className="field-msg">{fields.data_nascimento.msg}</span>
+            </div>
+
             {/* Email */}
             <div className={fieldClass("email")}>
               <input
@@ -371,7 +432,7 @@ export default function Register() {
                 )}
               </button>
               <span className="field-msg">{fields.senha.msg}</span>
-              {form.senha && <PasswordStrength senha={form.senha} />}
+              <PasswordStrength senha={form.senha} />
             </div>
 
             {/* Confirmar Senha */}

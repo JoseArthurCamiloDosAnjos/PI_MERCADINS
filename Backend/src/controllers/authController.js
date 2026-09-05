@@ -14,7 +14,7 @@ const { enviarEmailVerificacao, enviarEmailRecuperacao } = require("../utils/mai
 const cadastrosPendentes = new Map();
 
 const signUp = async (req, res) => {
-  const { nome, email, senha, telefone, cpf, confirmarSenha } = req.body;
+  const { nome, email, senha, telefone, cpf, data_nascimento, confirmarSenha } = req.body;
 
   if (!req.body) return res.status(400).json({ erro: "Body inválido" });
   if (!nome || !email || !senha || !telefone || !cpf || !confirmarSenha)
@@ -55,11 +55,11 @@ const signUp = async (req, res) => {
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await sql`
-      INSERT INTO usuarios (nome, email, senha, telefone, cpf, email_verificado, token_verificacao, token_expiracao)
-      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, FALSE, ${codigoVerificacao}, ${expiracao})
+      INSERT INTO usuarios (nome, email, senha, telefone, cpf, data_nascimento, email_verificado, token_verificacao, token_expiracao)
+      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, ${data_nascimento || null}, FALSE, ${codigoVerificacao}, ${expiracao})
     `;
 
-    await enviarEmailVerificacao(email, codigoVerificacao);
+    await enviarEmailVerificacao(email, codigoVerificacao, `${process.env.FRONTEND_URL}/verificar-email?codigo=${codigoVerificacao}`);
     console.log("✅ Email enviado para:", email);
 
     res
@@ -117,7 +117,7 @@ const signIn = async (req, res) => {
     const sql = await conectar(); // ← ADICIONE ISSO
 
     const resultado = await sql`
-      SELECT id_usuario, nome, email, cpf, senha, email_verificado, foto_perfil
+      SELECT id_usuario, nome, email, cpf, data_nascimento, senha, email_verificado, foto_perfil
       FROM usuarios WHERE email = ${email}
     `;
 
@@ -147,6 +147,7 @@ const signIn = async (req, res) => {
         nome: usuario.nome,
         email: usuario.email,
         cpf: usuario.cpf ?? '',
+        data_nascimento: usuario.data_nascimento ?? null,
         email_verificado: usuario.email_verificado,
         foto_perfil: usuario.foto_perfil ?? '',
       },
@@ -260,7 +261,7 @@ const getPerfil = async (req, res) => {
   try {
     const sql = await conectar();
     const [usuario] = await sql`
-      SELECT id_usuario, nome, email, cpf, telefone, email_verificado, foto_perfil
+      SELECT id_usuario, nome, email, cpf, telefone, data_nascimento, email_verificado, foto_perfil
       FROM usuarios
       WHERE id_usuario = ${req.usuarioId}
     `;
@@ -376,7 +377,7 @@ const redefinirSenha =
     }
 };
 const atualizarPerfil = async (req, res) => {
-  const { nome, email, telefone, foto_perfil_url } = req.body;
+  const { nome, email, telefone, data_nascimento, foto_perfil_url } = req.body;
 
   const foto_perfil = foto_perfil_url || undefined
 
@@ -384,6 +385,7 @@ const atualizarPerfil = async (req, res) => {
     const sql = await conectar();
     await sql`
       UPDATE usuarios SET nome = ${nome}, email = ${email}, telefone = ${telefone},
+        data_nascimento = ${data_nascimento || null},
         foto_perfil = COALESCE(${foto_perfil ?? null}, foto_perfil)
       WHERE id_usuario = ${req.usuarioId}
     `;
@@ -395,8 +397,9 @@ const atualizarPerfil = async (req, res) => {
   }
 };
 const solicitarTrocaSenha = async (req, res) => {
-  const { novaSenha, emailConfirmacao } = req.body;
+  const { senhaAtual, novaSenha, emailConfirmacao } = req.body;
 
+  if (!senhaAtual) return res.status(400).json({ erro: 'Senha atual obrigatória.' });
   if (!novaSenha) return res.status(400).json({ erro: 'Nova senha obrigatória.' });
   if (!emailConfirmacao) return res.status(400).json({ erro: 'Email de confirmação obrigatório.' });
 
@@ -409,11 +412,16 @@ const solicitarTrocaSenha = async (req, res) => {
 
   try {
     const sql = await conectar();
-    const [usuario] = await sql`SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
+    const [usuario] = await sql`SELECT id_usuario, email, senha FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
     if (emailConfirmacao.toLowerCase() !== usuario.email.toLowerCase()) {
       return res.status(400).json({ erro: 'O email de confirmação deve ser o mesmo da sua conta.' });
+    }
+
+    const senhaValida = await bcrypt.compare(senhaAtual, usuario.senha);
+    if (!senhaValida) {
+      return res.status(400).json({ erro: 'Senha atual incorreta.' });
     }
 
     // gera código numérico de 6 dígitos

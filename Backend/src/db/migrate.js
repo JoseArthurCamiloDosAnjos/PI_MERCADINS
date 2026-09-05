@@ -79,6 +79,11 @@ async function migrate() {
     ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf TEXT DEFAULT ''
   `;
 
+  // Adiciona coluna data_nascimento na tabela usuarios se não existir
+  await sql`
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE
+  `;
+
   // Atualiza slug para mercados existentes
   await sql`
     UPDATE mercados SET slug = LOWER(REPLACE(REPLACE(REPLACE(nome, ' ', '-'), '.', ''), ',', ''))

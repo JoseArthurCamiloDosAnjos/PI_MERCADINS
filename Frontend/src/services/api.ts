@@ -25,7 +25,7 @@ export const api = {
     request('/auth/login',        { method: 'POST', body: JSON.stringify(dados) }),
   perfil:      () =>
     request('/auth/perfil'),
-  atualizar:   (dados: { nome?: string; email?: string; telefone?: string; foto_perfil_url?: string }) => {
+  atualizar:   (dados: { nome?: string; email?: string; telefone?: string; data_nascimento?: string | null; foto_perfil_url?: string }) => {
     return request('/auth/perfil', {
       method: 'PUT',
       body: JSON.stringify(dados),

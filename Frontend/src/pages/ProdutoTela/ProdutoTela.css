@@ -14,7 +14,7 @@
   min-height: 100vh;
   width: 100%;
   background: var(--vt-azul-bg);
-  font-family: var(--vt-font);
+  font-family: var(--font);
   color: var(--vt-branco);
   display: flex;
   flex-direction: column;
@@ -73,7 +73,7 @@
   outline: none;
   color: var(--vt-branco);
   font-size: 13px;
-  font-family: var(--vt-font);
+  font-family: var(--font);
 }
 .pd-busca-input::placeholder { color: var(--vt-cinza); }
 
@@ -127,7 +127,7 @@
   border: none;
   color: var(--vt-cinza);
   font-size: 12px;
-  font-family: var(--vt-font);
+  font-family: var(--font);
   cursor: pointer;
   padding: 0;
   transition: color 0.2s;
@@ -328,7 +328,7 @@
   border: none; border-radius: var(--vt-radius-full);
   padding: 13px 18px; font-size: 13.5px; font-weight: 800;
   cursor: pointer; transition: all 0.2s;
-  font-family: var(--vt-font);
+  font-family: var(--font);
 }
 .pd-btn-comprar {
   background: var(--vt-azul-medio);

@@ -21,6 +21,7 @@ const Vitrine = lazy(() => import('./pages/Vitrine/Vitrine'))
 const VitrineCliente = lazy(() => import('./pages/VitrineCliente/VitrineCliente'))
 const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaContainer'))
 const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
+const Administrador = lazy(() => import('./pages/Adimin/adiministrador'))
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
@@ -202,7 +203,8 @@ function Rotas() {
     )
   }
 
-  const destino = usuario ? (temMercado ? '/vendedor' : '/perfil') : '/auth'
+  const isAdminLogin = localStorage.getItem('is_admin_login') === 'true'
+  const destino = usuario ? (usuario.is_admin && isAdminLogin ? '/admin' : (temMercado ? '/vendedor' : '/perfil')) : '/auth'
 
   return (
     <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
@@ -218,6 +220,7 @@ function Rotas() {
         <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
+        <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
         <Route path="*"                  element={<Navigate to={destino} />} />
       </Routes>
     </Suspense>

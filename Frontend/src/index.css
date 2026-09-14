@@ -18,7 +18,7 @@ html, body, #root {
 body {
   margin: 0;
   background: #0d1b2a;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
   overflow-x: hidden;
 }
 
@@ -70,7 +70,8 @@ body {
   --radius-full:  999px;
 
   --azul-bg:      #0d1b2a;
-  --font:         'Nunito', sans-serif;
+  --font:         'Inter', 'Segoe UI', sans-serif;
+  --font-display: 'Poppins', 'Inter', sans-serif;
   --radius-lg:    14px;
 
   --verde-bg:       rgba(34,197,94,0.12);

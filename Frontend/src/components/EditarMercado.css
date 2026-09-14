@@ -23,7 +23,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font);
   color: var(--vt-cor-texto);
   overflow: hidden;
   animation: emSlideUp 0.25s ease both;
@@ -232,7 +232,7 @@
   border: 1.5px solid var(--vt-azul-item);
   border-radius: 6px;
   color: var(--vt-cor-texto);
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font);
   font-size: 14px;
   padding: 10px 14px;
   width: 100%;
@@ -274,7 +274,7 @@
   flex-shrink: 0;
 }
 .em-btn {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font);
   font-size: 14px;
   font-weight: 700;
   border-radius: 6px;

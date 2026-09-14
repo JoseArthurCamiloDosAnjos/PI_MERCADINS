@@ -16,7 +16,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
 }
 
 .register-page {
@@ -111,7 +111,7 @@ html, body {
 }
 
 .logo-tagline {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   color: rgba(255,255,255,0.88);
   font-size: 14px;
   font-weight: 600;
@@ -148,7 +148,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 48px;
+  padding: 20px 48px;
   background: var(--white);
   position: relative;
   overflow-y: auto;
@@ -171,11 +171,11 @@ html, body {
   width: 100%;
   max-width: 420px;
   animation: fadeUp 0.9s 0.15s ease both;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .form-header {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .form-header-row {
@@ -186,18 +186,18 @@ html, body {
 }
 
 .form-header h1 {
-  font-family: 'Sora', sans-serif;
-  font-size: 28px;
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
   color: var(--navy);
   line-height: 1.2;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   overflow-wrap: break-word;
 }
 
 .form-header p {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -227,16 +227,16 @@ html, body {
 /* ── INPUTS ── */
 .field {
   position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 7px;
 }
 
 .field input {
   width: 100%;
-  padding: 12px 44px 12px 42px;
+  padding: 10px 40px 10px 38px;
   border: 1.8px solid var(--input-border);
-  border-radius: 12px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 14px;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 13px;
   color: var(--navy);
   background: var(--gray);
   transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
@@ -248,11 +248,11 @@ html, body {
 /* Date input */
 .date-input {
   width: 100%;
-  padding: 12px 44px 12px 42px;
-  border-radius: 12px;
+  padding: 10px 40px 10px 38px;
+  border-radius: 10px;
   border: 1.8px solid var(--input-border);
-  font-family: 'Nunito', sans-serif;
-  font-size: 14px;
+  font-family: var(--font);
+  font-size: 13px;
   color: var(--navy);
   background: var(--gray);
   transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
@@ -317,8 +317,8 @@ html, body {
 
 .field-icon-register {
   position: absolute;
-  left: 14px;
-  top: 24px;
+  left: 12px;
+  top: 20px;
   transform: translateY(-50%);
   color: var(--text-muted);
   pointer-events: none;
@@ -329,11 +329,11 @@ html, body {
 /* Mensagem de validação */
 .field-msg {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  margin-top: 3px;
+  margin-top: 1px;
   margin-left: 4px;
-  min-height: 14px;
+  min-height: 12px;
   transition: color 0.2s;
 }
 .field.has-error .field-msg  { color: var(--danger); }
@@ -342,8 +342,8 @@ html, body {
 /* Botão olho senha */
 .toggle-senha {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  right: 10px;
+  top: 10px;
   background: none;
   border: none;
   cursor: pointer;
@@ -357,14 +357,14 @@ html, body {
 .senha-strength {
   display: none;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 2px;
 }
 .senha-strength.show { display: flex; }
 
 .strength-bar {
   flex: 1;
-  height: 5px;
+  height: 4px;
   background: var(--input-border);
   border-radius: 99px;
   overflow: hidden;
@@ -378,10 +378,10 @@ html, body {
 }
 
 .strength-label {
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 700;
   white-space: nowrap;
-  min-width: 50px;
+  min-width: 45px;
   text-align: right;
 }
 
@@ -389,15 +389,15 @@ html, body {
 .senha-requisitos {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 8px;
+  gap: 2px;
+  margin-top: 4px;
 }
 
 .senha-req-item {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   transition: color 0.2s;
@@ -409,7 +409,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px; height: 16px;
+  width: 14px; height: 14px;
   border-radius: 50%;
   background: var(--input-border);
   flex-shrink: 0;
@@ -428,16 +428,16 @@ html, body {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 13px;
-  border-radius: 12px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 15px;
+  padding: 11px;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.4px;
   cursor: pointer;
   border: none;
   transition: transform 0.18s, box-shadow 0.18s, background 0.18s, opacity 0.18s;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .btn:active { transform: scale(0.97); }
@@ -470,8 +470,8 @@ html, body {
 /* ── LINK LOGIN ── */
 .login-link {
   text-align: center;
-  margin-top: 14px;
-  font-size: 12.5px;
+  margin-top: 10px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -489,8 +489,8 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-top: 14px;
-  font-size: 11px;
+  margin-top: 10px;
+  font-size: 10px;
   color: var(--text-muted);
   font-weight: 600;
 }

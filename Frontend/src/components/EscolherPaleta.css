@@ -28,7 +28,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: epPop 0.22s ease both;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font);
   color: #ffffff;
 }
 

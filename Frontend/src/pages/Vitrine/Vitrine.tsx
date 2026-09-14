@@ -428,7 +428,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const [modalSaida, setModalSaida]               = useState(false);
   const [modalPaleta, setModalPaleta]             = useState(false);
   const [modalDescricao, setModalDescricao]       = useState(false);
-  const [salvandoMercado, setSalvandoMercado]     = useState(false);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
   const [carregando, setCarregando]               = useState(!!mercadoId);
   const [busca, setBusca]                         = useState('');
@@ -489,13 +488,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     carregarDados();
   }, [mercadoId]);
 
-  // Garante que a tela sempre comece do topo depois que os dados (e categorias)
-  // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
-  // topbar quando o navegador reancora o scroll com múltiplas categorias/imagens.
-  // Usamos requestAnimationFrame (duas vezes) em vez de rodar direto, porque o
-  // reset precisa acontecer DEPOIS que o navegador termina de calcular o layout
-  // final da página — inclusive em navegadores como Safari, que não têm a
-  // propriedade overflow-anchor e por isso não respeitam esse CSS sozinho.
+  
   useEffect(() => {
     if (carregando) return;
     let raf2 = 0;
@@ -618,30 +611,16 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   // ── Editar mercado ────────────────────────────────────────────────────────
 
   async function handleSalvarMercado(form: { nome: string; descricao: string; logo_url?: string; banner_url?: string }) {
-    if (!dados.id || dados.id === 0) {
-      setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
-      setModalEditar(false);
-      setTemAlteracoes(true);
-      showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
-      return;
-    }
-    setSalvandoMercado(true);
-    try {
-      await api.atualizarMercado(dados.id, {
-        nome: form.nome,
-        descricao: form.descricao,
-        logo_url: form.logo_url,
-        banner_url: form.banner_url,
-      });
-      setDados(prev => ({ ...prev, nome: form.nome, descricao: form.descricao }));
-      setModalEditar(false);
-      setTemAlteracoes(true);
-      showToast('sucesso', 'Mercado atualizado com sucesso!');
-    } catch (e: unknown) {
-      showToast('erro', e instanceof Error ? e.message : 'Erro ao atualizar mercado.');
-    } finally {
-      setSalvandoMercado(false);
-    }
+    setDados(prev => ({
+      ...prev,
+      nome: form.nome,
+      descricao: form.descricao,
+      ...(form.logo_url !== undefined ? { logo: form.logo_url } : {}),
+      ...(form.banner_url !== undefined ? { banner: form.banner_url } : {}),
+    }));
+    setModalEditar(false);
+    setTemAlteracoes(true);
+    showToast('info', 'Alterações pendentes — clique em Salvar vitrine.');
   }
 
   // ── Criar categoria ───────────────────────────────────────────────────────
@@ -826,7 +805,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           descricao={dados.descricao}
           logo={dados.logo}
           banner={dados.banner}
-          salvando={salvandoMercado}
           onSalvar={handleSalvarMercado}
           onCancelar={() => setModalEditar(false)}
         />

@@ -32,7 +32,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: amfPop 0.22s ease both;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font);
 }
 
 .amf-header {

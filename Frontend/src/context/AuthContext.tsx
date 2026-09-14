@@ -19,13 +19,16 @@ interface Usuario {
   data_nascimento?: string;
   email_verificado: boolean;
   foto_perfil?: string;
+  is_admin?: boolean;
+  status?: string;
+  email_admin?: string;
 }
 
 interface AuthContextType {
   usuario: Usuario | null;
   carregando: boolean;
   temMercado: boolean;
-  login: (email: string, senha: string) => Promise<Usuario>;
+  login: (email: string, senha: string) => Promise<{ usuario: Usuario; is_admin_login: boolean }>;
   logout: () => void;
   refreshMercados: () => Promise<void>;
   refreshUsuario: () => Promise<void>;
@@ -64,6 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api
       .perfil()
       .then((u: Usuario) => {
+        if (u.status === 'bloqueado' || u.status === 'inativo') {
+          localStorage.removeItem("token");
+          setTemMercado(false);
+          return;
+        }
         setUsuario(u);
         return verificarMercados();
       })
@@ -74,16 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setCarregando(false));
   }, [verificarMercados]);
 
-  async function login(email: string, senha: string): Promise<Usuario> {
-    const { usuario: u, token } = await api.login({ email, senha });
+  async function login(email: string, senha: string): Promise<{ usuario: Usuario; is_admin_login: boolean }> {
+    const { usuario: u, token, is_admin_login } = await api.login({ email, senha });
     localStorage.setItem("token", token);
     setUsuario(u);
     await verificarMercados();
-    return u;
+    return { usuario: u, is_admin_login: is_admin_login ?? false };
   }
 
   function logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("is_admin_login");
     setUsuario(null);
     setTemMercado(false);
   }
@@ -91,6 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshUsuario() {
     try {
       const u = await api.perfil();
+      if (u.status === 'bloqueado' || u.status === 'inativo') {
+        logout();
+        return;
+      }
       setUsuario(u);
     } catch { /* ignore */ }
   }

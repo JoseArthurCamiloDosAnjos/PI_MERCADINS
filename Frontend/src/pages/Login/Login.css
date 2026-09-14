@@ -14,7 +14,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
 }
 
 .login-page {
@@ -98,7 +98,7 @@ html, body {
 }
 
 .logo-tagline {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   color: rgba(255,255,255,0.88);
   font-size: 14px;
   font-weight: 600;
@@ -168,7 +168,7 @@ html, body {
 }
 
 .form-header h1 {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   font-size: 32px;
   font-weight: 700;
   color: var(--navy);
@@ -193,7 +193,7 @@ html, body {
   padding: 15px 18px 15px 46px;
   border: 1.8px solid var(--input-border);
   border-radius: 14px;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
   font-size: 15px;
   color: var(--navy);
   background: var(--gray);
@@ -262,7 +262,7 @@ html, body {
   width: 100%;
   padding: 15px;
   border-radius: 14px;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.4px;

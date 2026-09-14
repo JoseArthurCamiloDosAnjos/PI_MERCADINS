@@ -24,7 +24,7 @@ html {
 }
 
 .mp-root {
-  font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
+  font-family: var(--font);
   color: #0D2251;
   background: #ffffff;
   overflow-x: hidden;

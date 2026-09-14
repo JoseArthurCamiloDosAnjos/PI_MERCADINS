@@ -10,6 +10,7 @@ const produtoRoutes          = require('./routes/produtoRoutes.js')
 const categoriaRoutes        = require('./routes/categoriaRoutes.js')
 const usuarioRoutes          = require('./routes/usuarioRoutes.js')
 const carrinhoRoutes         = require('./routes/carrinhoRoutes.js')
+const adminRoutes            = require('./routes/adminRoutes.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -87,6 +88,8 @@ app.use('/api/mercados',          marketRoutes)
 app.use('/api/usuarios-mercados', usuariosMercadosRoutes)
 app.use('/api/usuario',           usuarioRoutes)
 app.use('/api/carrinho',          carrinhoRoutes)
+
+app.use('/api/admin',              adminRoutes)
 
 app.use('/api/mercados/:mercadoId/categorias',                          categoriaRoutes)
 app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoRoutes)

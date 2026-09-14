@@ -133,7 +133,7 @@
 
 /* ── Título ── */
 .modal-title {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   color: #0d2a5e;
@@ -241,7 +241,7 @@
   padding: 14px 18px 14px 46px;
   border: 1.8px solid #dde3ef;
   border-radius: 14px;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
   font-size: 15px;
   color: #0d2a5e;
   background: #f0f2f7;
@@ -295,7 +295,7 @@
   width: 100%;
   padding: 14px;
   border-radius: 14px;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
@@ -362,7 +362,7 @@
   border: 2px solid #dde3ef;
   border-radius: 14px;
   text-align: center;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   color: #0d2a5e;
@@ -391,7 +391,7 @@
   color: #1a3a7a;
   font-weight: 700;
   font-size: 13px;
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font);
   padding: 0;
   transition: color 0.2s;
 }

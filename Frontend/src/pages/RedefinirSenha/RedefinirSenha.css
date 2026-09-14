@@ -85,7 +85,7 @@
 }
 
 .rs-sucesso h1 {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display);
   font-size: 28px;
   font-weight: 700;
   color: var(--navy);

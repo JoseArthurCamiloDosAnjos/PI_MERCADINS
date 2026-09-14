@@ -32,10 +32,19 @@ export default function Login() {
     }
     setCarregando(true);
     try {
-      const usuario = await login(form.email, form.senha);
+      const { usuario, is_admin_login } = await login(form.email, form.senha);
+      if (is_admin_login) {
+        localStorage.setItem('is_admin_login', 'true');
+      } else {
+        localStorage.removeItem('is_admin_login');
+      }
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/auth");
+        if (is_admin_login) {
+          navigate("/admin");
+        } else {
+          navigate("/auth");
+        }
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

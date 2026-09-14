@@ -1,6 +1,6 @@
 /* ─── Design Tokens (mesma paleta do painel do vendedor) ───────────────────── */
 :root {
-  --vt-font:          'Inter', 'Segoe UI', sans-serif;
+  --vt-font:          var(--font);
 
   --vt-azul-escuro:   #0d1b3e;
   --vt-azul-medio:    #1843a0;
@@ -46,7 +46,7 @@
   height: 100dvh;
   width: 100%;
   background: var(--vt-azul-bg);
-  font-family: var(--vt-font);
+  font-family: var(--font);
   color: var(--vt-cor-texto);
   display: flex;
   flex-direction: column;
@@ -276,7 +276,7 @@
   outline: none;
   color: var(--vt-cor-texto);
   font-size: 13.5px;
-  font-family: var(--vt-font);
+  font-family: var(--font);
 }
 .vtc-busca-input::placeholder { color: var(--vt-cinza); }
 
@@ -341,7 +341,7 @@
   flex-direction: column;
   text-align: left;
   padding: 0;
-  font-family: var(--vt-font);
+  font-family: var(--font);
 }
 .vtc-produto-card:hover {
   border-color: var(--vt-amarelo);

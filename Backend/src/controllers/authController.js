@@ -114,22 +114,36 @@ const signIn = async (req, res) => {
     return res.status(400).json({ erro: "Email e senha são obrigatórios" });
 
   try {
-    const sql = await conectar(); // ← ADICIONE ISSO
+    const sql = await conectar();
 
+    // Busca por email normal OU email_admin
     const resultado = await sql`
-      SELECT id_usuario, nome, email, cpf, data_nascimento, senha, email_verificado, foto_perfil
-      FROM usuarios WHERE email = ${email}
+      SELECT id_usuario, nome, email, cpf, telefone, data_nascimento, senha, email_verificado, foto_perfil, is_admin, status, email_admin
+      FROM usuarios WHERE email = ${email} OR email_admin = ${email}
     `;
 
     if (resultado.length === 0)
       return res.status(401).json({ erro: "Email ou senha incorretos" });
 
-    const usuario = resultado[0]; // ← define aqui
+    const usuario = resultado[0];
+
+    // Verifica se o login foi feito com o email admin
+    const is_admin_login = usuario.email_admin && email.toLowerCase() === usuario.email_admin.toLowerCase();
 
     if (!usuario.email_verificado)
       return res
         .status(403)
         .json({ erro: "Verifique seu email antes de fazer login." });
+
+    if (usuario.status === 'bloqueado')
+      return res.status(403).json({ erro: "Sua conta foi bloqueada. Entre em contato com o suporte." });
+
+    if (usuario.status === 'inativo')
+      return res.status(403).json({ erro: "Sua conta está desativada. Faça login novamente para reativar." });
+
+    // Se login com email_admin mas não é admin, negar acesso
+    if (is_admin_login && !usuario.is_admin)
+      return res.status(403).json({ erro: "Este email é de administrador. Faça login com seu email normal." });
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida)
@@ -141,17 +155,24 @@ const signIn = async (req, res) => {
       { expiresIn: "7d" },
     );
 
+    // Atualiza ultimo_acesso
+    await sql`UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_usuario = ${usuario.id_usuario}`;
+
     res.json({
       usuario: {
         id_usuario: usuario.id_usuario,
         nome: usuario.nome,
         email: usuario.email,
         cpf: usuario.cpf ?? '',
+        telefone: usuario.telefone ?? '',
         data_nascimento: usuario.data_nascimento ?? null,
         email_verificado: usuario.email_verificado,
         foto_perfil: usuario.foto_perfil ?? '',
+        is_admin: usuario.is_admin ?? false,
+        email_admin: usuario.email_admin ?? '',
       },
       token,
+      is_admin_login,
     });
   } catch (err) {
     console.error(err);
@@ -261,7 +282,7 @@ const getPerfil = async (req, res) => {
   try {
     const sql = await conectar();
     const [usuario] = await sql`
-      SELECT id_usuario, nome, email, cpf, telefone, data_nascimento, email_verificado, foto_perfil
+      SELECT id_usuario, nome, email, cpf, telefone, data_nascimento, email_verificado, foto_perfil, is_admin, status, email_admin
       FROM usuarios
       WHERE id_usuario = ${req.usuarioId}
     `;

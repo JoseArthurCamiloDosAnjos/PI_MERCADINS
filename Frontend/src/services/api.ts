@@ -169,4 +169,22 @@ export const api = {
   listarFavoritos:  () => request('/usuario/favoritos'),
   listarAvaliacoes: () => request('/usuario/avaliacoes'),
   listarHistorico:  () => request('/usuario/historico'),
+
+  // ── Admin ───────────────────────────────────────────────────────────────────
+  adminDashboard:   ()         => request('/admin/dashboard'),
+  adminUsuarios:    (params?: string) => request(`/admin/usuarios${params ? `?${params}` : ''}`),
+  adminDetalhesUsuario: (id: number) => request(`/admin/usuarios/${id}`),
+  adminEditarUsuario: (id: number, dados: Record<string, unknown>) =>
+    request(`/admin/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
+  adminBloquearUsuario: (id: number) =>
+    request(`/admin/usuarios/${id}/bloquear`, { method: 'PUT' }),
+  adminStatusUsuario: (id: number, status: string) =>
+    request(`/admin/usuarios/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  adminExcluirUsuario: (id: number) =>
+    request(`/admin/usuarios/${id}`, { method: 'DELETE' }),
+  adminRelatorios:  (params?: string) => request(`/admin/relatorios${params ? `?${params}` : ''}`),
+  adminAtividade:   ()         => request('/admin/atividade'),
+  adminAlertas:     ()         => request('/admin/alertas'),
+  adminBloquearMercado: (id: number) =>
+    request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
 }

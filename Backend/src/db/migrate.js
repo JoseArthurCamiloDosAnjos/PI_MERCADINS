@@ -117,9 +117,24 @@ async function migrate() {
       UNIQUE(id_usuario, id_mercado, id_produto)
     )
   `;
+  await sql`
+  ALTER TABLE usuarios
+  ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+  `;
+
+  // Adiciona coluna status na tabela mercados se não existir
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'ativo'
+  `;
+
+  // Adiciona coluna email_admin na tabela usuarios se não existir
+  await sql`
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_admin TEXT DEFAULT ''
+  `;
 
   console.log('✅ Tabelas criadas com sucesso!');
 }
+
 
 migrate().catch(err => {
   console.error('❌ Erro na migração:', err.message);

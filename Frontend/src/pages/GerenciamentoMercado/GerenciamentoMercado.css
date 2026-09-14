@@ -1,7 +1,5 @@
 /* ─── Design Tokens ─────────────────────────────────────────────────────── */
 :root {
-  --font: 'Inter', 'Segoe UI', sans-serif;
-
   --azul-bg:      #0d1b3e;
   --azul-sidebar: #0a1530;
   --azul-card:    #112250;

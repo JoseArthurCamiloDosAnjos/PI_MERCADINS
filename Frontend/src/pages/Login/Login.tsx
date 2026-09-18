@@ -49,7 +49,7 @@ export default function Login() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Verifique")) {
-        showToast("aviso", msg);
+        navigate(`/verificar-email?email=${encodeURIComponent(form.email.trim())}`);
       } else {
         showToast("erro", msg || "Email ou senha incorretos.");
       }

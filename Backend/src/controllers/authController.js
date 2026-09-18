@@ -59,7 +59,8 @@ const signUp = async (req, res) => {
       VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, ${data_nascimento || null}, FALSE, ${codigoVerificacao}, ${expiracao})
     `;
 
-    await enviarEmailVerificacao(email, codigoVerificacao, `${process.env.FRONTEND_URL}/verificar-email?codigo=${codigoVerificacao}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'https://mercadins.com.br';
+    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
     console.log("✅ Email enviado para:", email);
 
     res
@@ -130,6 +131,10 @@ const signIn = async (req, res) => {
     // Verifica se o login foi feito com o email admin
     const is_admin_login = usuario.email_admin && email.toLowerCase() === usuario.email_admin.toLowerCase();
 
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaValida)
+      return res.status(401).json({ erro: "Email ou senha incorretos" });
+
     if (!usuario.email_verificado)
       return res
         .status(403)
@@ -144,10 +149,6 @@ const signIn = async (req, res) => {
     // Se login com email_admin mas não é admin, negar acesso
     if (is_admin_login && !usuario.is_admin)
       return res.status(403).json({ erro: "Este email é de administrador. Faça login com seu email normal." });
-
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
-    if (!senhaValida)
-      return res.status(401).json({ erro: "Email ou senha incorretos" });
 
     const token = jwt.sign(
       { id: usuario.id_usuario, email: usuario.email },

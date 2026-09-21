@@ -22,7 +22,7 @@ const VitrineCliente = lazy(() => import('./pages/VitrineCliente/VitrineCliente'
 const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaContainer'))
 const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
 const Administrador = lazy(() => import('./pages/Adimin/adiministrador'))
-
+const MenuPrincipal = lazy(() => import('./pages/MenuPrincipal/MenuPrincipal'))
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
 function VitrineClienteWrapper() {
@@ -205,12 +205,12 @@ function Rotas() {
 
   const isAdminLogin = localStorage.getItem('is_admin_login') === 'true'
   const destino = usuario ? (usuario.is_admin && isAdminLogin ? '/admin' : (temMercado ? '/vendedor' : '/perfil')) : '/auth'
-
   return (
     <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
       <Routes>
-        <Route path="/"                  element={<MercadinsPromos />} />
-        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/"                  element={<MenuPrincipal/>} />
+        <Route path="/promocional"       element={<MercadinsPromos />}/>
+        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to="/" />} />
         <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
         <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
         <Route path="/verificar-email"   element={<VerificarEmail />} />

@@ -63,7 +63,7 @@ export default function RedefinirSenha() {
   }
 
   return (
-    <>
+    <div className="login-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
@@ -154,6 +154,6 @@ export default function RedefinirSenha() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

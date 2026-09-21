@@ -97,7 +97,7 @@ export default function VerificarEmail() {
   }
 
   return (
-    <>
+    <div className="login-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
@@ -185,6 +185,6 @@ export default function VerificarEmail() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

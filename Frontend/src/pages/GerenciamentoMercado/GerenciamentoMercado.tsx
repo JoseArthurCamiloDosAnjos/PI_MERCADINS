@@ -1,7 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
-import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
@@ -655,8 +654,7 @@ export default function GerenciamentoMercado({
   onAbrirVitrine: () => void;
 }) {
   const [nav, setNav] = useState(0);
-  const { tema } = useTheme();
-  const { toasts, showToast, dismissToast } = useToast();
+  const {toasts, showToast, dismissToast } = useToast();
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
 
   const [dados, setDados] = useState<DadosMercado>({

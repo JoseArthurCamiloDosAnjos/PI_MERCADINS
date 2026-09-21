@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from "react";
 import "./Sidebar.css";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import {
   IconUser,
@@ -56,7 +55,6 @@ export default function Sidebar({
   showCriarMercado = true,
 }: SidebarProps) {
   const { logout } = useAuth();
-  const { tema } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 

@@ -996,7 +996,7 @@ html {
     font-size: 15px;
   }
 
-  .mp-logo-img { height: 80px; }
+  .mp-logo-img { height: 80px;  }
 
   /* HERO */
   .mp-hero {
@@ -1159,6 +1159,7 @@ html {
   height: 150px;
   width: auto;
   object-fit: contain;
+  cursor: pointer;
 }
 
 /* Corrige o espaço branco abaixo do hero */

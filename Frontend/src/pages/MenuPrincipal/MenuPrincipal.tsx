@@ -82,7 +82,7 @@ export default function Mercadins() {
         <div className="container">
           <nav className="navbar">
             <a className="logo" href="#">
-              <span>●</span> Mercadins
+              <img src = {logo} alt="Mercadins" className="mp-logo-img"/>
             </a>
 
             <ul className="nav-links">
@@ -210,7 +210,7 @@ export default function Mercadins() {
         <div className="container">
           <div className="footer-grid">
             <div>
-              <h3>🟡 Mercadins</h3>
+              <img src={logo} className="mp-logo-img"/>
               <p>
                 Seus mercados favoritos reunidos em um único lugar.
                 Compre online e receba onde estiver.

@@ -136,7 +136,7 @@ export default function MercadinsPromo() {
       <nav className={`mp-nav ${mobileMenuOpen ? "mp-nav-open" : ""}`}>
         <div className="mp-nav-inner">
           <div className="mp-logo">
-            <img src={logo} alt="Mercadins" className="mp-logo-img" />
+            <img src={logo}  alt="Mercadins" className="mp-logo-img" onClick={() => navigate("/")}  />
           </div>
           <div className={`mp-nav-links ${mobileMenuOpen ? "mp-nav-links--open" : ""}`}>
             <a href="#sobre" onClick={(e) => { e.preventDefault(); scrollTo('sobre'); }}>Sobre</a>
@@ -462,7 +462,7 @@ export default function MercadinsPromo() {
       <footer className="mp-footer">
         <div className="mp-container mp-footer-inner">
           <div className="mp-logo">
-            <img src={logo} alt="Mercadins" className="mp-logo-img" />
+            <img src={logo} alt="Mercadins" className="mp-logo-img" onClick={() => navigate("/")}/>
           </div>
           <p className="mp-footer-tagline">Seu mercado inteligente</p>
           <p className="mp-footer-copy">© 2025 Mercadins. Todos os direitos reservados.</p>

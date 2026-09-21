@@ -1,64 +1,24 @@
+import { useState, useEffect } from "react";
 import "./MenuPrincipal.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
 import logo from "../../assets/logo2.png";
-type Store = {
-  name: string;
-  description: string;
-  distance: string;
-  rating: string;
-  icon: string;
-  color: string;
-  tags: string[];
-};
 
-const stores: Store[] = [
-  {
-    name: "Mercado Central",
-    description: "Mercado completo para as compras do dia a dia.",
-    distance: "1,2 km",
-    rating: "4,9",
-    icon: "🛒",
-    color: "blue",
-    tags: ["Entrega grátis", "30–45 min", "Aberto"],
-  },
-  {
-    name: "Açougue do Zé",
-    description: "Carnes selecionadas e cortes especiais.",
-    distance: "2,1 km",
-    rating: "4,8",
-    icon: "🥩",
-    color: "red",
-    tags: ["Entrega rápida", "Aberto"],
-  },
-  {
-    name: "Hortifruti Natural",
-    description: "Frutas, legumes e verduras sempre frescos.",
-    distance: "1,8 km",
-    rating: "4,9",
-    icon: "🌱",
-    color: "green",
-    tags: ["Produtos frescos", "Orgânicos"],
-  },
-  {
-    name: "Padaria São Paulo",
-    description: "Pães, doces e salgados feitos diariamente.",
-    distance: "2,5 km",
-    rating: "4,7",
-    icon: "🍞",
-    color: "orange",
-    tags: ["Café da manhã", "Aberto"],
-  },
-  {
-    name: "Peixaria do Mar",
-    description: "Peixes e frutos do mar selecionados.",
-    distance: "3,4 km",
-    rating: "4,8",
-    icon: "🐟",
-    color: "dark",
-    tags: ["Produtos frescos", "Entrega agendada"],
-  },
-];
+type Store = {
+  id_mercado: number;
+  nome: string;
+  slug: string;
+  cidade?: string;
+  estado?: string;
+  bairro?: string;
+  descricao?: string;
+  foto_perfil?: string;
+  cor_base?: string;
+  status?: string;
+  avaliacao?: number;
+  avaliacoes_count?: number;
+};
 
 const categories = [
   "Todos",
@@ -71,9 +31,65 @@ const categories = [
   "Conveniência",
 ];
 
+function formatrarNota(nota?: number) {
+  const n = Number(nota ?? 0);
+  if (Number.isNaN(n)) return "0,0";
+  return n.toFixed(1).replace(".", ",");
+}
+
 export default function Mercadins() {
+  const navigate = useNavigate();
+  const { usuario, temMercado, logout } = useAuth();
+  const [stores, setStores] = useState<Store[]>([]);
+  const [totalMercados, setTotalMercados] = useState(0);
+  const [totalPedidos, setTotalPedidos] = useState(0);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    api
+      .listarMercados()
+      .then((data) => {
+        if (!ativo) return;
+        setStores(data.mercados ?? []);
+        setTotalMercados(data.stats?.totalMercados ?? 0);
+        setTotalPedidos(data.stats?.totalPedidos ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const destinoUsuario = usuario
+    ? usuario.is_admin && localStorage.getItem("is_admin_login") === "true"
+      ? "/admin"
+      : temMercado
+        ? "/vendedor"
+        : "/perfil"
+    : "/auth";
+
   function handleLocation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+  }
+
+  function handleSair() {
+    logout();
+    navigate("/");
+  }
+
+  function irParaMercado(slug: string) {
+    if (slug) navigate(`/vitrine/${slug}`);
+  }
+
+  function localizacao(m: Store) {
+    if (m.bairro && m.cidade) return `${m.bairro} · ${m.cidade}`;
+    if (m.cidade && m.estado) return `${m.cidade} · ${m.estado}`;
+    if (m.cidade) return m.cidade;
+    return "Mercado parceiro";
   }
 
   return (
@@ -82,7 +98,7 @@ export default function Mercadins() {
         <div className="container">
           <nav className="navbar">
             <a className="logo" href="#">
-              <img src = {logo} alt="Mercadins" className="mp-logo-img"/>
+              <img src={logo} alt="Mercadins" className="mp-logo-img" />
             </a>
 
             <ul className="nav-links">
@@ -99,8 +115,39 @@ export default function Mercadins() {
               />
             </div>
 
-            <a className="login" href="#">Entrar</a>
-            <button className="signup">Criar conta</button>
+            {usuario ? (
+              <>
+                <a
+                  className="login"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(destinoUsuario);
+                  }}
+                >
+                  Olá, {usuario.nome?.split(" ")[0] ?? "usuário"}
+                </a>
+                <button className="signup" onClick={handleSair}>
+                  Sair
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  className="login"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/auth");
+                  }}
+                >
+                  Entrar
+                </a>
+                <button className="signup" onClick={() => navigate("/auth/register")}>
+                  Criar conta
+                </button>
+              </>
+            )}
           </nav>
 
           <div className="hero-content">
@@ -123,28 +170,30 @@ export default function Mercadins() {
             </div>
 
             <aside className="store-preview">
-              <PreviewItem
-                icon="🛒"
-                title="Mercado Central"
-                subtitle="Entrega em 30–45 min"
-              />
-              <PreviewItem
-                icon="🥕"
-                title="Hortifruti Natural"
-                subtitle="Produtos frescos"
-              />
-              <PreviewItem
-                icon="🥖"
-                title="Padaria São Paulo"
-                subtitle="Aberto agora"
-              />
+              {carregando
+                ? <p className="preview-vazio">Carregando mercados...</p>
+                : stores.length === 0
+                  ? <p className="preview-vazio">Nenhum mercado disponível.</p>
+                  : stores.slice(0, 3).map((store) => (
+                      <PreviewItem
+                        key={store.id_mercado}
+                        image={store.foto_perfil}
+                        title={store.nome}
+                        subtitle={store.status === "ativo" ? "Aberto agora" : localizacao(store)}
+                      />
+                    ))}
             </aside>
           </div>
 
           <div className="stats">
-            <Stat value="47" label="mercados parceiros" />
-            <Stat value="1.2k+" label="pedidos entregues" />
-            <Stat value="30 min" label="tempo médio" />
+            <Stat
+              value={totalMercados.toLocaleString("pt-BR")}
+              label="mercados parceiros"
+            />
+            <Stat
+              value={totalPedidos.toLocaleString("pt-BR")}
+              label="pedidos entregues"
+            />
           </div>
         </div>
       </header>
@@ -166,43 +215,68 @@ export default function Mercadins() {
         <div className="container">
           <div className="section-header">
             <h2>Mercados em destaque</h2>
-            <button>Mais perto de você</button>
           </div>
 
-          <section className="stores">
-            {stores.map((store) => (
-              <article className="store-card" key={store.name}>
-                <div className={`store-cover ${store.color}`}>
-                  {store.icon}
-                </div>
+          {carregando ? (
+            <p className="lista-vazio">Carregando mercados...</p>
+          ) : stores.length === 0 ? (
+            <p className="lista-vazio">
+              Nenhum mercado cadastrado no momento.
+            </p>
+          ) : (
+            <section className="stores">
+              {stores.map((store) => (
+                <article className="store-card" key={store.id_mercado}>
+                  <div
+                    className="store-cover"
+                    style={store.cor_base ? { backgroundColor: store.cor_base } : undefined}
+                  >
+                    {store.foto_perfil ? (
+                      <img
+                        src={store.foto_perfil}
+                        alt={store.nome}
+                        className="store-cover-img"
+                      />
+                    ) : (
+                      <span className="store-cover-icon">🏪</span>
+                    )}
+                  </div>
 
-                <div className="store-content">
-                  <div className="store-title-row">
-                    <div>
-                      <h3>{store.name}</h3>
-                      <p>{store.description}</p>
+                  <div className="store-content">
+                    <div className="store-title-row">
+                      <div>
+                        <h3>{store.nome}</h3>
+                        <p>{store.descricao || localizacao(store)}</p>
+                      </div>
+
+                      <span className="distance">{localizacao(store)}</span>
                     </div>
 
-                    <span className="distance">{store.distance}</span>
-                  </div>
+                    <span className="rating">
+                      ★★★★★ <strong>{formatrarNota(store.avaliacao)}</strong>
+                    </span>
 
-                  <span className="rating">
-                    ★★★★★ <strong>{store.rating}</strong>
-                  </span>
-
-                  <div className="tags">
-                    {store.tags.map((tag) => (
-                      <span className="tag" key={tag}>
-                        {tag}
+                    <div className="tags">
+                      <span className="tag">
+                        {store.status === "ativo" ? "Aberto" : "Indisponível"}
                       </span>
-                    ))}
+                      <span className="tag">
+                        {store.avaliacoes_count ?? 0}{" "}
+                        {store.avaliacoes_count === 1 ? "avaliação" : "avaliações"}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <button className="card-action">Acessar mercado</button>
-              </article>
-            ))}
-          </section>
+                  <button
+                    className="card-action"
+                    onClick={() => irParaMercado(store.slug)}
+                  >
+                    Acessar mercado
+                  </button>
+                </article>
+              ))}
+            </section>
+          )}
         </div>
       </main>
 
@@ -210,7 +284,7 @@ export default function Mercadins() {
         <div className="container">
           <div className="footer-grid">
             <div>
-              <img src={logo} className="mp-logo-img"/>
+              <img src={logo} className="mp-logo-img" />
               <p>
                 Seus mercados favoritos reunidos em um único lugar.
                 Compre online e receba onde estiver.
@@ -247,17 +321,23 @@ export default function Mercadins() {
 }
 
 function PreviewItem({
-  icon,
+  image,
   title,
   subtitle,
 }: {
-  icon: string;
+  image?: string;
   title: string;
   subtitle: string;
 }) {
   return (
     <div className="preview-item">
-      <div className="preview-icon">{icon}</div>
+      <div className="preview-icon">
+        {image ? (
+          <img src={image} alt={title} className="preview-img" />
+        ) : (
+          <span>🛒</span>
+        )}
+      </div>
       <div>
         <strong>{title}</strong>
         <small>{subtitle}</small>

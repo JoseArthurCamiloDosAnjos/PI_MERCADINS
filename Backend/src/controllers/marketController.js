@@ -161,13 +161,20 @@ const listarMercados = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
 
-    const [mercados, [{ total }]] = await Promise.all([
+    const [mercados, [{ total }], [{ totalPedidos }]] = await Promise.all([
       sql`
-        SELECT * FROM mercados
-        ORDER BY data_cadastro DESC
+        SELECT m.*,
+          COALESCE(AVG(a.nota), 0)::numeric(2,1) AS avaliacao,
+          COUNT(a.id)::int AS avaliacoes_count
+        FROM mercados m
+        LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
+        WHERE m.status = 'ativo'
+        GROUP BY m.id_mercado
+        ORDER BY avaliacao DESC, m.data_cadastro DESC
         LIMIT ${limit} OFFSET ${offset}
       `,
-      sql`SELECT COUNT(*)::int AS total FROM mercados`
+      sql`SELECT COUNT(*)::int AS total FROM mercados WHERE status = 'ativo'`,
+      sql`SELECT COUNT(*)::int AS totalPedidos FROM historico_compras`
     ]);
 
     res.status(200).json({
@@ -177,6 +184,10 @@ const listarMercados = async (req, res) => {
         limit,
         total,
         totalPages: Math.ceil(total / limit)
+      },
+      stats: {
+        totalMercados: total,
+        totalPedidos
       }
     });
   } catch (err) {

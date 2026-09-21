@@ -1,23 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DatePicker, { registerLocale } from "react-datepicker";
-import { ptBR } from "date-fns/locale/pt-BR";
-import "react-datepicker/dist/react-datepicker.css";
 import "./Register.css";
 import "../common/Modais.css";
 import { BASE_URL } from '../../services/api';
 
-registerLocale("pt-BR", ptBR);
-
-function parseDateSafe(dateStr: string | null | undefined): Date | null {
-  if (!dateStr) return null;
-  const str = String(dateStr).slice(0, 10);
-  const d = new Date(str + "T00:00:00");
-  return isNaN(d.getTime()) ? null : d;
-}
-
 import { useToast } from '../../hooks/useToast';
-import { removeEmojis } from '../../hooks/useBlockEmojis';
+import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
 import logoImg from "../../assets/logo.jpeg";
@@ -39,6 +27,7 @@ export default function Register() {
     telefone: "",
     cpf: "",
     data_nascimento: "",
+    data_display: "",
     email: "",
     senha: "",
     confirmar: "",
@@ -73,7 +62,13 @@ export default function Register() {
   // ── Handlers ──
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: removeEmojis(value) }));
+    let filtered = removeEmojis(value);
+    if (name === "email") {
+      filtered = removeSpecialCharsEmail(filtered);
+    } else if (name !== "senha" && name !== "confirmar") {
+      filtered = removeSpecialChars(filtered);
+    }
+    setForm((prev) => ({ ...prev, [name]: filtered }));
     setField(name, "", "");
   }
 
@@ -286,183 +281,201 @@ export default function Register() {
 
             {/* Nome */}
             <div className={fieldClass("nome")}>
-              <input
-                type="text"
-                name="nome"
-                placeholder="Nome completo"
-                autoComplete="name"
-                value={form.nome}
-                onChange={handleChange}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </span>
+              <div className="field-input-wrap">
+                <input
+                  type="text"
+                  name="nome"
+                  placeholder="Nome completo"
+                  autoComplete="name"
+                  value={form.nome}
+                  onChange={handleChange}
+                />
+                <span className="field-icon-register">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+              </div>
               <span className="field-msg">{fields.nome.msg}</span>
             </div>
 
             {/* Telefone */}
             <div className={fieldClass("telefone")}>
-              <input
-                type="tel"
-                name="telefone"
-                placeholder="Telefone"
-                autoComplete="tel"
-                value={form.telefone}
-                onChange={handleTelefone}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-              </span>
+              <div className="field-input-wrap">
+                <input
+                  type="tel"
+                  name="telefone"
+                  placeholder="Telefone"
+                  autoComplete="tel"
+                  value={form.telefone}
+                  onChange={handleTelefone}
+                />
+                <span className="field-icon-register">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                </span>
+              </div>
               <span className="field-msg">{fields.telefone.msg}</span>
             </div>
 
             {/* CPF */}
             <div className={fieldClass("cpf")}>
-              <input
-                type="text"
-                name="cpf"
-                placeholder="CPF"
-                autoComplete="off"
-                value={form.cpf}
-                onChange={handleCPF}
-                maxLength={14}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="5" width="20" height="14" rx="2" />
-                  <line x1="2" y1="10" x2="22" y2="10" />
-                </svg>
-              </span>
+              <div className="field-input-wrap">
+                <input
+                  type="text"
+                  name="cpf"
+                  placeholder="CPF"
+                  autoComplete="off"
+                  value={form.cpf}
+                  onChange={handleCPF}
+                  maxLength={14}
+                />
+                <span className="field-icon-register">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <line x1="2" y1="10" x2="22" y2="10" />
+                  </svg>
+                </span>
+              </div>
               <span className="field-msg">{fields.cpf.msg}</span>
             </div>
 
             {/* Data de Nascimento */}
             <div className={fieldClass("data_nascimento")}>
-              <DatePicker
-                selected={parseDateSafe(form.data_nascimento)}
-                onChange={(date: Date | null) => {
-                  const value = date
-                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                    : "";
-                  setForm((prev) => ({ ...prev, data_nascimento: value }));
-                  setField("data_nascimento", "", "");
-                }}
-                onChangeRaw={(e) => {
-                  if (!e) return;
-                  const input = e.target as HTMLInputElement;
-                  let value = input.value.replace(/\D/g, "").slice(0, 8);
-                  if (value.length > 2) value = value.slice(0, 2) + "/" + value.slice(2);
-                  if (value.length > 5) value = value.slice(0, 5) + "/" + value.slice(5);
-                  input.value = value;
-                }}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Data de nascimento"
-                autoComplete="bday"
-                locale="pt-BR"
-                maxDate={new Date()}
-                showYearDropdown
-                showMonthDropdown
-                dropdownMode="select"
-                className="date-input"
-                calendarClassName="date-calendar"
-                strictParsing
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-              </span>
+              <div className="field-input-wrap">
+                <input
+                  type="text"
+                  name="data_nascimento"
+                  className="date-input"
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  autoComplete="bday"
+                  value={form.data_display}
+                  onKeyDown={(e) => {
+                    if (!/[0-9]/.test(e.key) && e.key !== "Backspace" && e.key !== "Tab" && e.key !== "Enter") {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    let digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    let formatted = digits;
+                    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+                    if (digits.length > 5) formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+                    setForm((prev) => ({ ...prev, data_display: formatted }));
+                    if (digits.length === 8) {
+                      const y = digits.slice(4, 8);
+                      const m = digits.slice(2, 4);
+                      const d = digits.slice(0, 2);
+                      const parsed = new Date(`${y}-${m}-${d}T00:00:00`);
+                      if (!isNaN(parsed.getTime())) {
+                        setForm((prev) => ({ ...prev, data_nascimento: `${y}-${m}-${d}`, data_display: formatted }));
+                        setField("data_nascimento", "", "");
+                      }
+                    } else {
+                      setForm((prev) => ({ ...prev, data_nascimento: "" }));
+                    }
+                  }}
+                />
+                <span className="field-icon-register">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </span>
+              </div>
               <span className="field-msg">{fields.data_nascimento.msg}</span>
             </div>
 
             {/* Email */}
             <div className={fieldClass("email")}>
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                autoComplete="email"
-                value={form.email}
-                onChange={handleChange}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </span>
+              <div className="field-input-wrap">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                />
+                <span className="field-icon-register">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+              </div>
               <span className="field-msg">{fields.email.msg}</span>
             </div>
 
             {/* Senha */}
             <div className={fieldClass("senha")}>
-              <input
-                type={showSenha ? "text" : "password"}
-                name="senha"
-                placeholder="Senha"
-                autoComplete="new-password"
-                value={form.senha}
-                onChange={handleChange}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </span>
-              <button type="button" className="toggle-senha" onClick={() => setShowSenha((v) => !v)}>
-                {showSenha ? (
+              <div className="field-input-wrap">
+                <input
+                  type={showSenha ? "text" : "password"}
+                  name="senha"
+                  placeholder="Senha"
+                  autoComplete="new-password"
+                  value={form.senha}
+                  onChange={handleChange}
+                />
+                <span className="field-icon-register">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                ) : (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
+                </span>
+                <button type="button" className="toggle-senha" onClick={() => setShowSenha((v) => !v)}>
+                  {showSenha ? (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <span className="field-msg">{fields.senha.msg}</span>
               <PasswordStrength senha={form.senha} />
             </div>
 
             {/* Confirmar Senha */}
             <div className={fieldClass("confirmar")}>
-              <input
-                type={showConfirmar ? "text" : "password"}
-                name="confirmar"
-                placeholder="Confirmar Senha"
-                autoComplete="new-password"
-                value={form.confirmar}
-                onChange={handleChange}
-              />
-              <span className="field-icon-register">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </span>
-              <button type="button" className="toggle-senha" onClick={() => setShowConfirmar((v) => !v)}>
-                {showConfirmar ? (
+              <div className="field-input-wrap">
+                <input
+                  type={showConfirmar ? "text" : "password"}
+                  name="confirmar"
+                  placeholder="Confirmar Senha"
+                  autoComplete="new-password"
+                  value={form.confirmar}
+                  onChange={handleChange}
+                />
+                <span className="field-icon-register">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                ) : (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
+                </span>
+                <button type="button" className="toggle-senha" onClick={() => setShowConfirmar((v) => !v)}>
+                  {showConfirmar ? (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <span className="field-msg">{fields.confirmar.msg}</span>
             </div>
 

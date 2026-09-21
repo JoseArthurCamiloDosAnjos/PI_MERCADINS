@@ -2,7 +2,6 @@ import { useState, useEffect, type ReactNode } from 'react';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import ThemeToggle from '../../components/ThemeToggle';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
@@ -656,7 +655,7 @@ export default function GerenciamentoMercado({
   onAbrirVitrine: () => void;
 }) {
   const [nav, setNav] = useState(0);
-  const { tema, toggleTema } = useTheme();
+  const { tema } = useTheme();
   const { toasts, showToast, dismissToast } = useToast();
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
 
@@ -748,10 +747,6 @@ export default function GerenciamentoMercado({
         </nav>
 
         <div className="gm-sidebar-footer">
-          <div className="gm-theme-row">
-            <span className="gm-theme-label">Tema</span>
-            <ThemeToggle tema={tema} onToggle={toggleTema} />
-          </div>
         </div>
       </aside>
 

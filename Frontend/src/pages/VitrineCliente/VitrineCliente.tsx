@@ -8,7 +8,6 @@ import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import ThemeToggle from '../../components/ThemeToggle';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
@@ -261,7 +260,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
   const [modalDescricao, setModalDescricao] = useState(false);
 
   const { toasts, showToast, dismissToast } = useToast();
-  const { tema, toggleTema } = useTheme();
+  const { tema } = useTheme();
   const carrinho = useCarrinho(mercadoId);
   const refsCategoria = useRef<Record<number, HTMLElement | null>>({});
 
@@ -415,12 +414,6 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
         <div className="vtc-topbar-direita">
-          <ThemeToggle
-            tema={tema}
-            onToggle={toggleTema}
-            corEscura={paletaAtual.cores.azulEscuro}
-            corClara={paletaAtual.cores.amarelo}
-          />
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}
             onClick={() => setCarrinhoAberto(true)}

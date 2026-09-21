@@ -12,7 +12,6 @@ import { useToast }     from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api }          from '../../services/api';
 import { useTheme }     from '../../context/ThemeContext';
-import ThemeToggle      from '../../components/ThemeToggle';
 import {
   IconStore,
   IconPlus,
@@ -437,7 +436,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const shellRef                                  = useRef<HTMLDivElement>(null);
 
   const { toasts, showToast, dismissToast } = useToast();
-  const { tema, toggleTema } = useTheme();
+  const { tema } = useTheme();
 
   // ── Carregar dados do banco ───────────────────────────────────────────────
 
@@ -688,7 +687,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
         }
 
         <div className="vt-topbar-direita">
-          <ThemeToggle tema={tema} onToggle={toggleTema} />
 
           <button className="vt-btn-paleta" onClick={() => setModalPaleta(true)} title="Personalizar cores">
             <IconPaleta size={14} /> Cores

@@ -8,7 +8,7 @@ const {
   validarTelefone,
   validarCPF,
 } = require("../utils/validators");
-const { enviarEmailVerificacao, enviarEmailRecuperacao } = require("../utils/mailer");
+const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } = require("../utils/mailer");
 
 // Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
@@ -401,12 +401,20 @@ const redefinirSenha =
 const atualizarPerfil = async (req, res) => {
   const { nome, email, telefone, data_nascimento, foto_perfil_url } = req.body;
 
+  if (!nome || !nome.trim()) return res.status(400).json({ erro: 'Nome é obrigatório.' });
+  if (!email || !email.trim()) return res.status(400).json({ erro: 'Email é obrigatório.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ erro: 'Email inválido.' });
+
   const foto_perfil = foto_perfil_url || undefined
 
   try {
     const sql = await conectar();
+
+    const [existente] = await sql`SELECT id_usuario FROM usuarios WHERE email = ${email.trim().toLowerCase()} AND id_usuario != ${req.usuarioId}`;
+    if (existente) return res.status(400).json({ erro: 'Este email já está em uso por outra conta.' });
+
     await sql`
-      UPDATE usuarios SET nome = ${nome}, email = ${email}, telefone = ${telefone},
+      UPDATE usuarios SET nome = ${nome.trim()}, email = ${email.trim().toLowerCase()}, telefone = ${telefone},
         data_nascimento = ${data_nascimento || null},
         foto_perfil = COALESCE(${foto_perfil ?? null}, foto_perfil)
       WHERE id_usuario = ${req.usuarioId}
@@ -466,6 +474,100 @@ const solicitarTrocaSenha = async (req, res) => {
     res.status(500).json({ erro: 'Erro ao solicitar troca de senha.' });
   }
 };
+
+const solicitarTrocaEmail = async (req, res) => {
+  const { novoEmail } = req.body;
+
+  if (!novoEmail || !novoEmail.trim()) return res.status(400).json({ erro: 'Novo email é obrigatório.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) return res.status(400).json({ erro: 'Email inválido.' });
+
+  const novoEmailFormatado = novoEmail.trim().toLowerCase();
+
+  try {
+    const sql = await conectar();
+
+    const [usuario] = await sql`SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${req.usuarioId}`;
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+    if (novoEmailFormatado === usuario.email.toLowerCase()) {
+      return res.status(400).json({ erro: 'O novo email é igual ao atual.' });
+    }
+
+    const [existente] = await sql`SELECT id_usuario FROM usuarios WHERE email = ${novoEmailFormatado} AND id_usuario != ${req.usuarioId}`;
+    if (existente) return res.status(400).json({ erro: 'Este email já está em uso por outra conta.' });
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000);
+
+    await sql`
+      UPDATE usuarios SET
+        token_verificacao = ${codigo + '|' + novoEmailFormatado},
+        token_expiracao = ${expiracao}
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+
+    await enviarEmailTrocaEmail(novoEmailFormatado, codigo);
+    res.json({ mensagem: 'Código de confirmação enviado para o novo email.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao solicitar troca de email.' });
+  }
+};
+
+const confirmarTrocaEmail = async (req, res) => {
+  const { codigo } = req.body;
+  if (!codigo) return res.status(400).json({ erro: 'Código não informado.' });
+
+  try {
+    const sql = await conectar();
+
+    const [usuario] = await sql`
+      SELECT id_usuario, token_verificacao, token_expiracao
+      FROM usuarios
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+
+    if (!usuario || !usuario.token_verificacao) {
+      return res.status(400).json({ erro: 'Nenhuma troca de email pendente.' });
+    }
+
+    if (new Date() > new Date(usuario.token_expiracao)) {
+      await sql`
+        UPDATE usuarios SET token_verificacao = NULL, token_expiracao = NULL
+        WHERE id_usuario = ${req.usuarioId}
+      `;
+      return res.status(400).json({ erro: 'Código expirado. Solicite uma nova troca de email.' });
+    }
+
+    const [codigoSalvo, novoEmail] = usuario.token_verificacao.split('|');
+    if (codigo !== codigoSalvo) {
+      return res.status(400).json({ erro: 'Código inválido.' });
+    }
+
+    const [existente] = await sql`SELECT id_usuario FROM usuarios WHERE email = ${novoEmail} AND id_usuario != ${req.usuarioId}`;
+    if (existente) {
+      await sql`
+        UPDATE usuarios SET token_verificacao = NULL, token_expiracao = NULL
+        WHERE id_usuario = ${req.usuarioId}
+      `;
+      return res.status(400).json({ erro: 'Este email já está em uso por outra conta.' });
+    }
+
+    await sql`
+      UPDATE usuarios SET
+        email = ${novoEmail},
+        token_verificacao = NULL,
+        token_expiracao = NULL
+      WHERE id_usuario = ${req.usuarioId}
+    `;
+
+    res.json({ mensagem: 'Email atualizado com sucesso!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao confirmar troca de email.' });
+  }
+};
+
 module.exports = {
   signUp,
   signIn,
@@ -475,5 +577,7 @@ module.exports = {
   getPerfil,
   atualizarPerfil,
   solicitarTrocaSenha,
-  confirmarTrocaSenha
+  confirmarTrocaSenha,
+  solicitarTrocaEmail,
+  confirmarTrocaEmail
 };

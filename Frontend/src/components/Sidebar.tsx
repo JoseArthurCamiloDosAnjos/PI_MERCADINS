@@ -3,7 +3,6 @@ import "./Sidebar.css";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
-import ThemeToggle from "./ThemeToggle";
 import {
   IconUser,
   IconLock,
@@ -57,7 +56,7 @@ export default function Sidebar({
   showCriarMercado = true,
 }: SidebarProps) {
   const { logout } = useAuth();
-  const { tema, toggleTema } = useTheme();
+  const { tema } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -128,10 +127,6 @@ export default function Sidebar({
         </nav>
 
         <div className="sb-footer">
-          <div className="sb-theme-row">
-            <span className="sb-theme-label">Tema</span>
-            <ThemeToggle tema={tema} onToggle={toggleTema} />
-          </div>
           {showCriarMercado && (
             <button
               className="sb-create-btn"

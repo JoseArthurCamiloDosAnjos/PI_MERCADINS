@@ -94,8 +94,50 @@ const enviarEmailRecuperacao = async (email, codigo) => {
   });
 };
 
+const enviarEmailTrocaEmail = async (email, codigo) => {
+  await resend.emails.send({
+    from: EmailDominio,
+    to: email,
+    subject: "Confirme seu novo email — Mercadins",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: 'Nunito', Arial, sans-serif; background: #f0f2f7; margin: 0; padding: 40px 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+          
+          <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">✉️ Confirmar novo email</h1>
+            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
+          </div>
+
+          <div style="padding: 36px 32px; text-align: center;">
+            <p style="color: #0d2a5e; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Olá!</p>
+            <p style="color: #8892a4; font-size: 14px; line-height: 1.6; margin: 0 0 28px;">
+              Você solicitou a alteração do email da sua conta. Use o código abaixo para confirmar o novo email.
+            </p>
+
+            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 28px;">
+              <span style="font-size: 36px; font-weight: 800; color: #0d2a5e; letter-spacing: 8px;">${codigo}</span>
+            </div>
+
+            <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
+              <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
+                ⏱ Este código expira em <strong>15 minutos</strong>.<br/>
+                Se você não solicitou a alteração, ignore este email — seu email permanece o mesmo.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};
+
 module.exports = {
   
   enviarEmailVerificacao,
-  enviarEmailRecuperacao
+  enviarEmailRecuperacao,
+  enviarEmailTrocaEmail
 };

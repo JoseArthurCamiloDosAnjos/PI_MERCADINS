@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
-import { removeEmojis } from '../hooks/useBlockEmojis';
+import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail } from '../hooks/useBlockEmojis';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
 import ToastContainer from './Toast';
@@ -40,6 +40,12 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
   );
   const [fotoFile, setFotoFile] = useState<File | undefined>();
 
+  const [emailAlterado, setEmailAlterado] = useState(false);
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
+  const [mostrarCodigo, setMostrarCodigo] = useState(false);
+  const [codigo, setCodigo] = useState('');
+  const [confirmandoEmail, setConfirmandoEmail] = useState(false);
+
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
   function handleFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -74,8 +80,48 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
     reader.readAsDataURL(file);
   }
 
+  function handleEmailChange(value: string) {
+    const filtrado = removeSpecialCharsEmail(removeEmojis(value));
+    setForm(f => ({ ...f, email: filtrado }));
+    if (filtrado !== usuario?.email) {
+      setEmailAlterado(true);
+    } else {
+      setEmailAlterado(false);
+      setMostrarCodigo(false);
+      setCodigo('');
+    }
+  }
+
   async function salvar() {
     if (!form.nome.trim()) return showToast('erro', 'Nome é obrigatório.');
+    if (!form.email.trim()) return showToast('erro', 'Email é obrigatório.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return showToast('erro', 'Email inválido.');
+
+    if (emailAlterado && !mostrarCodigo) {
+      setEnviandoCodigo(true);
+      try {
+        await api.solicitarTrocaEmail({ novoEmail: form.email.trim().toLowerCase() });
+        setMostrarCodigo(true);
+        showToast('sucesso', 'Código enviado para o novo email!');
+      } catch (e: unknown) {
+        showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar código.');
+      } finally {
+        setEnviandoCodigo(false);
+      }
+      return;
+    }
+
+    if (mostrarCodigo) {
+      if (!codigo.trim()) return showToast('erro', 'Digite o código de verificação.');
+      setConfirmandoEmail(true);
+      try {
+        await api.confirmarTrocaEmail({ codigo: codigo.trim() });
+      } catch (e: unknown) {
+        showToast('erro', e instanceof Error ? e.message : 'Código inválido ou expirado.');
+        setConfirmandoEmail(false);
+        return;
+      }
+    }
 
     setSalvando(true);
     try {
@@ -165,7 +211,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
               <input
                 className="pu-modal-input"
                 value={form.nome}
-                onChange={e => setForm(f => ({ ...f, nome: removeEmojis(e.target.value) }))}
+                onChange={e => setForm(f => ({ ...f, nome: removeSpecialChars(removeEmojis(e.target.value)) }))}
                 placeholder="Seu nome completo"
                 maxLength={150}
                 autoComplete="name"
@@ -177,12 +223,35 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
                 className="pu-modal-input"
                 type="email"
                 value={form.email}
-                readOnly
+                onChange={e => handleEmailChange(e.target.value)}
                 placeholder="seu@email.com"
                 autoComplete="email"
               />
-              <span className="pu-input-hint">O email não pode ser alterado</span>
+              {emailAlterado && !mostrarCodigo && (
+                <span className="pu-input-hint" style={{ color: '#f5c518' }}>
+                  Um código será enviado para confirmar o novo email
+                </span>
+              )}
             </div>
+
+            {mostrarCodigo && (
+              <div className="pu-modal-group">
+                <label className="pu-modal-label">Código de verificação</label>
+                <input
+                  className="pu-modal-input"
+                  type="text"
+                  value={codigo}
+                  onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                />
+                <span className="pu-input-hint">
+                  Digite o código de 6 dígitos enviado para <strong>{form.email}</strong>
+                </span>
+              </div>
+            )}
+
             <div className="pu-modal-group">
               <label className="pu-modal-label">CPF</label>
               <input
@@ -243,9 +312,9 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
           </div>
 
           <div className="pu-modal-footer">
-            <button className="pu-modal-btn-cancel" onClick={onFechar} disabled={salvando}>Cancelar</button>
-            <button className="pu-modal-btn-save" onClick={salvar} disabled={salvando}>
-              Salvar
+            <button className="pu-modal-btn-cancel" onClick={onFechar} disabled={salvando || confirmandoEmail}>Cancelar</button>
+            <button className="pu-modal-btn-save" onClick={salvar} disabled={salvando || confirmandoEmail || enviandoCodigo}>
+              {enviandoCodigo ? 'Enviando código...' : confirmandoEmail ? 'Confirmando...' : mostrarCodigo ? 'Confirmar e Salvar' : 'Salvar'}
             </button>
           </div>
 

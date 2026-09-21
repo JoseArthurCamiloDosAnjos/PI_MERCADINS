@@ -35,6 +35,10 @@ export const api = {
     request('/auth/trocar-senha', { method: 'POST', body: JSON.stringify(dados) }),
   confirmarTrocaSenha: (dados: Record<string, string>) =>
     request('/auth/confirmar-troca-senha', { method: 'POST', body: JSON.stringify(dados) }),
+  solicitarTrocaEmail: (dados: { novoEmail: string }) =>
+    request('/auth/solicitar-troca-email', { method: 'POST', body: JSON.stringify(dados) }),
+  confirmarTrocaEmail: (dados: { codigo: string }) =>
+    request('/auth/confirmar-troca-email', { method: 'POST', body: JSON.stringify(dados) }),
 
   // ── Mercados ─────────────────────────────────────────────────────────────────
   meusMercados: () =>

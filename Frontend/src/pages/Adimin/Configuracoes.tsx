@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
-import ThemeToggle from '../../components/ThemeToggle'
 import { IconCamera, IconLock, IconUser } from '../../components/Icons'
 
 export default function Configuracoes() {
   const { usuario, refreshUsuario } = useAuth()
-  const { tema, toggleTema } = useTheme()
   const { toasts, showToast, dismissToast } = useToast()
 
   const [formPerfil, setFormPerfil] = useState({
@@ -92,17 +89,6 @@ export default function Configuracoes() {
 
   return (
     <div className="adm-config">
-      {/* ─── Tema ──────────────────────────────────────────────── */}
-      <div className="adm-config-section">
-        <h3>Aparencia</h3>
-        <p className="adm-config-desc">Altere entre o tema escuro e claro da interface.</p>
-        <div className="adm-config-theme-row">
-          <span className="adm-config-theme-label">
-            Tema atual: <strong>{tema === 'escuro' ? 'Escuro' : 'Claro'}</strong>
-          </span>
-          <ThemeToggle tema={tema} onToggle={toggleTema} />
-        </div>
-      </div>
 
       {/* ─── Perfil ────────────────────────────────────────────── */}
       <div className="adm-config-section">

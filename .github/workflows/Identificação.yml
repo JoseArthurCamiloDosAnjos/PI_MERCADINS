@@ -1,0 +1,17 @@
+name: Identificar alteração
+
+on:
+  push:
+
+jobs:
+  identificar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Mostrar quem fez o push
+        run: |
+          echo "Usuário: ${{ github.actor }}"
+          echo "Autor do commit: ${{ github.event.head_commit.author.name }}"
+          echo "Email: ${{ github.event.head_commit.author.email }}"
+          echo "Commit: ${{ github.event.head_commit.message }}"
+          echo "Hash: ${{ github.sha }}"

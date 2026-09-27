@@ -126,7 +126,7 @@ export default function RegistrarMercado() {
   }
 
   return (
-    <>
+    <div className="register-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
@@ -274,6 +274,6 @@ export default function RegistrarMercado() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -13,6 +13,16 @@ const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } 
 // Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
 
+const normalizarFrontendUrl = (url) => {
+  let base = (url || "").trim() || "https://mercadins.com.br";
+  base = base.replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(base)) base = `https://${base}`;
+  const host = base.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+  const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(host);
+  if (!isLocal) base = base.replace(/^http:\/\//i, "https://");
+  return base;
+};
+
 const signUp = async (req, res) => {
   const { nome, email, senha, telefone, cpf, data_nascimento, confirmarSenha } = req.body;
 
@@ -59,9 +69,9 @@ const signUp = async (req, res) => {
       VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, ${data_nascimento || null}, FALSE, ${codigoVerificacao}, ${expiracao})
     `;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://mercadins.com.br';
+    const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
     await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
-    console.log("✅ Email enviado para:", email);
+    console.log("Email enviado para:", email);
 
     res
       .status(201)

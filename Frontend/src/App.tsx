@@ -203,8 +203,10 @@ function Rotas() {
     )
   }
 
-  const isAdminLogin = localStorage.getItem('is_admin_login') === 'true'
-  const destino = usuario ? (usuario.is_admin && isAdminLogin ? '/admin' : (temMercado ? '/vendedor' : '/perfil')) : '/auth'
+
+  const destino = usuario ? '/' : '/auth'
+
+
   return (
     <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
       <Routes>

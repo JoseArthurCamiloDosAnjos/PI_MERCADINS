@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import ProfileMenu from "../../components/ProfileMenu";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -144,18 +143,14 @@ export default function MercadinsPromo() {
             <a href="#beneficios" onClick={(e) => { e.preventDefault(); scrollTo('beneficios'); }}>Benefícios</a>
             <a href="#planos" onClick={(e) => { e.preventDefault(); scrollTo('planos'); }}>Planos</a>
             <div className="mp-nav-mobile-actions">
-              {usuario ? (
-                <ProfileMenu inline onNavigate={() => setMobileMenuOpen(false)} />
-              ) : (
+              {!usuario && (
                 <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
               )}
               <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
             </div>
           </div>
           <div className="mp-nav-right">
-            {usuario ? (
-              <ProfileMenu />
-            ) : (
+            {!usuario && (
               <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
             )}
             <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>

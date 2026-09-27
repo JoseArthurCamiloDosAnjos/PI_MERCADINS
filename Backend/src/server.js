@@ -1,6 +1,5 @@
 const express = require('express')
 const cors    = require('cors')
-const path    = require('path')
 require('dotenv').config()
 
 const authRoutes             = require('./routes/authRoutes.js')
@@ -71,12 +70,6 @@ app.use(cors({
 // ── Body parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }))
 
-// ── Static files ─────────────────────────────────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'), {
-  maxAge: '1d',
-  immutable: true,
-}))
-
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -114,5 +107,5 @@ app.use((err, _req, res, _next) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`✅ Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
+  console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
 })

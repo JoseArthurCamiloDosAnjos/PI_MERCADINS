@@ -132,7 +132,7 @@ const criarMercado = async (req, res) => {
       RETURNING *
     `;
 
-    // ✅ Vincula o mercado ao usuário logado com papel 'dono'
+    // Vincula o mercado ao usuário logado com papel 'dono'
     await sql`
       INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
       VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')

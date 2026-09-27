@@ -10,7 +10,7 @@ const validarSenha = (senha) => {
 }
 
 const validarTelefone = (telefone) => {
-  // ✅ código morto removido — só uma return pode existir
+  // código morto removido — só uma return pode existir
   const isString = typeof telefone === 'string' && telefone.trim() !== ''
   if (!isString) return false
   const numeros = telefone.replace(/\D/g, '')

@@ -25,7 +25,7 @@ function FieldIcon({ children }: { children: React.ReactNode }) {
 
 export default function RegistrarMercado() {
   const navigate = useNavigate();
-  const { refreshMercados } = useAuth(); // ✅ corrigido: era refreshUsuario
+  const { refreshMercados } = useAuth(); // corrigido: era refreshUsuario
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);

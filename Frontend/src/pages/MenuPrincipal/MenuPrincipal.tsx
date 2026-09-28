@@ -218,8 +218,8 @@ export default function Mercadins() {
                 type="search"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar mercados e produtos"
-                aria-label="Buscar mercados e produtos"
+                placeholder="Buscar mercados"
+                aria-label="Buscar mercados"
               />
             </form>
 

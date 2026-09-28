@@ -173,6 +173,29 @@
   border-color: rgba(239, 68, 68, 0.3);
   color: #f87171;
 }
+.sb-back-btn{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  color: var(--cinza-texto);
+  font-size: 13px ;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.23s;
+  margin-bottom: 6px;
+
+}
+.sb-back-btn:hover {
+  background: var(--azul-medio);
+  color: var(--branco);
+  transform: translateY(-1px);
+  text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
 .sb-create-btn {
   display: flex;
   align-items: center;

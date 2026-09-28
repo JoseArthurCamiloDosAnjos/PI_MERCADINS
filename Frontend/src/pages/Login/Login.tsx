@@ -40,11 +40,7 @@ export default function Login() {
       }
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        if (is_admin_login) {
-          navigate("/admin");
-        } else {
-          navigate("/auth");
-        }
+        navigate("/");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

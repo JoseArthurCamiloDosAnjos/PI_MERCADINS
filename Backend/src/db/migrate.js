@@ -132,11 +132,11 @@ async function migrate() {
     ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_admin TEXT DEFAULT ''
   `;
 
-  console.log('✅ Tabelas criadas com sucesso!');
+  console.log('Tabelas criadas com sucesso!');
 }
 
 
 migrate().catch(err => {
-  console.error('❌ Erro na migração:', err.message);
+  console.error('Erro na migração:', err.message);
   process.exit(1);
 });

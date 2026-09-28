@@ -38,13 +38,13 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  // ✅ Fix 1: inicializa como true só se há token — evita setState síncrono no effect
+  // Fix 1: inicializa como true só se há token — evita setState síncrono no effect
   const [carregando, setCarregando] = useState(
     () => !!localStorage.getItem("token")
   );
   const [temMercado, setTemMercado] = useState(false);
 
-  // ✅ Fix 2: useCallback para estabilizar a referência e poder incluir no dep array
+  // Fix 2: useCallback para estabilizar a referência e poder incluir no dep array
   const verificarMercados = useCallback(async () => {
   const token = localStorage.getItem("token");
   if (!token) { setTemMercado(false); return; }
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-   // ✅ Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
+   // Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
     //    temMercado após cadastrar o primeiro mercado (App.tsx usa temMercado
     //    para decidir rota /vendedor vs /perfil)
     <AuthContext.Provider

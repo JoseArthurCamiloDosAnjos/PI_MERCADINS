@@ -25,7 +25,7 @@ function FieldIcon({ children }: { children: React.ReactNode }) {
 
 export default function RegistrarMercado() {
   const navigate = useNavigate();
-  const { refreshMercados } = useAuth(); // ✅ corrigido: era refreshUsuario
+  const { refreshMercados } = useAuth(); // corrigido: era refreshUsuario
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -126,7 +126,7 @@ export default function RegistrarMercado() {
   }
 
   return (
-    <>
+    <div className="register-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
@@ -274,6 +274,6 @@ export default function RegistrarMercado() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

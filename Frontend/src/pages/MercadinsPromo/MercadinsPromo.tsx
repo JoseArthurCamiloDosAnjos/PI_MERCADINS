@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ProfileMenu from "../../components/ProfileMenu";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -136,19 +137,27 @@ export default function MercadinsPromo() {
       <nav className={`mp-nav ${mobileMenuOpen ? "mp-nav-open" : ""}`}>
         <div className="mp-nav-inner">
           <div className="mp-logo">
-            <img src={logo} alt="Mercadins" className="mp-logo-img" />
+            <img src={logo}  alt="Mercadins" className="mp-logo-img" onClick={() => navigate("/")}  />
           </div>
           <div className={`mp-nav-links ${mobileMenuOpen ? "mp-nav-links--open" : ""}`}>
             <a href="#sobre" onClick={(e) => { e.preventDefault(); scrollTo('sobre'); }}>Sobre</a>
             <a href="#beneficios" onClick={(e) => { e.preventDefault(); scrollTo('beneficios'); }}>Benefícios</a>
             <a href="#planos" onClick={(e) => { e.preventDefault(); scrollTo('planos'); }}>Planos</a>
             <div className="mp-nav-mobile-actions">
-              <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
+              {usuario ? (
+                <ProfileMenu inline onNavigate={() => setMobileMenuOpen(false)} />
+              ) : (
+                <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
+              )}
               <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
             </div>
           </div>
           <div className="mp-nav-right">
-            <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
+            {usuario ? (
+              <ProfileMenu />
+            ) : (
+              <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
+            )}
             <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
           </div>
           <button
@@ -462,7 +471,7 @@ export default function MercadinsPromo() {
       <footer className="mp-footer">
         <div className="mp-container mp-footer-inner">
           <div className="mp-logo">
-            <img src={logo} alt="Mercadins" className="mp-logo-img" />
+            <img src={logo} alt="Mercadins" className="mp-logo-img" onClick={() => navigate("/")}/>
           </div>
           <p className="mp-footer-tagline">Seu mercado inteligente</p>
           <p className="mp-footer-copy">© 2025 Mercadins. Todos os direitos reservados.</p>

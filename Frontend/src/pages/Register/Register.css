@@ -37,16 +37,16 @@ html, body {
 
 /* ── TEMA CLARO ── */
 .tema-claro .register-page { background: #f0f2f7; }
-.tema-claro .right { background: #f0f2f7; }
-.tema-claro .form-header h1 { color: #0d2a5e; }
-.tema-claro .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
-.tema-claro .field input:focus { background: #ffffff; }
-.tema-claro .btn-primary { background: #0d2a5e; color: #ffffff; }
-.tema-claro .login-link { color: #8892a4; }
-.tema-claro .login-link a { color: #1a3a7a; }
+.tema-claro .register-page .right { background: #f0f2f7; }
+.tema-claro .register-page .form-header h1 { color: #0d2a5e; }
+.tema-claro .register-page .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
+.tema-claro .register-page .field input:focus { background: #ffffff; }
+.tema-claro .register-page .btn-primary { background: #0d2a5e; color: #ffffff; }
+.tema-claro .register-page .login-link { color: #8892a4; }
+.tema-claro .register-page .login-link a { color: #1a3a7a; }
 
 /* ── LEFT PANEL ── */
-.left {
+.register-page .left {
   width: 46%;
   position: relative;
   display: flex;
@@ -56,42 +56,42 @@ html, body {
   flex-shrink: 0;
 }
 
-.left-bg {
+.register-page .left-bg {
   position: absolute;
   inset: 0;
   background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
 }
 
-.left-bg::after {
+.register-page .left-bg::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(160deg, rgba(245,197,24,0.35) 0%, transparent 55%);
 }
 
-.circle {
+.register-page .circle {
   position: absolute;
   border-radius: 50%;
   opacity: 0.18;
 }
-.circle-1 {
+.register-page .circle-1 {
   width: 380px; height: 380px;
   background: var(--gold);
   top: -100px; left: -80px;
 }
-.circle-2 {
+.register-page .circle-2 {
   width: 260px; height: 260px;
   background: var(--white);
   bottom: -60px; right: -60px;
 }
-.circle-3 {
+.register-page .circle-3 {
   width: 140px; height: 140px;
   background: var(--gold);
   bottom: 100px; left: 40px;
   opacity: 0.25;
 }
 
-.logo-wrap {
+.register-page .logo-wrap {
   position: relative;
   z-index: 2;
   display: flex;
@@ -101,7 +101,7 @@ html, body {
   animation: fadeUp 0.8s ease both;
 }
 
-.logo-img {
+.register-page .logo-img {
   width: 260px;
   height: 260px;
   object-fit: cover;
@@ -110,7 +110,7 @@ html, body {
   animation: floatImg 4s ease-in-out infinite;
 }
 
-.logo-tagline {
+.register-page .logo-tagline {
   font-family: var(--font-display);
   color: rgba(255,255,255,0.88);
   font-size: 14px;
@@ -120,12 +120,12 @@ html, body {
 }
 
 /* ── MOBILE LOGO (inside card) ── */
-.mobile-logo {
+.register-page .mobile-logo {
   display: none;
 }
 
 /* ── BACK BUTTON ── */
-.btn-back {
+.register-page .btn-back {
   position: absolute;
   top: 24px;
   left: 24px;
@@ -139,11 +139,11 @@ html, body {
   backdrop-filter: blur(6px);
   transition: background 0.2s, transform 0.2s;
 }
-.btn-back:hover { background: rgba(255,255,255,0.3); transform: scale(1.08); }
-.btn-back svg { stroke: white; }
+.register-page .btn-back:hover { background: rgba(255,255,255,0.3); transform: scale(1.08); }
+.register-page .btn-back svg { stroke: white; }
 
 /* ── RIGHT PANEL ── */
-.right {
+.register-page .right {
   flex: 1;
   display: flex;
   align-items: center;
@@ -154,7 +154,7 @@ html, body {
   overflow-y: auto;
 }
 
-.right::before {
+.register-page .right::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -165,7 +165,7 @@ html, body {
   pointer-events: none;
 }
 
-.form-card {
+.register-page .form-card {
   position: relative;
   z-index: 1;
   width: 100%;
@@ -174,18 +174,18 @@ html, body {
   padding: 4px 0;
 }
 
-.form-header {
+.register-page .form-header {
   margin-bottom: 4px;
 }
 
-.form-header-row {
+.register-page .form-header-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
 
-.form-header h1 {
+.register-page .form-header h1 {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 700;
@@ -195,14 +195,14 @@ html, body {
   overflow-wrap: break-word;
 }
 
-.form-header p {
+.register-page .form-header p {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
 }
 
 /* ── ALERTS ── */
-.alert {
+.register-page .alert {
   display: none;
   padding: 7px 12px;
   border-radius: 10px;
@@ -211,29 +211,29 @@ html, body {
   margin-bottom: 6px;
   animation: fadeUp 0.3s ease;
 }
-.alert.show { display: flex; align-items: flex-start; gap: 8px; }
+.register-page .alert.show { display: flex; align-items: flex-start; gap: 8px; }
 
-.alert-error {
+.register-page .alert-error {
   background: rgba(224,82,82,0.1);
   border: 1.5px solid rgba(224,82,82,0.3);
   color: var(--danger);
 }
-.alert-success {
+.register-page .alert-success {
   background: rgba(46,204,113,0.1);
   border: 1.5px solid rgba(46,204,113,0.3);
   color: #1a9e55;
 }
 
 /* ── INPUTS ── */
-.field {
+.register-page .field {
   margin-bottom: 4px;
 }
 
-.field-input-wrap {
+.register-page .field-input-wrap {
   position: relative;
 }
 
-.field input {
+.register-page .field input {
   width: 100%;
   padding: 7px 35px 7px 35px;
   border: 1.8px solid var(--input-border);
@@ -246,10 +246,10 @@ html, body {
   outline: none;
 }
 
-.field input::placeholder { color: var(--text-muted); }
+.register-page .field input::placeholder { color: var(--text-muted); }
 
 /* Date input */
-.date-input {
+.register-page .date-input {
   width: 100%;
   padding: 7px 35px 7px 35px;
   border-radius: 10px;
@@ -262,61 +262,61 @@ html, body {
   outline: none;
 }
 
-.date-input::placeholder { color: var(--text-muted); }
+.register-page .date-input::placeholder { color: var(--text-muted); }
 
-.date-input:focus {
+.register-page .date-input:focus {
   border-color: var(--navy-mid);
   background: var(--white);
 }
 
-.has-error .date-input {
+.register-page .has-error .date-input {
   border-color: var(--danger);
   background: rgba(224,82,82,0.04);
 }
-.has-error .date-input:focus {
+.register-page .has-error .date-input:focus {
   box-shadow: 0 0 0 4px rgba(224,82,82,0.1);
 }
 
-.has-success .date-input {
+.register-page .has-success .date-input {
   border-color: var(--success);
 }
-.has-success .date-input:focus {
+.register-page .has-success .date-input:focus {
   box-shadow: 0 0 0 4px rgba(46,204,113,0.1);
 }
 
 /* Calendar dropdown */
-.date-calendar {
+.register-page .date-calendar {
   font-family: inherit;
 }
 
-.react-datepicker-wrapper {
+.register-page .react-datepicker-wrapper {
   display: block;
   width: 100%;
 }
 
-.field input:focus {
+.register-page .field input:focus {
   border-color: var(--navy-mid);
   background: var(--white);
 }
 
 /* Estado de erro no campo */
-.field.has-error input {
+.register-page .field.has-error input {
   border-color: var(--danger);
   background: rgba(224,82,82,0.04);
 }
-.field.has-error input:focus {
+.register-page .field.has-error input:focus {
   box-shadow: 0 0 0 4px rgba(224,82,82,0.1);
 }
 
 /* Estado de sucesso no campo */
-.field.has-success input {
+.register-page .field.has-success input {
   border-color: var(--success);
 }
-.field.has-success input:focus {
+.register-page .field.has-success input:focus {
   box-shadow: 0 0 0 4px rgba(46,204,113,0.1);
 }
 
-.field-icon-register {
+.register-page .field-icon-register {
   position: absolute;
   left: 12px;
   top: 50%;
@@ -325,10 +325,10 @@ html, body {
   pointer-events: none;
   transition: color 0.25s;
 }
-.field input:focus ~ .field-icon-register { color: var(--navy-mid); }
+.register-page .field input:focus ~ .field-icon-register { color: var(--navy-mid); }
 
 /* Mensagem de validação */
-.field-msg {
+.register-page .field-msg {
   display: block;
   font-size: 10px;
   font-weight: 600;
@@ -337,11 +337,11 @@ html, body {
   min-height: 12px;
   transition: color 0.2s;
 }
-.field.has-error .field-msg  { color: var(--danger); }
-.field.has-success .field-msg { color: var(--success); }
+.register-page .field.has-error .field-msg  { color: var(--danger); }
+.register-page .field.has-success .field-msg { color: var(--success); }
 
 /* Botão olho senha */
-.toggle-senha {
+.register-page .toggle-senha {
   position: absolute;
   right: 10px;
   top: 50%;
@@ -353,18 +353,18 @@ html, body {
   padding: 2px;
   transition: color 0.2s;
 }
-.toggle-senha:hover { color: var(--navy); }
+.register-page .toggle-senha:hover { color: var(--navy); }
 
 /* ── FORÇA DA SENHA ── */
-.senha-strength {
+.register-page .senha-strength {
   display: none;
   align-items: center;
   gap: 6px;
   margin-top: 2px;
 }
-.senha-strength.show { display: flex; }
+.register-page .senha-strength.show { display: flex; }
 
-.strength-bar {
+.register-page .strength-bar {
   flex: 1;
   height: 4px;
   background: var(--input-border);
@@ -372,14 +372,14 @@ html, body {
   overflow: hidden;
 }
 
-.strength-fill {
+.register-page .strength-fill {
   height: 100%;
   border-radius: 99px;
   width: 0%;
   transition: width 0.4s ease, background 0.4s ease;
 }
 
-.strength-label {
+.register-page .strength-label {
   font-size: 9px;
   font-weight: 700;
   white-space: nowrap;
@@ -388,14 +388,14 @@ html, body {
 }
 
 /* ── REQUISITOS DE SENHA ── */
-.senha-requisitos {
+.register-page .senha-requisitos {
   display: flex;
   flex-direction: column;
   gap: 1px;
   margin-top: 2px;
 }
 
-.senha-req-item {
+.register-page .senha-req-item {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -405,9 +405,9 @@ html, body {
   transition: color 0.2s;
 }
 
-.senha-req-item.ok { color: #22c55e; }
+.register-page .senha-req-item.ok { color: #22c55e; }
 
-.senha-req-icon {
+.register-page .senha-req-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,13 +418,13 @@ html, body {
   transition: background 0.2s;
 }
 
-.senha-req-item.ok .senha-req-icon {
+.register-page .senha-req-item.ok .senha-req-icon {
   background: rgba(34, 197, 94, 0.15);
   color: #22c55e;
 }
 
 /* ── BOTÃO PRINCIPAL ── */
-.btn {
+.register-page .btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -442,22 +442,22 @@ html, body {
   margin-top: 2px;
 }
 
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+.register-page .btn:active { transform: scale(0.97); }
+.register-page .btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
 
-.btn-primary {
+.register-page .btn-primary {
   background: var(--navy);
   color: var(--white);
   box-shadow: 0 8px 24px rgba(13,42,94,0.28);
 }
-.btn-primary:hover:not(:disabled) {
+.register-page .btn-primary:hover:not(:disabled) {
   background: var(--navy-mid);
   box-shadow: 0 12px 32px rgba(13,42,94,0.36);
   transform: translateY(-1px);
 }
 
 /* Loader girando */
-.register-spinner {
+.register-page .register-spinner {
   width: 20px;
   height: 20px;
   border: 2.5px solid rgba(255,255,255,0.3);
@@ -470,23 +470,23 @@ html, body {
 }
 
 /* ── LINK LOGIN ── */
-.login-link {
+.register-page .login-link {
   text-align: center;
   margin-top: 6px;
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
 }
-.login-link a {
+.register-page .login-link a {
   color: var(--navy-mid);
   font-weight: 700;
   text-decoration: none;
   transition: color 0.2s;
 }
-.login-link a:hover { color: var(--gold-dark); }
+.register-page .login-link a:hover { color: var(--gold-dark); }
 
 /* ── BADGE ── */
-.badge {
+.register-page .badge {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -496,7 +496,7 @@ html, body {
   color: var(--text-muted);
   font-weight: 600;
 }
-.badge span {
+.register-page .badge span {
   display: inline-block;
   width: 8px; height: 8px;
   background: var(--success);
@@ -533,74 +533,74 @@ html, body {
     overflow-y: auto;
     background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
   }
-  .left { display: none; }
-  .mobile-logo {
+  .register-page .left { display: none; }
+  .register-page .mobile-logo {
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
   }
-  .mobile-logo-img {
+  .register-page .mobile-logo-img {
     width: 110px;
     height: 110px;
     object-fit: cover;
     border-radius: 24px;
   }
-  .right {
+  .register-page .right {
     padding: 28px 24px;
     min-height: auto;
     background: rgba(255,255,255,0.95);
     border-radius: 24px 24px 0 0;
   }
-  .form-card { animation: none; padding: 0; }
-  .form-header { margin-bottom: 12px; }
-  .form-header h1 { font-size: 22px; margin-bottom: 2px; color: var(--navy); }
-  .form-header p { font-size: 12px; }
-  .field { margin-bottom: 8px; }
-  .field input { padding: 11px 38px 11px 38px; font-size: 13px; }
-  .field-icon-register { left: 12px; }
-  .toggle-senha { right: 10px; }
-  .field-msg { font-size: 10px; margin-top: 2px; margin-left: 2px; }
-  .senha-strength { margin-top: 3px; }
-  .senha-strength .strength-label { font-size: 10px; min-width: 50px; }
-  .btn { padding: 12px; font-size: 14px; margin-top: 2px; }
-  .login-link { margin-top: 10px; font-size: 11px; }
-  .badge { margin-top: 10px; font-size: 11px; }
+  .register-page .form-card { animation: none; padding: 0; }
+  .register-page .form-header { margin-bottom: 12px; }
+  .register-page .form-header h1 { font-size: 22px; margin-bottom: 2px; color: var(--navy); }
+  .register-page .form-header p { font-size: 12px; }
+  .register-page .field { margin-bottom: 8px; }
+  .register-page .field input { padding: 11px 38px 11px 38px; font-size: 13px; }
+  .register-page .field-icon-register { left: 12px; }
+  .register-page .toggle-senha { right: 10px; }
+  .register-page .field-msg { font-size: 10px; margin-top: 2px; margin-left: 2px; }
+  .register-page .senha-strength { margin-top: 3px; }
+  .register-page .senha-strength .strength-label { font-size: 10px; min-width: 50px; }
+  .register-page .btn { padding: 12px; font-size: 14px; margin-top: 2px; }
+  .register-page .login-link { margin-top: 10px; font-size: 11px; }
+  .register-page .badge { margin-top: 10px; font-size: 11px; }
   .toast { min-width: auto; max-width: calc(100vw - 40px); }
 }
 
 @media (max-width: 480px) {
-  .mobile-logo-img { width: 90px; height: 90px; border-radius: 22px; }
-  .right { padding: 20px 16px; border-radius: 20px 20px 0 0; }
-  .form-header { margin-bottom: 10px; }
-  .form-header h1 { font-size: 20px; }
-  .form-header p { font-size: 11px; }
-  .field { margin-bottom: 6px; }
-  .field input { padding: 10px 36px 10px 36px; font-size: 13px; }
-  .field-msg { font-size: 9px; }
-  .btn { padding: 11px; font-size: 13px; }
-  .alert { padding: 8px 10px; font-size: 11px; margin-bottom: 10px; }
+  .register-page .mobile-logo-img { width: 90px; height: 90px; border-radius: 22px; }
+  .register-page .right { padding: 20px 16px; border-radius: 20px 20px 0 0; }
+  .register-page .form-header { margin-bottom: 10px; }
+  .register-page .form-header h1 { font-size: 20px; }
+  .register-page .form-header p { font-size: 11px; }
+  .register-page .field { margin-bottom: 6px; }
+  .register-page .field input { padding: 10px 36px 10px 36px; font-size: 13px; }
+  .register-page .field-msg { font-size: 9px; }
+  .register-page .btn { padding: 11px; font-size: 13px; }
+  .register-page .alert { padding: 8px 10px; font-size: 11px; margin-bottom: 10px; }
 }
 
 @media (max-width: 380px) {
-  .form-header h1 { font-size: 18px; }
-  .form-card { max-width: 100%; }
+  .register-page .form-header h1 { font-size: 18px; }
+  .register-page .form-card { max-width: 100%; }
 }
 
 /* ── XIAOMI / POCO (viewport ~393-412px, tela 20:9 alta) ── */
 @media (max-width: 412px) and (min-width: 381px) {
   .register-page { min-height: 100dvh; }
-  .mobile-logo { margin-bottom: 12px; }
-  .mobile-logo-img { width: 100px; height: 100px; }
-  .right { padding: 20px 18px; }
-  .form-header { margin-bottom: 14px; }
-  .form-header h1 { font-size: 24px; }
-  .field { margin-bottom: 8px; }
-  .field input { padding: 11px 36px 11px 36px; font-size: 13px; }
-  .btn { padding: 11px; font-size: 13px; }
-  .field-msg { font-size: 10px; }
-  .senha-strength .strength-label { font-size: 10px; min-width: 45px; }
-  .login-link { margin-top: 10px; font-size: 12px; }
-  .badge { margin-top: 10px; font-size: 10px; }
+  .register-page .mobile-logo { margin-bottom: 12px; }
+  .register-page .mobile-logo-img { width: 100px; height: 100px; }
+  .register-page .right { padding: 20px 18px; }
+  .register-page .form-header { margin-bottom: 14px; }
+  .register-page .form-header h1 { font-size: 24px; }
+  .register-page .field { margin-bottom: 8px; }
+  .register-page .field input { padding: 11px 36px 11px 36px; font-size: 13px; }
+  .register-page .btn { padding: 11px; font-size: 13px; }
+  .register-page .field-msg { font-size: 10px; }
+  .register-page .senha-strength .strength-label { font-size: 10px; min-width: 45px; }
+  .register-page .login-link { margin-top: 10px; font-size: 12px; }
+  .register-page .badge { margin-top: 10px; font-size: 10px; }
 }
 
 /* ── Toasts ── */

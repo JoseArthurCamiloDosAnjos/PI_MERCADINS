@@ -497,7 +497,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
     carregarDados();
   }, []);
 
-  // ✅ Troca de tela com animação — igual ao PerfilUsuario
+  // Troca de tela com animação — igual ao PerfilUsuario
   useEffect(() => {
     if (anteriorNav.current === nav) return;
     setVisivel(false);

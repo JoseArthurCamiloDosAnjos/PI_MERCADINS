@@ -17,6 +17,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug Sonar configuration
+        run: |
+          echo "=== DIRETORIO ATUAL ==="
+          pwd
+
+          echo "=== ARQUIVOS DA RAIZ ==="
+          ls -la
+
+          echo "=== SONAR PROJECT ==="
+          cat sonar-project.properties
+
+          echo "=== PASTAS ==="
+          find . -maxdepth 3 -type d | sort
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:

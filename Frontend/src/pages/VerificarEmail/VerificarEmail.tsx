@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent, type ClipboardEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ClipboardEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { BASE_URL } from '../../services/api';
@@ -8,24 +8,27 @@ import './VerificarEmail.css';
 export default function VerificarEmail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toasts, dismissToast } = useToast();
+  const { toasts, showToast, dismissToast } = useToast();
 
   const emailParam = searchParams.get('email') ?? '';
   const codigoParam = searchParams.get('codigo') ?? '';
 
-  const [codigo, setCodigo] = useState(["", "", "", "", "", ""]);
+  const [codigo, setCodigo] = useState<string[]>(() =>
+    codigoParam.length === 6 ? codigoParam.split("") : ["", "", "", "", "", ""]
+  );
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [avisoReenvio, setAvisoReenvio] = useState("");
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    if (codigoParam && codigoParam.length === 6) {
-      const digits = codigoParam.split("");
-      setCodigo(digits);
-      handleVerificarCodigo(digits.join(""));
-    }
-  }, []);
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   function mascaraEmail(e: string) {
     const [user, domain] = e.split("@");
@@ -68,7 +71,7 @@ export default function VerificarEmail() {
     inputsRef.current[proximoVazio === -1 ? 5 : proximoVazio]?.focus();
   }
 
-  async function handleVerificarCodigo(codigoStr?: string) {
+  const handleVerificarCodigo = useCallback(async (codigoStr?: string) => {
     const code = codigoStr || codigo.join("");
     if (code.length !== 6) {
       setErro("Digite o código completo de 6 dígitos.");
@@ -93,6 +96,41 @@ export default function VerificarEmail() {
       setErro("Erro ao verificar código.");
     } finally {
       setCarregando(false);
+    }
+  }, [codigo, navigate]);
+
+  const autoVerificadoRef = useRef(false);
+
+  useEffect(() => {
+    if (autoVerificadoRef.current || codigoParam.length !== 6) return;
+    autoVerificadoRef.current = true;
+    void handleVerificarCodigo(codigoParam);
+  }, [codigoParam, handleVerificarCodigo]);
+
+  async function handleReenviarCodigo() {
+    if (!emailParam || reenviando || cooldown > 0) return;
+    setReenviando(true);
+    setAvisoReenvio("");
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/reenviar-verificacao`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailParam }),
+      });
+      const data = await res.json();
+      setCooldown(60);
+      if (!res.ok) {
+        setAvisoReenvio(data.erro || "Não foi possível reenviar o código.");
+        return;
+      }
+      setCodigo(["", "", "", "", "", ""]);
+      setErro("");
+      inputsRef.current[0]?.focus();
+      showToast("sucesso", data.mensagem || "Novo código enviado para seu email.");
+    } catch {
+      setAvisoReenvio("Erro ao reenviar o código. Tente novamente.");
+    } finally {
+      setReenviando(false);
     }
   }
 
@@ -171,6 +209,26 @@ export default function VerificarEmail() {
               >
                 {carregando ? "Verificando..." : "Verificar código"}
               </button>
+
+              {emailParam && (
+                <div className="ve-resend">
+                  <span className="ve-resend-text">Não recebeu o email?</span>
+                  <button
+                    type="button"
+                    className="ve-resend-btn"
+                    onClick={handleReenviarCodigo}
+                    disabled={reenviando || cooldown > 0}
+                  >
+                    {reenviando
+                      ? "Reenviando..."
+                      : cooldown > 0
+                        ? `Reenviar em ${cooldown}s`
+                        : "Reenviar código"}
+                  </button>
+                </div>
+              )}
+
+              {avisoReenvio && <p className="ve-aviso">{avisoReenvio}</p>}
 
               <button type="button" className="btn btn-secondary"
                 onClick={() => navigate('/auth')}>

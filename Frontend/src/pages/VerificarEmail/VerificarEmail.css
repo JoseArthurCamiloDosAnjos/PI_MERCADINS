@@ -53,7 +53,51 @@
   margin-bottom: 12px;
 }
 
-/* ── TELA DE SUCESSO ── */
+/* ── REENVIAR CÓDIGO ── */
+.ve-resend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ve-resend-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s, opacity 0.2s;
+}
+
+.ve-resend-btn:hover:not(:disabled) {
+  color: var(--navy-mid);
+}
+
+.ve-resend-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
+.ve-aviso {
+  color: #b7791f;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+
 .rs-sucesso {
   display: flex;
   flex-direction: column;

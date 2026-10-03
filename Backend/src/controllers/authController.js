@@ -118,6 +118,46 @@ const verificarEmail = async (req, res) => {
     res.status(500).json({ erro: "Erro ao confirmar cadastro" });
   }
 };
+// reenviarCodigoVerificacao — gera um novo código e reenvia o email de verificação
+const reenviarCodigoVerificacao = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ erro: "Email não informado" });
+
+  try {
+    const sql = await conectar();
+
+    const [usuario] = await sql`
+      SELECT id_usuario, email_verificado FROM usuarios
+      WHERE email = ${email}
+    `;
+
+    if (!usuario)
+      return res.status(404).json({ erro: "Email não encontrado" });
+
+    if (usuario.email_verificado)
+      return res.status(400).json({ erro: "Email já verificado. Faça o login." });
+
+    const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await sql`
+      UPDATE usuarios
+      SET token_verificacao = ${codigoVerificacao}, token_expiracao = ${expiracao}
+      WHERE id_usuario = ${usuario.id_usuario}
+    `;
+
+    const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
+    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
+    console.log("Email de verificação reenviado para:", email);
+
+    res.json({ mensagem: "Novo código enviado! Verifique seu email." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao reenviar código de verificação" });
+  }
+};
+
 const signIn = async (req, res) => {
   const { email, senha } = req.body;
 
@@ -289,6 +329,43 @@ const esqueciSenha = async (req, res) => {
     });
   }
 };
+// reenviarRecuperacao — gera um novo código de recuperação e reenvia o email
+const reenviarRecuperacao = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ erro: "Email obrigatório" });
+
+  try {
+    const sql = await conectar();
+
+    const usuario = await sql`
+      SELECT id_usuario FROM usuarios WHERE email = ${email}
+    `;
+
+    const mensagem =
+      "Se o email estiver cadastrado, você receberá um código de recuperação.";
+    if (usuario.length === 0) return res.json({ mensagem });
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000);
+
+    await sql`
+      UPDATE usuarios
+      SET token_verificacao = ${codigo},
+          token_expiracao = ${expiracao}
+      WHERE id_usuario = ${usuario[0].id_usuario}
+    `;
+
+    await enviarEmailRecuperacao(email, codigo);
+    console.log("Email de recuperação reenviado para:", email);
+
+    res.json({ mensagem: "Novo código enviado! Verifique seu email." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao enviar recuperação" });
+  }
+};
+
 const getPerfil = async (req, res) => {
   try {
     const sql = await conectar();
@@ -582,7 +659,9 @@ module.exports = {
   signUp,
   signIn,
   verificarEmail,
+  reenviarCodigoVerificacao,
   esqueciSenha,
+  reenviarRecuperacao,
   redefinirSenha,
   getPerfil,
   atualizarPerfil,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { removeEmojis, removeSpecialCharsEmail } from '../hooks/useBlockEmojis';
 import { BASE_URL } from '../services/api';
@@ -15,7 +15,16 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
   const [codigo, setCodigo] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [avisoReenvio, setAvisoReenvio] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   function mascaraEmail(e: string) {
     const [user, domain] = e.split("@");
@@ -42,6 +51,8 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
         body: JSON.stringify({ email }),
       });
       setEtapa("codigo");
+      setCodigo("");
+      setAvisoReenvio("");
     } catch {
       setErro("Falha na conexão. Tente novamente.");
     } finally {
@@ -61,6 +72,32 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
     setErro("");
     navigate(`/redefinir-senha?codigo=${codigo}`);
     onClose();
+  }
+
+  async function handleReenviarCodigo() {
+    if (!email || reenviando || cooldown > 0) return;
+    setReenviando(true);
+    setAvisoReenvio("");
+    setErro("");
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/reenviar-recuperacao`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setCooldown(60);
+      if (!res.ok) {
+        setErro(data.erro || "Não foi possível reenviar o código.");
+        return;
+      }
+      setCodigo("");
+      setAvisoReenvio(data.mensagem || "Novo código enviado! Verifique seu email.");
+    } catch {
+      setErro("Falha na conexão. Tente novamente.");
+    } finally {
+      setReenviando(false);
+    }
   }
 
   return (
@@ -174,10 +211,29 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
               O código expira em <strong>15 minutos</strong>. Verifique também a pasta de spam caso não encontre o e-mail.
             </p>
 
+            {avisoReenvio && <span className="modal-field-msg-ok">{avisoReenvio}</span>}
+
             <p className="modal-footer-text">
-              Não recebeu?{" "}
-              <button className="modal-link" onClick={() => { setEtapa("email"); setEmail(""); setCodigo(""); }}>
-                Tentar novamente
+              Não recebeu o email?{" "}
+              <button
+                className="modal-link"
+                onClick={handleReenviarCodigo}
+                disabled={reenviando || cooldown > 0}
+              >
+                {reenviando
+                  ? "Reenviando..."
+                  : cooldown > 0
+                    ? `Reenviar em ${cooldown}s`
+                    : "Reenviar código"}
+              </button>
+            </p>
+
+            <p className="modal-footer-text">
+              <button
+                className="modal-link"
+                onClick={() => { setEtapa("email"); setCodigo(""); setErro(""); setAvisoReenvio(""); }}
+              >
+                Usar outro e-mail
               </button>
             </p>
           </>

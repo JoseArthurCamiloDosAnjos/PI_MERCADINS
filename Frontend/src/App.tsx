@@ -17,6 +17,7 @@ const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha/RedefinirSenha'
 const VerificarEmail = lazy(() => import('./pages/VerificarEmail/VerificarEmail'))
 const RegistrarMercado = lazy(() => import('./pages/RegistrarMercado/RegistrarMercado'))
 const MercadinsPromos = lazy(() => import('./pages/MercadinsPromo/MercadinsPromo'))
+const SelecionarPlano = lazy(() => import('./pages/SelecionarPlano/SelecionarPlano'))
 const Vitrine = lazy(() => import('./pages/Vitrine/Vitrine'))
 const VitrineCliente = lazy(() => import('./pages/VitrineCliente/VitrineCliente'))
 const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaContainer'))
@@ -219,6 +220,7 @@ function Rotas() {
         <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
         <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => handleSetMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
+        <Route path="/planos"            element={usuario?.is_admin ? <Navigate to="/registrar-mercado" /> : <SelecionarPlano />} />
         <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />

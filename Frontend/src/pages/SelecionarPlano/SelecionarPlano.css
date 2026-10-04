@@ -1,0 +1,311 @@
+/* ============================================================
+   SELECIONAR PLANO — SelecionarPlano.css
+   Palette:
+     --blue-deep: #0D2251
+     --gold:      #F5C000
+     --gray-bg:   #F4F6FB
+     --gray-text: #5A6478
+============================================================ */
+
+.sp-page {
+  min-height: 100vh;
+  background: #F4F6FB;
+  font-family: var(--font);
+  color: #0D2251;
+  padding-bottom: 64px;
+}
+
+/* TOPBAR */
+.sp-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  height: 64px;
+  background: #0D2251;
+  box-shadow: 0 2px 16px rgba(13, 34, 81, 0.18);
+}
+
+.sp-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 8px 4px;
+  transition: color 0.2s;
+}
+.sp-back:hover { color: #F5C000; }
+
+.sp-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+.sp-logo img { height: 30px; width: auto; border-radius: 6px; }
+
+.sp-step {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+/* CONTENT */
+.sp-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 0;
+}
+
+.sp-head { text-align: center; margin-bottom: 36px; }
+
+.sp-eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #1A3A7A;
+  margin-bottom: 12px;
+}
+
+.sp-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+.sp-title span { color: #F5C000; }
+
+.sp-sub {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #5A6478;
+}
+
+/* BILLING TOGGLE */
+.sp-billing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 40px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #5A6478;
+}
+.sp-billing-active { color: #0D2251; }
+
+.sp-toggle {
+  width: 52px;
+  height: 28px;
+  background: #D1D9E6;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.25s;
+  padding: 0;
+}
+.sp-toggle.sp-toggle-on { background: #0D2251; }
+
+.sp-toggle-knob {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: left 0.25s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.sp-toggle.sp-toggle-on .sp-toggle-knob { left: 27px; }
+
+.sp-discount {
+  background: #22c55e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 4px;
+}
+
+/* GRID DE PLANOS */
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.sp-card {
+  background: #ffffff;
+  border: 2px solid #E8EDF5;
+  border-radius: 20px;
+  padding: 36px 30px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.sp-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(13, 34, 81, 0.1);
+}
+
+.sp-card-featured {
+  border-color: #0D2251;
+  background: #0D2251;
+  color: #fff;
+  box-shadow: 0 16px 56px rgba(13, 34, 81, 0.3);
+  transform: translateY(-8px);
+}
+.sp-card-featured:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 24px 64px rgba(13, 34, 81, 0.38);
+}
+
+.sp-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #F5C000;
+  color: #0D2251;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 18px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.sp-card-head { margin-bottom: 26px; }
+
+.sp-card-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0D2251;
+  margin-bottom: 14px;
+}
+.sp-card-featured .sp-card-name { color: #F5C000; }
+
+.sp-price {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  line-height: 1;
+}
+.sp-price-currency {
+  font-size: 20px;
+  font-weight: 700;
+  color: #5A6478;
+  padding-bottom: 6px;
+}
+.sp-card-featured .sp-price-currency { color: rgba(255, 255, 255, 0.65); }
+
+.sp-price-value {
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  color: #0D2251;
+}
+.sp-card-featured .sp-price-value { color: #ffffff; }
+
+.sp-price-period {
+  font-size: 15px;
+  font-weight: 500;
+  color: #5A6478;
+  padding-bottom: 10px;
+}
+.sp-card-featured .sp-price-period { color: rgba(255, 255, 255, 0.6); }
+
+.sp-annual-note {
+  display: block;
+  font-size: 12px;
+  color: #5A6478;
+  margin-top: 6px;
+}
+.sp-card-featured .sp-annual-note { color: rgba(255, 255, 255, 0.5); }
+
+.sp-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+.sp-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #3A4660;
+}
+.sp-card-featured .sp-features li { color: rgba(255, 255, 255, 0.85); }
+
+.sp-cta {
+  width: 100%;
+  border: 2px solid #0D2251;
+  background: transparent;
+  color: #0D2251;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+.sp-cta:hover {
+  background: #0D2251;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.sp-cta-featured {
+  background: #F5C000;
+  border-color: #F5C000;
+  color: #0D2251;
+  box-shadow: 0 4px 20px rgba(245, 192, 0, 0.4);
+}
+.sp-cta-featured:hover {
+  background: #FFD740;
+  border-color: #FFD740;
+  color: #0D2251;
+}
+
+.sp-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+  font-size: 14px;
+  color: #5A6478;
+  text-align: center;
+}
+
+/* RESPONSIVO */
+@media (max-width: 900px) {
+  .sp-grid { grid-template-columns: 1fr; max-width: 440px; margin: 0 auto; }
+  .sp-card-featured { transform: none; }
+  .sp-card-featured:hover { transform: translateY(-4px); }
+  .sp-title { font-size: 30px; }
+  .sp-step { display: none; }
+}

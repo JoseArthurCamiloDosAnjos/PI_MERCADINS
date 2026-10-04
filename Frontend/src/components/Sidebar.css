@@ -152,6 +152,29 @@
   flex-shrink: 0;
 }
 
+.sb-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: var(--cinza-texto);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s;
+  margin-bottom: 4px;
+}
+
+.sb-back-btn:hover {
+  background: rgba(245, 200, 74, 0.1);
+  border-color: rgba(245, 200, 74, 0.3);
+  color: var(--amarelo);
+}
+
 .sb-logout-btn {
   display: flex;
   align-items: center;
@@ -278,6 +301,7 @@
   .sb-nav-btn { padding: 9px 12px; font-size: 12px; }
   .sb-footer { padding: 0.8rem 0.6rem; }
   .sb-create-btn { padding: 9px 12px; font-size: 12px; margin-bottom: 6px; }
+  .sb-back-btn { padding: 9px 12px; font-size: 12px; }
   .sb-logout-btn { padding: 9px 12px; font-size: 12px; }
   .sb-theme-row { margin-bottom: 8px; }
 

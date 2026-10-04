@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { PLANOS, type Plano } from "./planos";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -16,56 +17,6 @@ const StarIcon = () => (
     <path d="M9 1l2.39 4.84 5.34.78-3.86 3.76.91 5.32L9 13.27l-4.78 2.53.91-5.32L1.27 6.62l5.34-.78z" />
   </svg>
 );
-
-const plans = [
-  {
-    name: "Básico",
-    price: "49",
-    period: "/mês",
-    highlight: false,
-    badge: null,
-    features: [
-      "Loja virtual completa",
-      "Até 100 produtos",
-      "Pedidos online",
-      "Suporte por e-mail",
-      "Domínio incluso",
-    ],
-    cta: "Começar agora",
-  },
-  {
-    name: "Profissional",
-    price: "97",
-    period: "/mês",
-    highlight: true,
-    badge: "Mais popular",
-    features: [
-      "Tudo do Básico",
-      "Produtos ilimitados",
-      "IA para decisões de venda",
-      "Relatórios de desempenho",
-      "Suporte prioritário",
-      "Integração WhatsApp",
-    ],
-    cta: "Escolher Profissional",
-  },
-  {
-    name: "Premium",
-    price: "197",
-    period: "/mês",
-    highlight: false,
-    badge: null,
-    features: [
-      "Tudo do Profissional",
-      "Múltiplas lojas",
-      "API personalizada",
-      "Gerente de conta dedicado",
-      "Onboarding exclusivo",
-      "SLA garantido",
-    ],
-    cta: "Falar com vendas",
-  },
-];
 
 const benefits = [
   {
@@ -125,9 +76,31 @@ export default function MercadinsPromo() {
   const handleCTA = () => {
     if (!usuario) {
       navigate("/auth/register");
+    } else if (temMercado) {
+      navigate("/vendedor");
     } else {
-      navigate(temMercado ? "/vendedor" : "/perfil");
+      // Usuário comum escolhe o plano antes de criar; admin pula direto
+      navigate(usuario.is_admin ? "/registrar-mercado" : "/planos");
     }
+  };
+
+  const handleEscolherPlano = (plano: Plano) => {
+    if (!usuario) {
+      navigate("/auth/register");
+      return;
+    }
+    if (temMercado) {
+      navigate("/vendedor");
+      return;
+    }
+    if (!usuario.is_admin) {
+      localStorage.setItem("planoSelecionado", JSON.stringify({
+        id: plano.id,
+        nome: plano.name,
+        cobranca: billingAnnual ? "anual" : "mensal",
+      }));
+    }
+    navigate("/registrar-mercado");
   };
 
   return (
@@ -343,7 +316,7 @@ export default function MercadinsPromo() {
           </div>
 
           <div className="mp-plans-grid">
-            {plans.map((plan, i) => (
+            {PLANOS.map((plan, i) => (
               <div
                 className={`mp-plan-card ${plan.highlight ? "mp-plan-featured" : ""}`}
                 key={i}
@@ -372,7 +345,7 @@ export default function MercadinsPromo() {
                 </ul>
                 <button
                   className={`mp-plan-cta ${plan.highlight ? "mp-plan-cta-featured" : ""}`}
-                  onClick={handleCTA}
+                  onClick={() => handleEscolherPlano(plan)}
                 >
                   {plan.cta}
                 </button>

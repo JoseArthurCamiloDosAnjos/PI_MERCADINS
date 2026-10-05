@@ -225,7 +225,13 @@ html, body {
 }
 
 /* ── INPUTS ── */
+/* `position: relative` é obrigatório aqui: `.field-icon-register` é
+   `position: absolute` e precisa de um bloco contentor. No Register o ícone
+   fica dentro de `.field-input-wrap` (que tem relative), mas o
+   RegistrarMercado põe o ícone direto em `.field`. Sem isto aqui, os 9 ícones
+   sobem a árvore e ancoram todos no `.form-card`, empilhados em top:50%. */
 .register-page .field {
+  position: relative;
   margin-bottom: 4px;
 }
 
@@ -284,14 +290,134 @@ html, body {
   box-shadow: 0 0 0 4px rgba(46,204,113,0.1);
 }
 
+/* Botão que abre o calendário */
+.register-page .date-picker-trigger {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.register-page .date-picker-trigger:hover {
+  color: var(--navy-mid);
+  background: rgba(0, 0, 0, 0.05);
+}
+.register-page .date-picker-trigger:focus-visible {
+  outline: 2px solid var(--navy-mid);
+  outline-offset: 1px;
+}
+.register-page .date-input-wrap .field-icon-register { display: none; }
+
 /* Calendar dropdown */
 .register-page .date-calendar {
   font-family: inherit;
 }
 
-.register-page .react-datepicker-wrapper {
-  display: block;
-  width: 100%;
+/* O react-datepicker renderiza o próprio <input>, que ficaria visível ao lado
+   do campo estilizado do formulário. Escondemos só o input: o popper do
+   calendário é irmão do wrapper (não filho), então continua visível e ancorado
+   em dateInputRef via popperTargetRef. */
+.register-page .react-datepicker-wrapper { display: none; }
+
+.register-page .react-datepicker-popper {
+  z-index: 40;
+}
+
+.register-page .react-datepicker {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--navy);
+  background: var(--white);
+  border: 1.8px solid var(--input-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+  padding: 8px;
+}
+
+.register-page .react-datepicker__header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 4px 0 8px;
+  margin-bottom: 4px;
+}
+
+.register-page .react-datepicker__current-month {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  padding: 2px 4px;
+}
+
+.register-page .react-datepicker__day-name,
+.register-page .react-datepicker__day {
+  color: var(--navy);
+  font-size: 12px;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  margin: 1px;
+  border-radius: 8px;
+}
+
+.register-page .react-datepicker__day-name {
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 2.2em;
+}
+
+.register-page .react-datepicker__day:hover,
+.register-page .react-datepicker__month-text:hover,
+.register-page .react-datepicker__quarter-text:hover,
+.register-page .react-datepicker__year-text:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.register-page .react-datepicker__day--selected,
+.register-page .react-datepicker__day--keyboard-selected,
+.register-page .react-datepicker__day--in-range {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.register-page .react-datepicker__day--selected:hover {
+  background: var(--navy-mid);
+  color: var(--white);
+}
+
+.register-page .react-datepicker__day--disabled {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.register-page .react-datepicker__navigation {
+  top: 8px;
+}
+.register-page .react-datepicker__navigation-icon {
+  border-width: 1.6px 1.6px 0 0;
+  border-color: var(--navy);
+}
+.register-page .react-datepicker__navigation:hover .react-datepicker__navigation-icon {
+  border-color: var(--navy-mid);
+}
+
+.register-page .react-datepicker__triangle {
+  display: none;
+}
+
+.register-page .react-datepicker__close-icon {
+  border-color: var(--text-muted);
+}
+.register-page .react-datepicker__close-icon:hover {
+  background: var(--danger);
 }
 
 .register-page .field input:focus {
@@ -339,6 +465,31 @@ html, body {
 }
 .register-page .field.has-error .field-msg  { color: var(--danger); }
 .register-page .field.has-success .field-msg { color: var(--success); }
+
+/* Rodapé do campo: mensagem de validação + contador de caracteres */
+.register-page .field-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.register-page .field-counter {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.register-page .field-counter.is-full { color: var(--danger); }
+.register-page .field-counter.is-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 10px;
+}
+.register-page .field-counter.is-clear:hover { color: var(--danger); }
 
 /* Botão olho senha */
 .register-page .toggle-senha {
@@ -577,6 +728,7 @@ html, body {
   .register-page .field { margin-bottom: 6px; }
   .register-page .field input { padding: 10px 36px 10px 36px; font-size: 13px; }
   .register-page .field-msg { font-size: 9px; }
+  .register-page .field-counter { font-size: 9px; }
   .register-page .btn { padding: 11px; font-size: 13px; }
   .register-page .alert { padding: 8px 10px; font-size: 11px; margin-bottom: 10px; }
 }

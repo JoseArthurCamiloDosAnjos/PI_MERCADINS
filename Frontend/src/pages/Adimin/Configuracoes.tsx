@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
+import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword } from '../../hooks/useBlockEmojis'
 import { IconCamera, IconLock, IconUser } from '../../components/Icons'
 
 export default function Configuracoes() {
@@ -128,7 +129,9 @@ export default function Configuracoes() {
             <input
               type="email"
               value={formPerfil.email}
-              onChange={e => setFormPerfil(p => ({ ...p, email: e.target.value }))}
+              maxLength={LIMITS.email}
+              onChange={e => setFormPerfil(p => ({ ...p, email: sanitizeEmail(e.target.value) }))}
+              onKeyDown={bloquearEspaco}
             />
           </div>
           <div className="adm-config-field">
@@ -169,7 +172,9 @@ export default function Configuracoes() {
               type="password"
               placeholder="Digite sua senha atual"
               value={formSenha.senha_atual}
-              onChange={e => setFormSenha(p => ({ ...p, senha_atual: e.target.value }))}
+              onChange={e => setFormSenha(p => ({ ...p, senha_atual: sanitizePassword(e.target.value) }))}
+              maxLength={LIMITS.senha}
+              onKeyDown={bloquearEspaco}
             />
           </div>
           <div className="adm-config-field">
@@ -178,7 +183,9 @@ export default function Configuracoes() {
               type="password"
               placeholder="Digite a nova senha"
               value={formSenha.nova_senha}
-              onChange={e => setFormSenha(p => ({ ...p, nova_senha: e.target.value }))}
+              onChange={e => setFormSenha(p => ({ ...p, nova_senha: sanitizePassword(e.target.value) }))}
+              maxLength={LIMITS.senha}
+              onKeyDown={bloquearEspaco}
             />
           </div>
           <div className="adm-config-field">
@@ -187,7 +194,9 @@ export default function Configuracoes() {
               type="password"
               placeholder="Confirme a nova senha"
               value={formSenha.confirmar_senha}
-              onChange={e => setFormSenha(p => ({ ...p, confirmar_senha: e.target.value }))}
+              onChange={e => setFormSenha(p => ({ ...p, confirmar_senha: sanitizePassword(e.target.value) }))}
+              maxLength={LIMITS.confirmar}
+              onKeyDown={bloquearEspaco}
             />
           </div>
         </div>

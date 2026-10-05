@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
-import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail } from '../hooks/useBlockEmojis';
+import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../hooks/useBlockEmojis';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
 import ToastContainer from './Toast';
@@ -224,6 +224,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
                 type="email"
                 value={form.email}
                 onChange={e => handleEmailChange(e.target.value)}
+                onKeyDown={bloquearEspaco}
                 placeholder="seu@email.com"
                 autoComplete="email"
               />

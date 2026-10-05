@@ -25,13 +25,16 @@
   flex: 1;
 }
 
+/* Padding, raio e margem casados com `.register-page .field input`
+   (padding 7px vertical + borda 1.8px, raio 10px). Com 14px o botão ficava
+   ~11px mais alto que o input ao lado e desalinhava a linha. */
 .rm-cep-btn {
-  margin-top: 2px;
-  padding: 14px 16px;
+  margin-top: 0;
+  padding: 7px 16px;
   background: var(--navy);
   color: var(--white);
-  border: none;
-  border-radius: 14px;
+  border: 1.8px solid var(--navy);
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;

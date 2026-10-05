@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { removeEmojis, removeSpecialCharsEmail } from '../hooks/useBlockEmojis';
+import { removeEmojis, removeSpecialCharsEmail, bloquearEspaco } from '../hooks/useBlockEmojis';
 import { BASE_URL } from '../services/api';
 
 interface EsqueciSenhaModalProps {
@@ -97,7 +97,7 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
                 placeholder="Seu e-mail cadastrado"
                 value={email}
                 onChange={(e) => { setEmail(removeSpecialCharsEmail(removeEmojis(e.target.value))); setErro(""); }}
-                onKeyDown={(e) => e.key === "Enter" && handleEnviar()}
+                onKeyDown={(e) => { bloquearEspaco(e); if (e.key === "Enter") handleEnviar(); }}
                 autoFocus
               />
             </div>

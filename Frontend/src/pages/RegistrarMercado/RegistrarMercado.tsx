@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
-import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail } from '../../hooks/useBlockEmojis';
+import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
 import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
@@ -169,6 +169,7 @@ export default function RegistrarMercado() {
 
             <div className="field">
               <input placeholder="Email do mercado" type="email" value={form.email}
+                onKeyDown={bloquearEspaco}
                 onChange={e => set('email', removeSpecialCharsEmail(removeEmojis(e.target.value)))} />
               <FieldIcon>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

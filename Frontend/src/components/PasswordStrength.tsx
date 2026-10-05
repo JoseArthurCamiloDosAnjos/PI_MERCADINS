@@ -6,12 +6,14 @@ function getSenhaStrength(senha: string) {
   let score = 0;
   if (senha.length >= 8) score++;
   if (/[A-Z]/.test(senha)) score++;
+  if (/[a-z]/.test(senha)) score++;
   if (/[0-9]/.test(senha)) score++;
   if (/[^A-Za-z0-9]/.test(senha)) score++;
   const map = [
-    { pct: "25%", color: "#ef4444", label: "Fraca" },
-    { pct: "50%", color: "#f59e0b", label: "Razoável" },
-    { pct: "75%", color: "#3b82f6", label: "Boa" },
+    { pct: "20%", color: "#ef4444", label: "Fraca" },
+    { pct: "40%", color: "#ef4444", label: "Fraca" },
+    { pct: "60%", color: "#f59e0b", label: "Razoável" },
+    { pct: "80%", color: "#3b82f6", label: "Boa" },
     { pct: "100%", color: "#22c55e", label: "Forte" },
   ];
   return score > 0 ? map[score - 1] : null;
@@ -37,6 +39,7 @@ function SenhaRequisitos({ senha }: { senha: string }) {
   const requisitos = [
     { ok: senha.length >= 8,          texto: 'Mínimo 8 caracteres' },
     { ok: /[A-Z]/.test(senha),        texto: 'Uma letra maiúscula' },
+    { ok: /[a-z]/.test(senha),        texto: 'Uma letra minúscula' },
     { ok: /[0-9]/.test(senha),        texto: 'Um número' },
     { ok: /[^A-Za-z0-9]/.test(senha), texto: 'Um caractere especial (!@#$...)' },
   ];

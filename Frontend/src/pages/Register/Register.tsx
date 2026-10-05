@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import "./Register.css";
 import "../common/Modais.css";
 import { BASE_URL } from '../../services/api';
 
 import { useToast } from '../../hooks/useToast';
-import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail } from '../../hooks/useBlockEmojis';
+import { removeEmojis, LIMITS, bloquearEspaco, sanitizeEmail, sanitizeName, sanitizePassword } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
 import logoImg from "../../assets/logo.jpeg";
@@ -17,6 +19,14 @@ interface FieldState {
 }
 
 const emptyField: FieldState = { status: "", msg: "" };
+
+function Contador({ atual, max }: { atual: number; max: number }) {
+  return (
+    <span className={`field-counter ${atual >= max ? "is-full" : ""}`}>
+      {atual}/{max}
+    </span>
+  );
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -46,6 +56,9 @@ export default function Register() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmar, setShowConfirmar] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [calendarioAberto, setCalendarioAberto] = useState(false);
+  const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // ── Field helpers ──
   function setField(name: string, status: FieldState["status"], msg: string) {
@@ -62,11 +75,13 @@ export default function Register() {
   // ── Handlers ──
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
-    let filtered = removeEmojis(value);
+    let filtered: string;
     if (name === "email") {
-      filtered = removeSpecialCharsEmail(filtered);
-    } else if (name !== "senha" && name !== "confirmar") {
-      filtered = removeSpecialChars(filtered);
+      filtered = sanitizeEmail(value);
+    } else if (name === "senha" || name === "confirmar") {
+      filtered = sanitizePassword(value);
+    } else {
+      filtered = sanitizeName(value);
     }
     setForm((prev) => ({ ...prev, [name]: filtered }));
     setField(name, "", "");
@@ -82,7 +97,7 @@ export default function Register() {
   }
 
   function handleTelefone(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatTelefone(removeEmojis(e.target.value));
+    const formatted = formatTelefone(removeEmojis(e.target.value)).slice(0, LIMITS.telefone);
     setForm((prev) => ({ ...prev, telefone: formatted }));
     setField("telefone", "", "");
   }
@@ -96,9 +111,50 @@ export default function Register() {
   }
 
   function handleCPF(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatCPF(removeEmojis(e.target.value));
+    const formatted = formatCPF(removeEmojis(e.target.value)).slice(0, LIMITS.cpf);
     setForm((prev) => ({ ...prev, cpf: formatted }));
     setField("cpf", "", "");
+  }
+
+  // ── Data de nascimento ──
+  function aplicarData(digits: string) {
+    let display = digits;
+    if (digits.length > 2) display = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (digits.length > 5) display = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+
+    if (digits.length === 8) {
+      const d = digits.slice(0, 2);
+      const m = digits.slice(2, 4);
+      const y = digits.slice(4, 8);
+      const parsed = new Date(`${y}-${m}-${d}T00:00:00`);
+      if (!isNaN(parsed.getTime())) {
+        setForm((prev) => ({ ...prev, data_nascimento: `${y}-${m}-${d}`, data_display: display }));
+        setField("data_nascimento", "", "");
+        return;
+      }
+    }
+    setForm((prev) => ({ ...prev, data_nascimento: "", data_display: display }));
+  }
+
+  function handleData(e: React.ChangeEvent<HTMLInputElement>) {
+    aplicarData(e.target.value.replace(/\D/g, "").slice(0, 8));
+  }
+
+  function selecionarData(date: Date | null) {
+    if (!date) return;
+    const d = String(date.getDate()).padStart(2, "0");
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const y = String(date.getFullYear());
+    setDataSelecionada(date);
+    setCalendarioAberto(false);
+    setForm((prev) => ({ ...prev, data_nascimento: `${y}-${m}-${d}`, data_display: `${d}/${m}/${y}` }));
+    setField("data_nascimento", "", "");
+  }
+
+  function limparData() {
+    setDataSelecionada(null);
+    setForm((prev) => ({ ...prev, data_nascimento: "", data_display: "" }));
+    setField("data_nascimento", "", "");
   }
 
   function validarCPF(cpf: string): boolean {
@@ -184,11 +240,21 @@ export default function Register() {
     if (!form.senha) {
       setField("senha", "error", "Senha é obrigatória.");
       ok = false;
-    } else if (form.senha.length < 6) {
-      setField("senha", "error", "Mínimo de 6 caracteres.");
-      ok = false;
     } else {
-      setField("senha", "success", "");
+      const regrasSenha: Array<[boolean, string]> = [
+        [form.senha.length >= 8, "Mínimo de 8 caracteres."],
+        [/[A-Z]/.test(form.senha), "Inclua uma letra maiúscula."],
+        [/[a-z]/.test(form.senha), "Inclua uma letra minúscula."],
+        [/[0-9]/.test(form.senha), "Inclua um número."],
+        [/[!@#$%^&*(),.?":{}|<>]/.test(form.senha), "Inclua um caractere especial."],
+      ];
+      const falhou = regrasSenha.find(([passou]) => !passou);
+      if (falhou) {
+        setField("senha", "error", falhou[1]);
+        ok = false;
+      } else {
+        setField("senha", "success", "");
+      }
     }
 
     if (!form.confirmar) {
@@ -287,6 +353,7 @@ export default function Register() {
                   name="nome"
                   placeholder="Nome completo"
                   autoComplete="name"
+                  maxLength={LIMITS.nome}
                   value={form.nome}
                   onChange={handleChange}
                 />
@@ -297,7 +364,10 @@ export default function Register() {
                   </svg>
                 </span>
               </div>
-              <span className="field-msg">{fields.nome.msg}</span>
+              <div className="field-foot">
+                <span className="field-msg">{fields.nome.msg}</span>
+                <Contador atual={form.nome.length} max={LIMITS.nome} />
+              </div>
             </div>
 
             {/* Telefone */}
@@ -330,7 +400,7 @@ export default function Register() {
                   autoComplete="off"
                   value={form.cpf}
                   onChange={handleCPF}
-                  maxLength={14}
+                  maxLength={LIMITS.cpf}
                 />
                 <span className="field-icon-register">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -344,13 +414,14 @@ export default function Register() {
 
             {/* Data de Nascimento */}
             <div className={fieldClass("data_nascimento")}>
-              <div className="field-input-wrap">
+              <div className="field-input-wrap date-input-wrap">
                 <input
+                  ref={dateInputRef}
                   type="text"
                   name="data_nascimento"
                   className="date-input"
                   placeholder="DD/MM/AAAA"
-                  maxLength={10}
+                  maxLength={LIMITS.data_nascimento}
                   autoComplete="bday"
                   value={form.data_display}
                   onKeyDown={(e) => {
@@ -358,25 +429,7 @@ export default function Register() {
                       e.preventDefault();
                     }
                   }}
-                  onChange={(e) => {
-                    let digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    let formatted = digits;
-                    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
-                    if (digits.length > 5) formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
-                    setForm((prev) => ({ ...prev, data_display: formatted }));
-                    if (digits.length === 8) {
-                      const y = digits.slice(4, 8);
-                      const m = digits.slice(2, 4);
-                      const d = digits.slice(0, 2);
-                      const parsed = new Date(`${y}-${m}-${d}T00:00:00`);
-                      if (!isNaN(parsed.getTime())) {
-                        setForm((prev) => ({ ...prev, data_nascimento: `${y}-${m}-${d}`, data_display: formatted }));
-                        setField("data_nascimento", "", "");
-                      }
-                    } else {
-                      setForm((prev) => ({ ...prev, data_nascimento: "" }));
-                    }
-                  }}
+                  onChange={handleData}
                 />
                 <span className="field-icon-register">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -386,8 +439,45 @@ export default function Register() {
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 </span>
+                <button
+                  type="button"
+                  className="date-picker-trigger"
+                  onClick={() => setCalendarioAberto(true)}
+                  aria-label="Abrir calendário"
+                  title="Abrir calendário"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </button>
+                {calendarioAberto && (
+                  <DatePicker
+                    open
+                    selected={dataSelecionada}
+                    onChange={selecionarData}
+                    onClickOutside={() => setCalendarioAberto(false)}
+                    onCalendarClose={() => setCalendarioAberto(false)}
+                    dateFormat="dd/MM/yyyy"
+                    maxDate={new Date()}
+                    openToDate={dataSelecionada ?? undefined}
+                    popperTargetRef={dateInputRef}
+                    popperPlacement="bottom-end"
+                    showIcon={false}
+                    locale="pt-BR"
+                  />
+                )}
               </div>
-              <span className="field-msg">{fields.data_nascimento.msg}</span>
+              <div className="field-foot">
+                <span className="field-msg">{fields.data_nascimento.msg}</span>
+                {form.data_display && (
+                  <button type="button" className="field-counter is-clear" onClick={limparData}>
+                    Limpar
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Email */}
@@ -398,8 +488,10 @@ export default function Register() {
                   name="email"
                   placeholder="Email"
                   autoComplete="email"
+                  maxLength={LIMITS.email}
                   value={form.email}
                   onChange={handleChange}
+                  onKeyDown={bloquearEspaco}
                 />
                 <span className="field-icon-register">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -408,7 +500,10 @@ export default function Register() {
                   </svg>
                 </span>
               </div>
-              <span className="field-msg">{fields.email.msg}</span>
+              <div className="field-foot">
+                <span className="field-msg">{fields.email.msg}</span>
+                <Contador atual={form.email.length} max={LIMITS.email} />
+              </div>
             </div>
 
             {/* Senha */}
@@ -419,6 +514,8 @@ export default function Register() {
                   name="senha"
                   placeholder="Senha"
                   autoComplete="new-password"
+                  maxLength={LIMITS.senha}
+                  onKeyDown={bloquearEspaco}
                   value={form.senha}
                   onChange={handleChange}
                 />
@@ -454,6 +551,8 @@ export default function Register() {
                   name="confirmar"
                   placeholder="Confirmar Senha"
                   autoComplete="new-password"
+                  maxLength={LIMITS.confirmar}
+                  onKeyDown={bloquearEspaco}
                   value={form.confirmar}
                   onChange={handleChange}
                 />

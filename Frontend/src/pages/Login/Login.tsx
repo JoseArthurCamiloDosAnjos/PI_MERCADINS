@@ -5,7 +5,7 @@ import "../common/Modais.css";
 import { useNavigate } from "react-router-dom";
 import EsqueciSenhaModal from "../../components/EsqueciSenhaModal";
 import { useToast } from '../../hooks/useToast';
-import { removeEmojis } from '../../hooks/useBlockEmojis';
+import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import logoImg from "../../assets/logo.jpeg";
 import logo2Img from "../../assets/logo2.png";
@@ -21,7 +21,9 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: removeEmojis(e.target.value) }));
+    const { name, value } = e.target;
+    const filtered = name === "senha" ? sanitizePassword(value) : sanitizeEmail(value);
+    setForm((prev) => ({ ...prev, [name]: filtered }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -110,6 +112,8 @@ export default function Login() {
                 name="email"
                 placeholder="Email:"
                 autoComplete="email"
+                maxLength={LIMITS.email}
+                onKeyDown={bloquearEspaco}
                 value={form.email}
                 onChange={handleChange}
                 required
@@ -137,6 +141,8 @@ export default function Login() {
                 name="senha"
                 placeholder="Senha:"
                 autoComplete="current-password"
+                maxLength={LIMITS.senha}
+                onKeyDown={bloquearEspaco}
                 value={form.senha}
                 onChange={handleChange}
                 required

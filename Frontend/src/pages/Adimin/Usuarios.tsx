@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
+import { LIMITS, bloquearEspaco, sanitizeEmail } from '../../hooks/useBlockEmojis'
 
 interface Usuario {
   id_usuario: number
@@ -557,7 +558,9 @@ export default function Usuarios() {
               <input
                 type="email"
                 value={formEdit.email}
-                onChange={e => setFormEdit(p => ({ ...p, email: e.target.value }))}
+                maxLength={LIMITS.email}
+                onChange={e => setFormEdit(p => ({ ...p, email: sanitizeEmail(e.target.value) }))}
+                onKeyDown={bloquearEspaco}
               />
             </div>
             {editando.usuario.is_admin && editando.usuario.email_admin && (

@@ -1,0 +1,38 @@
+name: SonarQube
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Debug Sonar configuration
+        run: |
+          echo "=== DIRETORIO ATUAL ==="
+          pwd
+
+          echo "=== ARQUIVOS DA RAIZ ==="
+          ls -la
+
+          echo "=== SONAR PROJECT ==="
+          cat sonar-project.properties
+
+          echo "=== PASTAS ==="
+          find . -maxdepth 3 -type d | sort
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io

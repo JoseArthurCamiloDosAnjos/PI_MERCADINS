@@ -54,7 +54,7 @@ export default function Sidebar({
   foto,
   showCriarMercado = true,
 }: SidebarProps) {
-  const { logout } = useAuth();
+  const { logout, usuario } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -68,6 +68,19 @@ export default function Sidebar({
 
   function handleNav(i: number) {
     onNav?.(i);
+    setOpen(false);
+  }
+
+  // Usuário comum escolhe o plano antes de criar; admin pula direto para o cadastro
+  function irCriarMercado() {
+    navigate(usuario?.is_admin ? "/registrar-mercado" : "/planos");
+    setOpen(false);
+  }
+
+  // Sai do perfil e volta para a tela anterior (ou para o início, se não houver histórico)
+  function sairDoPerfil() {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate("/");
     setOpen(false);
   }
 
@@ -128,12 +141,28 @@ export default function Sidebar({
           {showCriarMercado && (
             <button
               className="sb-create-btn"
-              onClick={() => { navigate("/registrar-mercado"); setOpen(false); }}
+              onClick={irCriarMercado}
             >
               <IconPlus size={16} />
               Criar Mercado
             </button>
           )}
+
+          <button className="sb-back-btn" onClick={sairDoPerfil}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Sair do perfil
+          </button>
 
           <button className="sb-logout-btn" onClick={handleLogout}>
             <svg

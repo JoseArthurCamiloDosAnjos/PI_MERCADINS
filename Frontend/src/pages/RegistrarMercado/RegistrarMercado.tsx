@@ -29,6 +29,14 @@ export default function RegistrarMercado() {
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [planoSelecionado] = useState<{ nome: string; cobranca: string } | null>(() => {
+    try {
+      const salvo = localStorage.getItem('planoSelecionado');
+      return salvo ? JSON.parse(salvo) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const [form, setForm] = useState<Form>({
     nome: '', email: '', telefone: '', cnpj: '',
@@ -116,6 +124,7 @@ export default function RegistrarMercado() {
       if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
 
       showToast('sucesso', 'Mercado cadastrado com sucesso!');
+      localStorage.removeItem('planoSelecionado');
       await refreshMercados(); // atualiza temMercado antes de navegar
       setTimeout(() => navigate('/vendedor'), 1500);
     } catch (e: unknown) {
@@ -151,6 +160,12 @@ export default function RegistrarMercado() {
           <div className="form-header">
             <h1>Seu Mercado<br />Começa Aqui!</h1>
             <p>Preencha os dados do seu estabelecimento.</p>
+            {planoSelecionado && (
+              <span className="rm-plano-chip">
+                Plano {planoSelecionado.nome}
+                <small> · {planoSelecionado.cobranca === 'anual' ? 'cobrança anual' : 'cobrança mensal'} · 7 dias grátis</small>
+              </span>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} noValidate>

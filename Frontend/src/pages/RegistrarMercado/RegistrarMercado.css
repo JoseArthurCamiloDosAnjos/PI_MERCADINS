@@ -65,6 +65,25 @@
   background: var(--input-border);
 }
 
+/* ── PLANO ESCOLHIDO ── */
+.rm-plano-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  padding: 7px 16px;
+  background: rgba(245, 200, 74, 0.16);
+  border: 1.5px solid var(--amarelo, #f5c84a);
+  color: var(--navy);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rm-plano-chip small {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .rm-grid {

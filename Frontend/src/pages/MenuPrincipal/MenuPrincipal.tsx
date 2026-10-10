@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import "./MenuPrincipal.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import ProfileMenu from "../../components/ProfileMenu";
@@ -229,19 +229,12 @@ export default function Mercadins() {
               </div>
             ) : (
               <>
-                <a
-                  className="login"
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate("/auth");
-                  }}
-                >
+                <Link className="login" to="/auth">
                   Entrar
-                </a>
-                <button className="signup" onClick={() => navigate("/auth/register")}>
+                </Link>
+                <Link className="signup" to="/auth/register">
                   Criar conta
-                </button>
+                </Link>
               </>
             )}
           </nav>

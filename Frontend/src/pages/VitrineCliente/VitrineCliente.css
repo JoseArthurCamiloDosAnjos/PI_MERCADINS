@@ -68,7 +68,7 @@
 .vtc-topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   padding: 0.8rem 1.8rem;
   background: var(--vt-azul-escuro);
@@ -78,6 +78,25 @@
   z-index: 20;
   width: 100%;
   box-sizing: border-box;
+}
+
+.vtc-btn-voltar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--vt-cor-texto);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.vtc-btn-voltar:hover {
+  background: var(--vt-azul-card);
+  color: var(--vt-amarelo);
 }
 
 .vtc-topbar-direita {

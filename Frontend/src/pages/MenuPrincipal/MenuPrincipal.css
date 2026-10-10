@@ -180,6 +180,8 @@ button {
   color: #17233d;
   font-weight: 700;
   transition: transform 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .signup:hover {

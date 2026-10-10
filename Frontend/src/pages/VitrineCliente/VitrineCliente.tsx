@@ -13,6 +13,7 @@ import {
   IconStore,
   IconPlus,
   IconX,
+  IconArrowLeft,
 } from '../../components/Icons';
 import { useCarrinho, type ItemCarrinho } from '../../hooks/useCarrinho';
 
@@ -248,7 +249,7 @@ function CarrinhoDrawer({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
+export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineClienteProps) {
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
@@ -413,6 +414,17 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
+        <button
+          className="vtc-btn-voltar"
+          onClick={() => {
+            if (onVoltar) onVoltar();
+            else if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+            else navigate('/');
+          }}
+        >
+          <IconArrowLeft size={16} />
+          <span>Voltar</span>
+        </button>
         <div className="vtc-topbar-direita">
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}

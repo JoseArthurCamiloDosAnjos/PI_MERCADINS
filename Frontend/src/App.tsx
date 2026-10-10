@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
@@ -151,62 +151,51 @@ function CartWrapper() {
   )
 }
 
+// ─── Wrapper: resolve mercadoId da URL e renderiza o gerenciamento ────────────
+
+function GerenciamentoMercadoWrapper() {
+  const { mercadoId } = useParams<{ mercadoId: string }>()
+  const navigate = useNavigate()
+  const id = Number(mercadoId)
+
+  useEffect(() => {
+    if (!id || Number.isNaN(id)) navigate('/vendedor')
+  }, [id, navigate])
+
+  if (!id || Number.isNaN(id)) return null
+
+  return (
+    <GerenciamentoMercado
+      mercadoId={id}
+      onVoltar={() => navigate('/vendedor')}
+      onAbrirVitrine={() => navigate(`/vendedor/mercado/${id}/vitrine`)}
+    />
+  )
+}
+
+// ─── Wrapper: resolve mercadoId da URL e renderiza a vitrine do vendedor ──────
+
+function VitrineVendedorWrapper() {
+  const { mercadoId } = useParams<{ mercadoId: string }>()
+  const navigate = useNavigate()
+  const id = Number(mercadoId)
+
+  useEffect(() => {
+    if (!id || Number.isNaN(id)) navigate('/vendedor')
+  }, [id, navigate])
+
+  if (!id || Number.isNaN(id)) return null
+
+  return <Vitrine mercadoId={id} onVoltar={() => navigate(`/vendedor/mercado/${id}`)} />
+}
+
 // ─── Rotas ──────────────────────────────────────────────────────────────────
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
-  const location = useLocation()
-  const [mercadoAberto, setMercadoAberto] = useState<{ id: number; nome: string } | null>(() => {
-    try {
-      const salvo = localStorage.getItem('mercadoAberto')
-      return salvo ? JSON.parse(salvo) : null
-    } catch { return null }
-  })
-  const [vitrineAberta, setVitrineAberta] = useState(() => {
-    try {
-      return localStorage.getItem('vitrineAberta') === 'true'
-    } catch { return false }
-  })
-
-  function handleSetMercadoAberto(valor: { id: number; nome: string } | null) {
-    setMercadoAberto(valor)
-    if (valor) localStorage.setItem('mercadoAberto', JSON.stringify(valor))
-    else localStorage.removeItem('mercadoAberto')
-  }
-
-  function handleSetVitrineAberta(valor: boolean) {
-    setVitrineAberta(valor)
-    localStorage.setItem('vitrineAberta', String(valor))
-  }
-
-  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
-
-  const isRotaVendedor = location.pathname === '/vendedor'
-
-  if (!isRotaVendedor && !temMercado && mercadoAberto) {
-    handleSetMercadoAberto(null)
-    handleSetVitrineAberta(false)
-  }
-
-  if (isRotaVendedor && usuario && mercadoAberto && vitrineAberta) {
-    return (
-      <Vitrine mercadoId={mercadoAberto.id} onVoltar={() => handleSetVitrineAberta(false)} />
-    )
-  }
-
-  if (isRotaVendedor && usuario && mercadoAberto) {
-    return (
-      <GerenciamentoMercado
-        mercadoId={mercadoAberto.id}
-        onVoltar={() => handleSetMercadoAberto(null)}
-        onAbrirVitrine={() => handleSetVitrineAberta(true)}
-      />
-    )
-  }
-
-
   const destino = usuario ? '/' : '/auth'
 
+  if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
   return (
     <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
@@ -218,7 +207,9 @@ function Rotas() {
         <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
         <Route path="/verificar-email"   element={<VerificarEmail />} />
         <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
-        <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor onAbrirMercado={(m) => handleSetMercadoAberto(m)} /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+        <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+        <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+        <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
         <Route path="/planos"            element={usuario?.is_admin ? <Navigate to="/registrar-mercado" /> : <SelecionarPlano />} />
         <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />

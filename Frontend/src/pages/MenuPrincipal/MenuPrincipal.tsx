@@ -74,7 +74,7 @@ function irParaSecao(id: string) {
 
 export default function Mercadins() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, temMercado } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [totalMercados, setTotalMercados] = useState(0);
   const [totalPedidos, setTotalPedidos] = useState(0);
@@ -462,6 +462,23 @@ export default function Mercadins() {
                   </button>
                 </article>
               ))}
+
+              {/* Criar mercado — só para quem não tem loja própria ou não está logado */}
+              {(!usuario || !temMercado) && (
+                <button
+                  type="button"
+                  className="store-card store-card--criar"
+                  onClick={() => navigate(usuario ? "/promocional" : "/auth")}
+                >
+                  <span className="criar-mercado-icon">+</span>
+                  <strong className="criar-mercado-titulo">Criar seu mercado</strong>
+                  <span className="criar-mercado-sub">
+                    {usuario
+                      ? "Cadastre sua loja e comece a vender hoje mesmo"
+                      : "Entre ou crie sua conta para começar"}
+                  </span>
+                </button>
+              )}
             </section>
           )}
         </div>

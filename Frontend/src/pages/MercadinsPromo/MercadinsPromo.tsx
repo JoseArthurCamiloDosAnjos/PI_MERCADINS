@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { PLANOS, type Plano } from "./planos";
+import ConsultorModal from "../../components/ConsultorModal";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -43,6 +44,7 @@ const benefits = [
 
 export default function MercadinsPromo() {
   const [billingAnnual, setBillingAnnual] = useState(false);
+  const [consultorAberto, setConsultorAberto] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { usuario, temMercado } = useAuth();
@@ -327,11 +329,22 @@ export default function MercadinsPromo() {
                 <div className="mp-plan-header">
                   <h3 className="mp-plan-name">{plan.name}</h3>
                   <div className="mp-plan-price">
-                    <span className="mp-price-currency">R$</span>
-                    <span className="mp-price-value">{getPrice(plan.price)}</span>
-                    <span className="mp-price-period">{plan.period}</span>
+                    {plan.sobConsulta ? (
+                      <span className="mp-price-custom">Sob consulta</span>
+                    ) : (
+                      <>
+                        <span className="mp-price-currency">R$</span>
+                        <span className="mp-price-value">{getPrice(plan.price)}</span>
+                        <span className="mp-price-period">{plan.period}</span>
+                      </>
+                    )}
                   </div>
-                  {billingAnnual && (
+                  {plan.sobConsulta && plan.aPartirDe && (
+                    <span className="mp-annual-note">
+                      a partir de <strong>R$ {plan.aPartirDe}</strong>/mês
+                    </span>
+                  )}
+                  {!plan.sobConsulta && billingAnnual && (
                     <span className="mp-annual-note">cobrado anualmente</span>
                   )}
                 </div>
@@ -345,7 +358,7 @@ export default function MercadinsPromo() {
                 </ul>
                 <button
                   className={`mp-plan-cta ${plan.highlight ? "mp-plan-cta-featured" : ""}`}
-                  onClick={() => handleEscolherPlano(plan)}
+                  onClick={() => plan.sobConsulta ? setConsultorAberto(true) : handleEscolherPlano(plan)}
                 >
                   {plan.cta}
                 </button>
@@ -445,6 +458,8 @@ export default function MercadinsPromo() {
           <p className="mp-footer-copy">© 2025 Mercadins. Todos os direitos reservados.</p>
         </div>
       </footer>
+
+      <ConsultorModal aberto={consultorAberto} onFechar={() => setConsultorAberto(false)} />
     </div>
   );
 }

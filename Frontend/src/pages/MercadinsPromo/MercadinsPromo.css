@@ -657,6 +657,15 @@ html {
 }
 .mp-plan-featured .mp-price-currency { color: rgba(255,255,255,0.65); }
 
+.mp-price-custom {
+  font-size: 34px;
+  font-weight: 900;
+  color: #0D2251;
+  letter-spacing: -1px;
+  align-self: center;
+}
+.mp-plan-featured .mp-price-custom { color: #ffffff; }
+
 .mp-price-value {
   font-size: 56px;
   font-weight: 900;

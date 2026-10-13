@@ -121,14 +121,12 @@ export default function MercadinsPromo() {
               {!usuario && (
                 <button className="mp-btn-nav mp-btn-login" onClick={() => { setMobileMenuOpen(false); navigate("/auth"); }}>Entrar</button>
               )}
-              <button className="mp-btn-nav" onClick={() => { setMobileMenuOpen(false); handleCTA(); }}>Criar minha loja grátis</button>
             </div>
           </div>
           <div className="mp-nav-right">
             {!usuario && (
               <button className="mp-btn-nav mp-btn-login" onClick={() => navigate("/auth")}>Entrar</button>
             )}
-            <button className="mp-btn-nav" onClick={handleCTA}>Criar minha loja grátis</button>
           </div>
           <button
             className={`mp-hamburger ${mobileMenuOpen ? "mp-hamburger--open" : ""}`}
@@ -159,15 +157,15 @@ export default function MercadinsPromo() {
             </h1>
             <p className="mp-hero-sub">
               Cadastre sua loja, receba pedidos e aumente suas vendas sem complicação.
-              Sem mensalidade para começar — você só paga quando vender.
+              Escolha o plano ideal para o seu tamanho e comece a vender hoje mesmo.
             </p>
             <div className="mp-hero-checks">
-              <span><CheckIcon /> Sem mensalidade inicial</span>
+              <span><CheckIcon /> Planos para todos os tamanhos</span>
               <span><CheckIcon /> Comece em menos de 5 minutos</span>
               <span><CheckIcon /> Suporte simples e rápido</span>
             </div>
             <div className="mp-hero-actions">
-              <button className="mp-btn-primary" onClick={handleCTA}>Criar mercado grátis</button>
+              <button className="mp-btn-primary" onClick={handleCTA}>Criar meu mercado</button>
               <button className="mp-btn-ghost" onClick={() => scrollTo('beneficios')}>Ver como funciona →</button>
             </div>
           </div>
@@ -432,15 +430,15 @@ export default function MercadinsPromo() {
             Pronto para levar seu mercado<br />para o digital?
           </h2>
           <p className="mp-cta-sub">
-            Comece sem pagar nada. Você só paga quando vender. Sem risco.
+            Escolha o plano ideal e comece a vender hoje mesmo. Sem complicação.
           </p>
           <div className="mp-cta-actions">
             <button className="mp-btn-primary mp-btn-large" onClick={handleCTA}>
-              Criar meu mercado grátis →
+              Criar meu mercado →
             </button>
           </div>
           <div className="mp-cta-checks">
-            <span><CheckIcon /> Sem mensalidade inicial</span>
+            <span><CheckIcon /> Planos para todos os tamanhos</span>
             <span><CheckIcon /> Setup em 5 minutos</span>
             <span><CheckIcon /> Suporte incluso</span>
           </div>

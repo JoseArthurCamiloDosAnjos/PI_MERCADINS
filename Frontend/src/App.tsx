@@ -76,7 +76,7 @@ function ProdutoTelaWrapper() {
       categoriaId={Number(categoriaId)}
       produtoId={Number(produtoId)}
       onVoltar={() => navigate(-1)}
-      onAbrirCarrinho={() => navigate(`/vitrine/${slug}`)}
+      onAbrirCarrinho={() => navigate(`/vitrine/${slug}/carrinho`)}
       onAbrirProduto={(catId, prodId) => navigate(`/vitrine/${slug}/produto/${catId}/${prodId}`)}
     />
   )

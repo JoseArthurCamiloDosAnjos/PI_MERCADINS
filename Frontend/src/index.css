@@ -14,7 +14,10 @@ html, body, #root {
   flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  overflow-y: auto;
+  /* overflow-x: clip em vez de overflow-y: auto — um container de rolagem
+     em #root quebra o position: sticky do menu lateral (perfil/vendedor),
+     fazendo o menu sumir e deixando áreas em branco atrás dele. */
+  overflow-x: clip;
 }
 
 body {

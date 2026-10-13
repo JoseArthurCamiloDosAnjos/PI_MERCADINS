@@ -10,14 +10,13 @@ import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
+import CarrinhoOverlay from '../../components/CarrinhoOverlay/CarrinhoOverlay';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
-  IconPlus,
-  IconX,
   IconArrowLeft,
 } from '../../components/Icons';
-import { useCarrinho, type ItemCarrinho } from '../../hooks/useCarrinho';
+import { useCarrinho } from '../../hooks/useCarrinho';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -52,14 +51,6 @@ function IconCart({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-function IconMinus({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}>
-      <path d="M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Produto {
@@ -170,82 +161,6 @@ function ProdutoCardCliente({
         {produto.preco && <p className="vtc-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
     </button>
-  );
-}
-
-// ─── Drawer do carrinho ────────────────────────────────────────────────────────
-
-function CarrinhoDrawer({
-  aberto, itens, totalValor, onFechar, onAlterarQuantidade, onRemover, onFinalizar, finalizando,
-}: {
-  aberto: boolean;
-  itens: ItemCarrinho[];
-  totalValor: number;
-  onFechar: () => void;
-  onAlterarQuantidade: (id: number, delta: number) => void;
-  onRemover: (id: number) => void;
-  onFinalizar: () => void;
-  finalizando: boolean;
-}) {
-  if (!aberto) return null;
-
-  return (
-    <div className="vtc-drawer-overlay" onClick={onFechar}>
-      <aside className="vtc-drawer" onClick={e => e.stopPropagation()}>
-        <div className="vtc-drawer-header">
-          <h3><IconCart size={18} /> Seu carrinho</h3>
-          <button className="vtc-drawer-fechar" onClick={onFechar}><IconX size={16} /></button>
-        </div>
-
-        {itens.length === 0 ? (
-          <div className="vtc-drawer-vazio">
-            <IconCart size={30} />
-            <p>Seu carrinho está vazio</p>
-          </div>
-        ) : (
-          <div className="vtc-drawer-lista">
-            {itens.map(item => (
-              <div className="vtc-drawer-item" key={item.produto.id_produto}>
-                <div className="vtc-drawer-item-img">
-                  {item.produto.imagem
-                    ? <img src={item.produto.imagem} alt={item.produto.nome} />
-                    : <span className="vtc-produto-img-placeholder">—</span>
-                  }
-                </div>
-                <div className="vtc-drawer-item-info">
-                  <p className="vtc-drawer-item-nome">{item.produto.nome}</p>
-                  <p className="vtc-drawer-item-preco">R$ {formatarPreco(item.produto.preco)}</p>
-                  <div className="vtc-stepper vtc-stepper-sm">
-                    <button className="vtc-stepper-btn" onClick={() => onAlterarQuantidade(item.produto.id_produto, -1)}>
-                      <IconMinus size={11} />
-                    </button>
-                    <span className="vtc-stepper-valor">{item.quantidade}</span>
-                    <button className="vtc-stepper-btn" onClick={() => onAlterarQuantidade(item.produto.id_produto, 1)}>
-                      <IconPlus size={11} />
-                    </button>
-                  </div>
-                </div>
-                <button className="vtc-drawer-item-remover" onClick={() => onRemover(item.produto.id_produto)} title="Remover">
-                  <IconX size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {itens.length > 0 && (
-          <div className="vtc-drawer-footer">
-            <div className="vtc-drawer-total">
-              <span>Total</span>
-              <strong>R$ {formatarPreco(String(totalValor))}</strong>
-            </div>
-            <button className="vtc-btn-finalizar" onClick={onFinalizar} disabled={finalizando}>
-              {finalizando ? 'Enviando…' : 'Finalizar pedido'}
-            </button>
-          </div>
-        )}
-      </aside>
-    </div>
   );
 }
 
@@ -365,12 +280,6 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
     } finally {
       setFavoritando(false);
     }
-  }
-
-  async function handleFinalizarPedido() {
-    if (!slug) return;
-    setCarrinhoAberto(false);
-    navigate(`/vitrine/${slug}/carrinho`);
   }
 
   if (carregando || !dados) {
@@ -542,16 +451,13 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
         )}
       </main>
 
-      {/* ── Carrinho ──────────────────────────────────────────────────── */}
-      <CarrinhoDrawer
+      {/* ── Carrinho (componente reutilizável) ──────────────────────── */}
+      <CarrinhoOverlay
+        mercadoId={mercadoId}
         aberto={carrinhoAberto}
-        itens={carrinho.itens}
-        totalValor={carrinho.totalValor}
         onFechar={() => setCarrinhoAberto(false)}
-        onAlterarQuantidade={carrinho.alterarQuantidade}
-        onRemover={carrinho.remover}
-        onFinalizar={handleFinalizarPedido}
-        finalizando={false}
+        storeName={dados.nome}
+        carrinho={carrinho}
       />
 
       {/* ── FAB carrinho (mobile) ────────────────────────────────────── */}

@@ -13,6 +13,7 @@ import {
   IconStore,
   IconPlus,
   IconX,
+  IconArrowLeft,
 } from '../../components/Icons';
 import { useCarrinho, type ItemCarrinho } from '../../hooks/useCarrinho';
 
@@ -413,6 +414,9 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
+        <button className="vtc-btn-voltar" onClick={() => navigate('/')}>
+          <IconArrowLeft size={15} /> Voltar ao menu
+        </button>
         <div className="vtc-topbar-direita">
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}

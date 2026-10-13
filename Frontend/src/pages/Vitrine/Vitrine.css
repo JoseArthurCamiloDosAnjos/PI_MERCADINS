@@ -92,6 +92,23 @@
 }
 .vt-btn-voltar:hover { color: var(--vt-cor-texto); }
 
+.vt-topbar-esq {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* "Voltar ao menu" — versão em pílula para não confundir com o voltar contextual */
+.vt-btn-voltar--menu {
+  border: 1px solid var(--vt-azul-borda);
+  border-radius: var(--vt-radius-full);
+  padding: 0.3rem 0.95rem;
+}
+.vt-btn-voltar--menu:hover {
+  border-color: var(--vt-amarelo);
+  color: var(--vt-amarelo);
+}
+
 .vt-topbar-direita {
   display: flex;
   align-items: center;

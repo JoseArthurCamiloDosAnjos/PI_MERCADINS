@@ -68,7 +68,7 @@
 .vtc-topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   padding: 0.8rem 1.8rem;
   background: var(--vt-azul-escuro);
@@ -85,6 +85,21 @@
   align-items: center;
   gap: 14px;
 }
+
+.vtc-btn-voltar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  color: var(--vt-cinza);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.3rem 0;
+  transition: color 0.2s;
+}
+.vtc-btn-voltar:hover { color: var(--vt-cor-texto); }
 
 .vtc-topbar-mercado {
   display: flex;

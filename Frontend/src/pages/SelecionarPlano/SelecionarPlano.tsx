@@ -54,7 +54,7 @@ export default function SelecionarPlano() {
             Selecione o plano ideal<br />
             <span>para o seu mercado</span>
           </h1>
-          <p className="sp-sub">7 dias grátis para testar. Sem necessidade de cartão de crédito.</p>
+          <p className="sp-sub">Escolha o plano que combina com o tamanho do seu mercado.</p>
         </div>
 
         <div className="sp-billing">
@@ -116,7 +116,7 @@ export default function SelecionarPlano() {
         </div>
 
         <p className="sp-note">
-          <span>✅</span> Você só paga depois do teste grátis. Cancele quando quiser.
+          <span>✅</span> Cobrança mensal ou anual — economize 20% no plano anual.
         </p>
       </main>
 

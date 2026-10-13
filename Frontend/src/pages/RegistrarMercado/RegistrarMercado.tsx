@@ -164,7 +164,7 @@ export default function RegistrarMercado() {
             {planoSelecionado && (
               <span className="rm-plano-chip">
                 Plano {planoSelecionado.nome}
-                <small> · {planoSelecionado.cobranca === 'anual' ? 'cobrança anual' : 'cobrança mensal'} · 7 dias grátis</small>
+                <small> · {planoSelecionado.cobranca === 'anual' ? 'cobrança anual' : 'cobrança mensal'}</small>
               </span>
             )}
           </div>

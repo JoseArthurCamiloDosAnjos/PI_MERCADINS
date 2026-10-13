@@ -366,7 +366,7 @@ export default function MercadinsPromo() {
 
           <div className="mp-plans-note">
             <span>✅</span>
-            Todos os planos incluem 7 dias grátis para testar. Sem necessidade de cartão de crédito.
+            Planos com cobrança mensal ou anual — no anual você economiza 20%.
           </div>
         </div>
       </section>

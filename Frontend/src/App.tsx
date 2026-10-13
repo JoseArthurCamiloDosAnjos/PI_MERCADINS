@@ -150,6 +150,9 @@ function CartWrapper() {
         onBack={() => navigate(`/vitrine/${slug}`)}
         onCheckout={handleCheckout}
         finalizando={finalizando}
+        onUpdateQuantity={(id, delta) => carrinho.alterarQuantidade(Number(id), delta)}
+        onRemoveItem={(id) => carrinho.remover(Number(id))}
+        onClearCart={() => carrinho.limpar()}
       />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

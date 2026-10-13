@@ -1005,7 +1005,7 @@ html {
     font-size: 15px;
   }
 
-  .mp-logo-img { height: 80px;  }
+  .mp-logo-img { height: 44px; }
 
   /* HERO */
   .mp-hero {
@@ -1165,7 +1165,7 @@ html {
 
 /* ── LOGO ────────────────────────────────────────────────── */
 .mp-logo-img {
-  height: 150px;
+  height: 52px;
   width: auto;
   object-fit: contain;
   cursor: pointer;
@@ -1182,11 +1182,6 @@ html {
 /* Garante que a seção seguinte não deixe gap */
 .mp-about {
   margin-top: 0;
-}/* Logo como imagem */
-.mp-logo-img {
-  height: 150px;
-  width: auto;
-  object-fit: contain;
 }
 
 /* Corrige o espaço branco abaixo do hero */

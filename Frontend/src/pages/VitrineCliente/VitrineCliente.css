@@ -101,6 +101,23 @@
 }
 .vtc-btn-voltar:hover { color: var(--vt-cor-texto); }
 
+.vtc-btn-entrar {
+  background: transparent;
+  border: 1px solid var(--vt-azul-item);
+  color: var(--vt-cor-texto);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 7px 16px;
+  border-radius: var(--vt-radius-full);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.vtc-btn-entrar:hover {
+  border-color: var(--vt-amarelo);
+  color: var(--vt-amarelo);
+}
+
 .vtc-topbar-mercado {
   display: flex;
   align-items: center;

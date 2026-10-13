@@ -23,6 +23,9 @@ interface CartScreenProps {
   onBack?: () => void;
   onCheckout?: (items: CartItem[], total: number) => void;
   finalizando?: boolean;
+  onUpdateQuantity?: (id: string, delta: number) => void;
+  onRemoveItem?: (id: string) => void;
+  onClearCart?: () => void;
 }
 
 // ---------------------------------------------------------------
@@ -121,8 +124,13 @@ export default function CartScreen({
   onBack,
   onCheckout,
   finalizando = false,
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
 }: CartScreenProps) {
-  const [items, setItems] = useState<CartItem[]>(initialItems);
+  // Os itens vêm do componente pai (useCarrinho) — fonte única de verdade,
+  // sincronizada com o navegador (localStorage) e com o banco.
+  const items = initialItems;
   const [coupon, setCoupon] = useState("");
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -135,22 +143,17 @@ export default function CartScreen({
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
 
   const updateQuantity = (id: string, delta: number) => {
-    setItems((prev) =>
-      prev
-        .map((item) =>
-          item.id === id
-            ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+    // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
+    const item = items.find((i) => i.id === id);
+    if (delta < 0 && (item?.quantity ?? 1) <= 1) return;
+    onUpdateQuantity?.(id, delta);
   };
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    onRemoveItem?.(id);
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => onClearCart?.();
 
   const handleCheckout = () => {
     onCheckout?.(items, total);

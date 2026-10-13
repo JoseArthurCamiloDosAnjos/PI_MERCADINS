@@ -8,6 +8,8 @@ import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import ProfileMenu from '../../components/ProfileMenu';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
@@ -262,6 +264,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
+  const { usuario } = useAuth();
   const carrinho = useCarrinho(mercadoId);
   const refsCategoria = useRef<Record<number, HTMLElement | null>>({});
 
@@ -418,6 +421,13 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
           <IconArrowLeft size={15} /> Voltar ao menu
         </button>
         <div className="vtc-topbar-direita">
+          {usuario ? (
+            <ProfileMenu />
+          ) : (
+            <button className="vtc-btn-entrar" onClick={() => navigate('/auth')}>
+              Entrar
+            </button>
+          )}
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}
             onClick={() => setCarrinhoAberto(true)}

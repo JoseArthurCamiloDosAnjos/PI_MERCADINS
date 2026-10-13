@@ -158,6 +158,12 @@
 .pu-status.transit { background: var(--verde-medio); color: var(--verde-claro); }
 .pu-status.pending { background: var(--pendente-bg); color: var(--pendente-texto); }
 .pu-status.new     { background: var(--novo-bg);     color: var(--novo-texto); }
+/* Status gravados em português no banco de dados */
+.pu-status.pendente   { background: var(--pendente-bg); color: var(--pendente-texto); }
+.pu-status.entregue   { background: var(--verde-bg);    color: var(--verde-texto); }
+.pu-status.transito,
+.pu-status.em-transito{ background: var(--verde-medio); color: var(--verde-claro); }
+.pu-status.cancelado  { background: rgba(198, 40, 40, 0.12); color: #f87171; }
 
 /* AVALIAÇÕES */
 .pu-rev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }

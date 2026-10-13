@@ -37,6 +37,9 @@ interface CadastroProdutoProps {
   onCancelar: () => void;
 }
 
+const MAX_IMAGENS = 8;
+const MAX_TAMANHO_MB = 5;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CadastroProduto({
@@ -68,6 +71,7 @@ export default function CadastroProduto({
   const [erros, setErros]             = useState<Erros>({});
   const [arrastando, setArrastando]   = useState(false);
   const [enviando, setEnviando]       = useState(false);
+  const [erroGeral, setErroGeral]     = useState('');
 
   const inputFileRef = useRef<HTMLInputElement>(null);
   const editando = !!produto;
@@ -100,10 +104,30 @@ export default function CadastroProduto({
 
   function lerArquivos(files: FileList | null) {
     if (!files) return;
-    const permitidos = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (!permitidos.length) return;
+    setErroGeral('');
 
-    permitidos.forEach(file => {
+    const lista = Array.from(files);
+    const validas = lista.filter(f =>
+      f.type.startsWith('image/') && f.size <= MAX_TAMANHO_MB * 1024 * 1024
+    );
+    const rejeitadas = lista.length - validas.length;
+
+    if (!validas.length) {
+      setErroGeral(`Envie apenas imagens de até ${MAX_TAMANHO_MB} MB.`);
+      return;
+    }
+
+    const vagas = MAX_IMAGENS - imagens.length;
+    if (vagas <= 0) {
+      setErroGeral(`Máximo de ${MAX_IMAGENS} imagens por produto. Remova uma para adicionar outra.`);
+      return;
+    }
+
+    if (rejeitadas > 0 || validas.length > vagas) {
+      setErroGeral(`Arquivos ignorados: apenas imagens de até ${MAX_TAMANHO_MB} MB e no máximo ${MAX_IMAGENS} por produto.`);
+    }
+
+    validas.slice(0, vagas).forEach(file => {
       const reader = new FileReader();
       reader.onload = (e: ProgressEvent<FileReader>) => {
         const url = e.target?.result;
@@ -185,10 +209,12 @@ export default function CadastroProduto({
   async function handleSalvar() {
     if (!validar()) return;
 
+    setErroGeral('');
     setEnviando(true);
 
     try {
       const urlsSupabase: string[] = [];
+      let falhaNoUpload = false;
 
       for (let i = 0; i < imagens.length; i++) {
         const img = imagens[i];
@@ -200,6 +226,8 @@ export default function CadastroProduto({
           const url = await uploadParaSupabase(img.file);
           if (url) {
             urlsSupabase.push(url);
+          } else {
+            falhaNoUpload = true;
           }
 
           setImagens(prev => prev.map((item, idx) =>
@@ -208,6 +236,12 @@ export default function CadastroProduto({
         } else {
           urlsSupabase.push(img.url);
         }
+      }
+
+      // Não salva o produto sem as imagens: o usuário precisa saber do problema
+      if (falhaNoUpload) {
+        setErroGeral('Não foi possível enviar uma das imagens. Verifique sua conexão e tente novamente.');
+        return;
       }
 
       onSalvar({
@@ -221,6 +255,7 @@ export default function CadastroProduto({
       });
     } catch (error) {
       console.error('Erro ao salvar:', error);
+      setErroGeral('Ocorreu um erro ao salvar o produto. Tente novamente.');
     } finally {
       setEnviando(false);
     }
@@ -397,6 +432,11 @@ export default function CadastroProduto({
 
           </section>
         </div>
+
+        {/* Erro geral (upload / salvar) */}
+        {erroGeral && (
+          <div className="cp-erro-barra" role="alert">{erroGeral}</div>
+        )}
 
         {/* Footer */}
         <div className="cp-footer">

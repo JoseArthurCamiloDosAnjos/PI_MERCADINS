@@ -6,6 +6,7 @@ import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
 import { useAuth } from '../../context/AuthContext';
+import logoImg from '../../assets/logo.jpeg';
 
 interface Form {
   nome: string;
@@ -149,7 +150,7 @@ export default function RegistrarMercado() {
           </svg>
         </button>
         <div className="logo-wrap">
-          <img className="logo-img" src="../src/assets/logo.jpeg" alt="Mercadins"
+          <img className="logo-img" src={logoImg} alt="Mercadins"
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

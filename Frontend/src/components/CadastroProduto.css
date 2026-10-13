@@ -310,6 +310,19 @@
   font-weight: 500;
 }
 
+/* Aviso geral (upload de imagem / erro ao salvar) */
+.cp-erro-barra {
+  margin: 0 1.5rem 0.5rem;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 /* ─── Footer ─────────────────────────────────────────────────────────────── */
 .cp-footer {
   display: flex;

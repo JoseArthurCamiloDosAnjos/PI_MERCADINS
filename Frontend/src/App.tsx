@@ -119,6 +119,11 @@ function CartWrapper() {
 
   async function handleCheckout() {
     if (!mercadoId) return
+    if (!localStorage.getItem('token')) {
+      showToast('erro', 'Faça login para finalizar o pedido.')
+      navigate('/auth')
+      return
+    }
     setFinalizando(true)
     try {
       await api.criarPedido(mercadoId, {

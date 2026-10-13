@@ -147,6 +147,12 @@ export function useCarrinho(mercadoId: number) {
   }, [mercadoId]);
 
   const limpar = useCallback(() => {
+    // Cancela o salvamento pendente: sem isso, um agendamento antigo
+    // poderia regravar o carrinho no servidor logo após o checkout
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
     setItens([]);
     saveCarrinhoLocal(mercadoId, []);
     const token = localStorage.getItem('token');

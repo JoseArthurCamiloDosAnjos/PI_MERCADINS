@@ -193,7 +193,15 @@ export default function CartScreen({
             {items.map((item) => (
               <div className="cart-item" key={item.id}>
                 <div className="cart-item__thumb">
-                  <img src={item.imageUrl} alt={item.name} />
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="cart-item__thumb-ph" aria-hidden="true">🛒</span>
+                  )}
                 </div>
 
                 <div className="cart-item__info">

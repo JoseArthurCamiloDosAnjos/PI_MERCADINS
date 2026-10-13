@@ -15,11 +15,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.getElementById('root');
+    const html = document.documentElement;
     if (!root) return;
     if (tema === 'claro') {
       root.classList.add('tema-claro');
+      html.classList.add('tema-claro');
     } else {
       root.classList.remove('tema-claro');
+      html.classList.remove('tema-claro');
     }
     localStorage.setItem('tema', tema);
   }, [tema]);

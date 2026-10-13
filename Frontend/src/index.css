@@ -4,7 +4,7 @@
   padding: 0;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   min-height: 100vh;
 }
@@ -13,8 +13,11 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   width: 100%;
+  /* altura livre (só min-height) — com height:100% o #root ficava preso ao
+     tamanho da janela e o conteúdo das telas (ex.: perfil) transbordava
+     para fora, deixando áreas em branco no rodapé */
   min-height: 100vh;
-  /* overflow-x: clip em vez de overflow-y: auto — um container de rolagem
+  /* overflow-x: clip em vez de overflow-y: um container de rolagem
      em #root quebra o position: sticky do menu lateral (perfil/vendedor),
      fazendo o menu sumir e deixando áreas em branco atrás dele. */
   overflow-x: clip;

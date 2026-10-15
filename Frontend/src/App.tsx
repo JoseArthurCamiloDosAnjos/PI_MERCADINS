@@ -45,7 +45,7 @@ function VitrineClienteWrapper() {
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
   if (!mercadoId) return null
-  return <VitrineCliente mercadoId={mercadoId} slug={slug} onVoltar={() => navigate(-1)} />
+  return <VitrineCliente mercadoId={mercadoId} slug={slug} onVoltar={() => navigate('/')} />
 }
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a tela cheia do produto ────

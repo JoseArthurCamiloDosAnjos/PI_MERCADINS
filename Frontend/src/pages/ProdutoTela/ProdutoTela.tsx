@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { useTheme } from '../../context/ThemeContext';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
+import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import {
   IconStore,
   IconArrowLeft,
@@ -142,6 +143,7 @@ export default function ProdutoTela({
   const [imagemAtiva, setImagemAtiva] = useState(0);
   const [quantidade, setQuantidade]   = useState(1);
   const [enviando, setEnviando]       = useState(false);
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
   const slideAnterior = useCallback(() => {
     setImagemAtiva(i => (i - 1 + imagens.length) % imagens.length);
@@ -161,6 +163,7 @@ export default function ProdutoTela({
   function handleAdicionar() {
     carrinho.adicionar(produto, quantidade);
     showToast('sucesso', `${produto.nome} adicionado ao carrinho!`);
+    setCarrinhoAberto(true);
   }
 
   function handleComprarAgora() {
@@ -170,8 +173,13 @@ export default function ProdutoTela({
     if (onIrParaCarrinho) {
       onIrParaCarrinho();
     } else {
-      showToast('sucesso', `${produto.nome} adicionado ao carrinho!`);
+      setCarrinhoAberto(true);
     }
+  }
+
+  function irParaCarrinho() {
+    setCarrinhoAberto(false);
+    onIrParaCarrinho?.();
   }
 
   return (
@@ -191,7 +199,8 @@ export default function ProdutoTela({
         <div className="pd-topbar-direita">
           <button
             className={`pd-btn-carrinho ${carrinho.totalItens > 0 ? 'pd-btn-carrinho--ativo' : ''}`}
-            onClick={onIrParaCarrinho}
+            onClick={() => setCarrinhoAberto(true)}
+            aria-label="Abrir carrinho"
           >
             <IconCart size={17} />
             {carrinho.totalItens > 0 && <span className="pd-carrinho-badge">{carrinho.totalItens}</span>}
@@ -348,6 +357,15 @@ export default function ProdutoTela({
           </div>
         </section>
       </main>
+
+      <CarrinhoSidebar
+        aberto={carrinhoAberto}
+        onFechar={() => setCarrinhoAberto(false)}
+        carrinho={carrinho}
+        onIrParaCarrinho={onIrParaCarrinho ? irParaCarrinho : undefined}
+        storeName={mercado.nome}
+        tema={tema}
+      />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>

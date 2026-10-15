@@ -9,6 +9,7 @@ import {
   IconStore,
   IconArrowRight,
   IconCheck,
+  IconHeartFilled,
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 
@@ -28,6 +29,8 @@ type Store = {
 };
 
 type Categoria = { nome: string; palavras: string[] };
+
+const EMPTY_FAVORITOS = new Set<number>();
 
 const CATEGORIAS: Categoria[] = [
   { nome: "Todos", palavras: [] },
@@ -82,6 +85,10 @@ export default function Mercadins() {
   const [busca, setBusca] = useState("");
   const [local, setLocal] = useState("");
   const [categoria, setCategoria] = useState("Todos");
+  const [favoritosData, setFavoritosData] = useState<{
+    usuarioId: number;
+    ids: Set<number>;
+  } | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -102,26 +109,55 @@ export default function Mercadins() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!usuario) return;
+    let ativo = true;
+    api
+      .listarFavoritos()
+      .then((data) => {
+        if (!ativo) return;
+        const ids = new Set<number>(
+          (data.favoritos ?? []).map((f: { id_mercado: number }) => f.id_mercado)
+        );
+        setFavoritosData({ usuarioId: usuario.id_usuario, ids });
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, [usuario]);
+
+  const favoritos =
+    favoritosData && favoritosData.usuarioId === usuario?.id_usuario
+      ? favoritosData.ids
+      : EMPTY_FAVORITOS;
+
   const lojasFiltradas = useMemo(() => {
     const termo = normalizar(busca);
     const buscaLocal = normalizar(local);
     const cat = CATEGORIAS.find((c) => c.nome === categoria);
 
-    return stores.filter((store) => {
-      const texto = normalizar(
-        [store.nome, store.descricao, store.bairro, store.cidade, store.estado]
-          .filter(Boolean)
-          .join(" ")
-      );
+    return stores
+      .filter((store) => {
+        const texto = normalizar(
+          [store.nome, store.descricao, store.bairro, store.cidade, store.estado]
+            .filter(Boolean)
+            .join(" ")
+        );
 
-      if (termo && !texto.includes(termo)) return false;
-      if (buscaLocal && !normalizar(localizacao(store)).includes(buscaLocal)) return false;
-      if (cat && cat.palavras.length > 0 && !cat.palavras.some((p) => texto.includes(p))) {
-        return false;
-      }
-      return true;
-    });
-  }, [stores, busca, local, categoria]);
+        if (termo && !texto.includes(termo)) return false;
+        if (buscaLocal && !normalizar(localizacao(store)).includes(buscaLocal)) return false;
+        if (cat && cat.palavras.length > 0 && !cat.palavras.some((p) => texto.includes(p))) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const favA = favoritos.has(a.id_mercado) ? 1 : 0;
+        const favB = favoritos.has(b.id_mercado) ? 1 : 0;
+        return favB - favA;
+      });
+  }, [stores, busca, local, categoria, favoritos]);
 
   const notaMedia = useMemo(() => {
     if (stores.length === 0) return 0;
@@ -297,18 +333,26 @@ export default function Mercadins() {
               ) : stores.length === 0 ? (
                 <p className="preview-vazio">Nenhum mercado disponível.</p>
               ) : (
-                stores.slice(0, 3).map((store) => (
-                  <PreviewItem
-                    key={store.id_mercado}
-                    image={store.foto_perfil}
-                    title={store.nome}
-                    subtitle={
-                      store.status === "ativo" ? "Aberto agora" : localizacao(store)
-                    }
-                    aberto={store.status === "ativo"}
-                    onClick={() => irParaMercado(store.slug)}
-                  />
-                ))
+                [...stores]
+                  .sort(
+                    (a, b) =>
+                      (favoritos.has(b.id_mercado) ? 1 : 0) -
+                      (favoritos.has(a.id_mercado) ? 1 : 0)
+                  )
+                  .slice(0, 3)
+                  .map((store) => (
+                    <PreviewItem
+                      key={store.id_mercado}
+                      image={store.foto_perfil}
+                      title={store.nome}
+                      subtitle={
+                        store.status === "ativo" ? "Aberto agora" : localizacao(store)
+                      }
+                      aberto={store.status === "ativo"}
+                      favoritado={favoritos.has(store.id_mercado)}
+                      onClick={() => irParaMercado(store.slug)}
+                    />
+                  ))
               )}
             </aside>
           </div>
@@ -418,6 +462,11 @@ export default function Mercadins() {
                       >
                         {store.status === "ativo" ? "Aberto" : "Fechado"}
                       </span>
+                      {favoritos.has(store.id_mercado) && (
+                        <span className="store-favorito-badge" title="Seu favorito">
+                          <IconHeartFilled size={13} />
+                        </span>
+                      )}
                     </div>
                   </button>
 
@@ -538,12 +587,14 @@ function PreviewItem({
   title,
   subtitle,
   aberto,
+  favoritado,
   onClick,
 }: {
   image?: string;
   title: string;
   subtitle: string;
   aberto?: boolean;
+  favoritado?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -556,7 +607,14 @@ function PreviewItem({
         )}
       </span>
       <span className="preview-info">
-        <strong>{title}</strong>
+        <strong>
+          <span>{title}</span>
+          {favoritado && (
+            <span className="preview-fav" title="Seu favorito">
+              <IconHeartFilled size={12} />
+            </span>
+          )}
+        </strong>
         <small>
           {aberto && <i className="preview-dot" />}
           {subtitle}

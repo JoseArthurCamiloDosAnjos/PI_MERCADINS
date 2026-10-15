@@ -161,6 +161,10 @@ const listarMercados = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
 
+    // Busca por nome/cidade/estado (usada no modal de favoritos)
+    const termo = (req.query.busca ?? '').trim();
+    const filtro = termo ? `%${termo}%` : null;
+
     const [mercados, [{ total }], [{ totalPedidos }]] = await Promise.all([
       sql`
         SELECT m.*,
@@ -169,11 +173,26 @@ const listarMercados = async (req, res) => {
         FROM mercados m
         LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
         WHERE m.status = 'ativo'
+          AND (
+            ${filtro}::text IS NULL
+            OR m.nome    ILIKE ${filtro}::text
+            OR m.cidade  ILIKE ${filtro}::text
+            OR m.estado  ILIKE ${filtro}::text
+          )
         GROUP BY m.id_mercado
         ORDER BY avaliacao DESC, m.data_cadastro DESC
         LIMIT ${limit} OFFSET ${offset}
       `,
-      sql`SELECT COUNT(*)::int AS total FROM mercados WHERE status = 'ativo'`,
+      sql`
+        SELECT COUNT(*)::int AS total FROM mercados m
+        WHERE m.status = 'ativo'
+          AND (
+            ${filtro}::text IS NULL
+            OR m.nome    ILIKE ${filtro}::text
+            OR m.cidade  ILIKE ${filtro}::text
+            OR m.estado  ILIKE ${filtro}::text
+          )
+      `,
       sql`SELECT COUNT(*)::int AS totalPedidos FROM historico_compras`
     ]);
 
@@ -202,13 +221,19 @@ const listarMercados = async (req, res) => {
 
 const buscarMercadoPorId = async (req, res) => {
   const { id } = req.params;
+  const id_usuario = req.usuarioId ?? null;
 
   try {
     const sql = await conectar();
 
     const [mercado] = await sql`
-      SELECT * FROM mercados
-      WHERE id_mercado = ${Number(id)}
+      SELECT m.*,
+        EXISTS(
+          SELECT 1 FROM favoritos f
+          WHERE f.id_mercado = m.id_mercado AND f.id_usuario = ${id_usuario}
+        ) AS favoritado
+      FROM mercados m
+      WHERE m.id_mercado = ${Number(id)}
     `;
 
     if (!mercado)
@@ -227,13 +252,19 @@ const buscarMercadoPorId = async (req, res) => {
 
 const buscarMercadoPorSlug = async (req, res) => {
   const { slug } = req.params;
+  const id_usuario = req.usuarioId ?? null;
 
   try {
     const sql = await conectar();
 
     const [mercado] = await sql`
-      SELECT * FROM mercados
-      WHERE slug = ${slug}
+      SELECT m.*,
+        EXISTS(
+          SELECT 1 FROM favoritos f
+          WHERE f.id_mercado = m.id_mercado AND f.id_usuario = ${id_usuario}
+        ) AS favoritado
+      FROM mercados m
+      WHERE m.slug = ${slug}
     `;
 
     if (!mercado)

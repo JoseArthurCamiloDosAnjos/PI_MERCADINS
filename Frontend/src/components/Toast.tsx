@@ -1,4 +1,5 @@
 import type { Toast } from "../hooks/useToast";
+import "./Toast.css";
 
 const tipoMap = {
   sucesso: { cls: "toast-success", icon: "✓", titulo: "Sucesso" },

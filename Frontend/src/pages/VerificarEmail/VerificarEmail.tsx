@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
+import logoImg from '../../assets/logo.jpeg';
 import './VerificarEmail.css';
 
 export default function VerificarEmail() {
@@ -144,7 +145,7 @@ export default function VerificarEmail() {
         <div className="circle circle-2" />
         <div className="circle circle-3" />
         <div className="logo-wrap">
-          <img className="logo-img" src="../src/assets/logo.jpeg" alt="Mercadins Logo"
+          <img className="logo-img" src={logoImg} alt="Mercadins Logo"
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

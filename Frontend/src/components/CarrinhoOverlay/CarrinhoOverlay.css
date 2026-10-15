@@ -1,0 +1,51 @@
+/* ── CarrinhoOverlay: tela de carrinho invocável de qualquer lugar ──────── */
+
+.co-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(5, 12, 26, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+
+.co-painel {
+  position: relative;
+  width: min(1060px, 100%);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  animation: co-abrir 0.22s ease;
+}
+
+@keyframes co-abrir {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.co-fechar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 22, 40, 0.85);
+  color: #f2f5fa;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.co-fechar:hover { background: #1a3a6b; transform: scale(1.06); }
+
+@media (max-width: 600px) {
+  .co-overlay { padding: 10px; }
+  .co-painel { border-radius: 14px; }
+}

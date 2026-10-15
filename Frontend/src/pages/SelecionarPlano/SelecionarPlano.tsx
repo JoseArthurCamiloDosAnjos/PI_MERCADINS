@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PLANOS, type Plano } from '../MercadinsPromo/planos';
+import ConsultorModal from '../../components/ConsultorModal';
 import './SelecionarPlano.css';
 import logo from '../../assets/logo2.png';
 
@@ -14,6 +15,7 @@ const CheckIcon = () => (
 export default function SelecionarPlano() {
   const navigate = useNavigate();
   const [billingAnnual, setBillingAnnual] = useState(false);
+  const [consultorAberto, setConsultorAberto] = useState(false);
 
   const getPrice = (price: string): string | number => {
     if (billingAnnual) return Math.floor(parseInt(price) * 0.8);
@@ -52,7 +54,7 @@ export default function SelecionarPlano() {
             Selecione o plano ideal<br />
             <span>para o seu mercado</span>
           </h1>
-          <p className="sp-sub">7 dias grátis para testar. Sem necessidade de cartão de crédito.</p>
+          <p className="sp-sub">Escolha o plano que combina com o tamanho do seu mercado.</p>
         </div>
 
         <div className="sp-billing">
@@ -76,11 +78,24 @@ export default function SelecionarPlano() {
               <div className="sp-card-head">
                 <h2 className="sp-card-name">{plano.name}</h2>
                 <div className="sp-price">
-                  <span className="sp-price-currency">R$</span>
-                  <span className="sp-price-value">{getPrice(plano.price)}</span>
-                  <span className="sp-price-period">{plano.period}</span>
+                  {plano.sobConsulta ? (
+                    <span className="sp-price-custom">Sob consulta</span>
+                  ) : (
+                    <>
+                      <span className="sp-price-currency">R$</span>
+                      <span className="sp-price-value">{getPrice(plano.price)}</span>
+                      <span className="sp-price-period">{plano.period}</span>
+                    </>
+                  )}
                 </div>
-                {billingAnnual && <span className="sp-annual-note">cobrado anualmente</span>}
+                {plano.sobConsulta && plano.aPartirDe && (
+                  <span className="sp-annual-note">
+                    a partir de <strong>R$ {plano.aPartirDe}</strong>/mês
+                  </span>
+                )}
+                {!plano.sobConsulta && billingAnnual && (
+                  <span className="sp-annual-note">cobrado anualmente</span>
+                )}
               </div>
               <ul className="sp-features">
                 {plano.features.map((f, i) => (
@@ -92,18 +107,20 @@ export default function SelecionarPlano() {
               </ul>
               <button
                 className={`sp-cta ${plano.highlight ? 'sp-cta-featured' : ''}`}
-                onClick={() => escolherPlano(plano)}
+                onClick={() => plano.sobConsulta ? setConsultorAberto(true) : escolherPlano(plano)}
               >
-                Escolher {plano.name}
+                {plano.sobConsulta ? plano.cta : `Escolher ${plano.name}`}
               </button>
             </div>
           ))}
         </div>
 
         <p className="sp-note">
-          <span>✅</span> Você só paga depois do teste grátis. Cancele quando quiser.
+          <span>✅</span> Cobrança mensal ou anual — economize 20% no plano anual.
         </p>
       </main>
+
+      <ConsultorModal aberto={consultorAberto} onFechar={() => setConsultorAberto(false)} />
     </div>
   );
 }

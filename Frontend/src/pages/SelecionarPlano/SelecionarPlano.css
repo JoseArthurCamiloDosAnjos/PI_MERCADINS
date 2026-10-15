@@ -219,6 +219,15 @@
 }
 .sp-card-featured .sp-price-currency { color: rgba(255, 255, 255, 0.65); }
 
+.sp-price-custom {
+  font-size: 32px;
+  font-weight: 900;
+  color: #0d2251;
+  letter-spacing: -1px;
+  align-self: center;
+}
+.sp-card-featured .sp-price-custom { color: #ffffff; }
+
 .sp-price-value {
   font-size: 52px;
   font-weight: 900;

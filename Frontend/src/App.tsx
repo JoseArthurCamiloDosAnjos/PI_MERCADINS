@@ -76,7 +76,7 @@ function ProdutoTelaWrapper() {
       categoriaId={Number(categoriaId)}
       produtoId={Number(produtoId)}
       onVoltar={() => navigate(-1)}
-      onAbrirCarrinho={() => navigate(`/vitrine/${slug}`)}
+      onAbrirCarrinho={() => navigate(`/vitrine/${slug}/carrinho`)}
       onAbrirProduto={(catId, prodId) => navigate(`/vitrine/${slug}/produto/${catId}/${prodId}`)}
     />
   )
@@ -119,6 +119,11 @@ function CartWrapper() {
 
   async function handleCheckout() {
     if (!mercadoId) return
+    if (!localStorage.getItem('token')) {
+      showToast('erro', 'Faça login para finalizar o pedido.')
+      navigate('/auth')
+      return
+    }
     setFinalizando(true)
     try {
       await api.criarPedido(mercadoId, {
@@ -145,6 +150,9 @@ function CartWrapper() {
         onBack={() => navigate(`/vitrine/${slug}`)}
         onCheckout={handleCheckout}
         finalizando={finalizando}
+        onUpdateQuantity={(id, delta) => carrinho.alterarQuantidade(Number(id), delta)}
+        onRemoveItem={(id) => carrinho.remover(Number(id))}
+        onClearCart={() => carrinho.limpar()}
       />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

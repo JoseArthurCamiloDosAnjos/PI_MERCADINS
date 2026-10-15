@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Vitrine.css';
 import CadastroProduto  from '../../components/CadastroProduto';
 import EditarMercado    from '../../components/EditarMercado';
@@ -419,6 +420,7 @@ function TelaVazia({ onCriar }: { onCriar: () => void }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
+  const navigate = useNavigate();
   const [dados, setDados]                         = useState<VitrineMercado>(MERCADO_PLACEHOLDER);
   const [temAlteracoes, setTemAlteracoes]         = useState(false);
   const [salvandoVitrine, setSalvandoVitrine]     = useState(false);
@@ -677,14 +679,16 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vt-topbar">
-        {onVoltar
-          ? (
+        <div className="vt-topbar-esq">
+          {onVoltar && (
             <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
               <IconArrowLeft size={15} /> Voltar ao Gerenciamento
             </button>
-          )
-          : <span />
-        }
+          )}
+          <button className="vt-btn-voltar vt-btn-voltar--menu" onClick={() => navigate('/')}>
+            Voltar ao menu
+          </button>
+        </div>
 
         <div className="vt-topbar-direita">
 

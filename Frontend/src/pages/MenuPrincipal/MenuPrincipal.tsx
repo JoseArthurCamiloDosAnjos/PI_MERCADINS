@@ -510,7 +510,14 @@ export default function Mercadins() {
                 <button
                   type="button"
                   className="store-card store-card--criar"
-                  onClick={() => navigate(usuario ? "/promocional" : "/auth")}
+                  onClick={() => {
+                    if (usuario) {
+                      navigate("/promocional");
+                    } else {
+                      sessionStorage.setItem("posLoginDestino", "/promocional");
+                      navigate("/auth");
+                    }
+                  }}
                 >
                   <span className="criar-mercado-icon">+</span>
                   <strong className="criar-mercado-titulo">Criar seu mercado</strong>

@@ -42,7 +42,9 @@ export default function Login() {
       }
       showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
       setTimeout(() => {
-        navigate("/");
+        const destino = sessionStorage.getItem("posLoginDestino");
+        sessionStorage.removeItem("posLoginDestino");
+        navigate(destino || "/");
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

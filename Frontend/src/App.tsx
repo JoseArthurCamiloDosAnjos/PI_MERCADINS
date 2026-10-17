@@ -201,7 +201,10 @@ function VitrineVendedorWrapper() {
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
-  const destino = usuario ? '/' : '/auth'
+  const posLoginDestino = typeof window !== 'undefined'
+    ? sessionStorage.getItem('posLoginDestino')
+    : null
+  const destino = usuario ? (posLoginDestino ?? '/') : '/auth'
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
 
@@ -210,7 +213,7 @@ function Rotas() {
       <Routes>
         <Route path="/"                  element={<MenuPrincipal/>} />
         <Route path="/promocional"       element={<MercadinsPromos />}/>
-        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to="/" />} />
+        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
         <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
         <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
         <Route path="/verificar-email"   element={<VerificarEmail />} />

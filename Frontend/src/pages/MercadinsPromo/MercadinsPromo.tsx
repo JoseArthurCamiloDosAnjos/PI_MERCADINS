@@ -77,6 +77,7 @@ export default function MercadinsPromo() {
 
   const handleCTA = () => {
     if (!usuario) {
+      sessionStorage.setItem("posLoginDestino", "/promocional");
       navigate("/auth/register");
     } else if (temMercado) {
       navigate("/vendedor");
@@ -88,6 +89,7 @@ export default function MercadinsPromo() {
 
   const handleEscolherPlano = (plano: Plano) => {
     if (!usuario) {
+      sessionStorage.setItem("posLoginDestino", "/promocional");
       navigate("/auth/register");
       return;
     }

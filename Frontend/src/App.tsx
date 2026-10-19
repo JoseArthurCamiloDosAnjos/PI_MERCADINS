@@ -214,7 +214,10 @@ function Rotas() {
         <Route path="/"                  element={<MenuPrincipal/>} />
         <Route path="/promocional"       element={<MercadinsPromos />}/>
         <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/login"             element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/auth/login"        element={!usuario ? <Login />    : <Navigate to={destino} />} />
         <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
+        <Route path="/register"          element={!usuario ? <Register /> : <Navigate to={destino} />} />
         <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
         <Route path="/verificar-email"   element={<VerificarEmail />} />
         <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />

@@ -588,7 +588,7 @@ export default function Register() {
 
           <div className="login-link">
             Já tem uma conta?{" "}
-            <a onClick={() => navigate("/auth")} style={{ cursor: "pointer" }}>
+            <a onClick={() => navigate("/auth", { replace: false })} style={{ cursor: "pointer" }}>
               Faça login
             </a>
           </div>

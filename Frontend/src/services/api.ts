@@ -58,6 +58,10 @@ export const api = {
   dashboardMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/dashboard`),
 
+  // ── Busca de produtos (todos os mercados) ──────────────────────────────────
+  buscarProdutos: (q: string) =>
+    request(`/busca/produtos?q=${encodeURIComponent(q)}`),
+
   // ── Categorias ───────────────────────────────────────────────────────────────
   listarCategorias: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/categorias`),

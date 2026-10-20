@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import "./MenuPrincipal.css";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -93,6 +93,22 @@ function cepBate(store: Store, buscaLocal: string) {
   return digitosCep.startsWith(digitosBusca.slice(0, 8));
 }
 
+// Sugestão de produto no dropdown da busca da home
+type ProdutoBusca = {
+  id_produto: number;
+  nome: string;
+  preco: number;
+  imagem: string;
+  estoque: number;
+  categoria: string;
+  id_categoria: number;
+  id_mercado: number;
+  mercado: string;
+  slug: string;
+  cidade: string;
+  estado: string;
+};
+
 function irParaSecao(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -122,6 +138,11 @@ export default function Mercadins() {
   const [busca, setBusca] = useState("");
   const [local, setLocal] = useState("");
   const [categoria, setCategoria] = useState("Todos");
+  // Sugestões de produtos no dropdown da busca
+  const [produtosBusca, setProdutosBusca] = useState<ProdutoBusca[]>([]);
+  const [buscandoProdutos, setBuscandoProdutos] = useState(false);
+  const [dropdownProdutos, setDropdownProdutos] = useState(false);
+  const buscaFormRef = useRef<HTMLFormElement | null>(null);
   const [favoritosData, setFavoritosData] = useState<{
     usuarioId: number;
     ids: Set<number>;
@@ -214,6 +235,32 @@ export default function Mercadins() {
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";
 
+  // Sugestões de produtos: busca com 300ms de espera em todos os mercados
+  useEffect(() => {
+    const termo = busca.trim();
+    if (termo.length < 2) return;
+    const timer = window.setTimeout(() => {
+      setBuscandoProdutos(true);
+      api.buscarProdutos(termo)
+        .then(d => setProdutosBusca(d.produtos ?? []))
+        .catch(() => setProdutosBusca([]))
+        .finally(() => setBuscandoProdutos(false));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [busca]);
+
+  // Fecha o dropdown quando o cliquefor fora da área de busca
+  useEffect(() => {
+    if (!dropdownProdutos) return;
+    function foraDoCampo(e: MouseEvent) {
+      if (buscaFormRef.current && !buscaFormRef.current.contains(e.target as Node)) {
+        setDropdownProdutos(false);
+      }
+    }
+    document.addEventListener("mousedown", foraDoCampo);
+    return () => document.removeEventListener("mousedown", foraDoCampo);
+  }, [dropdownProdutos]);
+
   // Aviso de CEP no contador: parcial = mesma região; completo = CEP exato
   const digitosLocal = local.replace(/\D/g, "");
   const avisoCep =
@@ -291,7 +338,7 @@ export default function Mercadins() {
               </li>
             </ul>
 
-            <form className="search" onSubmit={handleBuscar}>
+            <form className="search" onSubmit={handleBuscar} ref={buscaFormRef}>
               <svg
                 className="search-icon"
                 width="16"
@@ -310,10 +357,63 @@ export default function Mercadins() {
               <input
                 type="search"
                 value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  setBusca(valor);
+                  if (valor.trim().length < 2) {
+                    setProdutosBusca([]);
+                    setDropdownProdutos(false);
+                  } else {
+                    setDropdownProdutos(true);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setDropdownProdutos(false);
+                }}
                 placeholder="Buscar mercados e produtos"
                 aria-label="Buscar mercados e produtos"
               />
+
+              {/* Sugestões de produtos de todos os mercados */}
+              {dropdownProdutos && (buscandoProdutos || produtosBusca.length > 0) && (
+                <div className="search-dd" role="listbox" aria-label="Sugestões de produtos">
+                  <p className="search-dd-titulo">
+                    {buscandoProdutos ? "Buscando produtos..." : "Produtos"}
+                  </p>
+                  {!buscandoProdutos &&
+                    produtosBusca.slice(0, 6).map((p) => (
+                      <button
+                        type="button"
+                        className="search-dd-item"
+                        key={p.id_produto}
+                        role="option"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setDropdownProdutos(false);
+                          navigate(
+                            `/vitrine/${p.slug}/produto/${p.id_categoria}/${p.id_produto}`
+                          );
+                        }}
+                      >
+                        {p.imagem ? (
+                          <img className="search-dd-img" src={p.imagem} alt="" loading="lazy" />
+                        ) : (
+                          <span className="search-dd-img search-dd-img--vazio" aria-hidden="true" />
+                        )}
+                        <span className="search-dd-info">
+                          <span className="search-dd-nome">{p.nome}</span>
+                          <span className="search-dd-mercado">
+                            {p.mercado}
+                            {p.cidade ? ` · ${p.cidade}` : ""}
+                          </span>
+                        </span>
+                        <span className="search-dd-preco">
+                          R$ {p.preco.toFixed(2).replace(".", ",")}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
             </form>
 
             {usuario ? (

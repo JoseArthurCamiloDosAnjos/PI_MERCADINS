@@ -86,4 +86,50 @@ const criarPedido = async (req, res) => {
   }
 };
 
-module.exports = { criarPedido };
+// GET /api/mercados/:id/pedidos — lista os pedidos recebidos pelo mercado (vendedor)
+const listarPedidosMercado = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  const mercadoId  = Number(req.params.id);
+
+  if (!Number.isInteger(mercadoId) || mercadoId <= 0) {
+    return res.status(400).json({ erro: 'Mercado inválido.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    // Só quem gerencia o mercado pode ver os pedidos dele
+    const [permissao] = await sql`
+      SELECT 1 FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario} AND id_mercado = ${mercadoId}
+    `;
+    if (!permissao) {
+      return res.status(403).json({ erro: 'Você não tem acesso aos pedidos deste mercado.' });
+    }
+
+    const pedidos = await sql`
+      SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, u.nome AS cliente
+      FROM historico_compras h
+      JOIN usuarios u ON u.id_usuario = h.id_usuario
+      WHERE h.id_mercado = ${mercadoId}
+      ORDER BY h.data_compra DESC
+      LIMIT 50
+    `;
+
+    res.status(200).json({
+      pedidos: pedidos.map(p => ({
+        id: p.id,
+        cliente: p.cliente,
+        itens: p.produtos,
+        valorTotal: Number(p.valor_total),
+        dataCompra: p.data_compra,
+        status: p.status || 'pendente',
+      })),
+    });
+  } catch (err) {
+    console.error('ERRO listarPedidosMercado:', err);
+    res.status(500).json({ erro: 'Não foi possível carregar os pedidos.' });
+  }
+};
+
+module.exports = { criarPedido, listarPedidosMercado };

@@ -278,13 +278,19 @@
 .vtc-btn-favoritar:hover { border-color: #f26b6b; color: #f26b6b; }
 .vtc-btn-favoritar--ativo { border-color: #f26b6b; color: #f26b6b; background: rgba(242, 107, 107, 0.1); }
 
-.vtc-desc-mercado { font-size: 13px; color: var(--vt-cinza); margin: 0; }
+.vtc-desc-mercado {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c9d8ef;
+  margin: 0;
+  max-width: 620px;
+}
 .vtc-btn-leia-mais {
   background: none;
   border: none;
-  color: var(--vt-cor-icones);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--vt-amarelo);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;

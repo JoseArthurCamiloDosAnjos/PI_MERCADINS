@@ -312,16 +312,18 @@
 .vt-btn-editar:hover { border-color: var(--vt-cor-icones); color: var(--vt-cor-icones); }
 
 .vt-desc-mercado {
-  font-size: 13px;
-  color: var(--vt-cinza);
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c9d8ef;
   margin: 0;
+  max-width: 620px;
 }
 .vt-btn-leia-mais {
   background: none;
   border: none;
-  color: var(--vt-cor-icones);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--vt-amarelo);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;

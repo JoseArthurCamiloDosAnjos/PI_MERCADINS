@@ -118,6 +118,14 @@ function formatarPreco(valor?: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Corta o texto no limite indicado SEM partir palavras no meio
+function cortarEmPalavra(texto: string, max: number) {
+  if (texto.length <= max) return texto;
+  const corte = texto.slice(0, max);
+  const ultimoEspaco = corte.lastIndexOf(' ');
+  return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte).trimEnd();
+}
+
 // ─── ProdutoCard (cliente) ─────────────────────────────────────────────────────
 
 function ProdutoCardCliente({
@@ -421,8 +429,8 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               </button>
             </div>
             <p className="vtc-desc-mercado">
-              {dados.descricao && dados.descricao.length > 100
-                ? <>{dados.descricao.slice(0, 100)}... <button className="vtc-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
+              {dados.descricao && dados.descricao.length > 110
+                ? <>{cortarEmPalavra(dados.descricao, 110)}… <button className="vtc-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
                 : dados.descricao
               }
             </p>

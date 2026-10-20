@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
 import DescricaoModal from '../../components/DescricaoModal';
+import AvaliacoesModal from '../../components/AvaliacoesModal';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
@@ -176,6 +177,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
   const [modalDescricao, setModalDescricao] = useState(false);
+  const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
@@ -398,12 +400,17 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                 : dados.descricao
               }
             </p>
-            <div className="vtc-avaliacao">
+            <button
+              className="vtc-avaliacao vtc-avaliacao-btn"
+              onClick={() => setModalAvaliacoes(true)}
+              title="Ver avaliações e avaliar esta loja"
+            >
               {Array.from({ length: 5 }, (_, i) => (
                 <IconStar key={i} size={13} filled={i < Math.round(dados.avaliacao ?? 0)} />
               ))}
               <span>{(dados.avaliacao ?? 0).toFixed(1)}</span>
-            </div>
+              <em className="vtc-avaliacao-cta">· Avaliar</em>
+            </button>
           </div>
         </div>
 
@@ -495,6 +502,14 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           titulo={dados.nome}
           descricao={dados.descricao}
           onFechar={() => setModalDescricao(false)}
+        />
+      )}
+
+      {modalAvaliacoes && (
+        <AvaliacoesModal
+          mercadoId={dados.id}
+          onFechar={() => setModalAvaliacoes(false)}
+          onAtualizar={media => setDados(d => (d ? { ...d, avaliacao: media } : d))}
         />
       )}
     </div>

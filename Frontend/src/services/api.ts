@@ -158,6 +158,15 @@ export const api = {
       body:   JSON.stringify(dados),
     }),
 
+  // ── Avaliações do mercado ─────────────────────────────────────────────────
+  avaliacoesMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes`),
+  criarAvaliacao: (mercadoId: string | number, dados: { nota: number; texto?: string }) =>
+    request(`/mercados/${mercadoId}/avaliacoes`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+
   // ── Carrinho ────────────────────────────────────────────────────────────────
   buscarCarrinho: (mercadoId: string | number) =>
     request(`/carrinho/${mercadoId}`),

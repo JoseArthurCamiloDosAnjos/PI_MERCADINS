@@ -302,6 +302,27 @@
 }
 .vtc-avaliacao span { color: var(--vt-cor-texto-sec); margin-left: 5px; }
 
+/* Nota vira botão: abre o modal de avaliações */
+.vtc-avaliacao-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.vtc-avaliacao-btn:hover { background: rgba(255, 255, 255, 0.06); }
+.vtc-avaliacao-cta {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-cinza);
+  margin-left: 5px;
+}
+.vtc-avaliacao-btn:hover .vtc-avaliacao-cta { color: var(--vt-amarelo); }
+
 /* Busca */
 .vtc-busca-wrap {
   display: flex;

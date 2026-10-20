@@ -1,9 +1,12 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import './ProdutoTela.css';
 import ToastContainer from '../../components/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
@@ -92,8 +95,34 @@ export interface ProdutoDetalhe extends ProdutoCarrinho {
   estoque?: number;
 }
 
+/** Uma avaliação de produto vinda da API */
+export interface AvaliacaoProduto {
+  id: number;
+  nota: number;
+  texto: string;
+  data_cadastro: string;
+  cliente: string;
+  minha: boolean;
+}
+
+/** Resumo das avaliações de um produto (média + lista) */
+export interface ResumoAvaliacoes {
+  media: number;
+  total: number;
+  avaliacoes: AvaliacaoProduto[];
+}
+
+const ROTULOS_NOTA: Record<number, string> = {
+  1: 'Ruim',
+  2: 'Regular',
+  3: 'Bom',
+  4: 'Ótimo',
+  5: 'Excelente',
+};
+
 interface ProdutoTelaProps {
   produto: ProdutoDetalhe;
+  categoriaId: number;
   categoriaNome?: string;
   mercado: { id: number; nome: string; logo?: string };
   paleta?: string;
@@ -112,10 +141,12 @@ function formatarPreco(valor?: string) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ProdutoTela({
-  produto, categoriaNome, mercado, paleta, corBase, corDestaque, onVoltar, onIrParaCarrinho,
+  produto, categoriaId, categoriaNome, mercado, paleta, corBase, corDestaque, onVoltar, onIrParaCarrinho,
 }: ProdutoTelaProps) {
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
+  const { usuario } = useAuth();
+  const navigate = useNavigate();
   const carrinho = useCarrinho(mercado.id);
 
   const paletaAtual = useMemo(
@@ -144,6 +175,57 @@ export default function ProdutoTela({
   const [quantidade, setQuantidade]   = useState(1);
   const [enviando, setEnviando]       = useState(false);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
+
+  // ── Avaliações do produto ────────────────────────────────────────────────
+  const [avaliacoes, setAvaliacoes] = useState<ResumoAvaliacoes | null>(null);
+  const [notaForm, setNotaForm]     = useState(0);
+  const [notaHover, setNotaHover]   = useState(0);
+  const [textoAval, setTextoAval]   = useState('');
+  const [enviandoAval, setEnviandoAval] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto)
+      .then((dados) => {
+        if (!vivo) return;
+        const res = dados as ResumoAvaliacoes;
+        setAvaliacoes(res);
+        // Se já avaliei, o formulário nasce com a minha nota/texto antigos
+        const minha = res.avaliacoes.find(a => a.minha);
+        if (minha) {
+          setNotaForm(minha.nota);
+          setTextoAval(minha.texto);
+        }
+      })
+      .catch(() => { /* sem avaliações segue zerado */ });
+    return () => { vivo = false; };
+  }, [mercado.id, categoriaId, produto.id_produto]);
+
+  const jaAvaliou = !!avaliacoes?.avaliacoes.some(a => a.minha);
+  // Média exibida: ao vivo depois que carrega (atualiza após enviar)
+  const mediaExibida = avaliacoes ? avaliacoes.media : (produto.avaliacao ?? 0);
+  const totalExibida = avaliacoes ? avaliacoes.total : (produto.numAvaliacoes ?? 0);
+
+  async function handleEnviarAvaliacao() {
+    if (notaForm < 1) {
+      showToast('erro', 'Escolha uma nota de 1 a 5 estrelas.');
+      return;
+    }
+    setEnviandoAval(true);
+    try {
+      await api.criarAvaliacaoProduto(mercado.id, categoriaId, produto.id_produto, {
+        nota: notaForm,
+        texto: textoAval,
+      });
+      showToast('sucesso', jaAvaliou ? 'Sua avaliação foi atualizada!' : 'Avaliação enviada, obrigado!');
+      const novo = await api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto) as ResumoAvaliacoes;
+      setAvaliacoes(novo);
+    } catch (err) {
+      showToast('erro', (err as Error).message || 'Não foi possível enviar sua avaliação.');
+    } finally {
+      setEnviandoAval(false);
+    }
+  }
 
   const estoqueDisponivel = produto.estoque ?? 0;
   const semEstoque = estoqueDisponivel <= 0;
@@ -300,11 +382,11 @@ export default function ProdutoTela({
           <p className="pd-descricao-inline">{produto.descricao || 'Sem descrição disponível.'}</p>
 
           <div className="pd-avaliacao">
-            <span className="pd-avaliacao-valor">{(produto.avaliacao ?? 0).toFixed(1)}</span>
+            <span className="pd-avaliacao-valor">{mediaExibida.toFixed(1)}</span>
             {Array.from({ length: 5 }, (_, i) => (
-              <IconStar key={i} size={14} filled={i < Math.round(produto.avaliacao ?? 0)} />
+              <IconStar key={i} size={14} filled={i < Math.round(mediaExibida)} />
             ))}
-            <span className="pd-avaliacao-total">({produto.numAvaliacoes ?? 0})</span>
+            <span className="pd-avaliacao-total">({totalExibida})</span>
           </div>
 
           <div className="pd-preco-bloco">
@@ -383,6 +465,106 @@ export default function ProdutoTela({
                 <li><IconCard size={14} /> Pix, cartão ou dinheiro na entrega</li>
               </ul>
             </div>
+          </div>
+        </section>
+
+        {/* ── Avaliações do produto ─────────────────────────────────────── */}
+        <section className="pd-avaliacoes">
+          <div className="pd-aval-head">
+            <h2>Avaliações do produto</h2>
+            <div className="pd-aval-resumo">
+              <span className="pd-aval-media">{mediaExibida.toFixed(1)}</span>
+              <span className="pd-aval-estrelas">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <IconStar key={i} size={15} filled={i < Math.round(mediaExibida)} />
+                ))}
+              </span>
+              <span className="pd-aval-total">
+                {totalExibida} avaliaç{totalExibida === 1 ? 'ão' : 'ões'}
+              </span>
+            </div>
+          </div>
+
+          {usuario ? (
+            <div className="pd-aval-form">
+              <p className="pd-aval-form-titulo">
+                {jaAvaliou ? 'Sua avaliação — ajuste e salve de novo' : 'Avalie este produto'}
+              </p>
+              <div className="pd-aval-form-linha">
+                <div className="pd-aval-picker" role="group" aria-label="Escolha a nota de 1 a 5">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`pd-aval-estrela-btn ${n <= (notaHover || notaForm) ? 'ativa' : ''}`}
+                      onClick={() => setNotaForm(n)}
+                      onMouseEnter={() => setNotaHover(n)}
+                      onMouseLeave={() => setNotaHover(0)}
+                      aria-label={`Nota ${n}`}
+                    >
+                      <IconStar size={20} filled={n <= (notaHover || notaForm)} />
+                    </button>
+                  ))}
+                  {(notaHover || notaForm) > 0 && (
+                    <span className="pd-aval-dica">{ROTULOS_NOTA[notaHover || notaForm]}</span>
+                  )}
+                </div>
+              </div>
+              <textarea
+                className="pd-aval-textarea"
+                rows={3}
+                maxLength={500}
+                placeholder="Conte como foi sua experiência com o produto (opcional)"
+                value={textoAval}
+                onChange={e => setTextoAval(e.target.value)}
+              />
+              <button
+                className="pd-aval-btn"
+                onClick={handleEnviarAvaliacao}
+                disabled={enviandoAval || notaForm < 1}
+              >
+                {enviandoAval ? 'Enviando...' : jaAvaliou ? 'Atualizar avaliação' : 'Enviar avaliação'}
+              </button>
+            </div>
+          ) : (
+            <div className="pd-aval-login">
+              <p>Faça login para avaliar este produto.</p>
+              <button className="pd-aval-btn" onClick={() => navigate('/auth')}>
+                Fazer login
+              </button>
+            </div>
+          )}
+
+          <div className="pd-aval-lista">
+            {!avaliacoes ? (
+              <p className="pd-aval-vazio">Carregando avaliações...</p>
+            ) : avaliacoes.avaliacoes.length === 0 ? (
+              <p className="pd-aval-vazio">Este produto ainda não recebeu avaliações. Seja o primeiro!</p>
+            ) : (
+              avaliacoes.avaliacoes.map(a => (
+                <article key={a.id} className="pd-aval-item">
+                  <div className="pd-aval-item-topo">
+                    <span className="pd-aval-avatar">{a.cliente.charAt(0).toUpperCase()}</span>
+                    <div className="pd-aval-quem">
+                      <strong>
+                        {a.cliente} {a.minha && <span className="pd-aval-badge">você</span>}
+                      </strong>
+                      <span className="pd-aval-data">
+                        {new Date(a.data_cadastro).toLocaleDateString('pt-BR', {
+                          day: '2-digit', month: 'long', year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <span className="pd-aval-estrelas-item">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <IconStar key={i} size={13} filled={i < a.nota} />
+                      ))}
+                    </span>
+                  </div>
+                  {a.texto && <p className="pd-aval-texto-item">{a.texto}</p>}
+                </article>
+              ))
+            )}
           </div>
         </section>
       </main>

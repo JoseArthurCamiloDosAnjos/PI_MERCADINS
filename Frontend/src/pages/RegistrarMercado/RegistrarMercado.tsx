@@ -20,6 +20,18 @@ interface Form {
   rua: string;
 }
 
+// Tipos de loja que o mercado pode declarar (os mesmos atalhos da home).
+// O lojista pode marcar quantos quiser — ex.: Hortifruti E Padaria.
+const TIPOS_LOJA = [
+  { id: 'mercado', nome: 'Mercado', icone: '🏪' },
+  { id: 'hortifruti', nome: 'Hortifruti', icone: '🥬' },
+  { id: 'acougue', nome: 'Açougue', icone: '🥩' },
+  { id: 'padaria', nome: 'Padaria', icone: '🥖' },
+  { id: 'bebidas', nome: 'Bebidas', icone: '🥤' },
+  { id: 'organicos', nome: 'Orgânicos', icone: '🌱' },
+  { id: 'conveniencia', nome: 'Conveniência', icone: '🛒' },
+];
+
 function FieldIcon({ children }: { children: React.ReactNode }) {
   return <span className="field-icon-register">{children}</span>;
 }
@@ -30,6 +42,13 @@ export default function RegistrarMercado() {
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [categorias, setCategorias] = useState<string[]>([]);
+
+  function alternarCategoria(id: string) {
+    setCategorias(atual =>
+      atual.includes(id) ? atual.filter(c => c !== id) : [...atual, id]
+    );
+  }
   const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
@@ -104,6 +123,9 @@ export default function RegistrarMercado() {
     if (!form.nome || !form.email || !form.telefone || !form.cnpj || !form.cep || !form.estado || !form.cidade || !form.bairro || !form.rua)
       return showToast('erro', 'Preencha todos os campos.');
 
+    if (categorias.length === 0)
+      return showToast('erro', 'Escolha ao menos um tipo de loja.');
+
     const token = localStorage.getItem('token');
     if (!token) return showToast('erro', 'Sessão expirada. Faça login novamente.');
 
@@ -126,6 +148,7 @@ export default function RegistrarMercado() {
           bairro: form.bairro,
           rua: form.rua,
           plano: planoId,
+          categorias,
         }),
       });
       const data = await res.json();
@@ -224,6 +247,28 @@ export default function RegistrarMercado() {
                   </svg>
                 </FieldIcon>
               </div>
+            </div>
+
+            <p className="rm-section-label">
+              Tipos de loja <small>escolha quantos quiser</small>
+            </p>
+
+            <div className="rm-categorias">
+              {TIPOS_LOJA.map(tipo => {
+                const ativa = categorias.includes(tipo.id);
+                return (
+                  <button
+                    key={tipo.id}
+                    type="button"
+                    className={`rm-categoria-chip${ativa ? ' rm-categoria-chip--ativa' : ''}`}
+                    aria-pressed={ativa}
+                    onClick={() => alternarCategoria(tipo.id)}
+                  >
+                    <span aria-hidden="true">{tipo.icone}</span>
+                    {tipo.nome}
+                  </button>
+                );
+              })}
             </div>
 
             <p className="rm-section-label">Endereço</p>

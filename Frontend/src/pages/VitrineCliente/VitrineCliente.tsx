@@ -84,6 +84,8 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
+  /** Tipos de loja declarados no cadastro (ex.: Hortifruti, Padaria) */
+  tipos?: string[];
   categorias: Categoria[];
 }
 
@@ -92,6 +94,23 @@ interface VitrineClienteProps {
   slug?: string;
   onVoltar?: () => void;
 }
+
+/** Tipos de loja vindo do banco (lista ou "{mercado,padaria}") */
+function normalizarTipos(valor: unknown): string[] {
+  if (Array.isArray(valor)) return valor.map(String);
+  if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
+  return [];
+}
+
+const NOMES_TIPOS: Record<string, string> = {
+  mercado: "Mercado",
+  hortifruti: "Hortifruti",
+  acougue: "Açougue",
+  padaria: "Padaria",
+  bebidas: "Bebidas",
+  organicos: "Orgânicos",
+  conveniencia: "Conveniência",
+};
 
 function formatarPreco(valor?: string) {
   const n = Number(valor ?? 0);
@@ -218,6 +237,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           corTexto: mercadoData.mercado.cor_texto ?? undefined,
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
+          tipos: normalizarTipos(mercadoData.mercado.categorias),
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -411,6 +431,16 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               <span>{(dados.avaliacao ?? 0).toFixed(1)}</span>
               <em className="vtc-avaliacao-cta">· Avaliar</em>
             </button>
+
+            {dados.tipos && dados.tipos.length > 0 && (
+              <div className="vtc-tipos">
+                {dados.tipos.map(tipo => (
+                  <span key={tipo} className="vtc-tipo-chip">
+                    {NOMES_TIPOS[tipo] ?? tipo}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

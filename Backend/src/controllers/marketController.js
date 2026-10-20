@@ -59,6 +59,31 @@ function validarTelefone(telefone) {
   return nums.length === 10 || nums.length === 11;
 }
 
+// ── Tipos de loja (categorias do mercado) ───────────────────────────────
+// Mesmos tipos dos atalhos da página inicial. O valor é validado contra a
+// lista e salvo como literal de array do Postgres ("{mercado,padaria}"),
+// formato que funciona nos dois drivers (Neon e PostgreSQL local).
+const CATEGORIAS_VALIDAS = [
+  "mercado", "hortifruti", "acougue", "padaria", "bebidas", "organicos", "conveniencia",
+];
+
+function normalizarCategorias(categorias) {
+  if (categorias === undefined || categorias === null) return { valor: null };
+  if (!Array.isArray(categorias))
+    return { erro: "Categorias devem ser uma lista" };
+
+  const lista = [...new Set(categorias.map((c) => String(c).trim().toLowerCase()))];
+
+  if (lista.length === 0)
+    return { erro: "Escolha ao menos uma categoria" };
+
+  const invalida = lista.find((c) => !CATEGORIAS_VALIDAS.includes(c));
+  if (invalida)
+    return { erro: `Categoria inválida: ${invalida}` };
+
+  return { valor: `{${lista.join(",")}}` };
+}
+
 // ─────────────────────────────────────────────
 // POST /api/mercados — Criar novo mercado
 // Requer autenticação — vincula ao usuário logado
@@ -67,7 +92,7 @@ function validarTelefone(telefone) {
 const criarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -83,6 +108,10 @@ const criarMercado = async (req, res) => {
 
   if (!validarCEP(cep))
     return res.status(400).json({ erro: "CEP inválido" });
+
+  const catsCriacao = normalizarCategorias(categorias);
+  if (catsCriacao.erro)
+    return res.status(400).json({ erro: catsCriacao.erro });
 
   const cnpjLimpo     = limparMascara(cnpj);
   const cepLimpo      = limparMascara(cep);
@@ -112,7 +141,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -130,7 +159,8 @@ const criarMercado = async (req, res) => {
         ${cor_texto ?? ''},
         ${cor_icones ?? ''},
         ${cor_texto_sec ?? ''},
-        ${planoLimpo}
+        ${planoLimpo},
+        ${catsCriacao.valor}
       )
       RETURNING *
     `;
@@ -291,7 +321,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias } = req.body;
 
   const banner = banner_url || undefined
   const foto_perfil = foto_perfil_url || undefined
@@ -307,6 +337,10 @@ const atualizarMercado = async (req, res) => {
 
   if (cep && !validarCEP(cep))
     return res.status(400).json({ erro: "CEP inválido" });
+
+  const catsEdicao = normalizarCategorias(categorias);
+  if (catsEdicao.erro)
+    return res.status(400).json({ erro: catsEdicao.erro });
 
   try {
     const sql = await conectar();
@@ -362,7 +396,8 @@ const atualizarMercado = async (req, res) => {
         cor_icones  = COALESCE(${cor_icones ?? null}, cor_icones),
         cor_texto_sec = COALESCE(${cor_texto_sec ?? null}, cor_texto_sec),
         banner       = COALESCE(${banner ?? null}, banner),
-        foto_perfil  = COALESCE(${foto_perfil ?? null}, foto_perfil)
+        foto_perfil  = COALESCE(${foto_perfil ?? null}, foto_perfil),
+        categorias   = COALESCE(${catsEdicao.valor}, categorias)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
     `;

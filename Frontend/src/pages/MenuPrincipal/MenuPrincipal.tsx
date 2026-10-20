@@ -27,21 +27,22 @@ type Store = {
   status?: string;
   avaliacao?: number;
   avaliacoes_count?: number;
+  categorias?: string[];
 };
 
-type Categoria = { nome: string; palavras: string[] };
+type Categoria = { nome: string; palavras: string[]; slug?: string };
 
 const EMPTY_FAVORITOS = new Set<number>();
 
 const CATEGORIAS: Categoria[] = [
   { nome: "Todos", palavras: [] },
-  { nome: "Mercados", palavras: ["mercado", "supermerc", "mercadaria", "atacad", "atacado", "hiper"] },
-  { nome: "Hortifruti", palavras: ["hortifruti", "fruta", "verdura", "feira", "hortali"] },
-  { nome: "Açougues", palavras: ["acougue", "carnes", "carne", "frango"] },
-  { nome: "Padarias", palavras: ["padaria", "pao", "paes", "panificadora", "confeitaria"] },
-  { nome: "Bebidas", palavras: ["bebida", "bebidas", "sucos", "suco", "cerveja", "vinhos"] },
-  { nome: "Orgânicos", palavras: ["organico", "natural", "sustentavel", "vegano"] },
-  { nome: "Conveniência", palavras: ["conveniencia", "minimercado", "quitanda", "miscigena", "variedade"] },
+  { nome: "Mercados", palavras: ["mercado", "supermerc", "mercadaria", "atacad", "atacado", "hiper"], slug: "mercado" },
+  { nome: "Hortifruti", palavras: ["hortifruti", "fruta", "verdura", "feira", "hortali"], slug: "hortifruti" },
+  { nome: "Açougues", palavras: ["acougue", "carnes", "carne", "frango"], slug: "acougue" },
+  { nome: "Padarias", palavras: ["padaria", "pao", "paes", "panificadora", "confeitaria"], slug: "padaria" },
+  { nome: "Bebidas", palavras: ["bebida", "bebidas", "sucos", "suco", "cerveja", "vinhos"], slug: "bebidas" },
+  { nome: "Orgânicos", palavras: ["organico", "natural", "sustentavel", "vegano"], slug: "organicos" },
+  { nome: "Conveniência", palavras: ["conveniencia", "minimercado", "quitanda", "miscigena", "variedade"], slug: "conveniencia" },
 ];
 
 const DESTAQUES = [
@@ -69,6 +70,15 @@ function formatrarNota(nota?: number) {
   const n = Number(nota ?? 0);
   if (Number.isNaN(n)) return "0,0";
   return n.toFixed(1).replace(".", ",");
+}
+
+// Tipos que o mercado declarou no cadastro (protege contra o banco
+// devolver em texto "{mercado,padaria}" em vez de lista)
+function tiposDoMercado(store: Store): string[] {
+  const valor = store.categorias as unknown;
+  if (Array.isArray(valor)) return valor.map(String);
+  if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
+  return [];
 }
 
 function irParaSecao(id: string) {
@@ -162,8 +172,10 @@ export default function Mercadins() {
 
         if (termo && !texto.includes(termo)) return false;
         if (buscaLocal && !normalizar(localizacao(store)).includes(buscaLocal)) return false;
-        if (cat && cat.palavras.length > 0 && !cat.palavras.some((p) => texto.includes(p))) {
-          return false;
+        if (cat && (cat.palavras.length > 0 || cat.slug)) {
+          const bateuTipo = !!cat.slug && tiposDoMercado(store).includes(cat.slug);
+          const bateuPalavra = cat.palavras.some((p) => texto.includes(p));
+          if (!bateuTipo && !bateuPalavra) return false;
         }
         return true;
       })

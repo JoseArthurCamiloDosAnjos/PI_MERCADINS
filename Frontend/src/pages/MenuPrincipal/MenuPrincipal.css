@@ -100,10 +100,6 @@ button {
   align-items: center;
 }
 
-/* Logo clicável (rodapé): volta pro início */
-.mp-logo-click { cursor: pointer; }
-.mp-logo-click:hover { opacity: 0.85; }
-
 .nav-links {
   display: flex;
   gap: 26px;
@@ -897,65 +893,7 @@ button {
 }
 
 /* ── Rodapé ───────────────────────────────────────────── */
-
-.mercadins-page footer {
-  padding: 60px 0 30px;
-  background: var(--navy);
-  color: #cbd7ed;
-}
-
-.footer-grid {
-  display: grid;
-  grid-template-columns: 2fr repeat(3, 1fr);
-  gap: 55px;
-}
-
-.footer-brand .mp-logo-img {
-  margin-bottom: 16px;
-}
-
-.mercadins-page footer h4 {
-  position: relative;
-  margin-bottom: 18px;
-  padding-bottom: 10px;
-  color: white;
-}
-
-.mercadins-page footer h4::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 34px;
-  height: 2px;
-  background: var(--yellow);
-}
-
-.mercadins-page footer p,
-.mercadins-page footer li {
-  margin-bottom: 10px;
-  list-style: none;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.mercadins-page footer a {
-  color: #cbd7ed;
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.mercadins-page footer a:hover {
-  color: var(--yellow);
-}
-
-.copyright {
-  margin-top: 45px;
-  padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  color: #9fb2d4;
-  font-size: 12px;
-}
+/* O rodapé agora é o componente SiteFooter (components/SiteFooter) */
 
 /* ── Responsividade ───────────────────────────────────── */
 
@@ -993,11 +931,6 @@ button {
   .stat {
     flex: 1;
     min-width: 130px;
-  }
-
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 34px;
   }
 }
 
@@ -1038,10 +971,6 @@ button {
   }
 
   .stores {
-    grid-template-columns: 1fr;
-  }
-
-  .footer-grid {
     grid-template-columns: 1fr;
   }
 }

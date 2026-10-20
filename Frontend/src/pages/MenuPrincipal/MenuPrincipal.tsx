@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import ProfileMenu from "../../components/ProfileMenu";
+import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
   IconStore,
@@ -548,48 +549,7 @@ export default function Mercadins() {
         </div>
       </main>
 
-      <footer>
-        <div className="container">
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <img
-                src={logo}
-                alt="Mercadins"
-                className="mp-logo-img mp-logo-click"
-                onClick={irParaInicio}
-                title="Voltar ao início"
-              />
-              <p>
-                Seus mercados favoritos reunidos em um único lugar.
-                Compre online e receba onde estiver.
-              </p>
-            </div>
-
-            <FooterColumn
-              title="Mercadins"
-              links={["Sobre nós", "Como funciona", "Mercados parceiros"]}
-            />
-
-            <FooterColumn
-              title="Atendimento"
-              links={[
-                "Central de ajuda",
-                "Fale conosco",
-                "Perguntas frequentes",
-              ]}
-            />
-
-            <FooterColumn
-              title="Legal"
-              links={["Termos de uso", "Privacidade", "Cookies"]}
-            />
-          </div>
-
-          <div className="copyright">
-            © 2026 Mercadins. Todos os direitos reservados.
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -675,23 +635,4 @@ function StoreSkeleton() {
   );
 }
 
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: string[];
-}) {
-  return (
-    <div>
-      <h4>{title}</h4>
-      <ul>
-        {links.map((link) => (
-          <li key={link}>
-            <a href="#">{link}</a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+

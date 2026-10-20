@@ -24,6 +24,14 @@ const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaC
 const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
 const Administrador = lazy(() => import('./pages/Adimin/adiministrador'))
 const MenuPrincipal = lazy(() => import('./pages/MenuPrincipal/MenuPrincipal'))
+
+const Sobre = lazy(() => import('./pages/Institucional/Sobre'))
+const ComoFunciona = lazy(() => import('./pages/Institucional/ComoFunciona'))
+const MercadosParceiros = lazy(() => import('./pages/Institucional/MercadosParceiros'))
+const Atendimento = lazy(() => import('./pages/Institucional/Atendimento'))
+const Termos = lazy(() => import('./pages/Institucional/Termos'))
+const Privacidade = lazy(() => import('./pages/Institucional/Privacidade'))
+const Cookies = lazy(() => import('./pages/Institucional/Cookies'))
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
 function VitrineClienteWrapper() {
@@ -215,6 +223,13 @@ function Rotas() {
       <Routes>
         <Route path="/"                  element={<MenuPrincipal/>} />
         <Route path="/promocional"       element={<MercadinsPromos />}/>
+        <Route path="/sobre"             element={<Sobre />} />
+        <Route path="/como-funciona"     element={<ComoFunciona />} />
+        <Route path="/mercados-parceiros" element={<MercadosParceiros />} />
+        <Route path="/atendimento"       element={<Atendimento />} />
+        <Route path="/termos"            element={<Termos />} />
+        <Route path="/privacidade"       element={<Privacidade />} />
+        <Route path="/cookies"           element={<Cookies />} />
         <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
         <Route path="/login"             element={!usuario ? <Login />    : <Navigate to={destino} />} />
         <Route path="/auth/login"        element={!usuario ? <Login />    : <Navigate to={destino} />} />

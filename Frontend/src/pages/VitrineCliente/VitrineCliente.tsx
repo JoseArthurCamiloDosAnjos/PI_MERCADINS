@@ -16,6 +16,9 @@ import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
   IconArrowLeft,
+  IconShare,
+  IconLink,
+  IconMessage,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
 
@@ -207,6 +210,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca]           = useState('');
   const [ordenacao, setOrdenacao]   = useState<'categorias' | 'menor' | 'maior' | 'az'>('categorias');
+  const [menuCompartilhar, setMenuCompartilhar] = useState(false);
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
@@ -286,6 +290,16 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     };
   }, [carregando, dados]);
 
+  // Fecha o menu de compartilhar quando o clique fica fora dele
+  useEffect(() => {
+    if (!menuCompartilhar) return;
+    function fora(e: MouseEvent) {
+      if (!(e.target as HTMLElement).closest('.vtc-share-wrap')) setMenuCompartilhar(false);
+    }
+    document.addEventListener('mousedown', fora);
+    return () => document.removeEventListener('mousedown', fora);
+  }, [menuCompartilhar]);
+
   const categoriasFiltradas = useMemo(() => {
     if (!dados) return [];
     const termo = busca.trim().toLowerCase();
@@ -343,6 +357,31 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     } finally {
       setFavoritando(false);
     }
+  }
+
+  async function handleCopiarLink() {
+    setMenuCompartilhar(false);
+    const url = window.location.href;
+    let copiou: boolean;
+    try {
+      await navigator.clipboard.writeText(url);
+      copiou = true;
+    } catch {
+      // Plano B: navegadores/permissões que bloqueiam a API nova de clipboard
+      try {
+        const area = document.createElement('textarea');
+        area.value = url;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        copiou = document.execCommand('copy');
+        document.body.removeChild(area);
+      } catch {
+        copiou = false;
+      }
+    }
+    showToast(copiou ? 'sucesso' : 'erro', copiou ? 'Link da loja copiado!' : 'Não foi possível copiar o link.');
   }
 
   if (carregando || !dados) {
@@ -445,6 +484,34 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               >
                 <IconHeart size={16} filled={!!dados.favoritado} />
               </button>
+              <div className="vtc-share-wrap">
+                <button
+                  className="vtc-btn-share"
+                  onClick={() => setMenuCompartilhar(v => !v)}
+                  title="Compartilhar esta loja"
+                  aria-label="Compartilhar esta loja"
+                  aria-expanded={menuCompartilhar}
+                >
+                  <IconShare size={15} />
+                </button>
+                {menuCompartilhar && (
+                  <div className="vtc-share-menu" role="menu">
+                    <button className="vtc-share-item" role="menuitem" onClick={handleCopiarLink}>
+                      <IconLink size={14} /> Copiar link
+                    </button>
+                    <a
+                      className="vtc-share-item"
+                      role="menuitem"
+                      href={`https://wa.me/?text=${encodeURIComponent(`Olha esta loja no Mercadins: ${dados.nome} — ${window.location.href}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setMenuCompartilhar(false)}
+                    >
+                      <IconMessage size={14} /> Enviar no WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
             <p className="vtc-desc-mercado">
               {dados.descricao && dados.descricao.length > 110

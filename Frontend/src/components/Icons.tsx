@@ -72,6 +72,12 @@ export const IconArrowLeft = (props: IconProps) => <SvgBase {...props}><><line x
 
 export const IconCheck = (props: IconProps) => <SvgBase {...props}><polyline points="20 6 9 17 4 12" /></SvgBase>;
 
+export const IconShare = (props: IconProps) => <SvgBase {...props}><><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></></SvgBase>;
+
+export const IconLink = (props: IconProps) => <SvgBase {...props}><><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></></SvgBase>;
+
+export const IconMessage = (props: IconProps) => <SvgBase {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></SvgBase>;
+
 export const IconMail = (props: IconProps) => <SvgBase {...props}><><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 6-10 7L2 6" /></></SvgBase>;
 
 export const IconInbox = (props: IconProps) => <SvgBase {...props}><><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></></SvgBase>;

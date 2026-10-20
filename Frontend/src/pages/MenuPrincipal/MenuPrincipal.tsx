@@ -8,6 +8,7 @@ import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
   IconStore,
+  IconArrowLeft,
   IconArrowRight,
   IconCheck,
   IconHeartFilled,
@@ -186,6 +187,36 @@ export default function Mercadins() {
   const statusTitulo = (store: Store) =>
     resumoSemana(parseHorario(store.horario), agora) ||
     (store.status === "ativo" ? "Mercado ativo" : "Mercado fechado");
+
+  // Setas de rolagem da barra de categorias: aparecem só quando existe chip
+  // escondido (testa o espaço real da barra em cada mudança de tela/rolagem)
+  const categoriasRef = useRef<HTMLDivElement | null>(null);
+  const [setasCategorias, setSetasCategorias] = useState({ esq: false, dir: false });
+
+  useEffect(() => {
+    const ref = categoriasRef.current;
+    if (!ref) return;
+    const barra: HTMLDivElement = ref;
+    function atualizar() {
+      setSetasCategorias({
+        esq: barra.scrollLeft > 4,
+        dir: barra.scrollLeft < barra.scrollWidth - barra.clientWidth - 4,
+      });
+    }
+    atualizar();
+    barra.addEventListener("scroll", atualizar, { passive: true });
+    window.addEventListener("resize", atualizar);
+    return () => {
+      barra.removeEventListener("scroll", atualizar);
+      window.removeEventListener("resize", atualizar);
+    };
+  }, []);
+
+  function rolarCategorias(dir: -1 | 1) {
+    const el = categoriasRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.6, behavior: "smooth" });
+  }
 
   useEffect(() => {
     let ativo = true;
@@ -595,20 +626,44 @@ export default function Mercadins() {
       </section>
 
       <section className="category-bar" id="categorias">
-        <div className="container categories">
-          {CATEGORIAS.map((cat) => (
+        <div className="container categories-wrap">
+          {setasCategorias.esq && (
             <button
-              className={`category ${categoria === cat.nome ? "active" : ""}`}
-              key={cat.nome}
               type="button"
-              onClick={() => {
-                setCategoria(cat.nome);
-                irParaSecao("mercados");
-              }}
+              className="category-arrow"
+              aria-label="Ver categorias anteriores"
+              onClick={() => rolarCategorias(-1)}
             >
-              {cat.nome}
+              <IconArrowLeft size={16} />
             </button>
-          ))}
+          )}
+
+          <div className="categories" ref={categoriasRef}>
+            {CATEGORIAS.map((cat) => (
+              <button
+                className={`category ${categoria === cat.nome ? "active" : ""}`}
+                key={cat.nome}
+                type="button"
+                onClick={() => {
+                  setCategoria(cat.nome);
+                  irParaSecao("mercados");
+                }}
+              >
+                {cat.nome}
+              </button>
+            ))}
+          </div>
+
+          {setasCategorias.dir && (
+            <button
+              type="button"
+              className="category-arrow"
+              aria-label="Ver mais categorias"
+              onClick={() => rolarCategorias(1)}
+            >
+              <IconArrowRight size={16} />
+            </button>
+          )}
         </div>
       </section>
 

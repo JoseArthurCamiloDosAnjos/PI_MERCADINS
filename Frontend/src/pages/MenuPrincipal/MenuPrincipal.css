@@ -544,16 +544,54 @@ button {
   box-shadow: 0 4px 14px rgba(14, 35, 71, 0.05);
 }
 
+.categories-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 0;
+}
+
 .categories {
   display: flex;
+  flex: 1;
+  min-width: 0; /* deixa a barra encolher quando aparecem as setas */
   gap: 10px;
   overflow-x: auto;
-  padding: 18px 0;
   scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 
 .categories::-webkit-scrollbar {
   display: none;
+}
+
+/* Setas de rolagem da barra de categorias (desktop) */
+.category-arrow {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d8dee8;
+  border-radius: 50%;
+  background: white;
+  color: #536074;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 7px rgba(14, 35, 71, 0.1);
+}
+
+.category-arrow:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateY(-1px);
+}
+
+/* No celular o dedo desliza naturalmente — setas não são necessárias */
+@media (max-width: 640px) {
+  .category-arrow {
+    display: none;
+  }
 }
 
 .category {

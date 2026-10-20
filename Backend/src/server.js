@@ -10,6 +10,7 @@ const categoriaRoutes        = require('./routes/categoriaRoutes.js')
 const usuarioRoutes          = require('./routes/usuarioRoutes.js')
 const carrinhoRoutes         = require('./routes/carrinhoRoutes.js')
 const pedidoRoutes           = require('./routes/pedidoRoutes.js')
+const buscaRoutes            = require('./routes/buscaRoutes.js')
 const adminRoutes            = require('./routes/adminRoutes.js')
 
 const app  = express()
@@ -83,6 +84,7 @@ app.use('/api/usuarios-mercados', usuariosMercadosRoutes)
 app.use('/api/usuario',           usuarioRoutes)
 app.use('/api/carrinho',          carrinhoRoutes)
 app.use('/api/pedidos',           pedidoRoutes)
+app.use('/api/busca',            buscaRoutes)
 
 app.use('/api/admin',              adminRoutes)
 

@@ -138,6 +138,21 @@ async function migrate() {
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS plano TEXT DEFAULT 'basico'
   `;
 
+  // Função auxiliar da busca de produtos (ignora acentos e maiúsculas)
+  await sql`
+    CREATE OR REPLACE FUNCTION sem_acento(txt TEXT)
+    RETURNS TEXT
+    LANGUAGE sql
+    IMMUTABLE
+    AS $$
+      SELECT lower(translate(
+        txt,
+        'áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ',
+        'aaaaaeeeeiiiiooooouuuucnaaaaaeeeeiiiiooooouuuucn'
+      ))
+    $$
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

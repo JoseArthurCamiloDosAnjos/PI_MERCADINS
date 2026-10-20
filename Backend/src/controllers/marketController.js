@@ -67,8 +67,15 @@ const CATEGORIAS_VALIDAS = [
   "mercado", "hortifruti", "acougue", "padaria", "bebidas", "organicos", "conveniencia",
 ];
 
+// Nome bonito de cada tipo para a aba da vitrine (o tipo é sempre minúsculo)
+const LABELS_CATEGORIAS = {
+  mercado: "Mercado", hortifruti: "Hortifruti", acougue: "Açougue",
+  padaria: "Padaria", bebidas: "Bebidas", organicos: "Orgânicos",
+  conveniencia: "Conveniência",
+};
+
 function normalizarCategorias(categorias) {
-  if (categorias === undefined || categorias === null) return { valor: null };
+  if (categorias === undefined || categorias === null) return { valor: null, lista: [] };
   if (!Array.isArray(categorias))
     return { erro: "Categorias devem ser uma lista" };
 
@@ -81,7 +88,7 @@ function normalizarCategorias(categorias) {
   if (invalida)
     return { erro: `Categoria inválida: ${invalida}` };
 
-  return { valor: `{${lista.join(",")}}` };
+  return { valor: `{${lista.join(",")}}`, lista };
 }
 
 // ─────────────────────────────────────────────
@@ -172,6 +179,35 @@ const criarMercado = async (req, res) => {
       VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
     `;
 
+    // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
+    // tabela "categorias" — é daí que a página do mercado lê as abas de
+    // produtos. Sem isso a vitrine do mercado novo ficava sempre vazia.
+    if (catsCriacao.lista.length > 0) {
+      const nomesBonitos = catsCriacao.lista.map((c) => LABELS_CATEGORIAS[c] ?? c);
+      const linhasCategorias = await sql`
+        INSERT INTO categorias (id_mercado, nome)
+        SELECT ${novoMercado.id_mercado}, UNNEST(${nomesBonitos}::text[])
+        RETURNING id_categoria
+      `;
+
+      // Semente de demonstração: cada categoria ganha um produto de teste,
+      // para a vitrine já abrir com conteúdo. O vendedor edita ou apaga e
+      // cadastra os produtos reais em seguida.
+      if (linhasCategorias.length > 0) {
+        await sql`
+          INSERT INTO produtos (nome, descricao, id_categoria, preco, estoque)
+          SELECT
+            'Cesta de demonstração — ' || initcap(c.nome),
+            'Produto criado automaticamente no cadastro. Edite ou apague e cadastre seus produtos reais.',
+            c.id_categoria,
+            ROUND((2 + random() * 28)::numeric, 2),
+            20 + floor(random() * 80)::int
+          FROM categorias c
+          WHERE c.id_mercado = ${novoMercado.id_mercado}
+        `;
+      }
+    }
+
     res.status(201).json({
       mensagem: "Mercado criado com sucesso!",
       mercado: novoMercado,
@@ -214,7 +250,12 @@ const listarMercados = async (req, res) => {
             OR m.estado  ILIKE ${filtro}::text
           )
         GROUP BY m.id_mercado
-        ORDER BY avaliacao DESC, m.data_cadastro DESC
+        ORDER BY
+          -- Ordem da home: 1) mercado em destaque (o da equipe, configurável
+          -- via MERCADO_DESTAQUE), 2) melhor nota, 3) mais recente
+          CASE WHEN m.slug = ${process.env.MERCADO_DESTAQUE || 'supermercado-bom-preco'} THEN 0 ELSE 1 END,
+          avaliacao DESC,
+          m.data_cadastro DESC
         LIMIT ${limit} OFFSET ${offset}
       `,
       sql`

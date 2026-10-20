@@ -158,6 +158,13 @@ async function migrate() {
     ALTER TABLE historico_compras ADD COLUMN IF NOT EXISTS observacao TEXT DEFAULT ''
   `;
 
+  // Categorias são por mercado (cada loja tem sua padaria, sua bebidas...).
+  // A antiga restrição de nome único era GLOBAL e impedia dois mercados de
+  // terem a mesma categoria — removida para o cadastro funcionar.
+  await sql`
+    ALTER TABLE categorias DROP CONSTRAINT IF EXISTS categorias_nome_key
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

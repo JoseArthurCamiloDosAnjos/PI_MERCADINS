@@ -255,8 +255,8 @@ function EditarProdutoModal({
   }
 
   return (
-    <div className="gm-modal-overlay" onClick={onFechar}>
-      <div className="gm-modal" onClick={e => e.stopPropagation()}>
+    <div className="gm-modal-overlay">
+      <div className="gm-modal">
         <div className="gm-modal-header">
           <h3>Editar Produto</h3>
           <button className="gm-modal-close" onClick={onFechar}>✕</button>

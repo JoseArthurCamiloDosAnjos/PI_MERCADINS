@@ -37,9 +37,8 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
       role="dialog"
       aria-modal="true"
       aria-label="Falar com um consultor"
-      onClick={onFechar}
     >
-      <div className="ct-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="ct-modal">
         <button className="ct-close" onClick={onFechar} aria-label="Fechar">
           ×
         </button>

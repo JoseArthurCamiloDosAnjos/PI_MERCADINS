@@ -410,8 +410,8 @@ export default function Usuarios() {
 
       {/* ─── Modal Detalhes ──────────────────────────────────────── */}
       {detalhes && (
-        <div className="adm-modal-overlay" onClick={() => setDetalhes(null)}>
-          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal">
             <button className="adm-modal-close" onClick={() => setDetalhes(null)}>
               <CloseIcon />
             </button>
@@ -540,8 +540,8 @@ export default function Usuarios() {
 
       {/* ─── Modal Editar ────────────────────────────────────────── */}
       {editando && (
-        <div className="adm-modal-overlay" onClick={() => setEditando(null)}>
-          <div className="adm-modal adm-modal-editar" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal adm-modal-editar">
             <button className="adm-modal-close" onClick={() => setEditando(null)}>
               <CloseIcon />
             </button>
@@ -659,8 +659,8 @@ export default function Usuarios() {
 
       {/* ─── Modal Detalhes Mercado ──────────────────────────────── */}
       {mercadoDetalhes && (
-        <div className="adm-modal-overlay" onClick={() => setMercadoDetalhes(null)}>
-          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal">
             <button className="adm-modal-close" onClick={() => setMercadoDetalhes(null)}>
               <CloseIcon />
             </button>
@@ -739,8 +739,8 @@ export default function Usuarios() {
 
       {/* ─── Modal Confirmar Exclusão ────────────────────────────── */}
       {confirmandoExclusao && (
-        <div className="adm-modal-overlay" onClick={() => setConfirmandoExclusao(null)}>
-          <div className="adm-modal adm-modal-confirmar" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal adm-modal-confirmar">
             <h2>Excluir Usuario</h2>
             <p>Tem certeza que deseja excluir este usuario? Esta acao nao pode ser desfeita.</p>
             <div className="adm-modal-actions">

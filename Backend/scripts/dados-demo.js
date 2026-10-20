@@ -188,6 +188,25 @@ const AVALIACOES = [
   ['mercadins.demo.cliente3@gmail.com', 'Padaria Pão Quentinho',    4, 'Pão sempre quentinho!'],
 ];
 
+// ── Avaliações demo de PRODUTOS (cliente → mercado → produto → nota/texto) ───
+const AVALIACOES_PRODUTOS = [
+  ['mercadins.demo.cliente3@gmail.com', 'Supermercado Bom Preço',   'Arroz agulhinha 5kg',   5, 'Grãos bons e o preço compensa.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Supermercado Bom Preço',   'Arroz agulhinha 5kg',   4, 'Bom arroz, embalagem firme.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Supermercado Bom Preço',   'Feijão carioca 1kg',    5, 'Fresquinho, cozinha rápido.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Supermercado Bom Preço',   'Leite integral 1L',     5, 'Sempre dentro da validade.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Supermercado Bom Preço',   'Óleo de soja 900ml',    4, 'Preço melhor que no vizinho.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Hortifruti Quintal Verde', 'Tomate italiano (kg)',  5, 'Tomate firme e maduro no ponto.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Hortifruti Quintal Verde', 'Tomate italiano (kg)',  4, 'Bem bonito, só faltou ser maior.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Hortifruti Quintal Verde', 'Alface crespa (un)',    5, 'Folha crocante, veio lindinha.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Hortifruti Quintal Verde', 'Banana prata (kg)',     5, 'Doce no ponto certo.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Padaria Pão Quentinho',    'Pão francês (kg)',      5, 'Crocante por fora, macio por dentro.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Padaria Pão Quentinho',    'Coxinha (un)',          5, 'Recheio cremoso demais!'],
+  ['mercadins.demo.cliente3@gmail.com', 'Açougue Boi Gordo',        'Patinho moído (kg)',    5, 'Carne moída fresca, sem excesso de água.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Bebidas do Ponto',         'Coca-Cola 2L',          4, 'Gelada na entrega, nota alta.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Orgânicos da Serra',       'Mel orgânico 500g',     5, 'Sabor incomparável, vale cada centavo.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Conveniência 24 Horas',    'Sanduíche pronto',      4, 'Salvou meu jantar, razoável.'],
+];
+
 // ── Pedidos demo (cliente → mercado → itens [nome do produto, qtd]) ──────────
 const PEDIDOS = [
   ['mercadins.demo.cliente1@gmail.com', 'Hortifruti Quintal Verde', [['Tomate italiano (kg)', 1], ['Alface crespa (un)', 2]]],
@@ -417,6 +436,30 @@ async function logar(email) {
   }
   console.log(`  ✓ ${totalAvaliacoes} avaliações de clientes`);
 
+  // 4b. Avaliações de produtos (estrelas por item da vitrine)
+  let totalAvaliacoesProdutos = 0;
+  for (const [email, mercado, produto, nota, texto] of AVALIACOES_PRODUTOS) {
+    const mercadoMeta = MERCADOS.find(m => m.nome === mercado);
+    const slugMercado = mercadoMeta.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const idMercado = (await sql`SELECT id_mercado FROM mercados WHERE slug = ${slugMercado}`)[0]?.id_mercado;
+    const prodRow = (await sql`
+      SELECT p.id_produto, p.id_categoria
+      FROM produtos p JOIN categorias c ON c.id_categoria = p.id_categoria
+      WHERE p.nome = ${produto} AND c.id_mercado = ${idMercado}
+      LIMIT 1
+    `)[0];
+    if (!prodRow) {
+      console.log(`  (avaliação de produto falhou: "${produto}" não encontrado em ${mercado})`);
+      continue;
+    }
+    const r = await rota('POST', `/api/mercados/${idMercado}/categorias/${prodRow.id_categoria}/produtos/${prodRow.id_produto}/avaliacoes`, {
+      token: tokensClientes[email], body: { nota, texto },
+    });
+    if (r.status === 201) totalAvaliacoesProdutos += 1;
+    else console.log(`  (avaliação de produto falhou: ${r.status} ${r.body.erro || ''})`);
+  }
+  console.log(`  ✓ ${totalAvaliacoesProdutos} avaliações de produtos`);
+
   // 5. Pedidos (contam nos "pedidos entregues" da home; a cada outro fica
   //    "entregue" pra mostrar os dois estados no histórico e no painel)
   let totalPedidos = 0;
@@ -441,7 +484,7 @@ async function logar(email) {
 
   // 6. Resumo
   console.log('\n================ DEMO PRONTA ================');
-  console.log(`Mercados: ${MERCADOS.length} | Produtos: ${totalProdutos} | Avaliações: ${totalAvaliacoes} | Pedidos: ${totalPedidos}`);
+  console.log(`Mercados: ${MERCADOS.length} | Produtos: ${totalProdutos} | Avaliações: ${totalAvaliacoes} + ${totalAvaliacoesProdutos} de produtos | Pedidos: ${totalPedidos}`);
   console.log(`Imagens: ${semBucket ? 'diretas (placehold.co) — bucket do Supabase recusa upload anônimo; corrigir política no painel' : 'enviadas pro bucket'}`);
   console.log('\nContas para apresentar:');
   console.log(`  Vendedor(a): ${VENDEDOR.email} / ${SENHA_DEMO}`);

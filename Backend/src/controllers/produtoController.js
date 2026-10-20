@@ -34,9 +34,18 @@ const listarProdutos = async (req, res) => {
     const sql = await conectar()
 
     const produtos = await sql`
-      SELECT p.*
+      SELECT p.*,
+             COALESCE(ap.media, 0)::float AS avaliacao,
+             COALESCE(ap.total, 0)::int   AS "numAvaliacoes"
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
+      LEFT JOIN (
+        SELECT id_produto,
+               ROUND(AVG(nota), 1) AS media,
+               COUNT(*)            AS total
+        FROM avaliacoes_produtos
+        GROUP BY id_produto
+      ) ap ON ap.id_produto = p.id_produto
       WHERE p.id_categoria = ${Number(categoriaId)}
         AND c.id_mercado   = ${Number(mercadoId)}
       ORDER BY p.id_produto

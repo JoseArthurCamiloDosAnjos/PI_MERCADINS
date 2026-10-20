@@ -206,6 +206,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca]           = useState('');
+  const [ordenacao, setOrdenacao]   = useState<'categorias' | 'menor' | 'maior' | 'az'>('categorias');
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
@@ -297,6 +298,23 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       }))
       .filter(cat => cat.produtos.length > 0 || !termo);
   }, [dados, busca]);
+
+  // Lista plana de produtos quando o cliente escolhe uma ordenação
+  const modoOrdenado = ordenacao !== 'categorias';
+  const listaOrdenada = useMemo(() => {
+    if (!dados || ordenacao === 'categorias') return [];
+    const termo = busca.trim().toLowerCase();
+    const itens = dados.categorias.flatMap(cat =>
+      cat.produtos
+        .filter(p => !termo || p.nome.toLowerCase().includes(termo))
+        .map(produto => ({ produto, catId: cat.id }))
+    );
+    const preco = (x: { produto: { preco?: unknown } }) => Number(x.produto.preco ?? 0);
+    if (ordenacao === 'menor') itens.sort((a, b) => preco(a) - preco(b));
+    else if (ordenacao === 'maior') itens.sort((a, b) => preco(b) - preco(a));
+    else itens.sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
+    return itens;
+  }, [dados, busca, ordenacao]);
 
   function irParaCategoria(id: number) {
     setCategoriaAtiva(id);
@@ -458,15 +476,28 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           </div>
         </div>
 
-        {/* Busca */}
-        <div className="vtc-busca-wrap">
-          <IconSearch size={15} />
-          <input
-            className="vtc-busca-input"
-            placeholder="Buscar produtos nesta loja..."
-            value={busca}
-            onChange={e => setBusca(removeEmojis(e.target.value))}
-          />
+        {/* Busca + ordenação */}
+        <div className="vtc-busca-linha">
+          <div className="vtc-busca-wrap">
+            <IconSearch size={15} />
+            <input
+              className="vtc-busca-input"
+              placeholder="Buscar produtos nesta loja..."
+              value={busca}
+              onChange={e => setBusca(removeEmojis(e.target.value))}
+            />
+          </div>
+          <select
+            className="vtc-ordenar"
+            value={ordenacao}
+            onChange={e => setOrdenacao(e.target.value as 'categorias' | 'menor' | 'maior' | 'az')}
+            aria-label="Ordenar produtos"
+          >
+            <option value="categorias">Por categoria</option>
+            <option value="menor">Menor preço</option>
+            <option value="maior">Maior preço</option>
+            <option value="az">A – Z</option>
+          </select>
         </div>
 
         {/* Tags de categoria */}
@@ -487,7 +518,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
       {/* ── Categorias e produtos ─────────────────────────────────────── */}
       <main className="vtc-main">
-        {categoriasFiltradas.length === 0 ? (
+        {(modoOrdenado ? listaOrdenada.length : categoriasFiltradas.length) === 0 ? (
           <div className="vtc-vazio">
             <span className="vtc-vazio-icone"><IconStore size={26} /></span>
             <p className="vtc-vazio-titulo">Nenhum produto encontrado</p>
@@ -495,6 +526,23 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               {busca ? 'Tente buscar por outro termo.' : 'Esta loja ainda não cadastrou produtos.'}
             </p>
           </div>
+        ) : modoOrdenado ? (
+          <section className="vtc-categoria">
+            <h2 className="vtc-categoria-titulo">
+              {ordenacao === 'menor' ? 'Menor preço' : ordenacao === 'maior' ? 'Maior preço' : 'Ordem alfabética'}
+              {' · '}{listaOrdenada.length} {listaOrdenada.length === 1 ? 'produto' : 'produtos'}
+            </h2>
+            <div className="vtc-produtos-grid">
+              {listaOrdenada.map(({ produto, catId }) => (
+                <ProdutoCardCliente
+                  key={produto.id_produto}
+                  produto={produto}
+                  slug={slug}
+                  categoriaId={catId}
+                />
+              ))}
+            </div>
+          </section>
         ) : (
           categoriasFiltradas.map(cat => (
             <section

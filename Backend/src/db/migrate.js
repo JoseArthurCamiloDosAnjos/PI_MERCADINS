@@ -165,6 +165,16 @@ async function migrate() {
     ALTER TABLE categorias DROP CONSTRAINT IF EXISTS categorias_nome_key
   `;
 
+  // Horário de funcionamento, salvo como JSON dentro de um texto:
+  //   {"1":["08:00","18:00"],"6":["10:00","14:00"]}
+  // Chave = dia da semana (0 = domingo ... 6 = sábado, igual ao Date do JS).
+  // Dia ausente = fechado naquele dia. Se a hora de FECHAR for menor que a
+  // de ABRIR, o mercado fecha depois da meia-noite (ex.: 18:00 → 02:00).
+  // Valor nulo = mercado ainda não configurou o horário.
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS horario TEXT DEFAULT NULL
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

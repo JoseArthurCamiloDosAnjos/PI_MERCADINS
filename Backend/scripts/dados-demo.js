@@ -34,6 +34,7 @@ const MERCADOS = [
     nome: 'Supermercado Bom Preço', cats: ['mercado', 'conveniencia'], cor: '0d2858', corTexto: 'f5c84a',
     desc: 'Mercado de bairro com mercearia completa, hortifruti fresquinho e o melhor preço de Taquaritinga. Entregamos na região Centro e arredores.',
     cep: '15900-010', bairro: 'Centro', rua: 'Rua das Palmeiras',
+    horario: { '0': ['10:00','12:00'], '1': ['08:00','18:00'], '2': ['08:00','18:00'], '3': ['08:00','18:00'], '4': ['08:00','18:00'], '5': ['08:00','22:00'], '6': ['09:00','14:00'] },
     grupos: [
       { nome: 'Mercearia', produtos: [
         { nome: 'Leite integral 1L',            desc: 'Leite integral pasteurizado', preco: '5,49',  estoque: 60, kw: 'milk' },
@@ -54,6 +55,7 @@ const MERCADOS = [
     nome: 'Hortifruti Quintal Verde', cats: ['hortifruti', 'organicos'], cor: '2e7d32', corTexto: 'ffffff',
     desc: 'Hortifruti e produtos orgânicos colhidos no dia. Verduras, frutas e temperos selecionados direto da horta.',
     cep: '15901-500', bairro: 'Jardim Ipanema', rua: 'Avenida Brasil',
+    horario: { '2': ['06:00','13:00'], '3': ['06:00','13:00'], '4': ['06:00','13:00'], '5': ['06:00','13:00'], '6': ['06:00','13:00'] },
     grupos: [
       { nome: 'Hortaliças e Frutas', produtos: [
         { nome: 'Tomate italiano (kg)',    desc: 'Colheita do dia',        preco: '6,99',  estoque: 40, kw: 'tomato' },
@@ -89,6 +91,7 @@ const MERCADOS = [
     nome: 'Padaria Pão Quentinho', cats: ['padaria'], cor: '8a5a2b', corTexto: 'fff8e7',
     desc: 'Padaria e confeitaria com pães fresquinhos o dia todo, salgados, bolos e tortas feitos na hora.',
     cep: '15900-250', bairro: 'Centro', rua: 'Rua XV de Novembro',
+    horario: { '1': ['05:30','19:00'], '2': ['05:30','19:00'], '3': ['05:30','19:00'], '4': ['05:30','19:00'], '5': ['05:30','20:00'], '6': ['06:00','13:00'] },
     grupos: [
       { nome: 'Pães', produtos: [
         { nome: 'Pão francês (kg)',        desc: 'Fornada das 6h',       preco: '16,90', estoque: 50, kw: 'bread' },
@@ -143,6 +146,7 @@ const MERCADOS = [
     nome: 'Conveniência 24 Horas', cats: ['conveniencia'], cor: '4527a0', corTexto: 'ffffff',
     desc: 'Loja de conveniência aberta 24 horas: sanduíches, itens rápidos e o que você precisar, a qualquer hora.',
     cep: '15900-001', bairro: 'Centro', rua: 'Rua Amazonas',
+    horario: { '0': ['08:00','20:00'], '1': ['07:00','23:30'], '2': ['07:00','23:30'], '3': ['07:00','23:30'], '4': ['07:00','23:30'], '5': ['07:00','23:59'], '6': ['08:00','23:59'] },
     grupos: [
       { nome: 'Praticidade', produtos: [
         { nome: 'Sanduíche pronto',        desc: 'Pronto para levar',   preco: '12,90', estoque: 15, kw: 'sandwich' },
@@ -357,6 +361,7 @@ async function logar(email) {
         rua: m.rua,
         descricao: m.desc,
         categorias: m.cats,
+        horario: m.horario ?? null,
       },
     });
     if (criado.status !== 201) throw new Error(`criar mercado ${m.nome}: ${criado.status} ${criado.body.erro || ''}`);

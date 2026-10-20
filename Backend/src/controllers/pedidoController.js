@@ -132,4 +132,59 @@ const listarPedidosMercado = async (req, res) => {
   }
 };
 
-module.exports = { criarPedido, listarPedidosMercado };
+// ─────────────────────────────────────────────
+// PUT /api/pedidos/:id/status — vendedor atualiza o status do pedido
+// Ordem: pendente → preparo → caminho → entregue (só avança, nunca volta)
+// ─────────────────────────────────────────────
+const ORDEM_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'];
+
+const atualizarStatusPedido = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  const pedidoId   = Number(req.params.id);
+  const { status } = req.body;
+
+  if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
+    return res.status(400).json({ erro: 'Pedido inválido.' });
+  }
+  if (!ORDEM_STATUS.includes(status)) {
+    return res.status(400).json({ erro: 'Status inválido. Use: pendente, preparo, caminho ou entregue.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    const [pedido] = await sql`
+      SELECT id, id_mercado, status FROM historico_compras WHERE id = ${pedidoId}
+    `;
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    }
+
+    // Só quem gerencia o mercado do pedido pode alterá-lo
+    const [permissao] = await sql`
+      SELECT 1 FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario} AND id_mercado = ${pedido.id_mercado}
+    `;
+    if (!permissao) {
+      return res.status(403).json({ erro: 'Você não tem acesso a este pedido.' });
+    }
+
+    const atual = ORDEM_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
+    if (ORDEM_STATUS.indexOf(status) < ORDEM_STATUS.indexOf(atual)) {
+      return res.status(400).json({ erro: 'O status de um pedido só pode avançar, não voltar.' });
+    }
+
+    const [atualizado] = await sql`
+      UPDATE historico_compras SET status = ${status}
+      WHERE id = ${pedidoId}
+      RETURNING id, status
+    `;
+
+    res.status(200).json({ mensagem: 'Status atualizado com sucesso.', pedido: atualizado });
+  } catch (err) {
+    console.error('ERRO atualizarStatusPedido:', err);
+    res.status(500).json({ erro: 'Não foi possível atualizar o status.' });
+  }
+};
+
+module.exports = { criarPedido, listarPedidosMercado, atualizarStatusPedido };

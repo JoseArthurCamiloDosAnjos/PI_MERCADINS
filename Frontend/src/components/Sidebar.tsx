@@ -14,6 +14,7 @@ import {
   IconX,
   IconPencil,
 } from "./Icons";
+import { getReturnUrl } from "../utils/returnUrl";
 
 interface NavItem {
   icon: ReactNode;
@@ -77,10 +78,10 @@ export default function Sidebar({
     setOpen(false);
   }
 
-  // Sai do perfil e volta para a tela anterior (ou para o início, se não houver histórico)
+  // Sai do perfil e volta para a página anterior (ou para o início)
   function sairDoPerfil() {
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate("/");
+    const returnUrl = getReturnUrl();
+    navigate(returnUrl);
     setOpen(false);
   }
 

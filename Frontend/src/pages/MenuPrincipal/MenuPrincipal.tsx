@@ -71,6 +71,10 @@ function formatrarNota(nota?: number) {
 }
 
 function irParaSecao(id: string) {
+  if (id === "topo") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }

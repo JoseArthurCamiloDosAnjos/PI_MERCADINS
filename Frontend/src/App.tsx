@@ -9,6 +9,7 @@ import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 
 const Login = lazy(() => import('./pages/Login/Login'))
+const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
 const Register = lazy(() => import('./pages/Register/Register'))
 const PerfilUsuario = lazy(() => import('./pages/PerfilUsuario/PerfilUsuario'))
 const PerfilVendedor = lazy(() => import('./pages/PerfilVendedor/PerfilVendedor'))
@@ -255,7 +256,7 @@ function Rotas() {
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
         <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
-        <Route path="*"                  element={<Navigate to={destino} />} />
+        <Route path="*"                  element={<PaginaNaoEncontrada />} />
       </Routes>
     </Suspense>
   )

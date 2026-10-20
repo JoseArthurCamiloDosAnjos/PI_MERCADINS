@@ -44,7 +44,7 @@
 
 .pu-sec-title { font-size: 15px; font-weight: 800; color: var(--branco); margin-bottom: 1rem; display: flex; align-items: center; gap: 9px; }
 
-/* Badge de ícone que acompanha todo título de seção */
+/* Badge de Ã­cone que acompanha todo tÃ­tulo de seÃ§Ã£o */
 .pu-sec-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 27px; height: 27px; border-radius: 8px;
@@ -70,7 +70,7 @@
 
 .pu-divider { height: 1px; background: var(--azul-borda); }
 
-/* CÍRCULOS */
+/* CÃ�RCULOS */
 .pu-circles { display: flex; gap: 18px; flex-wrap: wrap; }
 .pu-circ-item {
   display: flex; flex-direction: column; align-items: center; gap: 7px;
@@ -98,7 +98,7 @@
   margin-top: 12px;
 }
 
-/* Cartão de estado vazio — usado em Histórico e Avaliações quando não há dados */
+/* CartÃ£o de estado vazio â€” usado em HistÃ³rico e AvaliaÃ§Ãµes quando nÃ£o hÃ¡ dados */
 .pu-empty {
   background: var(--azul-card);
   border: 1px dashed var(--azul-item);
@@ -126,7 +126,7 @@
   margin-top: 4px;
 }
 
-/* HISTÓRICO GRID */
+/* HISTÃ“RICO GRID */
 .pu-hist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .pu-hcard {
   background: var(--azul-card);
@@ -158,14 +158,14 @@
 .pu-status.transit { background: var(--verde-medio); color: var(--verde-claro); }
 .pu-status.pending { background: var(--pendente-bg); color: var(--pendente-texto); }
 .pu-status.new     { background: var(--novo-bg);     color: var(--novo-texto); }
-/* Status gravados em português no banco de dados */
+/* Status gravados em portuguÃªs no banco de dados */
 .pu-status.pendente   { background: var(--pendente-bg); color: var(--pendente-texto); }
 .pu-status.entregue   { background: var(--verde-bg);    color: var(--verde-texto); }
 .pu-status.transito,
 .pu-status.em-transito{ background: var(--verde-medio); color: var(--verde-claro); }
 .pu-status.cancelado  { background: rgba(198, 40, 40, 0.12); color: #f87171; }
 
-/* AVALIAÇÕES */
+/* AVALIAÃ‡Ã•ES */
 .pu-rev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .pu-rev-card {
   background: var(--azul-card); border-radius: var(--radius-md); border: 1px solid var(--azul-item); padding: 14px;
@@ -323,7 +323,7 @@
 .pu-status-ok { color: #4ade80; }
 .pu-status-fail { color: #f87171; }
 
-/* Bloco de formulário reutilizável (ex: tela de Segurança) */
+/* Bloco de formulÃ¡rio reutilizÃ¡vel (ex: tela de SeguranÃ§a) */
 .pu-form-block {
   max-width: 420px;
   display: flex;
@@ -336,7 +336,7 @@
   margin-top: 4px;
 }
 
-/* Cartão de confirmação (ex: "verifique seu email") */
+/* CartÃ£o de confirmaÃ§Ã£o (ex: "verifique seu email") */
 .pu-confirm-card {
   margin-top: 24px;
   background: var(--azul-card);
@@ -360,7 +360,7 @@
 .pu-confirm-text { font-size: 13px; color: var(--cinza-texto); line-height: 1.6; margin: 0; }
 .pu-confirm-highlight { color: var(--amarelo); }
 
-/* FADE TRANSIÇÃO */
+/* FADE TRANSIÃ‡ÃƒO */
 .pu-tela-fade {
   display: flex;
   flex-direction: column;
@@ -472,7 +472,7 @@
   color: #4ade80;
 }
 
-/* ── RESPONSIVO ──────────────────────────────────────────────────── */
+/* â”€â”€ RESPONSIVO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 900px) {
   .pu-topbar { padding: 0.9rem 1.2rem 0.9rem 62px; }
   .pu-content { padding: 1.2rem 1.2rem; gap: 1.3rem; }

@@ -560,9 +560,24 @@ const deletarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    // Remove vínculos primeiro (FK), depois o mercado
-    await sql`DELETE FROM usuarios_mercados WHERE id_mercado = ${Number(id)}`;
-    await sql`DELETE FROM mercados WHERE id_mercado = ${Number(id)}`;
+    // Remove tudo na ordem das chaves estrangeiras (do filho pro pai).
+    // carrinho e mercado_produtos apontam para mercado E produto; depois
+    // vêm pedidos, avaliações e afins; por último categorias, produtos e o
+    // próprio mercado. Sem essa ordem o banco recusa o DELETE (constraint).
+    const idNum = Number(id);
+    await sql`DELETE FROM carrinho           WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM mercado_produtos   WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM pedido_mercados    WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM historico_compras  WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM favoritos          WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM avaliacoes         WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM avaliacoes_mercado WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM assinaturas        WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM posts_mercado      WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM produtos WHERE id_categoria IN (SELECT id_categoria FROM categorias WHERE id_mercado = ${idNum})`;
+    await sql`DELETE FROM categorias         WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM usuarios_mercados  WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM mercados           WHERE id_mercado = ${idNum}`;
 
     res.status(200).json({ mensagem: "Mercado deletado com sucesso" });
   } catch (err) {

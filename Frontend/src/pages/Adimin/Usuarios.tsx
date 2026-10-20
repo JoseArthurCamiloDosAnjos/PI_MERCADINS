@@ -163,7 +163,9 @@ export default function Usuarios() {
   }, [busca, filtroTipo, filtroStatus, pagina])
 
   useEffect(() => {
-    carregar()
+    // Adia um instante: assim o carregamento não dispara setState de forma
+    // síncrona dentro do efeito (mesmo comportamento, sem o alerta do React)
+    Promise.resolve().then(carregar)
   }, [carregar])
 
   async function abrirDetalhes(id: number) {

@@ -158,7 +158,13 @@ function ProdutoCardCliente({
   }
 
   return (
-    <button className="vtc-produto-card" onClick={handleClick}>
+    <div
+      className="vtc-produto-card"
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+      role="button"
+      tabIndex={0}
+    >
       <div className="vtc-produto-img">
         {imagens.length > 0
           ? (
@@ -180,7 +186,7 @@ function ProdutoCardCliente({
         <p className="vtc-produto-nome">{produto.nome}</p>
         {produto.preco && <p className="vtc-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
-    </button>
+    </div>
   );
 }
 

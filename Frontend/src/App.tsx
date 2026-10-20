@@ -97,6 +97,7 @@ function CartWrapper() {
   const navigate = useNavigate()
   const [mercadoId, setMercadoId] = useState<number | null>(null)
   const [mercadoNome, setMercadoNome] = useState<string>('')
+  const [mercadoLocal, setMercadoLocal] = useState<string>('')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const { toasts, showToast, dismissToast } = useToast()
@@ -111,6 +112,7 @@ function CartWrapper() {
       .then(data => {
         setMercadoId(data.mercado.id_mercado)
         setMercadoNome(data.mercado.nome)
+        setMercadoLocal([data.mercado.cidade, data.mercado.estado].filter(Boolean).join(' · '))
       })
       .catch(() => navigate('/'))
       .finally(() => setCarregando(false))
@@ -156,6 +158,7 @@ function CartWrapper() {
     <>
       <CartScreen
         storeName={mercadoNome}
+        storeLocation={mercadoLocal}
         initialItems={itensConvertidos}
         onBack={() => navigate(`/vitrine/${slug}`)}
         onCheckout={handleCheckout}

@@ -83,6 +83,18 @@ function tiposDoMercado(store: Store): string[] {
   return [];
 }
 
+// Visual de cada tipo de loja pro bloco de categoria do card:
+// quadrado escuro com emoji + nome legível (o banco guarda minúsculo sem acento)
+const TIPO_VISUAL: Record<string, { label: string; emoji: string }> = {
+  mercado:      { label: "Mercado",      emoji: "🛒" },
+  hortifruti:   { label: "Hortifruti",   emoji: "🥬" },
+  acougue:      { label: "Açougue",      emoji: "🥩" },
+  padaria:      { label: "Padaria",      emoji: "🥖" },
+  bebidas:      { label: "Bebidas",      emoji: "🥤" },
+  organicos:    { label: "Orgânicos",    emoji: "🌱" },
+  conveniencia: { label: "Conveniência", emoji: "🏪" },
+};
+
 // Busca por CEP:
 // - parcial (5 a 7 dígitos) → mesma região, ex.: "15900" pega 15900-010, 15900-023...
 // - completo (8 dígitos) → só o mercado daquele CEP exato, ex.: "15900-013"
@@ -657,6 +669,9 @@ export default function Mercadins() {
                   </button>
 
                   <div className="store-content">
+                    {/* Bloco visual da categoria do estabelecimento */}
+                    <BlocoTipo store={store} />
+
                     <div className="store-title-row">
                       <div>
                         <h3>{store.nome}</h3>
@@ -807,6 +822,24 @@ export default function Mercadins() {
 
       <SiteFooter />
     </div>
+  );
+}
+
+// Bloco visual da categoria no card de mercado: quadrado escuro com emoji
+// + etiqueta com o nome da categoria (e "+N" quando tem mais tipos).
+function BlocoTipo({ store }: { store: Store }) {
+  const tipos = tiposDoMercado(store);
+  const principal = (tipos[0] ?? "mercado").toLowerCase();
+  const visual = TIPO_VISUAL[principal] ?? { label: "Mercado", emoji: "🏪" };
+  const extras = tipos.length - 1;
+  return (
+    <span className="store-tipo">
+      <span className="store-tipo-quadro" aria-hidden="true">
+        {visual.emoji}
+      </span>
+      <span className="store-tipo-nome">{visual.label}</span>
+      {extras > 0 && <span className="store-tipo-extra">+{extras}</span>}
+    </span>
   );
 }
 

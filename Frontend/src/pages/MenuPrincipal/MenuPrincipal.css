@@ -844,6 +844,18 @@ button {
   border-top: 1px dashed #e4eaf3;
 }
 
+/* Horário de funcionamento de hoje no card */
+.store-horario {
+  margin: -2px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #189252;
+}
+
+.store-horario.off {
+  color: var(--muted);
+}
+
 .store-content h3 {
   margin-bottom: 7px;
   font-size: 17px;

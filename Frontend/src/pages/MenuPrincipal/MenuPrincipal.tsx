@@ -14,6 +14,12 @@ import {
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
+import {
+  estaAberto,
+  horarioDeHoje,
+  parseHorario,
+  resumoSemana,
+} from "../../utils/horario";
 
 type Store = {
   id_mercado: number;
@@ -27,6 +33,7 @@ type Store = {
   foto_perfil?: string;
   cor_base?: string;
   status?: string;
+  horario?: string | null;
   avaliacao?: number;
   avaliacoes_count?: number;
   categorias?: string[];
@@ -162,6 +169,23 @@ export default function Mercadins() {
   } | null>(null);
   // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
   const [visitados] = useState<string[]>(listarVisitados);
+
+  // Relógio dos cards: recalcula Aberto/Fechado a cada minuto, sem recarregar
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgora(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Status de funcionamento agora: pelo horário quando a loja configurou;
+  // sem horário, ativo = aberto (compatível com mercados ainda sem rotina)
+  const lojaAberta = (store: Store) =>
+    estaAberto(parseHorario(store.horario), agora) ?? store.status === "ativo";
+
+  // Dica do badge: a semana inteira, começando por hoje
+  const statusTitulo = (store: Store) =>
+    resumoSemana(parseHorario(store.horario), agora) ||
+    (store.status === "ativo" ? "Mercado ativo" : "Mercado fechado");
 
   useEffect(() => {
     let ativo = true;
@@ -543,10 +567,8 @@ export default function Mercadins() {
                       key={store.id_mercado}
                       image={store.foto_perfil}
                       title={store.nome}
-                      subtitle={
-                        store.status === "ativo" ? "Aberto agora" : localizacao(store)
-                      }
-                      aberto={store.status === "ativo"}
+                      subtitle={lojaAberta(store) ? "Aberto agora" : localizacao(store)}
+                      aberto={lojaAberta(store)}
                       favoritado={favoritos.has(store.id_mercado)}
                       onClick={() => irParaMercado(store.slug)}
                     />
@@ -655,10 +677,11 @@ export default function Mercadins() {
                       )}
                       <span
                         className={`store-status ${
-                          store.status === "ativo" ? "aberto" : "fechado"
+                          lojaAberta(store) ? "aberto" : "fechado"
                         }`}
+                        title={statusTitulo(store)}
                       >
-                        {store.status === "ativo" ? "Aberto" : "Fechado"}
+                        {lojaAberta(store) ? "Aberto" : "Fechado"}
                       </span>
                       {favoritos.has(store.id_mercado) && (
                         <span className="store-favorito-badge" title="Seu favorito">
@@ -682,6 +705,9 @@ export default function Mercadins() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Horário de hoje, quando o mercado configurou */}
+                    <LinhaHorario store={store} agora={agora} />
 
                     {store.descricao && <p className="store-desc">{store.descricao}</p>}
 
@@ -827,6 +853,22 @@ export default function Mercadins() {
 
 // Bloco visual da categoria no card de mercado: quadrado escuro com emoji
 // + etiqueta com o nome da categoria (e "+N" quando tem mais tipos).
+// Linha de horário de hoje no card: "🕒 Hoje: 08:00 – 18:00" ou
+// "🚫 Fechado hoje". Mercado sem horário configurado não mostra nada.
+function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
+  const texto = horarioDeHoje(parseHorario(store.horario), agora);
+  if (!texto) return null;
+  const fechado = texto.startsWith("Fechado");
+  return (
+    <p
+      className={`store-horario ${fechado ? "off" : ""}`}
+      title={resumoSemana(parseHorario(store.horario), agora)}
+    >
+      {fechado ? "🚫" : "🕒"} {texto}
+    </p>
+  );
+}
+
 function BlocoTipo({ store }: { store: Store }) {
   const tipos = tiposDoMercado(store);
   const principal = (tipos[0] ?? "mercado").toLowerCase();

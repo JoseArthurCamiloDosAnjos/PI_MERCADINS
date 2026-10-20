@@ -32,6 +32,13 @@ const TIPOS_LOJA = [
   { id: 'conveniencia', nome: 'Conveniência', icone: '🛒' },
 ];
 
+// Dias da semana do formulário de horário (id = valor do Date: 0 = domingo)
+const DIAS = [
+  { id: '1', nome: 'Segunda' }, { id: '2', nome: 'Terça' }, { id: '3', nome: 'Quarta' },
+  { id: '4', nome: 'Quinta' }, { id: '5', nome: 'Sexta' }, { id: '6', nome: 'Sábado' },
+  { id: '0', nome: 'Domingo' },
+];
+
 function FieldIcon({ children }: { children: React.ReactNode }) {
   return <span className="field-icon-register">{children}</span>;
 }
@@ -48,6 +55,26 @@ export default function RegistrarMercado() {
     setCategorias(atual =>
       atual.includes(id) ? atual.filter(c => c !== id) : [...atual, id]
     );
+  }
+
+  // Horário de funcionamento: dia 0..6 (0 = domingo); null = fechado no dia.
+  // Começa com a semana comercial preenchida (o lojista ajusta como quiser).
+  const [horario, setHorario] = useState<Record<string, [string, string] | null>>({
+    '1': ['08:00', '18:00'], '2': ['08:00', '18:00'], '3': ['08:00', '18:00'],
+    '4': ['08:00', '18:00'], '5': ['08:00', '18:00'],
+  });
+
+  function alternarDia(dia: string) {
+    setHorario(h => ({ ...h, [dia]: h[dia] ? null : ['08:00', '18:00'] }));
+  }
+
+  function setHora(dia: string, campo: 0 | 1, valor: string) {
+    setHorario(h => {
+      const faixa = h[dia] ?? ['08:00', '18:00'];
+      const nova: [string, string] = [faixa[0], faixa[1]];
+      nova[campo] = valor;
+      return { ...h, [dia]: nova };
+    });
   }
   const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
@@ -126,6 +153,14 @@ export default function RegistrarMercado() {
     if (categorias.length === 0)
       return showToast('erro', 'Escolha ao menos um tipo de loja.');
 
+    // Horário: manda só os dias marcados como abertos, checando os horários
+    const horarioEnvio = Object.fromEntries(
+      Object.entries(horario).filter(([, faixa]) => faixa !== null) as [string, [string, string]][]
+    );
+    const diaRuim = Object.values(horarioEnvio).find(f => !f[0] || !f[1] || f[0] === f[1]);
+    if (diaRuim)
+      return showToast('erro', 'Confira o horário: abertura e fechamento precisam ser diferentes.');
+
     const token = localStorage.getItem('token');
     if (!token) return showToast('erro', 'Sessão expirada. Faça login novamente.');
 
@@ -149,6 +184,7 @@ export default function RegistrarMercado() {
           rua: form.rua,
           plano: planoId,
           categorias,
+          horario: horarioEnvio,
         }),
       });
       const data = await res.json();
@@ -270,6 +306,38 @@ export default function RegistrarMercado() {
                 );
               })}
             </div>
+
+            <p className="rm-section-label">Horário de funcionamento</p>
+
+            <div className="rm-horario">
+              {DIAS.map(dia => {
+                const aberto = !!horario[dia.id];
+                const faixa = horario[dia.id] ?? ['08:00', '18:00'];
+                return (
+                  <div key={dia.id} className={`rm-horario-dia${aberto ? ' aberto' : ''}`}>
+                    <label className="rm-horario-dia-nome">
+                      <input type="checkbox" checked={aberto} onChange={() => alternarDia(dia.id)} />
+                      {dia.nome}
+                    </label>
+                    {aberto ? (
+                      <div className="rm-horario-horas">
+                        <input type="time" value={faixa[0]} aria-label={`Abertura ${dia.nome}`}
+                          onChange={e => setHora(dia.id, 0, e.target.value)} />
+                        <span>às</span>
+                        <input type="time" value={faixa[1]} aria-label={`Fechamento ${dia.nome}`}
+                          onChange={e => setHora(dia.id, 1, e.target.value)} />
+                      </div>
+                    ) : (
+                      <span className="rm-horario-fechado">fechado</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="rm-horario-dica">
+              Fechar depois da meia-noite? Marque a hora de fechar menor que a de abrir
+              (ex.: abre 18:00, fecha 02:00).
+            </p>
 
             <p className="rm-section-label">Endereço</p>
 

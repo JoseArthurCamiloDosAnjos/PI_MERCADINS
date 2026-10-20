@@ -151,11 +151,23 @@ export const api = {
 
   criarPedido: (
     mercadoId: string | number,
-    dados: { itens: { id_produto: number; quantidade: number }[] }
+    dados: { itens: { id_produto: number; quantidade: number }[]; observacao?: string }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
       method: 'POST',
       body:   JSON.stringify(dados),
+    }),
+
+  // ── Pedidos do mercado (visão do vendedor) ─────────────────────────────────
+  listarPedidosMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/pedidos`),
+  atualizarStatusPedido: (
+    pedidoId: string | number,
+    status: 'pendente' | 'preparo' | 'caminho' | 'entregue'
+  ) =>
+    request(`/pedidos/${pedidoId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
     }),
 
   // ── Avaliações do mercado ─────────────────────────────────────────────────

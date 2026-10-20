@@ -38,11 +38,13 @@ interface Produto {
 }
 
 interface Pedido {
+  id: number;
   num: string;
   cliente: string;
   itens: string;
   preco: string;
-  status: 'entregue' | 'caminho' | 'preparo' | 'novo';
+  status: 'entregue' | 'caminho' | 'preparo' | 'novo';   // chave visual (badge)
+  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue'; // valor real do banco
   label: string;
 }
 
@@ -108,6 +110,24 @@ const NOMES_PLANOS: Record<string, string> = {
 function formatarBRL(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
+// ─── Status dos pedidos ───────────────────────────────────────────────────────
+// 'pendente' é o status inicial de todo pedido (chave visual: 'novo')
+const STATUS_PEDIDO: Record<
+  'pendente' | 'preparo' | 'caminho' | 'entregue',
+  { chave: Pedido['status']; label: string }
+> = {
+  pendente: { chave: 'novo',     label: 'Novo' },
+  preparo:  { chave: 'preparo',  label: 'Em preparo' },
+  caminho:  { chave: 'caminho',  label: 'A caminho' },
+  entregue: { chave: 'entregue', label: 'Entregue' },
+};
+
+const PROXIMO_STATUS: Partial<Record<'pendente' | 'preparo' | 'caminho' | 'entregue', 'pendente' | 'preparo' | 'caminho' | 'entregue'>> = {
+  pendente: 'preparo',
+  preparo:  'caminho',
+  caminho:  'entregue',
+};
 
 // ─── Sidebar nav ─────────────────────────────────────────────────────────────
 
@@ -502,12 +522,30 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
   );
 }
 
-function SecPedidos({ pedidos, loading }: { pedidos: Pedido[]; loading: boolean }) {
+function SecPedidos({
+  pedidos,
+  loading,
+  onAvancar,
+  expandido,
+  onAlternar,
+  total,
+}: {
+  pedidos: Pedido[];
+  loading: boolean;
+  onAvancar: (p: Pedido) => void;
+  expandido: boolean;
+  onAlternar: () => void;
+  total: number;
+}) {
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
         <h2 className="gm-sec-title"><IconShoppingCart size={15} /> Pedidos Recentes</h2>
-        <button className="gm-btn-link">Ver todos</button>
+        {total > 5 && (
+          <button className="gm-btn-link" onClick={onAlternar}>
+            {expandido ? 'Ver menos' : `Ver todos (${total})`}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -516,15 +554,29 @@ function SecPedidos({ pedidos, loading }: { pedidos: Pedido[]; loading: boolean 
         <EmptyState msg="Nenhum pedido ainda" />
       ) : (
         <div className="gm-pedidos-list">
-          {pedidos.map((p, i) => (
-            <div key={i} className="gm-pedido-row" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
-              <span className="gm-pedido-num">{p.num}</span>
-              <span className="gm-pedido-cliente">{p.cliente}</span>
-              <span className="gm-pedido-itens">{p.itens}</span>
-              <span className="gm-pedido-preco">{p.preco}</span>
-              <span className={`gm-pedido-status gm-pedido-status--${p.status}`}>{p.label}</span>
-            </div>
-          ))}
+          {pedidos.map((p, i) => {
+            const proximo = PROXIMO_STATUS[p.statusAtual];
+            return (
+              <div key={p.id} className="gm-pedido-row" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
+                <span className="gm-pedido-num">#{p.id}</span>
+                <span className="gm-pedido-cliente">{p.cliente}</span>
+                <span className="gm-pedido-itens">{p.itens}</span>
+                <span className="gm-pedido-preco">{p.preco}</span>
+                <span className={`gm-pedido-status gm-pedido-status--${p.status}`}>{p.label}</span>
+                {proximo ? (
+                  <button
+                    className="gm-pedido-acao"
+                    onClick={() => onAvancar(p)}
+                    title={`Avançar o pedido #${p.id} para "${STATUS_PEDIDO[proximo].label}"`}
+                  >
+                    {STATUS_PEDIDO[proximo].label} →
+                  </button>
+                ) : (
+                  <span className="gm-pedido-check" title="Pedido concluído">✓</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -699,6 +751,9 @@ export default function GerenciamentoMercado({
   const [nav, setNav] = useState(0);
   const {toasts, showToast, dismissToast } = useToast();
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [pedidosLoading, setPedidosLoading] = useState(true);
+  const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
 
   const [dados, setDados] = useState<DadosMercado>({
     mercado: null,
@@ -733,7 +788,53 @@ export default function GerenciamentoMercado({
       }
     }
     carregarDashboard();
+
+    // Pedidos reais recebidos pelo mercado (visão do vendedor)
+    (async () => {
+      setPedidosLoading(true);
+      try {
+        const data = await api.listarPedidosMercado(mercadoId);
+        setPedidos(
+          (data.pedidos ?? []).map((p: {
+            id: number; cliente: string; itens: string; valorTotal: number;
+            dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue';
+          }): Pedido => {
+            const info = STATUS_PEDIDO[p.status] ?? STATUS_PEDIDO.pendente;
+            return {
+              id: p.id,
+              num: `#${p.id}`,
+              cliente: p.cliente,
+              itens: p.itens,
+              preco: formatarBRL(p.valorTotal),
+              status: info.chave,
+              statusAtual: p.status,
+              label: info.label,
+            };
+          })
+        );
+      } catch (err) {
+        console.error('Erro ao carregar pedidos:', err);
+      } finally {
+        setPedidosLoading(false);
+      }
+    })();
   }, [mercadoId]);
+
+  // Vendedor avança o status de um pedido (pendente → preparo → caminho → entregue)
+  async function handleAvancarStatus(p: Pedido) {
+    const proximo = PROXIMO_STATUS[p.statusAtual];
+    if (!proximo) return;
+    try {
+      await api.atualizarStatusPedido(p.id, proximo);
+      const info = STATUS_PEDIDO[proximo];
+      setPedidos(prev =>
+        prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: proximo, label: info.label } : x))
+      );
+      showToast('sucesso', `Pedido #${p.id} agora está "${info.label}".`);
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível atualizar o pedido.');
+    }
+  }
 
   const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
 
@@ -767,7 +868,14 @@ export default function GerenciamentoMercado({
       resumo={resumo}
     />,
     <SecProdutos produtos={produtos} loading={loading} onEditar={setProdutoEditando} />,
-    <SecPedidos pedidos={[]} loading={loading} />,
+    <SecPedidos
+      pedidos={pedidosExpandidos ? pedidos : pedidos.slice(0, 5)}
+      loading={pedidosLoading}
+      onAvancar={handleAvancarStatus}
+      expandido={pedidosExpandidos}
+      onAlternar={() => setPedidosExpandidos(v => !v)}
+      total={pedidos.length}
+    />,
     <SecAvaliacoes avaliacoes={[]} loading={loading} />,
     <SecFinanceiro financeiro={[]} loading={loading} />,
     <SecInformacoes mercado={mercado} />,

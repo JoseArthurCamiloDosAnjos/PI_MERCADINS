@@ -32,6 +32,7 @@ const CLIENTES = [
 const MERCADOS = [
   {
     nome: 'Supermercado Bom Preço', cats: ['mercado', 'conveniencia'], cor: '0d2858', corTexto: 'f5c84a',
+    desc: 'Mercado de bairro com mercearia completa, hortifruti fresquinho e o melhor preço de Taquaritinga. Entregamos na região Centro e arredores.',
     cep: '15900-010', bairro: 'Centro', rua: 'Rua das Palmeiras',
     grupos: [
       { nome: 'Mercearia', produtos: [
@@ -51,6 +52,7 @@ const MERCADOS = [
   },
   {
     nome: 'Hortifruti Quintal Verde', cats: ['hortifruti', 'organicos'], cor: '2e7d32', corTexto: 'ffffff',
+    desc: 'Hortifruti e produtos orgânicos colhidos no dia. Verduras, frutas e temperos selecionados direto da horta.',
     cep: '15901-500', bairro: 'Jardim Ipanema', rua: 'Avenida Brasil',
     grupos: [
       { nome: 'Hortaliças e Frutas', produtos: [
@@ -68,10 +70,11 @@ const MERCADOS = [
   },
   {
     nome: 'Açougue Boi Gordo', cats: ['acougue'], cor: '8b1e1e', corTexto: 'ffffff',
+    desc: 'Carnes bovinas, suínas e aves cortadas do seu jeito, com higiene e qualidade. Frios e embutidos selecionados.',
     cep: '15902-100', bairro: 'Jardim Contendas', rua: 'Rua São Paulo',
     grupos: [
       { nome: 'Carnes', produtos: [
-        { nome: 'Patinho moído (kg)',      desc: 'Acém moído na hora',   preco: '39,90', estoque: 30, kw: 'beef' },
+        { nome: 'Patinho moído (kg)',      desc: 'Moído na hora',       preco: '39,90', estoque: 30, kw: 'beef' },
         { nome: 'Frango congelado (kg)',   desc: 'Inteiro',              preco: '13,90', estoque: 40, kw: 'chicken' },
         { nome: 'Costelinha suína (kg)',   desc: 'Com osso',             preco: '24,90', estoque: 25, kw: 'pork' },
         { nome: 'Linguiça toscana (kg)',   desc: 'Artesanal',            preco: '18,90', estoque: 30, kw: 'sausage' },
@@ -84,6 +87,7 @@ const MERCADOS = [
   },
   {
     nome: 'Padaria Pão Quentinho', cats: ['padaria'], cor: '8a5a2b', corTexto: 'fff8e7',
+    desc: 'Padaria e confeitaria com pães fresquinhos o dia todo, salgados, bolos e tortas feitos na hora.',
     cep: '15900-250', bairro: 'Centro', rua: 'Rua XV de Novembro',
     grupos: [
       { nome: 'Pães', produtos: [
@@ -102,6 +106,7 @@ const MERCADOS = [
   },
   {
     nome: 'Bebidas do Ponto', cats: ['bebidas'], cor: '1565c0', corTexto: 'ffffff',
+    desc: 'Refrigerantes, sucos, cervejas geladas e vinhos. De tudo para sua festa ou para um fim de semana tranquilo.',
     cep: '15903-050', bairro: 'Vila Baeta', rua: 'Avenida Independência',
     grupos: [
       { nome: 'Refrigerantes e Sucos', produtos: [
@@ -119,6 +124,7 @@ const MERCADOS = [
   },
   {
     nome: 'Orgânicos da Serra', cats: ['organicos', 'hortifruti'], cor: '558b2f', corTexto: 'ffffff',
+    desc: 'Produtos orgânicos da serra paulista: mercearia natural, frutas sem agrotóxico e mel puro da região.',
     cep: '15906-100', bairro: 'Sítio São João', rua: 'Rodovia SP-310 km 5',
     grupos: [
       { nome: 'Mercearia Natural', produtos: [
@@ -129,18 +135,19 @@ const MERCADOS = [
       ]},
       { nome: 'Frutas Orgânicas', produtos: [
         { nome: 'Maçã orgânica (kg)',      desc: 'Sem agrotóxico',      preco: '12,90', estoque: 25, kw: 'apple' },
-        { nome: 'Banana orgânica (kg)',    desc: 'Terra de origem',     preco: '8,99',  estoque: 30, kw: 'banana' },
+        { nome: 'Banana orgânica (kg)',    desc: 'Direto da roça',     preco: '8,99',  estoque: 30, kw: 'banana' },
       ]},
     ],
   },
   {
     nome: 'Conveniência 24 Horas', cats: ['conveniencia'], cor: '4527a0', corTexto: 'ffffff',
+    desc: 'Loja de conveniência aberta 24 horas: sanduíches, itens rápidos e o que você precisar, a qualquer hora.',
     cep: '15900-001', bairro: 'Centro', rua: 'Rua Amazonas',
     grupos: [
       { nome: 'Praticidade', produtos: [
         { nome: 'Sanduíche pronto',        desc: 'Pronto para levar',   preco: '12,90', estoque: 15, kw: 'sandwich' },
         { nome: 'Pizza congelada',         desc: 'Calabresa 400g',      preco: '24,90', estoque: 12, kw: 'pizza' },
-        { nome: 'Macarrão instantâneo',    desc: 'Cup noodles',         preco: '5,49',  estoque: 40, kw: 'noodles' },
+        { nome: 'Macarrão instantâneo',    desc: 'Pronto em 3 minutos', preco: '5,49',  estoque: 40, kw: 'noodles' },
         { nome: 'Saco de gelo 5kg',        desc: 'Barrados',            preco: '8,00',  estoque: 20, kw: 'ice' },
       ]},
       { nome: 'Itens Rápidos', produtos: [
@@ -166,6 +173,15 @@ const AVALIACOES = [
   ['mercadins.demo.cliente3@gmail.com', 'Açougue Boi Gordo',        4, 'Atendimento excelente.'],
   ['mercadins.demo.cliente3@gmail.com', 'Bebidas do Ponto',         5, 'Muitas opções, achei tudo que precisava.'],
   ['mercadins.demo.cliente3@gmail.com', 'Hortifruti Quintal Verde', 5, 'Recomendo demais!'],
+  ['mercadins.demo.cliente2@gmail.com', 'Supermercado Bom Preço',   5, 'Preço justo e atendimento rápido.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Supermercado Bom Preço',   4, 'Achei tudo que precisei em uma visita só.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Conveniência 24 Horas',    4, 'Sempre abre quando mais preciso.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Conveniência 24 Horas',    5, 'Atendimento 24h é nota máxima.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Açougue Boi Gordo',        5, 'Carnes frescas e bem cortadas.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Bebidas do Ponto',         4, 'Preço justo e entrega rápida.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Orgânicos da Serra',       5, 'Qualidade que eu procurava.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Orgânicos da Serra',       4, 'Mel e granola excelentes.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Padaria Pão Quentinho',    4, 'Pão sempre quentinho!'],
 ];
 
 // ── Pedidos demo (cliente → mercado → itens [nome do produto, qtd]) ──────────
@@ -339,6 +355,7 @@ async function logar(email) {
         cidade: 'Taquaritinga',
         bairro: m.bairro,
         rua: m.rua,
+        descricao: m.desc,
         categorias: m.cats,
       },
     });

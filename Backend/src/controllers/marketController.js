@@ -92,7 +92,7 @@ function normalizarCategorias(categorias) {
 const criarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -141,7 +141,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -152,6 +152,7 @@ const criarMercado = async (req, res) => {
         ${cidade.trim()},
         ${bairro.trim()},
         ${rua.trim()},
+        ${descricao?.trim() || null},
         ${slug},
         ${paleta ?? 'classico'},
         ${cor_base ?? ''},
@@ -329,7 +330,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias } = req.body;
 
   const banner = banner_url || undefined
   const foto_perfil = foto_perfil_url || undefined
@@ -396,6 +397,7 @@ const atualizarMercado = async (req, res) => {
         cidade      = COALESCE(${cidade?.trim()                     ?? null}, cidade),
         bairro      = COALESCE(${bairro?.trim()                     ?? null}, bairro),
         rua         = COALESCE(${rua?.trim()                        ?? null}, rua),
+        descricao   = COALESCE(${descricao?.trim()                  ?? null}, descricao),
         slug        = COALESCE(${slugAtualizado ?? null}, slug),
         paleta      = COALESCE(${paleta ?? null}, paleta),
         cor_base    = COALESCE(${cor_base ?? null}, cor_base),

@@ -497,3 +497,53 @@
 @media (max-width: 380px) {
   .pu-hist-grid, .pu-rev-grid { grid-template-columns: 1fr; }
 }
+/* -- Linha do tempo do pedido no histórico do cliente --------------------- */
+.pu-timeline {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pu-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--cinza-texto);
+}
+
+.pu-timeline-ponto {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 800;
+  border: 1.5px solid var(--azul-borda);
+  background: var(--azul-medio);
+  color: var(--branco);
+  flex-shrink: 0;
+}
+
+.pu-timeline-item.feita .pu-timeline-ponto {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--azul-escuro);
+}
+
+.pu-timeline-item.feita { color: var(--branco); }
+
+.pu-timeline-item.ativa .pu-timeline-ponto {
+  background: var(--amarelo);
+  border-color: var(--amarelo);
+  color: var(--azul-escuro);
+}
+
+.pu-timeline-item.ativa .pu-timeline-label {
+  color: var(--amarelo);
+  font-weight: 700;
+}

@@ -58,6 +58,37 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
+// Linha do tempo do pedido: pendente → preparo → caminho → entregue.
+// Mostra em que etapa o pedido está e o que já foi concluído.
+const ETAPAS_PEDIDO = [
+  { chave: 'pendente', label: 'Pedido recebido' },
+  { chave: 'preparo',  label: 'Em preparo' },
+  { chave: 'caminho',  label: 'A caminho' },
+  { chave: 'entregue', label: 'Entregue' },
+] as const;
+
+function PilhaStatus({ status }: { status: string }) {
+  const idxAtual = ETAPAS_PEDIDO.findIndex(e => e.chave === status);
+  const atual = idxAtual >= 0 ? idxAtual : 0;
+  return (
+    <ol className="pu-timeline" aria-label="Etapas do pedido">
+      {ETAPAS_PEDIDO.map((etapa, i) => {
+        const feita = i < atual;
+        const ativa = i === atual;
+        return (
+          <li
+            key={etapa.chave}
+            className={`pu-timeline-item${feita ? ' feita' : ''}${ativa ? ' ativa' : ''}`}
+          >
+            <span className="pu-timeline-ponto" aria-hidden="true">{feita ? '✓' : ''}</span>
+            <span className="pu-timeline-label">{etapa.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
   favoritos: Favorito[];
   historico: Historico[];
@@ -125,6 +156,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
                   <span className={`pu-status ${p.status}`}>● {p.status}</span>
+                  <PilhaStatus status={p.status} />
                   {p.observacao && (
                     <p className="pu-hcard-obs" title="Sua observação neste pedido">📝 {p.observacao}</p>
                   )}

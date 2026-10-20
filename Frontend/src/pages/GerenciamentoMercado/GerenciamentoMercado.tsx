@@ -583,12 +583,28 @@ function SecPedidos({
   );
 }
 
-function SecAvaliacoes({ avaliacoes, loading }: { avaliacoes: Avaliacao[]; loading: boolean }) {
+function SecAvaliacoes({
+  avaliacoes,
+  loading,
+  expandidas,
+  onAlternar,
+  total,
+}: {
+  avaliacoes: Avaliacao[];
+  loading: boolean;
+  expandidas: boolean;
+  onAlternar: () => void;
+  total: number;
+}) {
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
         <h2 className="gm-sec-title"><IconStar size={15} /> Avaliações</h2>
-        <button className="gm-btn-link">Ver todas</button>
+        {total > 4 && (
+          <button className="gm-btn-link" onClick={onAlternar}>
+            {expandidas ? 'Ver menos' : `Ver todas (${total})`}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -754,6 +770,9 @@ export default function GerenciamentoMercado({
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [pedidosLoading, setPedidosLoading] = useState(true);
   const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [avaliacoesLoading, setAvaliacoesLoading] = useState(true);
+  const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(false);
 
   const [dados, setDados] = useState<DadosMercado>({
     mercado: null,
@@ -818,6 +837,31 @@ export default function GerenciamentoMercado({
         setPedidosLoading(false);
       }
     })();
+
+    // Avaliações reais recebidas pelo mercado
+    (async () => {
+      setAvaliacoesLoading(true);
+      try {
+        const data = await api.avaliacoesMercado(mercadoId);
+        setAvaliacoes(
+          (data.avaliacoes ?? []).map((a: { nota: number; texto: string; cliente: string }): Avaliacao => ({
+            iniciais: a.cliente
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map(p => p[0]?.toUpperCase() ?? '')
+              .join(''),
+            nome: a.cliente,
+            n: a.nota,
+            texto: a.texto || 'Sem comentário.',
+          }))
+        );
+      } catch (err) {
+        console.error('Erro ao carregar avaliações:', err);
+      } finally {
+        setAvaliacoesLoading(false);
+      }
+    })();
   }, [mercadoId]);
 
   // Vendedor avança o status de um pedido (pendente → preparo → caminho → entregue)
@@ -876,7 +920,13 @@ export default function GerenciamentoMercado({
       onAlternar={() => setPedidosExpandidos(v => !v)}
       total={pedidos.length}
     />,
-    <SecAvaliacoes avaliacoes={[]} loading={loading} />,
+    <SecAvaliacoes
+      avaliacoes={avaliacoesExpandidas ? avaliacoes : avaliacoes.slice(0, 4)}
+      loading={avaliacoesLoading}
+      expandidas={avaliacoesExpandidas}
+      onAlternar={() => setAvaliacoesExpandidas(v => !v)}
+      total={avaliacoes.length}
+    />,
     <SecFinanceiro financeiro={[]} loading={loading} />,
     <SecInformacoes mercado={mercado} />,
   ];

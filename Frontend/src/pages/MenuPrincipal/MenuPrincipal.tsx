@@ -204,9 +204,12 @@ export default function Mercadins() {
   }, [stores, busca, local, categoria, favoritos]);
 
   const notaMedia = useMemo(() => {
-    if (stores.length === 0) return 0;
-    const soma = stores.reduce((acc, s) => acc + Number(s.avaliacao ?? 0), 0);
-    return soma / stores.length;
+    // Só entra na média quem já tem avaliação — mercado sem nota não
+    // deveria puxar a média pra baixo
+    const avaliados = stores.filter(s => Number(s.avaliacao ?? 0) > 0);
+    if (avaliados.length === 0) return 0;
+    const soma = avaliados.reduce((acc, s) => acc + Number(s.avaliacao ?? 0), 0);
+    return soma / avaliados.length;
   }, [stores]);
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";

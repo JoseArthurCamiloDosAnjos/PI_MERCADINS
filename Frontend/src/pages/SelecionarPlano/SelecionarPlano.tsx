@@ -40,7 +40,11 @@ export default function SelecionarPlano() {
           </svg>
           Voltar
         </button>
-        <div className="sp-logo">
+        <div
+          className="sp-logo"
+          onClick={() => navigate('/')}
+          title="Voltar ao início"
+        >
           <img src={logo} alt="Mercadins" />
           <span>Mercadins</span>
         </div>

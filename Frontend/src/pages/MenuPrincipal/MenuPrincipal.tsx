@@ -75,6 +75,20 @@ function irParaSecao(id: string) {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// Volta pro topo da página na hora, sem animação
+function irParaTopo() {
+  window.scrollTo(0, 0);
+}
+
+// Logo: em casa recarrega a página; de qualquer outra tela, volta pra home
+function irParaInicio() {
+  if (window.location.pathname === "/") {
+    window.location.reload();
+  } else {
+    window.location.assign("/");
+  }
+}
+
 export default function Mercadins() {
   const navigate = useNavigate();
   const { usuario, temMercado } = useAuth();
@@ -192,8 +206,9 @@ export default function Mercadins() {
               href="#topo"
               onClick={(e) => {
                 e.preventDefault();
-                irParaSecao("topo");
+                irParaInicio();
               }}
+              title="Voltar ao início"
             >
               <img src={logo} alt="Mercadins" className="mp-logo-img" />
             </a>
@@ -204,7 +219,7 @@ export default function Mercadins() {
                   href="#topo"
                   onClick={(e) => {
                     e.preventDefault();
-                    irParaSecao("topo");
+                    irParaTopo();
                   }}
                 >
                   Início
@@ -537,7 +552,13 @@ export default function Mercadins() {
         <div className="container">
           <div className="footer-grid">
             <div className="footer-brand">
-              <img src={logo} alt="Mercadins" className="mp-logo-img" />
+              <img
+                src={logo}
+                alt="Mercadins"
+                className="mp-logo-img mp-logo-click"
+                onClick={irParaInicio}
+                title="Voltar ao início"
+              />
               <p>
                 Seus mercados favoritos reunidos em um único lugar.
                 Compre online e receba onde estiver.

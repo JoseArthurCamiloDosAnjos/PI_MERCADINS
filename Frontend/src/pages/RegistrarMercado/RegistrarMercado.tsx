@@ -158,6 +158,9 @@ export default function RegistrarMercado() {
         </button>
         <div className="logo-wrap">
           <img className="logo-img" src={logoImg} alt="Mercadins"
+            title="Voltar ao início"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/')}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

@@ -100,6 +100,10 @@ button {
   align-items: center;
 }
 
+/* Logo clicável (rodapé): volta pro início */
+.mp-logo-click { cursor: pointer; }
+.mp-logo-click:hover { opacity: 0.85; }
+
 .nav-links {
   display: flex;
   gap: 26px;

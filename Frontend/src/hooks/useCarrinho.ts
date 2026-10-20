@@ -78,35 +78,36 @@ export function useCarrinho(mercadoId: number) {
 
     api.buscarCarrinho(mercadoId)
       .then(res => {
-        if (res.itens && res.itens.length > 0) {
-          const itensBanco: ItemCarrinho[] = res.itens.map((i: ItemCarrinhoBanco) => ({
-            produto: {
-              id_produto: i.id_produto,
-              id_categoria: i.id_categoria,
-              nome: i.nome,
-              descricao: i.descricao,
-              preco: i.preco,
-              imagem: i.imagem,
-              estoque: i.estoque,
-            },
-            quantidade: i.quantidade,
-          }));
+        const itensBanco: ItemCarrinho[] = (res.itens ?? []).map((i: ItemCarrinhoBanco) => ({
+          produto: {
+            id_produto: i.id_produto,
+            id_categoria: i.id_categoria,
+            nome: i.nome,
+            descricao: i.descricao,
+            preco: i.preco,
+            imagem: i.imagem,
+            estoque: i.estoque,
+          },
+          quantidade: i.quantidade,
+        }));
 
-          setItens(prev => {
-            const merged = [...itensBanco];
-            for (const local of prev) {
-              const idx = merged.findIndex(m => m.produto.id_produto === local.produto.id_produto);
-              if (idx >= 0) {
-                merged[idx] = { ...merged[idx], quantidade: merged[idx].quantidade + local.quantidade };
-              } else {
-                merged.push(local);
-              }
-            }
-            saveCarrinhoLocal(mercadoId, merged);
-            debounceSalvar(mercadoId, merged);
-            return merged;
-          });
-        }
+        setItens(prev => {
+          // O carrinho local é a fonte da verdade: ele é gravado a cada mudança
+          // e sobrevive ao login (não é apagado). Nunca somamos local + servidor,
+          // senão as quantidades duplicavam a cada atualização da página.
+          if (prev.length > 0) {
+            // Mantém o que o cliente já tinha (ex.: adicionou antes do login)
+            // e reenvia pro servidor pra ficar salvo na conta
+            debounceSalvar(mercadoId, prev);
+            return prev;
+          }
+          // Local vazio = navegador novo ou limpo: restaura do servidor
+          if (itensBanco.length > 0) {
+            saveCarrinhoLocal(mercadoId, itensBanco);
+            return itensBanco;
+          }
+          return prev;
+        });
       })
       .catch(() => {});
 

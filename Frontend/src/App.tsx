@@ -121,8 +121,9 @@ function CartWrapper() {
   async function handleCheckout() {
     if (!mercadoId) return
     if (!localStorage.getItem('token')) {
-      showToast('erro', 'Faça login para finalizar o pedido.')
-      navigate('/auth')
+      showToast('erro', 'Faça login para finalizar o pedido. Seus itens ficam salvos no carrinho.')
+      // Pausa curta para o cliente ler o aviso antes de mudar de tela
+      setTimeout(() => navigate('/auth'), 1600)
       return
     }
     setFinalizando(true)

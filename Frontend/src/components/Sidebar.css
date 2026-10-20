@@ -240,7 +240,7 @@
   position: fixed;
   top: 14px;
   left: 14px;
-  z-index: 60;
+  z-index: 100;
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -267,11 +267,16 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  z-index: 10;
 }
 .sb-close:hover { color: var(--branco); border-color: var(--azul-claro); }
 
 .sb-overlay {
   display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 65;
 }
 
 /* ── RESPONSIVO ──────────────────────────────────────────────────── */
@@ -284,7 +289,7 @@
     left: 0;
     height: 100dvh;
     width: 260px;
-    z-index: 70;
+    z-index: 200;
     transform: translateX(-100%);
     box-shadow: 10px 0 30px rgba(0,0,0,0.4);
     overflow-y: auto;
@@ -309,9 +314,5 @@
 
   .sb-overlay {
     display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 65;
   }
 }

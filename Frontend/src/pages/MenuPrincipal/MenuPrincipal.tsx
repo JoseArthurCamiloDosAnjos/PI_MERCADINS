@@ -82,14 +82,15 @@ function tiposDoMercado(store: Store): string[] {
   return [];
 }
 
-// Busca por CEP: os 5 primeiros dígitos identificam a mesma região.
-// Digitou "15900" ou "15900-023" → pega todos os mercados da região 15900.
-function mesmaRegiaoCep(store: Store, buscaLocal: string) {
+// Busca por CEP:
+// - parcial (5 a 7 dígitos) → mesma região, ex.: "15900" pega 15900-010, 15900-023...
+// - completo (8 dígitos) → só o mercado daquele CEP exato, ex.: "15900-013"
+function cepBate(store: Store, buscaLocal: string) {
   const digitosBusca = buscaLocal.replace(/\D/g, "");
   if (digitosBusca.length < 5) return false;
   const digitosCep = (store.cep ?? "").replace(/\D/g, "");
   if (digitosCep.length < 5) return false;
-  return digitosCep.slice(0, 5) === digitosBusca.slice(0, 5);
+  return digitosCep.startsWith(digitosBusca.slice(0, 8));
 }
 
 function irParaSecao(id: string) {
@@ -185,7 +186,7 @@ export default function Mercadins() {
         if (
           buscaLocal &&
           !normalizar(localizacao(store)).includes(buscaLocal) &&
-          !mesmaRegiaoCep(store, buscaLocal)
+          !cepBate(store, buscaLocal)
         )
           return false;
         if (cat && (cat.palavras.length > 0 || cat.slug)) {
@@ -210,9 +211,14 @@ export default function Mercadins() {
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";
 
-  // Região do CEP digitado (5 primeiros dígitos) — usado no aviso dos resultados
+  // Aviso de CEP no contador: parcial = mesma região; completo = CEP exato
   const digitosLocal = local.replace(/\D/g, "");
-  const cepFiltro = digitosLocal.length >= 5 ? digitosLocal.slice(0, 5) : null;
+  const avisoCep =
+    digitosLocal.length < 5
+      ? ""
+      : digitosLocal.length >= 8
+        ? ` · no CEP ${digitosLocal.slice(0, 5)}-${digitosLocal.slice(5, 8)}`
+        : ` · na região do CEP ${digitosLocal.slice(0, 5)}`;
 
   function limparFiltros() {
     setBusca("");
@@ -450,7 +456,7 @@ export default function Mercadins() {
                   ? "Carregando mercados..."
                   : `${lojasFiltradas.length} ${
                       lojasFiltradas.length === 1 ? "mercado encontrado" : "mercados encontrados"
-                    }${cepFiltro ? ` · na região do CEP ${cepFiltro}` : ""}`}
+                    }${avisoCep}`}
               </p>
             </div>
 

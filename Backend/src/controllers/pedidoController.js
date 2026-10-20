@@ -4,7 +4,7 @@ const { conectar } = require('../db/neon');
 const criarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const mercadoId  = Number(req.params.id);
-  const { itens }  = req.body;
+  const { itens, observacao } = req.body;
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return res.status(400).json({ erro: 'Informe os itens do pedido.' });
@@ -23,6 +23,11 @@ const criarPedido = async (req, res) => {
   if (!Number.isInteger(mercadoId) || mercadoId <= 0) {
     return res.status(400).json({ erro: 'Mercado inválido.' });
   }
+
+  // Observação é opcional: máx. 300 caracteres, sem caracteres de controle
+  const observacaoLimpa = typeof observacao === 'string'
+    ? observacao.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
+    : '';
 
   try {
     const sql = await conectar();
@@ -66,9 +71,9 @@ const criarPedido = async (req, res) => {
     }
 
     const [pedido] = await sql`
-      INSERT INTO historico_compras (id_usuario, id_mercado, produtos, valor_total, status)
-      VALUES (${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, 'pendente')
-      RETURNING id, id_mercado, produtos, valor_total, data_compra, status
+      INSERT INTO historico_compras (id_usuario, id_mercado, produtos, valor_total, status, observacao)
+      VALUES (${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, 'pendente', ${observacaoLimpa})
+      RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao
     `;
 
     // Remove do carrinho apenas os produtos que foram comprados
@@ -108,7 +113,7 @@ const listarPedidosMercado = async (req, res) => {
     }
 
     const pedidos = await sql`
-      SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, u.nome AS cliente
+      SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao, u.nome AS cliente
       FROM historico_compras h
       JOIN usuarios u ON u.id_usuario = h.id_usuario
       WHERE h.id_mercado = ${mercadoId}
@@ -124,6 +129,7 @@ const listarPedidosMercado = async (req, res) => {
         valorTotal: Number(p.valor_total),
         dataCompra: p.data_compra,
         status: p.status || 'pendente',
+        observacao: p.observacao || '',
       })),
     });
   } catch (err) {

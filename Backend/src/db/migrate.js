@@ -153,6 +153,11 @@ async function migrate() {
     $$
   `;
 
+  // Observação do cliente no pedido (ex.: "sem cebola", "entregar na portaria")
+  await sql`
+    ALTER TABLE historico_compras ADD COLUMN IF NOT EXISTS observacao TEXT DEFAULT ''
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

@@ -422,7 +422,7 @@
 /* ─── Pedidos ───────────────────────────────────────────────────────────── */
 .gm-pedidos-list { display: flex; flex-direction: column; gap: 8px; }
 .gm-pedido-row {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   background: var(--azul-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--azul-item);
@@ -435,6 +435,15 @@
 .gm-pedido-num     { font-size: 12px; font-weight: 800; color: var(--amarelo); min-width: 56px; }
 .gm-pedido-cliente { font-size: 13px; font-weight: 700; color: var(--branco); flex: 1; }
 .gm-pedido-itens   { font-size: 10px; color: var(--cinza-texto); }
+.gm-pedido-obs {
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding-left: 70px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--amarelo);
+  word-break: break-word;
+}
 .gm-pedido-preco   { font-size: 14px; font-weight: 800; color: var(--amarelo); min-width: 72px; text-align: right; }
 
 .gm-pedido-status {

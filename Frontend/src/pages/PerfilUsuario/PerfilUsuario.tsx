@@ -24,7 +24,7 @@ import {
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
 const TITULOS = ['Meu Perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
@@ -125,6 +125,9 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
                   <span className={`pu-status ${p.status}`}>● {p.status}</span>
+                  {p.observacao && (
+                    <p className="pu-hcard-obs" title="Sua observação neste pedido">📝 {p.observacao}</p>
+                  )}
                 </div>
               </div>
             ))}

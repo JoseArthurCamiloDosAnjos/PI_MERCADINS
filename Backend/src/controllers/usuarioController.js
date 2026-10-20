@@ -46,7 +46,7 @@ const listarHistorico = async (req, res) => {
     const sql = await conectar();
 
     const historico = await sql`
-      SELECT h.id, h.id_mercado, m.nome AS mercado, h.produtos, h.valor_total, h.data_compra, h.status
+      SELECT h.id, h.id_mercado, m.nome AS mercado, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao
       FROM historico_compras h
       INNER JOIN mercados m ON m.id_mercado = h.id_mercado
       WHERE h.id_usuario = ${id_usuario}

@@ -100,6 +100,7 @@ function CartWrapper() {
   const [mercadoLocal, setMercadoLocal] = useState<string>('')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
+  const [observacao, setObservacao] = useState('')
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
 
@@ -140,9 +141,11 @@ function CartWrapper() {
     try {
       await api.criarPedido(mercadoId, {
         itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
+        observacao: observacao.trim() || undefined,
       })
       showToast('sucesso', 'Pedido enviado com sucesso!')
       carrinho.limpar()
+      setObservacao('')
       navigate(`/vitrine/${slug}`)
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.')
@@ -163,6 +166,8 @@ function CartWrapper() {
         onBack={() => navigate(`/vitrine/${slug}`)}
         onCheckout={handleCheckout}
         finalizando={finalizando}
+        observacao={observacao}
+        onObservacaoChange={setObservacao}
         onUpdateQuantity={(id, delta) => carrinho.alterarQuantidade(Number(id), delta)}
         onRemoveItem={(id) => carrinho.remover(Number(id))}
         onClearCart={() => carrinho.limpar()}

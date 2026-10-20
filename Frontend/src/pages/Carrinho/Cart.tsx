@@ -25,6 +25,8 @@ interface CartScreenProps {
   onBack?: () => void;
   onCheckout?: (items: CartItem[], total: number) => void;
   finalizando?: boolean;
+  observacao?: string;
+  onObservacaoChange?: (valor: string) => void;
   onUpdateQuantity?: (id: string, delta: number) => void;
   onRemoveItem?: (id: string) => void;
   onClearCart?: () => void;
@@ -126,6 +128,8 @@ export default function CartScreen({
   onBack,
   onCheckout,
   finalizando = false,
+  observacao = "",
+  onObservacaoChange,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -308,6 +312,25 @@ export default function CartScreen({
             />
             <button type="button">Aplicar</button>
           </div>
+
+          {/* Observação opcional que vai junto do pedido (ex.: "sem cebola") */}
+          {onObservacaoChange && (
+            <div className="cart-obs">
+              <label className="cart-obs__label" htmlFor="cart-obs">
+                Observação para o lojista (opcional)
+              </label>
+              <textarea
+                id="cart-obs"
+                className="cart-obs__textarea"
+                rows={2}
+                maxLength={300}
+                placeholder="Ex.: sem cebola, entregar na portaria, trocar pela mais fresca…"
+                value={observacao}
+                onChange={(e) => onObservacaoChange(e.target.value)}
+              />
+              <span className="cart-obs__contador">{observacao.length}/300</span>
+            </div>
+          )}
 
           <div className="cart-summary__total">
             <span>Total</span>

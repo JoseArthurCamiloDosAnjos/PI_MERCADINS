@@ -51,6 +51,7 @@ interface Pedido {
   status: 'entregue' | 'caminho' | 'preparo' | 'novo';   // chave visual (badge)
   statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue'; // valor real do banco
   label: string;
+  observacao?: string;
 }
 
 interface Avaliacao {
@@ -581,6 +582,11 @@ function SecPedidos({
                 ) : (
                   <span className="gm-pedido-check" title="Pedido concluído">✓</span>
                 )}
+                {p.observacao && (
+                  <span className="gm-pedido-obs" title="Observação do cliente">
+                    📝 {p.observacao}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -827,6 +833,7 @@ export default function GerenciamentoMercado({
           (data.pedidos ?? []).map((p: {
             id: number; cliente: string; itens: string; valorTotal: number;
             dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue';
+            observacao?: string;
           }): Pedido => {
             const info = STATUS_PEDIDO[p.status] ?? STATUS_PEDIDO.pendente;
             return {
@@ -840,6 +847,7 @@ export default function GerenciamentoMercado({
               status: info.chave,
               statusAtual: p.status,
               label: info.label,
+              observacao: (p.observacao ?? '').trim(),
             };
           })
         );
@@ -929,10 +937,11 @@ export default function GerenciamentoMercado({
 
   // Exporta os pedidos em CSV (abre no Excel/Google Planilhas)
   function handleExportarRelatorio() {
-    const cabecalho = 'Pedido;Cliente;Itens;Valor (R$);Data;Status';
+    const cabecalho = 'Pedido;Cliente;Itens;Valor (R$);Data;Status;Observação';
     const linhas = pedidos.map(p => {
       const data = new Date(p.data).toLocaleString('pt-BR');
-      return `${p.num};${p.cliente};"${p.itens}";${p.valorNum.toFixed(2).replace('.', ',')};${data};${p.label}`;
+      const obs = (p.observacao ?? '').replace(/"/g, '""');
+      return `${p.num};${p.cliente};"${p.itens}";${p.valorNum.toFixed(2).replace('.', ',')};${data};${p.label};"${obs}"`;
     });
     const csv = [cabecalho, ...linhas].join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });

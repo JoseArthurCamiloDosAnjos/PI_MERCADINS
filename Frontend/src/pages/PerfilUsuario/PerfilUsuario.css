@@ -148,6 +148,13 @@
 .pu-hcard-nome  { font-size: 13px; font-weight: 800; color: var(--branco); }
 .pu-hcard-preco { font-size: 18px; font-weight: 800; color: var(--amarelo); margin-top: 4px; }
 .pu-hcard-data  { font-size: 11px; color: var(--cinza-texto); margin-top: 3px; }
+.pu-hcard-obs {
+  margin-top: 6px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--amarelo);
+  word-break: break-word;
+}
 
 .pu-status {
   display: inline-flex; align-items: center; gap: 4px;

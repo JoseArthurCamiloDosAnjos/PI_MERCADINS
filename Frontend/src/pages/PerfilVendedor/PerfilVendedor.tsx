@@ -91,10 +91,9 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
+function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
   mercados: Mercado[];
   carregando: boolean;
-  onAbrirMercado?: (m: { id: number; nome: string }) => void;
   favoritos: Favorito[];
   historico: Historico[];
   avaliacoes: Avaliacao[];
@@ -144,7 +143,7 @@ function TelaPerfil({ mercados, carregando, onAbrirMercado, favoritos, historico
             const MktIcon = MKT_ICONS[i % MKT_ICONS.length];
             return (
               <div key={m.id_mercado} className="pv-mkt-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}
-                onClick={() => onAbrirMercado && onAbrirMercado({ id: m.id_mercado, nome: m.nome })}>
+                onClick={() => navigate(`/vendedor/mercado/${m.id_mercado}`)}>
                 <div className="pv-mkt-img"><MktIcon size={20} /></div>
                 <div className="pv-mkt-body">
                   <p className="pv-mkt-nome">{m.nome}</p>
@@ -478,7 +477,7 @@ function TelaComunicacao() {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m: { id: number; nome: string }) => void }) {
+export default function PerfilVendedor() {
   const [nav, setNav] = useState(0);
   const [telaAtiva, setTelaAtiva] = useState(0);
   const [visivel, setVisivel] = useState(true);
@@ -524,7 +523,7 @@ export default function PerfilVendedor({ onAbrirMercado }: { onAbrirMercado?: (m
   }, [nav]);
 
   const TELAS = [
-    <TelaPerfil mercados={mercados} carregando={carregando} onAbrirMercado={onAbrirMercado} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
+    <TelaPerfil mercados={mercados} carregando={carregando} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
     <TelaEnderecos />,
     <TelaCartoes />,

@@ -10,7 +10,7 @@ import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
-import CarrinhoOverlay from '../../components/CarrinhoOverlay/CarrinhoOverlay';
+import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
@@ -166,7 +166,7 @@ function ProdutoCardCliente({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
+export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineClienteProps) {
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
@@ -269,11 +269,20 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
 
   async function handleFavoritar() {
     if (!dados) return;
+    // Favoritar é por perfil: exige usuário logado
+    if (!usuario) {
+      showToast('erro', 'Faça login para favoritar esta loja.');
+      navigate('/auth');
+      return;
+    }
     const novoValor = !dados.favoritado;
     setDados(prev => (prev ? { ...prev, favoritado: novoValor } : prev));
     setFavoritando(true);
     try {
       await api.favoritarMercado(dados.id, novoValor);
+      showToast('sucesso', novoValor
+        ? `${dados.nome} adicionada aos favoritos!`
+        : `${dados.nome} removida dos favoritos.`);
     } catch {
       setDados(prev => (prev ? { ...prev, favoritado: !novoValor } : prev));
       showToast('erro', 'Não foi possível atualizar os favoritos.');
@@ -326,8 +335,15 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
-        <button className="vtc-btn-voltar" onClick={() => navigate('/')}>
-          <IconArrowLeft size={15} /> Voltar ao menu
+        <button
+          className="vtc-btn-voltar"
+          onClick={() => {
+            if (onVoltar) onVoltar();
+            else navigate('/');
+          }}
+        >
+          <IconArrowLeft size={16} />
+          <span>Voltar ao menu</span>
         </button>
         <div className="vtc-topbar-direita">
           {usuario ? (
@@ -451,13 +467,17 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
         )}
       </main>
 
-      {/* ── Carrinho (componente reutilizável) ──────────────────────── */}
-      <CarrinhoOverlay
-        mercadoId={mercadoId}
+      {/* ── Carrinho (sidebar lateral) ───────────────────────────────── */}
+      <CarrinhoSidebar
         aberto={carrinhoAberto}
         onFechar={() => setCarrinhoAberto(false)}
-        storeName={dados.nome}
         carrinho={carrinho}
+        onIrParaCarrinho={() => {
+          setCarrinhoAberto(false);
+          if (slug) navigate(`/vitrine/${slug}/carrinho`);
+        }}
+        storeName={dados.nome}
+        tema={tema}
       />
 
       {/* ── FAB carrinho (mobile) ────────────────────────────────────── */}

@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev:neon": "nodemon src/server.js --db=neon",
+    "dev:local": "nodemon src/server.js --db=local",
+    "start": "node src/server.js",
+    "start:neon": "node src/server.js --db=neon",
+    "start:local": "node src/server.js --db=local"
   },
   "keywords": [],
   "author": "",

@@ -180,6 +180,8 @@ button {
   color: #17233d;
   font-weight: 700;
   transition: transform 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .signup:hover {
@@ -379,11 +381,24 @@ button {
 }
 
 .preview-item strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 5px;
-  overflow: hidden;
   font-size: 13.5px;
+}
+
+.preview-item strong > span:first-child {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.preview-fav {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #e11d48;
 }
 
 .preview-item small {
@@ -662,6 +677,21 @@ button {
 .store-status.fechado {
   background: rgba(107, 114, 128, 0.9);
   color: white;
+}
+
+.store-favorito-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #e11d48;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(4px);
 }
 
 .blue {

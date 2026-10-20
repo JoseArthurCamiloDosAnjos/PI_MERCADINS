@@ -41,7 +41,7 @@ export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {
 
   function handleLogout() {
     logout()
-    navigate('/auth')
+    navigate('/')
   }
 
   return (

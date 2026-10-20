@@ -63,7 +63,7 @@ export default function Sidebar({
 
   function handleLogout() {
     logout();
-    navigate("/auth");
+    navigate("/");
   }
 
   function handleNav(i: number) {

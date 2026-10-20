@@ -43,13 +43,13 @@ const PERGUNTAS: Pergunta[] = [
 ];
 
 export default function Atendimento() {
-  const { hash } = useLocation();
+  const { hash, key } = useLocation();
 
   useEffect(() => {
     if (!hash) return;
     const alvo = document.querySelector(hash);
     if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [hash]);
+  }, [key, hash]);
 
   return (
     <PaginaInstitucional

@@ -1,5 +1,5 @@
-import { type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLayoutEffect, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo2.png";
 import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import "./Institucional.css";
@@ -17,6 +17,14 @@ type Props = {
  */
 export default function PaginaInstitucional({ titulo, subtitulo, children }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Ao trocar para uma página institucional, cai no topo na hora
+  // (sem esperar a pintura — evita "piscar" no lugar antigo).
+  // Se a URL tem #secao, deixa a própria página cuidar da rolagem.
+  useLayoutEffect(() => {
+    if (!location.hash) window.scrollTo(0, 0);
+  }, [location.key, location.hash]);
 
   function voltar() {
     if (window.history.length > 1) navigate(-1);

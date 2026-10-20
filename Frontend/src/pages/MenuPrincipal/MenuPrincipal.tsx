@@ -13,6 +13,7 @@ import {
   IconHeartFilled,
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
+import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
 
 type Store = {
   id_mercado: number;
@@ -147,6 +148,8 @@ export default function Mercadins() {
     usuarioId: number;
     ids: Set<number>;
   } | null>(null);
+  // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
+  const [visitados] = useState<string[]>(listarVisitados);
 
   useEffect(() => {
     let ativo = true;
@@ -235,6 +238,29 @@ export default function Mercadins() {
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";
 
+  // Melhores avaliados: top 3 notas (desempate por quantidade de avaliações)
+  const melhoresAvaliados = useMemo(
+    () =>
+      [...stores]
+        .filter((s) => Number(s.avaliacao ?? 0) > 0)
+        .sort((a, b) => {
+          const diff = Number(b.avaliacao ?? 0) - Number(a.avaliacao ?? 0);
+          if (diff !== 0) return diff;
+          return (b.avaliacoes_count ?? 0) - (a.avaliacoes_count ?? 0);
+        })
+        .slice(0, 3),
+    [stores]
+  );
+
+  // Continue explorando: mercados abertos pelo cliente, mais recentes primeiro
+  const continueExplorando = useMemo(() => {
+    const porSlug = new Map(stores.map((s) => [s.slug, s]));
+    return visitados
+      .map((slug) => porSlug.get(slug))
+      .filter((s): s is Store => Boolean(s))
+      .slice(0, 6);
+  }, [stores, visitados]);
+
   // Sugestões de produtos: busca com 300ms de espera em todos os mercados
   useEffect(() => {
     const termo = busca.trim();
@@ -249,7 +275,7 @@ export default function Mercadins() {
     return () => window.clearTimeout(timer);
   }, [busca]);
 
-  // Fecha o dropdown quando o cliquefor fora da área de busca
+  // Fecha o dropdown quando o clique fica fora da área de busca
   useEffect(() => {
     if (!dropdownProdutos) return;
     function foraDoCampo(e: MouseEvent) {
@@ -282,7 +308,9 @@ export default function Mercadins() {
   }
 
   function irParaMercado(slug: string) {
-    if (slug) navigate(`/vitrine/${slug}`);
+    if (!slug) return;
+    registrarVisita(slug);
+    navigate(`/vitrine/${slug}`);
   }
 
   return (
@@ -390,6 +418,7 @@ export default function Mercadins() {
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setDropdownProdutos(false);
+                          registrarVisita(p.slug);
                           navigate(
                             `/vitrine/${p.slug}/produto/${p.id_categoria}/${p.id_produto}`
                           );
@@ -686,6 +715,91 @@ export default function Mercadins() {
                   </span>
                 </button>
               )}
+            </section>
+          )}
+
+          {/* Melhores avaliados — top 3 notas dos clientes */}
+          {!carregando && !filtrosAtivos && melhoresAvaliados.length > 0 && (
+            <section className="home-secao" id="melhores-avaliados">
+              <div className="home-secao-head">
+                <h2>Melhores avaliados</h2>
+                <p>Os mercados com maior nota dos nossos clientes</p>
+              </div>
+              <div className="home-rank-lista">
+                {melhoresAvaliados.map((store, indice) => (
+                  <button
+                    type="button"
+                    className="home-rank-item"
+                    key={store.id_mercado}
+                    onClick={() => irParaMercado(store.slug)}
+                  >
+                    <span className="home-rank-pos">{indice + 1}</span>
+                    {store.foto_perfil ? (
+                      <img
+                        src={store.foto_perfil}
+                        alt=""
+                        className="home-rank-img"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="home-rank-img home-rank-img--vazio" aria-hidden="true">
+                        🏪
+                      </span>
+                    )}
+                    <span className="home-rank-info">
+                      <strong>{store.nome}</strong>
+                      <span className="home-rank-local">{localizacao(store)}</span>
+                    </span>
+                    <span className="home-rank-nota">
+                      <Stars nota={Number(store.avaliacao ?? 0)} />
+                      <strong>{formatrarNota(store.avaliacao)}</strong>
+                      <small>
+                        {store.avaliacoes_count ?? 0}{" "}
+                        {(store.avaliacoes_count ?? 0) === 1 ? "avaliação" : "avaliações"}
+                      </small>
+                    </span>
+                    <IconArrowRight size={16} />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Continue explorando — mercados que o cliente já visitou */}
+          {!carregando && !filtrosAtivos && continueExplorando.length > 0 && (
+            <section className="home-secao" id="continue-explorando">
+              <div className="home-secao-head">
+                <h2>Continue explorando</h2>
+                <p>Mercados que você visitou recentemente</p>
+              </div>
+              <div className="home-vistos-lista">
+                {continueExplorando.map((store) => (
+                  <button
+                    type="button"
+                    className="home-visto-item"
+                    key={store.id_mercado}
+                    onClick={() => irParaMercado(store.slug)}
+                  >
+                    {store.foto_perfil ? (
+                      <img
+                        src={store.foto_perfil}
+                        alt=""
+                        className="home-visto-img"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="home-visto-img home-visto-img--vazio" aria-hidden="true">
+                        🏪
+                      </span>
+                    )}
+                    <strong className="home-visto-nome">{store.nome}</strong>
+                    <span className="home-visto-local">{localizacao(store)}</span>
+                    <span className="home-visto-cta">
+                      Ver mercado <IconArrowRight size={14} />
+                    </span>
+                  </button>
+                ))}
+              </div>
             </section>
           )}
         </div>

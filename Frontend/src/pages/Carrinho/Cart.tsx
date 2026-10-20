@@ -12,6 +12,8 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string;
+  /** Unidades disponíveis em estoque — trava o "+" do carrinho */
+  estoque?: number;
 }
 
 interface CartScreenProps {
@@ -146,6 +148,8 @@ export default function CartScreen({
     // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
     const item = items.find((i) => i.id === id);
     if (delta < 0 && (item?.quantity ?? 1) <= 1) return;
+    // Trava no estoque: não deixa passar do disponível
+    if (delta > 0 && item?.estoque != null && item.quantity >= item.estoque) return;
     onUpdateQuantity?.(id, delta);
   };
 
@@ -227,11 +231,15 @@ export default function CartScreen({
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.id, 1)}
+                        disabled={item.estoque != null && item.quantity >= item.estoque}
                         aria-label="Aumentar quantidade"
                       >
                         <IconPlus />
                       </button>
                     </div>
+                    {item.estoque != null && item.quantity >= item.estoque && (
+                      <span className="qty-max">Máx. {item.estoque}</span>
+                    )}
                   </div>
                 </div>
 

@@ -78,12 +78,35 @@ interface MercadoInfo {
   foto_perfil?: string;
 }
 
+interface ResumoDashboard {
+  semEstoque: number;
+  estoqueBaixo: number;
+  avaliacaoMedia: number;
+  avaliacoesTotal: number;
+  pedidosHoje: number;
+  receitaHoje: number;
+}
+
 interface DadosMercado {
   mercado: MercadoInfo | null;
   produtos: Produto[];
   totalCategorias: number;
   totalProdutos: number;
+  plano: string;
+  limites: { produtos: number; fotos: number };
+  uso: { produtos: number; fotos: number };
+  resumo: ResumoDashboard | null;
   loading: boolean;
+}
+
+const NOMES_PLANOS: Record<string, string> = {
+  basico: 'Básico',
+  profissional: 'Profissional',
+  personalizado: 'Personalizado',
+};
+
+function formatarBRL(valor: number) {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 // ─── Sidebar nav ─────────────────────────────────────────────────────────────
@@ -332,17 +355,37 @@ function CaixaUrlLoja({ slug }: { slug: string }) {
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
-function SecDashboard({ stats, financeiro, loading, slug }: {
+function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, resumo }: {
   stats: Stat[];
   financeiro: FinanceiroMes[];
   loading: boolean;
   slug?: string;
+  plano?: string;
+  uso?: { produtos: number; fotos: number };
+  limites?: { produtos: number; fotos: number };
+  resumo?: ResumoDashboard | null;
 }) {
   const STAT_ICONS = [IconPackage, IconStore, IconShoppingCart, IconStar];
+
+  const ticketMedio = (resumo?.pedidosHoje ?? 0) > 0
+    ? (resumo!.receitaHoje / resumo!.pedidosHoje)
+    : null;
 
   return (
     <div className="gm-section-wrap">
       {slug && <CaixaUrlLoja slug={slug} />}
+
+      {/* Uso do plano: produtos e fotos dentro do limite contratado */}
+      {plano && uso && limites && (
+        <div className="gm-plan-chip">
+          <IconCreditCard size={13} />
+          <span>Plano <strong>{NOMES_PLANOS[plano] ?? plano}</strong></span>
+          <span className="gm-plan-sep" />
+          <span>Produtos: <strong>{uso.produtos}</strong>/{limites.produtos}</span>
+          <span className="gm-plan-sep" />
+          <span>Fotos: <strong>{uso.fotos}</strong>/{limites.fotos}</span>
+        </div>
+      )}
 
       <div className="gm-stats-row">
         {stats.map((s, i) => {
@@ -398,12 +441,12 @@ function SecDashboard({ stats, financeiro, loading, slug }: {
               Array.from({ length: 6 }, (_, i) => <LoadingRow key={i} />)
             ) : (
               <>
-                <div className="gm-quick-row"><span>Pedidos hoje</span><strong>—</strong></div>
-                <div className="gm-quick-row"><span>Receita hoje</span><strong className="gm-yellow">—</strong></div>
-                <div className="gm-quick-row"><span>Ticket médio</span><strong>—</strong></div>
-                <div className="gm-quick-row"><span>Sem estoque</span><strong className="gm-red">—</strong></div>
-                <div className="gm-quick-row"><span>Estoque baixo</span><strong className="gm-orange">—</strong></div>
-                <div className="gm-quick-row"><span>Avaliação média</span><strong className="gm-yellow">—</strong></div>
+                <div className="gm-quick-row"><span>Pedidos hoje</span><strong>{resumo?.pedidosHoje ?? 0}</strong></div>
+                <div className="gm-quick-row"><span>Receita hoje</span><strong className="gm-yellow">{formatarBRL(resumo?.receitaHoje ?? 0)}</strong></div>
+                <div className="gm-quick-row"><span>Ticket médio</span><strong>{ticketMedio != null ? formatarBRL(ticketMedio) : '—'}</strong></div>
+                <div className="gm-quick-row"><span>Sem estoque</span><strong className="gm-red">{resumo?.semEstoque ?? 0}</strong></div>
+                <div className="gm-quick-row"><span>Estoque baixo</span><strong className="gm-orange">{resumo?.estoqueBaixo ?? 0}</strong></div>
+                <div className="gm-quick-row"><span>Avaliação média</span><strong className="gm-yellow">{(resumo?.avaliacaoMedia ?? 0).toFixed(1)} ★</strong></div>
               </>
             )}
           </div>
@@ -662,6 +705,10 @@ export default function GerenciamentoMercado({
     produtos: [],
     totalCategorias: 0,
     totalProdutos: 0,
+    plano: 'basico',
+    limites: { produtos: 300, fotos: 600 },
+    uso: { produtos: 0, fotos: 0 },
+    resumo: null,
     loading: true,
   });
 
@@ -674,6 +721,10 @@ export default function GerenciamentoMercado({
           produtos: data.produtos,
           totalCategorias: data.totalCategorias,
           totalProdutos: data.totalProdutos,
+          plano: data.plano ?? 'basico',
+          limites: data.limites ?? { produtos: 300, fotos: 600 },
+          uso: data.uso ?? { produtos: data.totalProdutos ?? 0, fotos: 0 },
+          resumo: data.resumo ?? null,
           loading: false,
         });
       } catch (err) {
@@ -684,7 +735,7 @@ export default function GerenciamentoMercado({
     carregarDashboard();
   }, [mercadoId]);
 
-  const { mercado, produtos, totalCategorias, totalProdutos, loading } = dados;
+  const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
 
   function handleProdutoSalvo(atualizado: Produto) {
     setDados(prev => ({
@@ -700,12 +751,21 @@ export default function GerenciamentoMercado({
   const stats: Stat[] = [
     { val: String(totalProdutos), lbl: 'Produtos' },
     { val: String(totalCategorias), lbl: 'Categorias' },
-    { val: '—', lbl: 'Pedidos' },
-    { val: '—', lbl: 'Avaliação' },
+    { val: String(resumo?.pedidosHoje ?? 0), lbl: 'Pedidos hoje' },
+    { val: `${(resumo?.avaliacaoMedia ?? 0).toFixed(1)} ★`, lbl: 'Avaliação' },
   ];
 
   const SECTIONS = [
-    <SecDashboard stats={stats} financeiro={[]} loading={loading} slug={mercado?.slug} />,
+    <SecDashboard
+      stats={stats}
+      financeiro={[]}
+      loading={loading}
+      slug={mercado?.slug}
+      plano={plano}
+      uso={uso}
+      limites={limites}
+      resumo={resumo}
+    />,
     <SecProdutos produtos={produtos} loading={loading} onEditar={setProdutoEditando} />,
     <SecPedidos pedidos={[]} loading={loading} />,
     <SecAvaliacoes avaliacoes={[]} loading={loading} />,

@@ -143,6 +143,15 @@ export default function ProdutoTela({
   const [quantidade, setQuantidade]   = useState(1);
   const [enviando, setEnviando]       = useState(false);
 
+  const estoqueDisponivel = produto.estoque ?? 0;
+  const semEstoque = estoqueDisponivel <= 0;
+  // Quantidade efetiva: mesmo quem tinha mais unidades abertas num produto
+  // anterior nunca pede acima do estoque do produto atual
+  const quantidadeEfetiva = semEstoque
+    ? 1
+    : Math.min(Math.max(quantidade, 1), estoqueDisponivel);
+  const noMaximoEstoque = !semEstoque && quantidadeEfetiva >= estoqueDisponivel;
+
   const slideAnterior = useCallback(() => {
     setImagemAtiva(i => (i - 1 + imagens.length) % imagens.length);
   }, [imagens.length]);
@@ -159,14 +168,25 @@ export default function ProdutoTela({
   }, [produto.preco, produto.precoOriginal]);
 
   function handleAdicionar() {
-    carrinho.adicionar(produto, quantidade);
-    showToast('sucesso', `${produto.nome} adicionado ao carrinho!`);
+    const ok = carrinho.adicionar(produto, quantidadeEfetiva);
+    if (ok) {
+      showToast('sucesso', `${produto.nome} adicionado ao carrinho!`);
+    } else if (semEstoque) {
+      showToast('erro', 'Produto sem estoque disponível.');
+    } else {
+      showToast('erro', `Estoque esgotado: só temos ${estoqueDisponivel} unidade${estoqueDisponivel !== 1 ? 's' : ''}.`);
+    }
   }
 
   function handleComprarAgora() {
     setEnviando(true);
-    carrinho.adicionar(produto, quantidade);
+    const ok = carrinho.adicionar(produto, quantidadeEfetiva);
     setEnviando(false);
+    if (!ok) {
+      if (semEstoque) showToast('erro', 'Produto sem estoque disponível.');
+      else showToast('erro', `Estoque esgotado: só temos ${estoqueDisponivel} unidade${estoqueDisponivel !== 1 ? 's' : ''}.`);
+      return;
+    }
     if (onIrParaCarrinho) {
       onIrParaCarrinho();
     } else {
@@ -300,22 +320,32 @@ export default function ProdutoTela({
           <div className="pd-quantidade-row">
             <span className="pd-quantidade-label">Quantidade</span>
             <div className="pd-stepper">
-              <button className="pd-stepper-btn" onClick={() => setQuantidade(q => Math.max(1, q - 1))}>
+              <button
+                className="pd-stepper-btn"
+                onClick={() => setQuantidade(Math.max(1, quantidadeEfetiva - 1))}
+              >
                 <IconMinus size={13} />
               </button>
-              <span className="pd-stepper-valor">{quantidade}</span>
-              <button className="pd-stepper-btn" onClick={() => setQuantidade(q => q + 1)}>
+              <span className="pd-stepper-valor">{quantidadeEfetiva}</span>
+              <button
+                className="pd-stepper-btn"
+                onClick={() => setQuantidade(Math.min(quantidadeEfetiva + 1, Math.max(1, estoqueDisponivel)))}
+                disabled={semEstoque || noMaximoEstoque}
+              >
                 <IconPlusMini size={13} />
               </button>
             </div>
+            {noMaximoEstoque && (
+              <span className="pd-estoque-max">Máximo: {estoqueDisponivel} unidade{estoqueDisponivel !== 1 ? 's' : ''}</span>
+            )}
           </div>
 
           <div className="pd-acoes">
-            <button className="pd-btn-comprar" onClick={handleComprarAgora} disabled={enviando}>
+            <button className="pd-btn-comprar" onClick={handleComprarAgora} disabled={enviando || semEstoque}>
               Comprar agora
             </button>
-            <button className="pd-btn-adicionar" onClick={handleAdicionar}>
-              <IconCart size={16} /> Adicionar ao carrinho
+            <button className="pd-btn-adicionar" onClick={handleAdicionar} disabled={semEstoque}>
+              <IconCart size={16} /> {semEstoque ? 'Produto sem estoque' : 'Adicionar ao carrinho'}
             </button>
           </div>
 

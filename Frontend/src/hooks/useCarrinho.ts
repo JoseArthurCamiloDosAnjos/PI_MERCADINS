@@ -9,6 +9,8 @@ export interface ProdutoCarrinho {
   preco?: string;
   imagem?: string;
   imagens?: string[];
+  /** Unidades disponíveis em estoque (trava a quantidade no carrinho) */
+  estoque?: number;
 }
 
 export interface ItemCarrinho {
@@ -53,6 +55,7 @@ interface ItemCarrinhoBanco {
   descricao?: string;
   preco?: string;
   imagem?: string;
+  estoque?: number;
   quantidade: number;
 }
 
@@ -84,6 +87,7 @@ export function useCarrinho(mercadoId: number) {
               descricao: i.descricao,
               preco: i.preco,
               imagem: i.imagem,
+              estoque: i.estoque,
             },
             quantidade: i.quantidade,
           }));
@@ -109,27 +113,48 @@ export function useCarrinho(mercadoId: number) {
     carregouBanco.current = true;
   }, [mercadoId]);
 
-  const adicionar = useCallback((produto: ProdutoCarrinho, quantidade: number) => {
+  /**
+   * Adiciona um produto ao carrinho respeitando o estoque.
+   * Retorna false quando não foi possível (sem estoque ou já no máximo).
+   */
+  const adicionar = useCallback((produto: ProdutoCarrinho, quantidade: number): boolean => {
+    const maximo = produto.estoque ?? 0;
+    if (maximo <= 0) return false;
+
+    const atual = itens.find(i => i.produto.id_produto === produto.id_produto)?.quantidade ?? 0;
+    if (atual >= maximo) return false;
+
+    const quantidadeFinal = Math.min(atual + quantidade, maximo);
+
     setItens(prev => {
       const idx = prev.findIndex(i => i.produto.id_produto === produto.id_produto);
       let novos: ItemCarrinho[];
       if (idx >= 0) {
         const copia = [...prev];
-        copia[idx] = { ...copia[idx], quantidade: copia[idx].quantidade + quantidade };
+        copia[idx] = { ...copia[idx], quantidade: quantidadeFinal };
         novos = copia;
       } else {
-        novos = [...prev, { produto, quantidade }];
+        novos = [...prev, { produto, quantidade: quantidadeFinal }];
       }
       saveCarrinhoLocal(mercadoId, novos);
       debounceSalvar(mercadoId, novos);
       return novos;
     });
-  }, [mercadoId]);
+    return true;
+  }, [mercadoId, itens]);
 
   const alterarQuantidade = useCallback((idProduto: number, delta: number) => {
     setItens(prev => {
       const novos = prev
-        .map(i => i.produto.id_produto === idProduto ? { ...i, quantidade: i.quantidade + delta } : i)
+        .map(i => {
+          if (i.produto.id_produto !== idProduto) return i;
+          // Trava a quantidade no estoque disponível do produto
+          const maximo = i.produto.estoque ?? 0;
+          const nova = maximo > 0
+            ? Math.min(i.quantidade + delta, maximo)
+            : i.quantidade + delta;
+          return { ...i, quantidade: nova };
+        })
         .filter(i => i.quantidade > 0);
       saveCarrinhoLocal(mercadoId, novos);
       debounceSalvar(mercadoId, novos);

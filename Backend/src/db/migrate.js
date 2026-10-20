@@ -132,6 +132,12 @@ async function migrate() {
     ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_admin TEXT DEFAULT ''
   `;
 
+  // Adiciona coluna plano na tabela mercados se não existir
+  // (define os limites de produtos e fotos: basico | profissional | personalizado)
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS plano TEXT DEFAULT 'basico'
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

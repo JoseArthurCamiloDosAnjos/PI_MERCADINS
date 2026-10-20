@@ -30,11 +30,13 @@ const criarPedido = async (req, res) => {
     const idsProdutos = [...new Set(itens.map(i => Number(i.id_produto)))];
 
     // Só aceita produtos que pertencem a este mercado
+    // (produtos não têm id_mercado direto: a ligação é pela categoria)
     const produtos = await sql`
-      SELECT id_produto, nome, preco
-      FROM produtos
-      WHERE id_mercado = ${mercadoId}
-        AND id_produto = ANY(${idsProdutos})
+      SELECT p.id_produto, p.nome, p.preco, p.estoque
+      FROM produtos p
+      JOIN categorias c ON c.id_categoria = p.id_categoria
+      WHERE c.id_mercado = ${mercadoId}
+        AND p.id_produto = ANY(${idsProdutos})
     `;
 
     if (produtos.length !== idsProdutos.length) {
@@ -47,8 +49,18 @@ const criarPedido = async (req, res) => {
     let valorTotal = 0;
     const resumo = [];
     for (const item of itens) {
-      const produto   = mapaProdutos.get(Number(item.id_produto));
+      const produto    = mapaProdutos.get(Number(item.id_produto));
       const quantidade = Number(item.quantidade);
+
+      // Estoque: a quantidade pedida nunca pode passar do disponível
+      const disponivel = Number(produto.estoque) || 0;
+      if (quantidade > disponivel) {
+        const motivo = disponivel <= 0
+          ? `O produto "${produto.nome}" está sem estoque.`
+          : `Estoque insuficiente para "${produto.nome}": disponível ${disponivel}, solicitado ${quantidade}.`;
+        return res.status(400).json({ erro: motivo });
+      }
+
       valorTotal += Number(produto.preco ?? 0) * quantidade;
       resumo.push(`${quantidade}x ${produto.nome}`);
     }

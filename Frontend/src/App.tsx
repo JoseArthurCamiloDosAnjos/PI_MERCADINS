@@ -115,6 +115,7 @@ function CartWrapper() {
     unitPrice: Number(item.produto.preco ?? 0),
     quantity: item.quantidade,
     imageUrl: item.produto.imagem ?? item.produto.imagens?.[0] ?? '',
+    estoque: item.produto.estoque,
   }))
 
   async function handleCheckout() {

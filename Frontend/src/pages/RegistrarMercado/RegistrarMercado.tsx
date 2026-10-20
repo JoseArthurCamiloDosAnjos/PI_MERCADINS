@@ -30,7 +30,7 @@ export default function RegistrarMercado() {
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
-  const [planoSelecionado] = useState<{ nome: string; cobranca: string } | null>(() => {
+  const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
       return salvo ? JSON.parse(salvo) : null;
@@ -38,6 +38,12 @@ export default function RegistrarMercado() {
       return null;
     }
   });
+
+  // Plano que será salvo no banco: o escolhido na tela de planos
+  // (ids conhecidos pelo servidor); sem escolha, começa no Básico
+  const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
+    ? planoSelecionado!.id!
+    : 'basico';
 
   const [form, setForm] = useState<Form>({
     nome: '', email: '', telefone: '', cnpj: '',
@@ -119,6 +125,7 @@ export default function RegistrarMercado() {
           cidade: form.cidade,
           bairro: form.bairro,
           rua: form.rua,
+          plano: planoId,
         }),
       });
       const data = await res.json();

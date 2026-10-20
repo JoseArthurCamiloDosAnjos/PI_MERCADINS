@@ -1,10 +1,25 @@
 const { conectar } = require('../db/neon')
+const { limitesDoPlano } = require('../utils/planos')
 
 function parsePreco(valor) {
   if (typeof valor === 'number') return valor;
   if (typeof valor !== 'string') return 0;
   const num = Number(valor.replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(num) ? num : 0;
+}
+
+// Uso atual do mercado: quantos produtos cadastrados e quantas fotos usadas
+async function usoDoMercado(sql, mercadoId) {
+  const produtos = await sql`
+    SELECT COALESCE(array_length(p.imagens, 1), 0) AS fotos
+    FROM produtos p
+    JOIN categorias c ON c.id_categoria = p.id_categoria
+    WHERE c.id_mercado = ${Number(mercadoId)}
+  `
+  return {
+    produtos: produtos.length,
+    fotos: produtos.reduce((soma, p) => soma + Number(p.fotos || 0), 0),
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -70,6 +85,24 @@ const criarProduto = async (req, res) => {
     const imagensUrls = Array.isArray(imagens) ? imagens : []
     const imagem = imagensUrls[0] || null
 
+    // Limites do plano: produtos e fotos
+    const [mercado] = await sql`
+      SELECT plano FROM mercados WHERE id_mercado = ${Number(mercadoId)}
+    `
+    const limites = limitesDoPlano(mercado?.plano)
+    const uso = await usoDoMercado(sql, mercadoId)
+
+    if (uso.produtos >= limites.produtos) {
+      return res.status(403).json({
+        erro: `Seu plano ${limites.nome} permite até ${limites.produtos} produtos. Faça upgrade para cadastrar mais.`,
+      })
+    }
+    if (uso.fotos + imagensUrls.length > limites.fotos) {
+      return res.status(403).json({
+        erro: `Seu plano ${limites.nome} permite até ${limites.fotos} fotos (${uso.fotos} já usadas). Remova fotos ou faça upgrade.`,
+      })
+    }
+
     const [novoProduto] = await sql`
       INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque)
       VALUES (
@@ -125,6 +158,28 @@ const atualizarProduto = async (req, res) => {
 
     const imagensUrls = Array.isArray(imagens) ? imagens : []
     const imagem = imagensUrls.length > 0 ? imagensUrls[0] : undefined
+
+    // Limites do plano na edição: só valida fotos se o cliente enviou novas
+    if (imagensUrls.length > 0) {
+      const [mercado] = await sql`
+        SELECT plano FROM mercados WHERE id_mercado = ${Number(mercadoId)}
+      `
+      const limites = limitesDoPlano(mercado?.plano)
+      const uso = await usoDoMercado(sql, mercadoId)
+
+      const [produtoAtual] = await sql`
+        SELECT COALESCE(array_length(imagens, 1), 0) AS fotos
+        FROM produtos
+        WHERE id_produto = ${Number(produtoId)}
+      `
+      const fotosAtuais = Number(produtoAtual?.fotos || 0)
+
+      if (uso.fotos - fotosAtuais + imagensUrls.length > limites.fotos) {
+        return res.status(403).json({
+          erro: `Seu plano ${limites.nome} permite até ${limites.fotos} fotos (${uso.fotos} já usadas). Remova fotos ou faça upgrade.`,
+        })
+      }
+    }
 
     const [produtoAtualizado] = await sql`
       UPDATE produtos

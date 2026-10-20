@@ -1,4 +1,5 @@
 const { conectar } = require("../db/neon");
+const { limitesDoPlano, normalizarPlano } = require("../utils/planos");
 
 // ─────────────────────────────────────────────
 // Helper — gera slug a partir do nome
@@ -66,7 +67,7 @@ function validarTelefone(telefone) {
 const criarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -86,6 +87,7 @@ const criarMercado = async (req, res) => {
   const cnpjLimpo     = limparMascara(cnpj);
   const cepLimpo      = limparMascara(cep);
   const telefoneLimpo = limparMascara(telefone);
+  const planoLimpo    = normalizarPlano(plano);
 
   try {
     const sql = await conectar();
@@ -110,7 +112,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -127,7 +129,8 @@ const criarMercado = async (req, res) => {
         ${cor_destaque ?? ''},
         ${cor_texto ?? ''},
         ${cor_icones ?? ''},
-        ${cor_texto_sec ?? ''}
+        ${cor_texto_sec ?? ''},
+        ${planoLimpo}
       )
       RETURNING *
     `;
@@ -438,7 +441,7 @@ const dashboardMercado = async (req, res) => {
 
     // Busca todos os produtos do mercado (via categorias)
     const produtos = await sql`
-      SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.id_categoria, c.nome AS categoria
+      SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.estoque, p.imagens, p.id_categoria, c.nome AS categoria
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
       WHERE c.id_mercado = ${Number(id)}
@@ -450,11 +453,53 @@ const dashboardMercado = async (req, res) => {
       SELECT COUNT(*)::int AS total FROM categorias WHERE id_mercado = ${Number(id)}
     `;
 
+    // Limites do plano e uso atual (produtos e fotos)
+    const limites = limitesDoPlano(mercado.plano);
+    const totalFotos = produtos.reduce(
+      (soma, p) => soma + (Array.isArray(p.imagens) ? p.imagens.length : 0), 0
+    );
+
+    // Resumo de estoque: produtos sem estoque (0) e estoque baixo (até 5)
+    const semEstoque   = produtos.filter(p => (Number(p.estoque) || 0) <= 0).length;
+    const estoqueBaixo = produtos.filter(p => {
+      const e = Number(p.estoque) || 0;
+      return e > 0 && e <= 5;
+    }).length;
+
+    // Avaliação média do mercado
+    const [avaliacao] = await sql`
+      SELECT COALESCE(AVG(a.nota), 0)::numeric(2,1) AS media, COUNT(a.id)::int AS total
+      FROM avaliacoes a
+      WHERE a.id_mercado = ${Number(id)}
+    `;
+
+    // Pedidos e receita de hoje
+    const [hoje] = await sql`
+      SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(valor_total), 0)::numeric(12,2) AS receita
+      FROM historico_compras
+      WHERE id_mercado = ${Number(id)}
+        AND data_compra::date = CURRENT_DATE
+    `;
+
     res.status(200).json({
       mercado,
       produtos,
       totalCategorias: catCount.total,
       totalProdutos: produtos.length,
+      plano: mercado.plano || 'basico',
+      limites,
+      uso: {
+        produtos: produtos.length,
+        fotos: totalFotos,
+      },
+      resumo: {
+        semEstoque,
+        estoqueBaixo,
+        avaliacaoMedia: Number(avaliacao.media),
+        avaliacoesTotal: avaliacao.total,
+        pedidosHoje: hoje.pedidos,
+        receitaHoje: Number(hoje.receita),
+      },
     });
   } catch (err) {
     console.error("ERRO dashboardMercado:", err);

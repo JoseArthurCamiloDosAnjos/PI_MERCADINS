@@ -44,7 +44,7 @@ button {
   scroll-margin-top: 100px;
 }
 
-/* ── Hero ─────────────────────────────────────────────── */
+/* â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .hero {
   position: relative;
@@ -536,7 +536,7 @@ button {
   font-size: 12px;
 }
 
-/* ── Categorias ───────────────────────────────────────── */
+/* â”€â”€ Categorias â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .category-bar {
   border-bottom: 1px solid #dfe3eb;
@@ -580,7 +580,7 @@ button {
   box-shadow: 0 8px 18px rgba(18, 61, 136, 0.25);
 }
 
-/* ── Mercados ─────────────────────────────────────────── */
+/* â”€â”€ Mercados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .mercadins-page main {
   padding: 44px 0 80px;
@@ -644,7 +644,7 @@ button {
   box-shadow: 0 16px 34px rgba(14, 35, 71, 0.14);
 }
 
-/* ── Card "Criar seu mercado" (menu principal) ───────────────────────────── */
+/* â”€â”€ Card "Criar seu mercado" (menu principal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .store-card--criar {
   align-items: center;
   justify-content: center;
@@ -894,7 +894,7 @@ button {
   transform: translateY(-1px);
 }
 
-/* ── Skeleton / vazio ─────────────────────────────────── */
+/* â”€â”€ Skeleton / vazio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .skeleton {
   pointer-events: none;
@@ -977,7 +977,7 @@ button {
 /* ── Rodapé ───────────────────────────────────────────── */
 /* O rodapé agora é o componente SiteFooter (components/SiteFooter) */
 
-/* ── Responsividade ───────────────────────────────────── */
+/* â”€â”€ Responsividade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 @media (max-width: 900px) {
   .hero-content {
@@ -1057,7 +1057,7 @@ button {
   }
 }
 
-/* -- Se��es da home: melhores avaliados + continue explorando ------------- */
+/* -- Se��es da home: melhores avaliados + continue explorando ------------- */
 .home-secao {
   margin-top: 44px;
 }

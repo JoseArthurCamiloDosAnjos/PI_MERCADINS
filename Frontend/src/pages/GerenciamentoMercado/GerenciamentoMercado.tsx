@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -24,6 +24,9 @@ import {
 // Alturas fixas para o skeleton do gráfico (evita Math.random no render)
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
 
+// Nomes curtos dos meses (gráficos do painel)
+const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Produto {
@@ -43,6 +46,8 @@ interface Pedido {
   cliente: string;
   itens: string;
   preco: string;
+  valorNum: number;   // valor numérico (para o financeiro)
+  data: string;       // data ISO da compra
   status: 'entregue' | 'caminho' | 'preparo' | 'novo';   // chave visual (badge)
   statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue'; // valor real do banco
   label: string;
@@ -442,7 +447,9 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
                 const pct = (f.val / max) * 100;
                 return (
                   <div key={i} className="gm-bar-col">
-                    <span className="gm-bar-val">R$ {(f.val / 1000).toFixed(1)}k</span>
+                    <span className="gm-bar-val">
+                      {f.val >= 1000 ? `R$ ${(f.val / 1000).toFixed(1)}k` : f.val > 0 ? `R$ ${f.val.toFixed(0)}` : '—'}
+                    </span>
                     <div className="gm-bar-outer">
                       <div className="gm-bar-inner" style={{ height: `${pct}%`, animationDelay: `${0.1 + i * 0.07}s` }} />
                     </div>
@@ -629,25 +636,35 @@ function SecAvaliacoes({
   );
 }
 
-function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; loading: boolean }) {
+function SecFinanceiro({
+  financeiro,
+  stats,
+  loading,
+  onExportar,
+  totalPedidos,
+}: {
+  financeiro: FinanceiroMes[];
+  stats: Stat[];
+  loading: boolean;
+  onExportar: () => void;
+  totalPedidos: number;
+}) {
+  const temDados = totalPedidos > 0;
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
         <h2 className="gm-sec-title"><IconCreditCard size={15} /> Financeiro</h2>
-        <button className="gm-btn-link">Exportar relatório</button>
+        {temDados && (
+          <button className="gm-btn-link" onClick={onExportar}>Exportar relatório (CSV)</button>
+        )}
       </div>
 
       <div className="gm-stats-row">
-        {[
-          { val: '—', lbl: 'Receita do Mês' },
-          { val: '—', lbl: 'Custos do Mês' },
-          { val: '—', lbl: 'Lucro Líquido' },
-          { val: '—', lbl: 'Margem' },
-        ].map((s, i) => (
+        {stats.map((s, i) => (
           <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
             <div className="gm-stat-icon"><IconBarChart size={17} /></div>
             <div>
-              <p className="gm-stat-val">{s.val}</p>
+              <p className="gm-stat-val">{loading ? '—' : s.val}</p>
               <p className="gm-stat-lbl">{s.lbl}</p>
             </div>
           </div>
@@ -657,7 +674,7 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
       <div className="gm-divider" />
 
       <div className="gm-chart-card gm-chart-card--full">
-        <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}><IconBarChart size={15} /> Receita x Custo — Últimos 6 meses</p>
+        <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}><IconBarChart size={15} /> Receita — Últimos 6 meses</p>
 
         {loading ? (
           <div className="gm-chart-loading">
@@ -665,24 +682,18 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
               <div key={i} className="gm-bar-skeleton" style={{ height: `${SKELETON_HEIGHTS[i]}%` }} />
             ))}
           </div>
-        ) : financeiro.length === 0 ? (
+        ) : !temDados ? (
           <EmptyState msg="Sem dados financeiros ainda" />
         ) : (
           <div className="gm-bar-chart gm-bar-chart--lg">
             {financeiro.map((f, i) => {
-              const max = Math.max(...financeiro.map(x => x.val));
-              const custo = Math.round(f.val * 0.65);
-              const pctRec = (f.val / max) * 100;
-              const pctCusto = (custo / max) * 100;
+              const max = Math.max(...financeiro.map(x => x.val), 1);
+              const pct = (f.val / max) * 100;
               return (
-                <div key={i} className="gm-bar-col gm-bar-col--pair">
-                  <div className="gm-bar-pair">
-                    <div className="gm-bar-outer">
-                      <div className="gm-bar-inner" style={{ height: `${pctRec}%`, animationDelay: `${0.1 + i * 0.07}s` }} />
-                    </div>
-                    <div className="gm-bar-outer">
-                      <div className="gm-bar-inner gm-bar-inner--cost" style={{ height: `${pctCusto}%`, animationDelay: `${0.15 + i * 0.07}s` }} />
-                    </div>
+                <div key={i} className="gm-bar-col">
+                  <span className="gm-bar-val">{f.val > 0 ? formatarBRL(f.val) : '—'}</span>
+                  <div className="gm-bar-outer">
+                    <div className="gm-bar-inner" style={{ height: `${Math.max(pct, f.val > 0 ? 4 : 0)}%`, animationDelay: `${0.1 + i * 0.07}s` }} />
                   </div>
                   <span className="gm-bar-label">{f.mes}</span>
                 </div>
@@ -692,8 +703,7 @@ function SecFinanceiro({ financeiro, loading }: { financeiro: FinanceiroMes[]; l
         )}
 
         <div className="gm-legend">
-          <span className="gm-legend-dot gm-legend-dot--rec" /> Receita
-          <span className="gm-legend-dot gm-legend-dot--cost" style={{ marginLeft: '1rem' }} /> Custo
+          <span className="gm-legend-dot gm-legend-dot--rec" /> Receita de pedidos
         </div>
       </div>
     </div>
@@ -825,6 +835,8 @@ export default function GerenciamentoMercado({
               cliente: p.cliente,
               itens: p.itens,
               preco: formatarBRL(p.valorTotal),
+              valorNum: p.valorTotal,
+              data: p.dataCompra,
               status: info.chave,
               statusAtual: p.status,
               label: info.label,
@@ -880,6 +892,59 @@ export default function GerenciamentoMercado({
     }
   }
 
+  // Receita real por mês (últimos 6 meses), calculada dos pedidos recebidos
+  const financeiro = useMemo<FinanceiroMes[]>(() => {
+    const agora = new Date();
+    const porMes: FinanceiroMes[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const ref = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+      const total = pedidos
+        .filter(p => {
+          const d = new Date(p.data);
+          return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+        })
+        .reduce((soma, p) => soma + p.valorNum, 0);
+      porMes.push({ mes: MESES_CURTO[ref.getMonth()], val: Math.round(total * 100) / 100 });
+    }
+    return porMes;
+  }, [pedidos]);
+
+  // Estatísticas financeiras reais do mês atual
+  const statsFinanceiro = useMemo<Stat[]>(() => {
+    const agora = new Date();
+    const doMes = pedidos.filter(p => {
+      const d = new Date(p.data);
+      return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+    });
+    const receitaMes   = doMes.reduce((s, p) => s + p.valorNum, 0);
+    const receitaTotal = pedidos.reduce((s, p) => s + p.valorNum, 0);
+    const ticketMedio  = doMes.length > 0 ? receitaMes / doMes.length : 0;
+    return [
+      { val: formatarBRL(receitaMes), lbl: 'Receita do Mês' },
+      { val: String(doMes.length), lbl: 'Pedidos no Mês' },
+      { val: doMes.length > 0 ? formatarBRL(ticketMedio) : '—', lbl: 'Ticket Médio' },
+      { val: formatarBRL(receitaTotal), lbl: 'Receita Total' },
+    ];
+  }, [pedidos]);
+
+  // Exporta os pedidos em CSV (abre no Excel/Google Planilhas)
+  function handleExportarRelatorio() {
+    const cabecalho = 'Pedido;Cliente;Itens;Valor (R$);Data;Status';
+    const linhas = pedidos.map(p => {
+      const data = new Date(p.data).toLocaleString('pt-BR');
+      return `${p.num};${p.cliente};"${p.itens}";${p.valorNum.toFixed(2).replace('.', ',')};${data};${p.label}`;
+    });
+    const csv = [cabecalho, ...linhas].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pedidos-${mercado?.slug ?? mercadoId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('sucesso', 'Relatório de pedidos exportado (CSV).');
+  }
+
   const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
 
   function handleProdutoSalvo(atualizado: Produto) {
@@ -903,7 +968,7 @@ export default function GerenciamentoMercado({
   const SECTIONS = [
     <SecDashboard
       stats={stats}
-      financeiro={[]}
+      financeiro={financeiro}
       loading={loading}
       slug={mercado?.slug}
       plano={plano}
@@ -927,7 +992,13 @@ export default function GerenciamentoMercado({
       onAlternar={() => setAvaliacoesExpandidas(v => !v)}
       total={avaliacoes.length}
     />,
-    <SecFinanceiro financeiro={[]} loading={loading} />,
+    <SecFinanceiro
+      financeiro={financeiro}
+      stats={statsFinanceiro}
+      loading={pedidosLoading}
+      onExportar={handleExportarRelatorio}
+      totalPedidos={pedidos.length}
+    />,
     <SecInformacoes mercado={mercado} />,
   ];
 

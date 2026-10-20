@@ -21,6 +21,7 @@ type Store = {
   cidade?: string;
   estado?: string;
   bairro?: string;
+  cep?: string;
   descricao?: string;
   foto_perfil?: string;
   cor_base?: string;
@@ -79,6 +80,16 @@ function tiposDoMercado(store: Store): string[] {
   if (Array.isArray(valor)) return valor.map(String);
   if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
   return [];
+}
+
+// Busca por CEP: os 5 primeiros dígitos identificam a mesma região.
+// Digitou "15900" ou "15900-023" → pega todos os mercados da região 15900.
+function mesmaRegiaoCep(store: Store, buscaLocal: string) {
+  const digitosBusca = buscaLocal.replace(/\D/g, "");
+  if (digitosBusca.length < 5) return false;
+  const digitosCep = (store.cep ?? "").replace(/\D/g, "");
+  if (digitosCep.length < 5) return false;
+  return digitosCep.slice(0, 5) === digitosBusca.slice(0, 5);
 }
 
 function irParaSecao(id: string) {
@@ -171,7 +182,12 @@ export default function Mercadins() {
         );
 
         if (termo && !texto.includes(termo)) return false;
-        if (buscaLocal && !normalizar(localizacao(store)).includes(buscaLocal)) return false;
+        if (
+          buscaLocal &&
+          !normalizar(localizacao(store)).includes(buscaLocal) &&
+          !mesmaRegiaoCep(store, buscaLocal)
+        )
+          return false;
         if (cat && (cat.palavras.length > 0 || cat.slug)) {
           const bateuTipo = !!cat.slug && tiposDoMercado(store).includes(cat.slug);
           const bateuPalavra = cat.palavras.some((p) => texto.includes(p));
@@ -193,6 +209,10 @@ export default function Mercadins() {
   }, [stores]);
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";
+
+  // Região do CEP digitado (5 primeiros dígitos) — usado no aviso dos resultados
+  const digitosLocal = local.replace(/\D/g, "");
+  const cepFiltro = digitosLocal.length >= 5 ? digitosLocal.slice(0, 5) : null;
 
   function limparFiltros() {
     setBusca("");
@@ -430,7 +450,7 @@ export default function Mercadins() {
                   ? "Carregando mercados..."
                   : `${lojasFiltradas.length} ${
                       lojasFiltradas.length === 1 ? "mercado encontrado" : "mercados encontrados"
-                    }`}
+                    }${cepFiltro ? ` · na região do CEP ${cepFiltro}` : ""}`}
               </p>
             </div>
 
@@ -505,6 +525,7 @@ export default function Mercadins() {
                         <p className="store-local">
                           <IconMapPin size={13} />
                           {localizacao(store)}
+                          {store.cep ? ` · CEP ${store.cep}` : ""}
                         </p>
                       </div>
                     </div>

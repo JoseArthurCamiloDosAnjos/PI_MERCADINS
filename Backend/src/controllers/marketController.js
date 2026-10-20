@@ -201,7 +201,7 @@ const listarMercados = async (req, res) => {
     const [mercados, [{ total }], [{ totalPedidos }]] = await Promise.all([
       sql`
         SELECT m.*,
-          COALESCE(AVG(a.nota), 0)::numeric(2,1) AS avaliacao,
+          COALESCE(AVG(a.nota), 0)::float8 AS avaliacao,
           COUNT(a.id)::int AS avaliacoes_count
         FROM mercados m
         LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
@@ -226,7 +226,7 @@ const listarMercados = async (req, res) => {
             OR m.estado  ILIKE ${filtro}::text
           )
       `,
-      sql`SELECT COUNT(*)::int AS totalPedidos FROM historico_compras`
+      sql`SELECT COUNT(*)::int AS "totalPedidos" FROM historico_compras`
     ]);
 
     res.status(200).json({
@@ -264,9 +264,13 @@ const buscarMercadoPorId = async (req, res) => {
         EXISTS(
           SELECT 1 FROM favoritos f
           WHERE f.id_mercado = m.id_mercado AND f.id_usuario = ${id_usuario}
-        ) AS favoritado
+        ) AS favoritado,
+        COALESCE(AVG(a.nota), 0)::float8 AS avaliacao,
+        COUNT(a.id)::int AS avaliacoes_count
       FROM mercados m
+      LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
       WHERE m.id_mercado = ${Number(id)}
+      GROUP BY m.id_mercado
     `;
 
     if (!mercado)
@@ -295,9 +299,13 @@ const buscarMercadoPorSlug = async (req, res) => {
         EXISTS(
           SELECT 1 FROM favoritos f
           WHERE f.id_mercado = m.id_mercado AND f.id_usuario = ${id_usuario}
-        ) AS favoritado
+        ) AS favoritado,
+        COALESCE(AVG(a.nota), 0)::float8 AS avaliacao,
+        COUNT(a.id)::int AS avaliacoes_count
       FROM mercados m
+      LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
       WHERE m.slug = ${slug}
+      GROUP BY m.id_mercado
     `;
 
     if (!mercado)

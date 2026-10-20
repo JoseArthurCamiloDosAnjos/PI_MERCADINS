@@ -229,7 +229,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
           banner: mercadoData.mercado.banner ?? undefined,
-          avaliacao: mercadoData.mercado.avaliacao ?? 0,
+          avaliacao: Number(mercadoData.mercado.avaliacao ?? 0),
           favoritado: mercadoData.mercado.favoritado ?? false,
           paleta: mercadoData.mercado.paleta ?? 'classico',
           corBase: mercadoData.mercado.cor_base ?? undefined,

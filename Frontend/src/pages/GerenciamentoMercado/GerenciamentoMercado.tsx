@@ -878,7 +878,7 @@ function InfoConteudo({ mercado, onSalvo }: {
                 onChange={e => set('nome', removeEmojis(e.target.value))} />
             </label>
             <label className="gm-info-campo">
-              Email
+              E-mail
               <input className="gm-modal-input" type="email" value={form.email}
                 onChange={e => set('email', e.target.value)} />
             </label>

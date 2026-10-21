@@ -2,7 +2,7 @@
 // Fonte única de verdade no servidor: usada no cadastro de mercados,
 // no cadastro de produtos e no painel do vendedor.
 
-// Nomes comerciais: Essencial (entrada) → Plus (crescimento) → Premium
+// Nomes comerciais: Essencial (entrada) → Plus (crescimento) → Personalizado
 // (rede e consultoria). As chaves ('basico' etc.) são as gravadas no banco
 // e não mudam.
 const LIMITES_PLANOS = {
@@ -17,7 +17,7 @@ const LIMITES_PLANOS = {
     fotos: 3000,
   },
   personalizado: {
-    nome: 'Premium',
+    nome: 'Personalizado',
     produtos: 5000,
     fotos: 10000,
   },

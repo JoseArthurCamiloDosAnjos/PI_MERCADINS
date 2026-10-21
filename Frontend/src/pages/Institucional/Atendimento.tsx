@@ -28,7 +28,7 @@ const PERGUNTAS: Pergunta[] = [
   {
     pergunta: "Quais são os planos?",
     resposta:
-      "Essencial por R$ 79/mês (até 300 produtos e 600 fotos), Plus por R$ 149/mês (até 1.500 produtos e 3.000 fotos) e Premium a partir de R$ 399/mês, com atendimento do consultor.",
+      "Essencial por R$ 79/mês (até 300 produtos e 600 fotos), Plus por R$ 149/mês (até 1.500 produtos e 3.000 fotos) e Personalizado a partir de R$ 399/mês, com atendimento do consultor.",
     link: { texto: "Ver planos completos", para: "/promocional" },
   },
   {

@@ -50,7 +50,7 @@ export const PLANOS: Plano[] = [
   },
   {
     id: "personalizado",
-    name: "Premium",
+    name: "Personalizado",
     price: "399",
     period: "/mês",
     highlight: false,

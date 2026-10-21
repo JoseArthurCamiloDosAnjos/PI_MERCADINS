@@ -47,7 +47,7 @@ const benefits = [
   },
   {
     icon: <IconZap size={32} />,
-    title: "Inteligência Artificial",
+    title: "Inteligência artificial",
     desc: "Tome decisões mais embasadas com análises e sugestões geradas por IA para seu negócio.",
   },
 ];
@@ -186,7 +186,7 @@ export default function MercadinsPromo() {
               <div className="mp-phone-screen">
                 <div className="mp-screen-header">
                   <span className="mp-screen-dot" />
-                  <span className="mp-screen-title">Minha Loja</span>
+                  <span className="mp-screen-title">Minha loja</span>
                   <span className="mp-screen-badge">● Online</span>
                 </div>
                 <div className="mp-screen-stats">
@@ -204,12 +204,12 @@ export default function MercadinsPromo() {
                 <div className="mp-screen-products">
                   <div className="mp-product-row">
                     <span className="mp-prod-icon"><IconPackage size={15} /></span>
-                    <span className="mp-prod-name">Leite Integral</span>
+                    <span className="mp-prod-name">Leite integral</span>
                     <span className="mp-prod-price">R$ 5,49</span>
                   </div>
                   <div className="mp-product-row">
                     <span className="mp-prod-icon"><IconPackage size={15} /></span>
-                    <span className="mp-prod-name">Pão Francês</span>
+                    <span className="mp-prod-name">Pão francês</span>
                     <span className="mp-prod-price">R$ 0,79</span>
                   </div>
                   <div className="mp-product-row">
@@ -319,6 +319,9 @@ export default function MercadinsPromo() {
             <button
               className={`mp-toggle-btn ${billingAnnual ? "mp-toggle-on" : ""}`}
               onClick={() => setBillingAnnual(!billingAnnual)}
+              role="switch"
+              aria-checked={billingAnnual}
+              aria-label="Alternar cobrança mensal ou anual"
             >
               <span className="mp-toggle-knob" />
             </button>

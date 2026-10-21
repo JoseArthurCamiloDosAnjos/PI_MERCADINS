@@ -3,7 +3,7 @@ import PaginaInstitucional from "./Institucional";
 export default function Privacidade() {
   return (
     <PaginaInstitucional
-      titulo="Política de Privacidade"
+      titulo="Política de privacidade"
       subtitulo="Como coletamos, usamos e protegemos seus dados pessoais, na linguagem simples."
     >
       <section className="inst-section inst-legal">

@@ -178,7 +178,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
 
           <div className="pu-modal-header">
             <h2 className="pu-modal-title">Editar perfil</h2>
-            <button className="pu-modal-close" onClick={onFechar}>✕</button>
+            <button className="pu-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
           </div>
 
           <div className="pu-modal-avatar">
@@ -315,7 +315,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
           <div className="pu-modal-footer">
             <button className="pu-modal-btn-cancel" onClick={onFechar} disabled={salvando || confirmandoEmail}>Cancelar</button>
             <button className="pu-modal-btn-save" onClick={salvar} disabled={salvando || confirmandoEmail || enviandoCodigo}>
-              {enviandoCodigo ? 'Enviando código...' : confirmandoEmail ? 'Confirmando...' : mostrarCodigo ? 'Confirmar e Salvar' : 'Salvar'}
+              {enviandoCodigo ? 'Enviando código...' : confirmandoEmail ? 'Confirmando...' : mostrarCodigo ? 'Confirmar e salvar' : 'Salvar'}
             </button>
           </div>
 

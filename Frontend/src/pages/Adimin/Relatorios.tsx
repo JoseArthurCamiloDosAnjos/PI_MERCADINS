@@ -34,9 +34,9 @@ interface RelatorioData {
 
 const PERIODO_OPTIONS = [
   { value: 'tudo', label: 'Tudo' },
-  { value: 'dia', label: 'Escolher Dia' },
-  { value: 'mes', label: 'Escolher Mes' },
-  { value: 'ano', label: 'Escolher Ano' },
+  { value: 'dia', label: 'Escolher dia' },
+  { value: 'mes', label: 'Escolher mês' },
+  { value: 'ano', label: 'Escolher ano' },
 ]
 
 const STATUS_COR: Record<string, string> = {
@@ -48,11 +48,11 @@ const STATUS_COR: Record<string, string> = {
 }
 
 const METRICAS_CONFIG: { key: keyof MetricasRelatorio; label: string; color: string; prefix?: string }[] = [
-  { key: 'totalMercados', label: 'Total Mercados', color: '#4a7fd4' },
-  { key: 'pedidosConcluidos', label: 'Pedidos Concluidos', color: '#22c55e' },
-  { key: 'pedidosMes', label: 'Pedidos no Mes', color: '#f59e0b' },
-  { key: 'entregasConcluidas', label: 'Entregas Concluidas', color: '#06b6d4' },
-  { key: 'receitaTotal', label: 'Receita Total', color: '#8b5cf6', prefix: 'R$ ' },
+  { key: 'totalMercados', label: 'Total de mercados', color: '#4a7fd4' },
+  { key: 'pedidosConcluidos', label: 'Pedidos concluídos', color: '#22c55e' },
+  { key: 'pedidosMes', label: 'Pedidos no mês', color: '#f59e0b' },
+  { key: 'entregasConcluidas', label: 'Entregas concluídas', color: '#06b6d4' },
+  { key: 'receitaTotal', label: 'Receita total', color: '#8b5cf6', prefix: 'R$ ' },
 ]
 
 export default function Relatorios() {
@@ -121,7 +121,7 @@ export default function Relatorios() {
             placeholder={periodo === 'ano' ? 'AAAA' : undefined}
           />
         )}
-        <button type="submit" className="adm-btn-aplicar">Aplicar Filtros</button>
+        <button type="submit" className="adm-btn-aplicar">Aplicar filtros</button>
       </form>
 
       <div className="adm-stats-grid">

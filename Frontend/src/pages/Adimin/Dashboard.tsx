@@ -59,12 +59,12 @@ function TruckIcon({ size = 22 }: { size?: number }) {
 }
 
 const STAT_CARDS: { key: keyof Metricas; label: string; icon: ReactNode; color: string }[] = [
-  { key: 'totalMercados', label: 'Total Mercados', icon: <IconStore size={22} />, color: '#4a7fd4' },
-  { key: 'totalUsuarios', label: 'Total Usuarios', icon: <IconUser size={22} />, color: '#22c55e' },
-  { key: 'totalProdutos', label: 'Total Produtos', icon: <IconPackage size={22} />, color: '#f59e0b' },
-  { key: 'totalPedidos', label: 'Total Pedidos', icon: <IconShoppingCart size={22} />, color: '#ef4444' },
-  { key: 'mercadosAtivos', label: 'Mercados Ativos', icon: <IconZap size={22} />, color: '#8b5cf6' },
-  { key: 'totalEntregadores', label: 'Total Entregadores', icon: <TruckIcon size={22} />, color: '#06b6d4' },
+  { key: 'totalMercados', label: 'Total de mercados', icon: <IconStore size={22} />, color: '#4a7fd4' },
+  { key: 'totalUsuarios', label: 'Total de usuários', icon: <IconUser size={22} />, color: '#22c55e' },
+  { key: 'totalProdutos', label: 'Total de produtos', icon: <IconPackage size={22} />, color: '#f59e0b' },
+  { key: 'totalPedidos', label: 'Total de pedidos', icon: <IconShoppingCart size={22} />, color: '#ef4444' },
+  { key: 'mercadosAtivos', label: 'Mercados ativos', icon: <IconZap size={22} />, color: '#8b5cf6' },
+  { key: 'totalEntregadores', label: 'Total de entregadores', icon: <TruckIcon size={22} />, color: '#06b6d4' },
 ]
 
 const TIPO_COR: Record<string, string> = {
@@ -158,7 +158,7 @@ export default function Dashboard() {
 
       <div className="adm-bottom-row">
         <div className="adm-box">
-          <h3><IconInfo size={16} /> Atividade Recente</h3>
+          <h3><IconInfo size={16} /> Atividade recente</h3>
           <div className="adm-list">
             {dados.atividade.length === 0 && <p className="adm-empty">Nenhuma atividade recente</p>}
             {dados.atividade.map((item, i) => (
@@ -174,7 +174,7 @@ export default function Dashboard() {
         </div>
 
         <div className="adm-box">
-          <h3><IconBell size={16} /> Alertas Importantes</h3>
+          <h3><IconBell size={16} /> Alertas importantes</h3>
           <div className="adm-list">
             {alertas.length === 0 && <p className="adm-empty">Nenhum alerta no momento</p>}
             {alertas.map((item, i) => (

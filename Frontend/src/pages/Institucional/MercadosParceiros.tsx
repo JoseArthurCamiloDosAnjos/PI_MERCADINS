@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../services/api";
+import { localizacao } from "../../utils/localizacao";
 import PaginaInstitucional from "./Institucional";
 
 type Mercado = {
@@ -17,12 +18,6 @@ function notaFormatada(nota?: number) {
   const n = Number(nota ?? 0);
   if (Number.isNaN(n)) return "0,0";
   return n.toFixed(1).replace(".", ",");
-}
-
-function localizacao(m: Mercado) {
-  const partes = [m.cidade, m.estado].filter(Boolean);
-  if (partes.length > 0) return partes.join(" · ");
-  return "Mercado parceiro";
 }
 
 export default function MercadosParceiros() {

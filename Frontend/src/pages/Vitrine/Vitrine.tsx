@@ -20,7 +20,9 @@ import {
   IconCheck,
   IconX,
   IconArrowLeft,
+  IconMapPin,
 } from '../../components/Icons';
+import { localizacaoCompleta } from '../../utils/localizacao';
 
 // ─── Ícones locais (mesmos usados na VitrineCliente) ──────────────────────────
 
@@ -66,6 +68,11 @@ interface VitrineMercado {
   corIcones?: string;
   /** Horário de funcionamento da semana (JSON do banco) */
   horario?: unknown;
+  /** Endereço da loja (aparece na header da vitrine) */
+  rua?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
   categorias: Categoria[];
 }
 
@@ -205,7 +212,7 @@ function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
 
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
-    <button className="vt-produto-card vt-produto-add" onClick={onAdd}>
+    <button className="vt-produto-card vt-produto-add" onClick={onAdd} aria-label="Adicionar ao carrinho">
       <span className="vt-add-icon"><IconPlus size={20} /></span>
     </button>
   );
@@ -486,6 +493,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
           horario: mercadoData.mercado.horario ?? null,
+          rua: mercadoData.mercado.rua ?? null,
+          bairro: mercadoData.mercado.bairro ?? null,
+          cidade: mercadoData.mercado.cidade ?? null,
+          estado: mercadoData.mercado.estado ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -749,6 +760,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                 ? <>{cortarEmPalavra(dados.descricao, 110)}… <button className="vt-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
                 : dados.descricao
               }
+            </p>
+
+            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
+            <p className="vt-local">
+              <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
 
             {/* Semana inteira visível: dias abertos e fechados (mesmo que o cliente vê) */}

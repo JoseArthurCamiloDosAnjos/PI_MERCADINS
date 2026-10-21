@@ -412,6 +412,7 @@ export default function ProdutoTela({
             <div className="pd-stepper">
               <button
                 className="pd-stepper-btn"
+                aria-label="Diminuir quantidade"
                 onClick={() => setQuantidade(Math.max(1, quantidadeEfetiva - 1))}
               >
                 <IconMinus size={13} />
@@ -419,6 +420,7 @@ export default function ProdutoTela({
               <span className="pd-stepper-valor">{quantidadeEfetiva}</span>
               <button
                 className="pd-stepper-btn"
+                aria-label="Aumentar quantidade"
                 onClick={() => setQuantidade(Math.min(quantidadeEfetiva + 1, Math.max(1, estoqueDisponivel)))}
                 disabled={semEstoque || noMaximoEstoque}
               >

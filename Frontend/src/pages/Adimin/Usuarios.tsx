@@ -346,12 +346,12 @@ export default function Usuarios() {
             <table className="adm-table">
               <thead>
                 <tr>
-                  <th>NOME</th>
-                  <th>E-MAIL</th>
-                  <th>TIPO</th>
-                  <th>STATUS</th>
-                  <th>CADASTRO</th>
-                  <th>ULTIMO ACESSO</th>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Cadastro</th>
+                  <th>Último acesso</th>
                   <th></th>
                 </tr>
               </thead>
@@ -412,7 +412,7 @@ export default function Usuarios() {
       {detalhes && (
         <div className="adm-modal-overlay">
           <div className="adm-modal">
-            <button className="adm-modal-close" onClick={() => setDetalhes(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setDetalhes(null)}>
               <CloseIcon />
             </button>
 
@@ -542,7 +542,7 @@ export default function Usuarios() {
       {editando && (
         <div className="adm-modal-overlay">
           <div className="adm-modal adm-modal-editar">
-            <button className="adm-modal-close" onClick={() => setEditando(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setEditando(null)}>
               <CloseIcon />
             </button>
             <h2>Editar usuário</h2>
@@ -612,7 +612,7 @@ export default function Usuarios() {
 
             {editando.mercados.length > 0 && (
               <div className="adm-form-group">
-                <label>Mercados Vinculados ({editando.mercados.length})</label>
+                <label>Mercados vinculados ({editando.mercados.length})</label>
                 <div className="adm-editar-mercados">
                   {editando.mercados.slice(0, mercadosVisiveis).map(m => (
                     <div key={m.id_mercado} className="adm-editar-mercado-item">
@@ -661,7 +661,7 @@ export default function Usuarios() {
       {mercadoDetalhes && (
         <div className="adm-modal-overlay">
           <div className="adm-modal">
-            <button className="adm-modal-close" onClick={() => setMercadoDetalhes(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setMercadoDetalhes(null)}>
               <CloseIcon />
             </button>
             <h2>Detalhes do Mercado</h2>

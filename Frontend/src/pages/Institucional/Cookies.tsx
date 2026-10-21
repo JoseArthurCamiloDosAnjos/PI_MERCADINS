@@ -3,7 +3,7 @@ import PaginaInstitucional from "./Institucional";
 export default function Cookies() {
   return (
     <PaginaInstitucional
-      titulo="Política de Cookies"
+      titulo="Política de cookies"
       subtitulo="O que guardamos no seu navegador para a plataforma funcionar — sem rastreamento de anúncios."
     >
       <section className="inst-section inst-legal">

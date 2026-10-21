@@ -29,7 +29,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
   const linkWhats =
     `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(MENSAGEM)}`;
   const linkEmail =
-    `mailto:${EMAIL}?subject=${encodeURIComponent("Plano Personalizado - Mercadins")}` +
+    `mailto:${EMAIL}?subject=${encodeURIComponent("Plano personalizado - Mercadins")}` +
     `&body=${encodeURIComponent(MENSAGEM)}`;
 
   return (

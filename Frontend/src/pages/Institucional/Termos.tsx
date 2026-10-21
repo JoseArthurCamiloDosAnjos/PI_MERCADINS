@@ -3,7 +3,7 @@ import PaginaInstitucional from "./Institucional";
 export default function Termos() {
   return (
     <PaginaInstitucional
-      titulo="Termos de Uso"
+      titulo="Termos de uso"
       subtitulo="Regras de convivência e uso da plataforma Mercadins."
     >
       <section className="inst-section inst-legal">

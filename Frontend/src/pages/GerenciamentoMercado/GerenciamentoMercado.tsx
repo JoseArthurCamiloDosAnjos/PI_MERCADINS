@@ -259,7 +259,7 @@ function EditarProdutoModal({
       <div className="gm-modal">
         <div className="gm-modal-header">
           <h3>Editar produto</h3>
-          <button className="gm-modal-close" onClick={onFechar}>✕</button>
+          <button className="gm-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
         </div>
 
         <div className="gm-modal-body">
@@ -435,7 +435,7 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
 
       <div className="gm-dash-grid">
         <div className="gm-chart-card">
-          <p className="gm-sec-title"><IconBarChart size={15} /> Receita Mensal</p>
+          <p className="gm-sec-title"><IconBarChart size={15} /> Receita mensal</p>
           {loading ? (
             <div className="gm-chart-loading">
               {Array.from({ length: 6 }, (_, i) => (
@@ -466,7 +466,7 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
         </div>
 
         <div className="gm-quick-card">
-          <p className="gm-sec-title"><IconZap size={15} /> Resumo Rápido</p>
+          <p className="gm-sec-title"><IconZap size={15} /> Resumo rápido</p>
           <div className="gm-quick-list">
             {loading ? (
               Array.from({ length: 6 }, (_, i) => <LoadingRow key={i} />)
@@ -551,7 +551,7 @@ function SecPedidos({
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
-        <h2 className="gm-sec-title"><IconShoppingCart size={15} /> Pedidos Recentes</h2>
+        <h2 className="gm-sec-title"><IconShoppingCart size={15} /> Pedidos recentes</h2>
         {total > 5 && (
           <button className="gm-btn-link" onClick={onAlternar}>
             {expandido ? 'Ver menos' : `Ver todos (${total})`}
@@ -957,7 +957,7 @@ function InfoConteudo({ mercado, onSalvo }: {
           <div className="gm-info-card">
             <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
             <div className="gm-info-row"><span className="gm-info-lbl"><IconPhone size={13} /> Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
-            <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> Email</span><span className="gm-info-val">{mercado.email}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> E-mail</span><span className="gm-info-val">{mercado.email}</span></div>
           </div>
           <div className="gm-info-card">
             <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
@@ -1134,10 +1134,10 @@ export default function GerenciamentoMercado({
     const receitaTotal = pedidos.reduce((s, p) => s + p.valorNum, 0);
     const ticketMedio  = doMes.length > 0 ? receitaMes / doMes.length : 0;
     return [
-      { val: formatarBRL(receitaMes), lbl: 'Receita do Mês' },
-      { val: String(doMes.length), lbl: 'Pedidos no Mês' },
-      { val: doMes.length > 0 ? formatarBRL(ticketMedio) : '—', lbl: 'Ticket Médio' },
-      { val: formatarBRL(receitaTotal), lbl: 'Receita Total' },
+      { val: formatarBRL(receitaMes), lbl: 'Receita do mês' },
+      { val: String(doMes.length), lbl: 'Pedidos no mês' },
+      { val: doMes.length > 0 ? formatarBRL(ticketMedio) : '—', lbl: 'Ticket médio' },
+      { val: formatarBRL(receitaTotal), lbl: 'Receita total' },
     ];
   }, [pedidos]);
 
@@ -1246,6 +1246,7 @@ export default function GerenciamentoMercado({
               key={i}
               className={`gm-nav-btn${nav === i ? ' active' : ''}`}
               style={{ animationDelay: `${0.18 + i * 0.06}s` }}
+              aria-label={item.label}
               onClick={() => setNav(i)}
             >
               <span className="gm-nav-icon">{item.icon}</span>
@@ -1264,7 +1265,7 @@ export default function GerenciamentoMercado({
         <div className="gm-topbar">
           <div className="gm-topbar-left">
             <button className="gm-btn-back" onClick={onVoltar}>
-              <IconArrowLeft size={14} /> Meus Mercados
+              <IconArrowLeft size={14} /> Meus mercados
             </button>
             <span className="gm-topbar-title">
               {SIDEBAR_NAV[nav].icon} {SIDEBAR_NAV[nav].label}
@@ -1272,7 +1273,7 @@ export default function GerenciamentoMercado({
           </div>
           <div className="gm-topbar-actions">
             <button className="gm-btn-sec" onClick={onAbrirVitrine}>
-              <IconEye size={14} /> Ver Vitrine
+              <IconEye size={14} /> Ver vitrine
             </button>
           </div>
         </div>

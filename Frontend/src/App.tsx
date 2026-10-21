@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
 import LoadingOverlay from './components/LoadingOverlay'
+import ControleRotas from './components/ControleRotas'
 import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
@@ -267,6 +268,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider>
+          <ControleRotas />
           <Rotas />
         </ThemeProvider>
       </AuthProvider>

@@ -16,9 +16,6 @@ import {
   IconUser,
   IconLock,
   IconMapPin,
-  IconCreditCard,
-  IconReceipt,
-  IconBell,
   IconStore,
   IconHeart,
   IconShoppingBag,
@@ -52,15 +49,11 @@ function rotaCriarMercado(ehAdmin?: boolean) {
 }
 
 const NAV_ITEMS = [
-  { icon: <IconUser size={18} />, label: 'Perfil' },
+  { icon: <IconUser size={18} />, label: 'Painel do vendedor' },
   { icon: <IconLock size={18} />, label: 'Segurança' },
-  { icon: <IconMapPin size={18} />, label: 'Endereços' },
-  { icon: <IconCreditCard size={18} />, label: 'Cartões' },
-  { icon: <IconReceipt size={18} />, label: 'Fatura' },
-  { icon: <IconBell size={18} />, label: 'Comunicação' },
 ];
 
-const TITULOS = ['Painel do vendedor', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
+const TITULOS = ['Painel do vendedor', 'Segurança'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -439,42 +432,6 @@ function TelaSeguranca() {
   );
 }
 
-function TelaEnderecos() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços</h2>
-      <p className="pu-sec-desc">Gerencie seus endereços de entrega.</p>
-    </section>
-  );
-}
-
-function TelaCartoes() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconCreditCard size={14} /></span>Cartões</h2>
-      <p className="pu-sec-desc">Gerencie seus cartões de pagamento.</p>
-    </section>
-  );
-}
-
-function TelaFatura() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconReceipt size={14} /></span>Fatura</h2>
-      <p className="pu-sec-desc">Visualize e baixe suas faturas.</p>
-    </section>
-  );
-}
-
-function TelaComunicacao() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconBell size={14} /></span>Comunicação</h2>
-      <p className="pu-sec-desc">Configure suas preferências de notificação.</p>
-    </section>
-  );
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PerfilVendedor() {
@@ -525,10 +482,6 @@ export default function PerfilVendedor() {
   const TELAS = [
     <TelaPerfil mercados={mercados} carregando={carregando} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
-    <TelaEnderecos />,
-    <TelaCartoes />,
-    <TelaFatura />,
-    <TelaComunicacao />,
   ];
 
   return (

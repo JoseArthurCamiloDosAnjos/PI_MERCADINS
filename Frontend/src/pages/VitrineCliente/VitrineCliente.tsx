@@ -12,7 +12,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
-import HorarioSemana from '../../components/HorarioSemana';
 import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
@@ -557,9 +556,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                 ))}
               </div>
             )}
-
-            {/* Semana inteira visível: dias abertos e fechados */}
-            <HorarioSemana horario={dados.horario} />
           </div>
         </div>
 

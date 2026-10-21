@@ -5,10 +5,6 @@ import { useNavigate } from "react-router-dom";
 import {
   IconUser,
   IconLock,
-  IconMapPin,
-  IconCreditCard,
-  IconReceipt,
-  IconBell,
   IconPlus,
   IconMenu,
   IconX,
@@ -34,13 +30,11 @@ interface SidebarProps {
   showCriarMercado?: boolean;
 }
 
+// Só abas com funcionalidade real: dados do perfil e segurança da conta.
+// (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
-  { icon: <IconUser size={18} />, label: "Perfil" },
+  { icon: <IconUser size={18} />, label: "Meu perfil" },
   { icon: <IconLock size={18} />, label: "Segurança" },
-  { icon: <IconMapPin size={18} />, label: "Endereços" },
-  { icon: <IconCreditCard size={18} />, label: "Cartões" },
-  { icon: <IconReceipt size={18} />, label: "Fatura" },
-  { icon: <IconBell size={18} />, label: "Comunicação" },
 ];
 
 export default function Sidebar({

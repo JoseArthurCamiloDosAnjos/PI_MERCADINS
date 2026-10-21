@@ -91,6 +91,49 @@ function normalizarCategorias(categorias) {
   return { valor: `{${lista.join(",")}}`, lista };
 }
 
+// ── Horário de funcionamento ───────────────────────────────────────────
+// Guardado como texto com JSON dentro da coluna "mercados.horario":
+//   {"1":["08:00","18:00"],"2":["08:00","18:00"]}
+// Chave = dia da semana (0 = domingo ... 6 = sábado, igual ao Date do JS).
+// Dia ausente da lista = fechado naquele dia. Se a hora de FECHAR for menor
+// que a de ABRIR, o mercado atravessa a meia-noite (ex.: 18:00 → 02:00).
+// Sem horário (nulo) = loja ainda não configurou; aí o card usa o status.
+const RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function normalizarHorario(horario) {
+  // Não enviado = mantém o que já está no banco (edição parcial)
+  if (horario === undefined) return { manter: true };
+  // Enviado vazio/nulo = loja limpou o horário
+  if (horario === null || horario === "") return { valor: null };
+
+  let obj = horario;
+  if (typeof horario === "string") {
+    try { obj = JSON.parse(horario); } catch { return { erro: "Horário inválido" }; }
+  }
+  if (typeof obj !== "object" || Array.isArray(obj))
+    return { erro: "Horário deve ser um objeto de dias da semana" };
+
+  const saida = {};
+  for (const [dia, faixa] of Object.entries(obj)) {
+    if (!/^[0-6]$/.test(dia))
+      return { erro: `Dia da semana inválido no horário: ${dia}` };
+    if (faixa === null || faixa === undefined) continue; // dia fechado
+    if (!Array.isArray(faixa) || faixa.length !== 2)
+      return { erro: "Cada dia precisa de abertura e fechamento (HH:MM)" };
+
+    const [abre, fecha] = faixa.map((v) => String(v).trim());
+    if (!RE_HORA.test(abre) || !RE_HORA.test(fecha))
+      return { erro: "Horários devem estar no formato HH:MM (ex.: 08:00)" };
+    if (abre === fecha)
+      return { erro: "Abertura e fechamento não podem ser iguais" };
+
+    saida[dia] = [abre, fecha];
+  }
+
+  // Sem nenhum dia aberto = tratado como "não configurado"
+  return { valor: Object.keys(saida).length > 0 ? JSON.stringify(saida) : null };
+}
+
 // ─────────────────────────────────────────────
 // POST /api/mercados — Criar novo mercado
 // Requer autenticação — vincula ao usuário logado
@@ -99,7 +142,7 @@ function normalizarCategorias(categorias) {
 const criarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
 
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario } = req.body;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
@@ -119,6 +162,10 @@ const criarMercado = async (req, res) => {
   const catsCriacao = normalizarCategorias(categorias);
   if (catsCriacao.erro)
     return res.status(400).json({ erro: catsCriacao.erro });
+
+  const horarioNovo = normalizarHorario(horario);
+  if (horarioNovo.erro)
+    return res.status(400).json({ erro: horarioNovo.erro });
 
   const cnpjLimpo     = limparMascara(cnpj);
   const cepLimpo      = limparMascara(cep);
@@ -148,7 +195,7 @@ const criarMercado = async (req, res) => {
 
     // Cria o mercado
     const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias)
+      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario)
       VALUES (
         ${nome.trim()},
         ${email.trim().toLowerCase()},
@@ -168,7 +215,8 @@ const criarMercado = async (req, res) => {
         ${cor_icones ?? ''},
         ${cor_texto_sec ?? ''},
         ${planoLimpo},
-        ${catsCriacao.valor}
+        ${catsCriacao.valor},
+        ${horarioNovo.valor ?? null}
       )
       RETURNING *
     `;
@@ -371,7 +419,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias, horario } = req.body;
 
   const banner = banner_url || undefined
   const foto_perfil = foto_perfil_url || undefined
@@ -391,6 +439,10 @@ const atualizarMercado = async (req, res) => {
   const catsEdicao = normalizarCategorias(categorias);
   if (catsEdicao.erro)
     return res.status(400).json({ erro: catsEdicao.erro });
+
+  const horarioEdicao = normalizarHorario(horario);
+  if (horarioEdicao.erro)
+    return res.status(400).json({ erro: horarioEdicao.erro });
 
   try {
     const sql = await conectar();
@@ -414,6 +466,16 @@ const atualizarMercado = async (req, res) => {
 
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
+
+    // Horário numa atualização à parte: ele pode ser limpo (valor nulo) e o
+    // COALESCE do UPDATE principal não distinguiria "não enviou" de "limpou".
+    // Quando não veio o campo (edição de outra seção), mantém o banco.
+    if (!horarioEdicao.manter) {
+      await sql`
+        UPDATE mercados SET horario = ${horarioEdicao.valor ?? null}
+        WHERE id_mercado = ${Number(id)}
+      `;
+    }
 
     let slugAtualizado = undefined;
     if (nome?.trim()) {
@@ -498,9 +560,24 @@ const deletarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    // Remove vínculos primeiro (FK), depois o mercado
-    await sql`DELETE FROM usuarios_mercados WHERE id_mercado = ${Number(id)}`;
-    await sql`DELETE FROM mercados WHERE id_mercado = ${Number(id)}`;
+    // Remove tudo na ordem das chaves estrangeiras (do filho pro pai).
+    // carrinho e mercado_produtos apontam para mercado E produto; depois
+    // vêm pedidos, avaliações e afins; por último categorias, produtos e o
+    // próprio mercado. Sem essa ordem o banco recusa o DELETE (constraint).
+    const idNum = Number(id);
+    await sql`DELETE FROM carrinho           WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM mercado_produtos   WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM pedido_mercados    WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM historico_compras  WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM favoritos          WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM avaliacoes         WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM avaliacoes_mercado WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM assinaturas        WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM posts_mercado      WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM produtos WHERE id_categoria IN (SELECT id_categoria FROM categorias WHERE id_mercado = ${idNum})`;
+    await sql`DELETE FROM categorias         WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM usuarios_mercados  WHERE id_mercado = ${idNum}`;
+    await sql`DELETE FROM mercados           WHERE id_mercado = ${idNum}`;
 
     res.status(200).json({ mensagem: "Mercado deletado com sucesso" });
   } catch (err) {

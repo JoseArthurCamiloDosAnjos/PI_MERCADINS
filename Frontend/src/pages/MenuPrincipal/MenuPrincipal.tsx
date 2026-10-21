@@ -8,12 +8,19 @@ import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
   IconStore,
+  IconArrowLeft,
   IconArrowRight,
   IconCheck,
   IconHeartFilled,
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
+import {
+  estaAberto,
+  horarioDeHoje,
+  parseHorario,
+  resumoSemana,
+} from "../../utils/horario";
 
 type Store = {
   id_mercado: number;
@@ -27,6 +34,7 @@ type Store = {
   foto_perfil?: string;
   cor_base?: string;
   status?: string;
+  horario?: string | null;
   avaliacao?: number;
   avaliacoes_count?: number;
   categorias?: string[];
@@ -82,6 +90,18 @@ function tiposDoMercado(store: Store): string[] {
   if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
   return [];
 }
+
+// Visual de cada tipo de loja pro bloco de categoria do card:
+// quadrado escuro com emoji + nome legível (o banco guarda minúsculo sem acento)
+const TIPO_VISUAL: Record<string, { label: string; emoji: string }> = {
+  mercado:      { label: "Mercado",      emoji: "🛒" },
+  hortifruti:   { label: "Hortifruti",   emoji: "🥬" },
+  acougue:      { label: "Açougue",      emoji: "🥩" },
+  padaria:      { label: "Padaria",      emoji: "🥖" },
+  bebidas:      { label: "Bebidas",      emoji: "🥤" },
+  organicos:    { label: "Orgânicos",    emoji: "🌱" },
+  conveniencia: { label: "Conveniência", emoji: "🏪" },
+};
 
 // Busca por CEP:
 // - parcial (5 a 7 dígitos) → mesma região, ex.: "15900" pega 15900-010, 15900-023...
@@ -154,6 +174,53 @@ export default function Mercadins() {
   } | null>(null);
   // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
   const [visitados] = useState<string[]>(listarVisitados);
+
+  // Relógio dos cards: recalcula Aberto/Fechado a cada minuto, sem recarregar
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgora(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Status de funcionamento agora: pelo horário quando a loja configurou;
+  // sem horário, ativo = aberto (compatível com mercados ainda sem rotina)
+  const lojaAberta = (store: Store) =>
+    estaAberto(parseHorario(store.horario), agora) ?? store.status === "ativo";
+
+  // Dica do badge: a semana inteira, começando por hoje
+  const statusTitulo = (store: Store) =>
+    resumoSemana(parseHorario(store.horario), agora) ||
+    (store.status === "ativo" ? "Mercado ativo" : "Mercado fechado");
+
+  // Setas de rolagem da barra de categorias: aparecem só quando existe chip
+  // escondido (testa o espaço real da barra em cada mudança de tela/rolagem)
+  const categoriasRef = useRef<HTMLDivElement | null>(null);
+  const [setasCategorias, setSetasCategorias] = useState({ esq: false, dir: false });
+
+  useEffect(() => {
+    const ref = categoriasRef.current;
+    if (!ref) return;
+    const barra: HTMLDivElement = ref;
+    function atualizar() {
+      setSetasCategorias({
+        esq: barra.scrollLeft > 4,
+        dir: barra.scrollLeft < barra.scrollWidth - barra.clientWidth - 4,
+      });
+    }
+    atualizar();
+    barra.addEventListener("scroll", atualizar, { passive: true });
+    window.addEventListener("resize", atualizar);
+    return () => {
+      barra.removeEventListener("scroll", atualizar);
+      window.removeEventListener("resize", atualizar);
+    };
+  }, []);
+
+  function rolarCategorias(dir: -1 | 1) {
+    const el = categoriasRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.6, behavior: "smooth" });
+  }
 
   useEffect(() => {
     let ativo = true;
@@ -535,10 +602,8 @@ export default function Mercadins() {
                       key={store.id_mercado}
                       image={store.foto_perfil}
                       title={store.nome}
-                      subtitle={
-                        store.status === "ativo" ? "Aberto agora" : localizacao(store)
-                      }
-                      aberto={store.status === "ativo"}
+                      subtitle={lojaAberta(store) ? "Aberto agora" : localizacao(store)}
+                      aberto={lojaAberta(store)}
                       favoritado={favoritos.has(store.id_mercado)}
                       onClick={() => irParaMercado(store.slug)}
                     />
@@ -565,20 +630,44 @@ export default function Mercadins() {
       </section>
 
       <section className="category-bar" id="categorias">
-        <div className="container categories">
-          {CATEGORIAS.map((cat) => (
+        <div className="container categories-wrap">
+          {setasCategorias.esq && (
             <button
-              className={`category ${categoria === cat.nome ? "active" : ""}`}
-              key={cat.nome}
               type="button"
-              onClick={() => {
-                setCategoria(cat.nome);
-                irParaSecao("mercados");
-              }}
+              className="category-arrow"
+              aria-label="Ver categorias anteriores"
+              onClick={() => rolarCategorias(-1)}
             >
-              {cat.nome}
+              <IconArrowLeft size={16} />
             </button>
-          ))}
+          )}
+
+          <div className="categories" ref={categoriasRef}>
+            {CATEGORIAS.map((cat) => (
+              <button
+                className={`category ${categoria === cat.nome ? "active" : ""}`}
+                key={cat.nome}
+                type="button"
+                onClick={() => {
+                  setCategoria(cat.nome);
+                  irParaSecao("mercados");
+                }}
+              >
+                {cat.nome}
+              </button>
+            ))}
+          </div>
+
+          {setasCategorias.dir && (
+            <button
+              type="button"
+              className="category-arrow"
+              aria-label="Ver mais categorias"
+              onClick={() => rolarCategorias(1)}
+            >
+              <IconArrowRight size={16} />
+            </button>
+          )}
         </div>
       </section>
 
@@ -647,10 +736,11 @@ export default function Mercadins() {
                       )}
                       <span
                         className={`store-status ${
-                          store.status === "ativo" ? "aberto" : "fechado"
+                          lojaAberta(store) ? "aberto" : "fechado"
                         }`}
+                        title={statusTitulo(store)}
                       >
-                        {store.status === "ativo" ? "Aberto" : "Fechado"}
+                        {lojaAberta(store) ? "Aberto" : "Fechado"}
                       </span>
                       {favoritos.has(store.id_mercado) && (
                         <span className="store-favorito-badge" title="Seu favorito">
@@ -661,6 +751,9 @@ export default function Mercadins() {
                   </button>
 
                   <div className="store-content">
+                    {/* Bloco visual da categoria do estabelecimento */}
+                    <BlocoTipo store={store} />
+
                     <div className="store-title-row">
                       <div>
                         <h3>{store.nome}</h3>
@@ -671,6 +764,9 @@ export default function Mercadins() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Horário de hoje, quando o mercado configurou */}
+                    <LinhaHorario store={store} agora={agora} />
 
                     {store.descricao && <p className="store-desc">{store.descricao}</p>}
 
@@ -811,6 +907,40 @@ export default function Mercadins() {
 
       <SiteFooter />
     </div>
+  );
+}
+
+// Bloco visual da categoria no card de mercado: quadrado escuro com emoji
+// + etiqueta com o nome da categoria (e "+N" quando tem mais tipos).
+// Linha de horário de hoje no card: "🕒 Hoje: 08:00 – 18:00" ou
+// "🚫 Fechado hoje". Mercado sem horário configurado não mostra nada.
+function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
+  const texto = horarioDeHoje(parseHorario(store.horario), agora);
+  if (!texto) return null;
+  const fechado = texto.startsWith("Fechado");
+  return (
+    <p
+      className={`store-horario ${fechado ? "off" : ""}`}
+      title={resumoSemana(parseHorario(store.horario), agora)}
+    >
+      {fechado ? "🚫" : "🕒"} {texto}
+    </p>
+  );
+}
+
+function BlocoTipo({ store }: { store: Store }) {
+  const tipos = tiposDoMercado(store);
+  const principal = (tipos[0] ?? "mercado").toLowerCase();
+  const visual = TIPO_VISUAL[principal] ?? { label: "Mercado", emoji: "🏪" };
+  const extras = tipos.length - 1;
+  return (
+    <span className="store-tipo">
+      <span className="store-tipo-quadro" aria-hidden="true">
+        {visual.emoji}
+      </span>
+      <span className="store-tipo-nome">{visual.label}</span>
+      {extras > 0 && <span className="store-tipo-extra">+{extras}</span>}
+    </span>
   );
 }
 

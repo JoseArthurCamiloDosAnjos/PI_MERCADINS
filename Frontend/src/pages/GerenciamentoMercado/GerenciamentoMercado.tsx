@@ -3,6 +3,7 @@ import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
+import { parseHorario, type HorarioMercado } from '../../utils/horario';
 import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
@@ -11,6 +12,7 @@ import {
   IconStar,
   IconCreditCard,
   IconInfo,
+  IconClock,
   IconInbox,
   IconZap,
   IconEye,
@@ -84,6 +86,7 @@ interface MercadoInfo {
   bairro: string;
   rua: string;
   foto_perfil?: string;
+  horario?: string | null;
 }
 
 interface ResumoDashboard {
@@ -252,8 +255,8 @@ function EditarProdutoModal({
   }
 
   return (
-    <div className="gm-modal-overlay" onClick={onFechar}>
-      <div className="gm-modal" onClick={e => e.stopPropagation()}>
+    <div className="gm-modal-overlay">
+      <div className="gm-modal">
         <div className="gm-modal-header">
           <h3>Editar Produto</h3>
           <button className="gm-modal-close" onClick={onFechar}>✕</button>
@@ -716,8 +719,57 @@ function SecFinanceiro({
   );
 }
 
-function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
+// Dias do editor de horário (ordem comercial; id = dia do Date, 0 = domingo)
+const DIAS_HORARIO: { id: string; nome: string; curto: string }[] = [
+  { id: '1', nome: 'Segunda', curto: 'Seg' }, { id: '2', nome: 'Terça', curto: 'Ter' },
+  { id: '3', nome: 'Quarta', curto: 'Qua' }, { id: '4', nome: 'Quinta', curto: 'Qui' },
+  { id: '5', nome: 'Sexta', curto: 'Sex' }, { id: '6', nome: 'Sábado', curto: 'Sáb' },
+  { id: '0', nome: 'Domingo', curto: 'Dom' },
+];
+
+// Horário em uma linha: "Seg–Sex 08:00–18:00 · Sáb 09:00–13:00 · Dom fechado"
+function resumirHorario(h: HorarioMercado | null): string {
+  if (!h) return 'Não configurado';
+  const grupos: { faixa: string; dias: string[] }[] = [];
+  for (const d of DIAS_HORARIO) {
+    const f = h[d.id];
+    const faixa = f ? `${f[0]}–${f[1]}` : 'fechado';
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.faixa === faixa) ultimo.dias.push(d.curto);
+    else grupos.push({ faixa, dias: [d.curto] });
+  }
+  return grupos
+    .map(g => {
+      const dias = g.dias.length > 1 ? `${g.dias[0]}–${g.dias[g.dias.length - 1]}` : g.dias[0];
+      return g.faixa === 'fechado' ? `${dias} fechado` : `${dias} ${g.faixa}`;
+    })
+    .join(' · ');
+}
+
+function SecInformacoes({ mercado, onSalvo }: {
+  mercado: MercadoInfo | null;
+  onSalvo: (atualizado: MercadoInfo) => void;
+}) {
   if (!mercado) return <EmptyState msg="Carregando informações..." />;
+  return <InfoConteudo mercado={mercado} onSalvo={onSalvo} />;
+}
+
+// Modo leitura + edição em linha dos dados do mercado. O "Editar" carrega os
+// valores atuais (inclusive o horário) nos campos; o "Salvar" grava no banco
+// (PUT /api/mercados/:id) e atualiza a tela com a resposta; o "Cancelar"
+// descarta as mudanças. O CNPJ fica somente leitura (é o documento da loja).
+function InfoConteudo({ mercado, onSalvo }: {
+  mercado: MercadoInfo;
+  onSalvo: (atualizado: MercadoInfo) => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [form, setForm] = useState({
+    nome: '', telefone: '', email: '', rua: '', bairro: '',
+    cidade: '', estado: '', cep: '',
+  });
+  const [horario, setHorario] = useState<Record<string, [string, string] | null>>({});
 
   const formatarTelefone = (tel: string) => {
     if (!tel) return '—';
@@ -741,30 +793,184 @@ function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
     return cep;
   };
 
+  function set(campo: keyof typeof form, valor: string) {
+    setForm(f => ({ ...f, [campo]: valor }));
+  }
+
+  function iniciarEdicao() {
+    setForm({
+      nome: mercado.nome ?? '', telefone: mercado.telefone ?? '', email: mercado.email ?? '',
+      rua: mercado.rua ?? '', bairro: mercado.bairro ?? '', cidade: mercado.cidade ?? '',
+      estado: mercado.estado ?? '', cep: mercado.cep ?? '',
+    });
+    setHorario(parseHorario(mercado.horario) ?? {});
+    setErro('');
+    setEditando(true);
+  }
+
+  function alternarDia(dia: string) {
+    setHorario(h => ({ ...h, [dia]: h[dia] ? null : ['08:00', '18:00'] }));
+  }
+
+  function setHora(dia: string, campo: 0 | 1, valor: string) {
+    setHorario(h => {
+      const faixa = h[dia] ?? ['08:00', '18:00'];
+      const nova: [string, string] = [faixa[0], faixa[1]];
+      nova[campo] = valor;
+      return { ...h, [dia]: nova };
+    });
+  }
+
+  async function salvar() {
+    if (!form.nome.trim()) {
+      setErro('O nome é obrigatório.');
+      return;
+    }
+    // Horário: envia só os dias abertos, conferindo os horários
+    const horarioEnvio = Object.fromEntries(
+      Object.entries(horario).filter(([, f]) => f !== null) as [string, [string, string]][]
+    );
+    if (Object.values(horarioEnvio).some(f => !f[0] || !f[1] || f[0] === f[1])) {
+      setErro('Confira o horário: abertura e fechamento precisam ser diferentes.');
+      return;
+    }
+
+    setSalvando(true);
+    setErro('');
+    try {
+      const res = await api.atualizarMercado(mercado.id_mercado, {
+        nome: form.nome.trim(),
+        telefone: form.telefone.replace(/\D/g, ''),
+        email: form.email.trim(),
+        rua: form.rua.trim(),
+        bairro: form.bairro.trim(),
+        cidade: form.cidade.trim(),
+        estado: form.estado.trim(),
+        cep: form.cep.replace(/\D/g, ''),
+        horario: horarioEnvio,
+      });
+      setEditando(false);
+      onSalvo({ ...mercado, ...form, ...(res.mercado ?? {}) } as MercadoInfo);
+    } catch (err: unknown) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar as informações.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
         <h2 className="gm-sec-title"><IconInfo size={15} /> Informações do Mercado</h2>
-        <button className="gm-btn-link">Editar</button>
+        {editando ? (
+          <span className="gm-info-editando-tag">Editando…</span>
+        ) : (
+          <button className="gm-btn-link" onClick={iniciarEdicao}>Editar</button>
+        )}
       </div>
 
-      <div className="gm-info-grid">
-        <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconPhone size={13} /> Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> Email</span><span className="gm-info-val">{mercado.email}</span></div>
+      {editando ? (
+        <div className="gm-info-edit">
+          <div className="gm-info-edit-grid">
+            <label className="gm-info-campo">
+              Nome do mercado
+              <input className="gm-modal-input" value={form.nome} maxLength={80}
+                onChange={e => set('nome', removeEmojis(e.target.value))} />
+            </label>
+            <label className="gm-info-campo">
+              Email
+              <input className="gm-modal-input" type="email" value={form.email}
+                onChange={e => set('email', e.target.value)} />
+            </label>
+            <label className="gm-info-campo">
+              Telefone (só números, com DDD)
+              <input className="gm-modal-input" value={form.telefone.replace(/\D/g, '').slice(0, 11)}
+                onChange={e => set('telefone', e.target.value.replace(/\D/g, '').slice(0, 11))} />
+            </label>
+            <label className="gm-info-campo">
+              CEP (só números)
+              <input className="gm-modal-input" value={form.cep.replace(/\D/g, '').slice(0, 8)}
+                onChange={e => set('cep', e.target.value.replace(/\D/g, '').slice(0, 8))} />
+            </label>
+            <label className="gm-info-campo gm-info-campo--full">
+              Rua
+              <input className="gm-modal-input" value={form.rua}
+                onChange={e => set('rua', removeEmojis(e.target.value))} />
+            </label>
+            <label className="gm-info-campo">
+              Bairro
+              <input className="gm-modal-input" value={form.bairro}
+                onChange={e => set('bairro', removeEmojis(e.target.value))} />
+            </label>
+            <label className="gm-info-campo">
+              Cidade
+              <input className="gm-modal-input" value={form.cidade}
+                onChange={e => set('cidade', removeEmojis(e.target.value))} />
+            </label>
+            <label className="gm-info-campo">
+              Estado (UF)
+              <input className="gm-modal-input" value={form.estado.toUpperCase()} maxLength={2}
+                onChange={e => set('estado', e.target.value.replace(/[^a-zA-Z]/g, ''))} />
+            </label>
+          </div>
+
+          <p className="gm-info-subtitulo"><IconClock size={13} /> Horário de funcionamento</p>
+          <div className="gm-info-horario">
+            {DIAS_HORARIO.map(d => {
+              const aberto = !!horario[d.id];
+              const faixa = horario[d.id] ?? ['08:00', '18:00'];
+              return (
+                <div key={d.id} className={`gm-info-dia${aberto ? ' aberto' : ''}`}>
+                  <label>
+                    <input type="checkbox" checked={aberto} onChange={() => alternarDia(d.id)} />
+                    {d.nome}
+                  </label>
+                  {aberto ? (
+                    <div className="gm-info-horas">
+                      <input type="time" value={faixa[0]} aria-label={`Abertura ${d.nome}`}
+                        onChange={e => setHora(d.id, 0, e.target.value)} />
+                      <span>às</span>
+                      <input type="time" value={faixa[1]} aria-label={`Fechamento ${d.nome}`}
+                        onChange={e => setHora(d.id, 1, e.target.value)} />
+                    </div>
+                  ) : (
+                    <span className="gm-info-fechado">fechado</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {erro && <p className="gm-info-erro">{erro}</p>}
+
+          <div className="gm-info-acoes">
+            <button className="gm-btn-link" onClick={() => setEditando(false)} disabled={salvando}>
+              Cancelar
+            </button>
+            <button className="gm-btn-primary" onClick={salvar} disabled={salvando}>
+              {salvando ? 'Salvando…' : 'Salvar alterações'}
+            </button>
+          </div>
         </div>
-        <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
+      ) : (
+        <div className="gm-info-grid">
+          <div className="gm-info-card">
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconPhone size={13} /> Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> Email</span><span className="gm-info-val">{mercado.email}</span></div>
+          </div>
+          <div className="gm-info-card">
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
+          </div>
+          <div className="gm-info-card">
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconCreditCard size={13} /> CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconStore size={13} /> Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
+            <div className="gm-info-row"><span className="gm-info-lbl"><IconClock size={13} /> Horário</span><span className="gm-info-val">{resumirHorario(parseHorario(mercado.horario))}</span></div>
+          </div>
         </div>
-        <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconCreditCard size={13} /> CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconStore size={13} /> Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconPackage size={13} /> Categorias</span><span className="gm-info-val">—</span></div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -967,6 +1173,13 @@ export default function GerenciamentoMercado({
     showToast('sucesso', 'Produto atualizado com sucesso!');
   }
 
+  // edição das informações do mercado (aba Informações): atualiza a tela
+  // com o que o servidor salvou e avisa o usuário
+  function handleInfoSalva(atualizado: MercadoInfo) {
+    setDados(prev => ({ ...prev, mercado: { ...prev.mercado!, ...atualizado } }));
+    showToast('sucesso', 'Informações atualizadas com sucesso!');
+  }
+
   const stats: Stat[] = [
     { val: String(totalProdutos), lbl: 'Produtos' },
     { val: String(totalCategorias), lbl: 'Categorias' },
@@ -1008,7 +1221,7 @@ export default function GerenciamentoMercado({
       onExportar={handleExportarRelatorio}
       totalPedidos={pedidos.length}
     />,
-    <SecInformacoes mercado={mercado} />,
+    <SecInformacoes mercado={mercado} onSalvo={handleInfoSalva} />,
   ];
 
   return (

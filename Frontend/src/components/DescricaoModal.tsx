@@ -11,10 +11,9 @@ interface Props {
 // vitrine do cliente e na do vendedor.
 export default function DescricaoModal({ titulo, descricao, onFechar }: Props) {
   return (
-    <div className="dmodal-overlay" onClick={onFechar} role="presentation">
+    <div className="dmodal-overlay">
       <div
         className="dmodal"
-        onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={`Sobre ${titulo}`}

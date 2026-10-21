@@ -86,8 +86,8 @@ export default function AdicionarMercadoFavorito({
   }
 
   return (
-    <div className="amf-overlay" onClick={onFechar}>
-      <div className="amf-modal" onClick={e => e.stopPropagation()}>
+    <div className="amf-overlay">
+      <div className="amf-modal">
 
         <div className="amf-header">
           <h3><IconStore size={16} /> Adicionar mercado favorito</h3>

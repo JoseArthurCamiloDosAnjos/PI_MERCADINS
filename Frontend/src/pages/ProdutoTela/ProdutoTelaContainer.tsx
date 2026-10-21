@@ -88,6 +88,7 @@ export default function ProdutoTelaContainer({
   return (
     <ProdutoTela
       produto={produto}
+      categoriaId={categoriaId}
       categoriaNome={categoriaNome}
       mercado={{ id: mercadoId, nome: mercadoNome, logo: mercadoLogo }}
       paleta={paleta}

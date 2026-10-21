@@ -132,8 +132,8 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
 
   return (
     <>
-      <div className="avm-overlay" onClick={onFechar}>
-        <div className="avm-modal" onClick={e => e.stopPropagation()}>
+      <div className="avm-overlay">
+        <div className="avm-modal">
           <div className="avm-header">
             <h2 className="avm-title">Avaliações do mercado</h2>
             <button className="avm-close" onClick={onFechar} aria-label="Fechar">✕</button>

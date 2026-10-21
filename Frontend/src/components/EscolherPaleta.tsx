@@ -272,8 +272,8 @@ export default function EscolherPaleta({
   }
 
   return (
-    <div className="ep-overlay" onClick={onFechar}>
-      <div className="ep-modal" onClick={e => e.stopPropagation()}>
+    <div className="ep-overlay">
+      <div className="ep-modal">
         <div className="ep-header">
           <h3><IconPaleta size={16} /> Personalizar cores da vitrine</h3>
           <button className="ep-fechar" onClick={onFechar}><IconX size={15} /></button>
@@ -432,8 +432,8 @@ export default function EscolherPaleta({
       </div>
 
       {modalConfirmacao && (
-        <div className="ep-confirm-overlay" onClick={() => setModalConfirmacao(false)}>
-          <div className="ep-confirm-modal" onClick={e => e.stopPropagation()}>
+        <div className="ep-confirm-overlay">
+          <div className="ep-confirm-modal">
             <div className="ep-confirm-icone">⚠️</div>
             <h4 className="ep-confirm-titulo">Contraste pode estar baixo</h4>
             <p className="ep-confirm-texto">

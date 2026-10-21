@@ -173,8 +173,8 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
     <>
       {salvando && <LoadingOverlay mensagem="Salvando perfil..." />}
 
-      <div className="pu-modal-overlay" onClick={onFechar}>
-        <div className="pu-modal" onClick={e => e.stopPropagation()}>
+      <div className="pu-modal-overlay">
+        <div className="pu-modal">
 
           <div className="pu-modal-header">
             <h2 className="pu-modal-title">Editar Perfil</h2>

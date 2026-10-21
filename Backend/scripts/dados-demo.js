@@ -34,6 +34,7 @@ const MERCADOS = [
     nome: 'Supermercado Bom Preço', cats: ['mercado', 'conveniencia'], cor: '0d2858', corTexto: 'f5c84a',
     desc: 'Mercado de bairro com mercearia completa, hortifruti fresquinho e o melhor preço de Taquaritinga. Entregamos na região Centro e arredores.',
     cep: '15900-010', bairro: 'Centro', rua: 'Rua das Palmeiras',
+    horario: { '0': ['10:00','12:00'], '1': ['08:00','18:00'], '2': ['08:00','18:00'], '3': ['08:00','18:00'], '4': ['08:00','18:00'], '5': ['08:00','22:00'], '6': ['09:00','14:00'] },
     grupos: [
       { nome: 'Mercearia', produtos: [
         { nome: 'Leite integral 1L',            desc: 'Leite integral pasteurizado', preco: '5,49',  estoque: 60, kw: 'milk' },
@@ -54,6 +55,7 @@ const MERCADOS = [
     nome: 'Hortifruti Quintal Verde', cats: ['hortifruti', 'organicos'], cor: '2e7d32', corTexto: 'ffffff',
     desc: 'Hortifruti e produtos orgânicos colhidos no dia. Verduras, frutas e temperos selecionados direto da horta.',
     cep: '15901-500', bairro: 'Jardim Ipanema', rua: 'Avenida Brasil',
+    horario: { '2': ['06:00','13:00'], '3': ['06:00','13:00'], '4': ['06:00','13:00'], '5': ['06:00','13:00'], '6': ['06:00','13:00'] },
     grupos: [
       { nome: 'Hortaliças e Frutas', produtos: [
         { nome: 'Tomate italiano (kg)',    desc: 'Colheita do dia',        preco: '6,99',  estoque: 40, kw: 'tomato' },
@@ -89,6 +91,7 @@ const MERCADOS = [
     nome: 'Padaria Pão Quentinho', cats: ['padaria'], cor: '8a5a2b', corTexto: 'fff8e7',
     desc: 'Padaria e confeitaria com pães fresquinhos o dia todo, salgados, bolos e tortas feitos na hora.',
     cep: '15900-250', bairro: 'Centro', rua: 'Rua XV de Novembro',
+    horario: { '1': ['05:30','19:00'], '2': ['05:30','19:00'], '3': ['05:30','19:00'], '4': ['05:30','19:00'], '5': ['05:30','20:00'], '6': ['06:00','13:00'] },
     grupos: [
       { nome: 'Pães', produtos: [
         { nome: 'Pão francês (kg)',        desc: 'Fornada das 6h',       preco: '16,90', estoque: 50, kw: 'bread' },
@@ -143,6 +146,7 @@ const MERCADOS = [
     nome: 'Conveniência 24 Horas', cats: ['conveniencia'], cor: '4527a0', corTexto: 'ffffff',
     desc: 'Loja de conveniência aberta 24 horas: sanduíches, itens rápidos e o que você precisar, a qualquer hora.',
     cep: '15900-001', bairro: 'Centro', rua: 'Rua Amazonas',
+    horario: { '0': ['08:00','20:00'], '1': ['07:00','23:30'], '2': ['07:00','23:30'], '3': ['07:00','23:30'], '4': ['07:00','23:30'], '5': ['07:00','23:59'], '6': ['08:00','23:59'] },
     grupos: [
       { nome: 'Praticidade', produtos: [
         { nome: 'Sanduíche pronto',        desc: 'Pronto para levar',   preco: '12,90', estoque: 15, kw: 'sandwich' },
@@ -182,6 +186,25 @@ const AVALIACOES = [
   ['mercadins.demo.cliente1@gmail.com', 'Orgânicos da Serra',       5, 'Qualidade que eu procurava.'],
   ['mercadins.demo.cliente2@gmail.com', 'Orgânicos da Serra',       4, 'Mel e granola excelentes.'],
   ['mercadins.demo.cliente3@gmail.com', 'Padaria Pão Quentinho',    4, 'Pão sempre quentinho!'],
+];
+
+// ── Avaliações demo de PRODUTOS (cliente → mercado → produto → nota/texto) ───
+const AVALIACOES_PRODUTOS = [
+  ['mercadins.demo.cliente3@gmail.com', 'Supermercado Bom Preço',   'Arroz agulhinha 5kg',   5, 'Grãos bons e o preço compensa.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Supermercado Bom Preço',   'Arroz agulhinha 5kg',   4, 'Bom arroz, embalagem firme.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Supermercado Bom Preço',   'Feijão carioca 1kg',    5, 'Fresquinho, cozinha rápido.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Supermercado Bom Preço',   'Leite integral 1L',     5, 'Sempre dentro da validade.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Supermercado Bom Preço',   'Óleo de soja 900ml',    4, 'Preço melhor que no vizinho.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Hortifruti Quintal Verde', 'Tomate italiano (kg)',  5, 'Tomate firme e maduro no ponto.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Hortifruti Quintal Verde', 'Tomate italiano (kg)',  4, 'Bem bonito, só faltou ser maior.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Hortifruti Quintal Verde', 'Alface crespa (un)',    5, 'Folha crocante, veio lindinha.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Hortifruti Quintal Verde', 'Banana prata (kg)',     5, 'Doce no ponto certo.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Padaria Pão Quentinho',    'Pão francês (kg)',      5, 'Crocante por fora, macio por dentro.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Padaria Pão Quentinho',    'Coxinha (un)',          5, 'Recheio cremoso demais!'],
+  ['mercadins.demo.cliente3@gmail.com', 'Açougue Boi Gordo',        'Patinho moído (kg)',    5, 'Carne moída fresca, sem excesso de água.'],
+  ['mercadins.demo.cliente2@gmail.com', 'Bebidas do Ponto',         'Coca-Cola 2L',          4, 'Gelada na entrega, nota alta.'],
+  ['mercadins.demo.cliente3@gmail.com', 'Orgânicos da Serra',       'Mel orgânico 500g',     5, 'Sabor incomparável, vale cada centavo.'],
+  ['mercadins.demo.cliente1@gmail.com', 'Conveniência 24 Horas',    'Sanduíche pronto',      4, 'Salvou meu jantar, razoável.'],
 ];
 
 // ── Pedidos demo (cliente → mercado → itens [nome do produto, qtd]) ──────────
@@ -357,6 +380,7 @@ async function logar(email) {
         rua: m.rua,
         descricao: m.desc,
         categorias: m.cats,
+        horario: m.horario ?? null,
       },
     });
     if (criado.status !== 201) throw new Error(`criar mercado ${m.nome}: ${criado.status} ${criado.body.erro || ''}`);
@@ -412,6 +436,30 @@ async function logar(email) {
   }
   console.log(`  ✓ ${totalAvaliacoes} avaliações de clientes`);
 
+  // 4b. Avaliações de produtos (estrelas por item da vitrine)
+  let totalAvaliacoesProdutos = 0;
+  for (const [email, mercado, produto, nota, texto] of AVALIACOES_PRODUTOS) {
+    const mercadoMeta = MERCADOS.find(m => m.nome === mercado);
+    const slugMercado = mercadoMeta.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const idMercado = (await sql`SELECT id_mercado FROM mercados WHERE slug = ${slugMercado}`)[0]?.id_mercado;
+    const prodRow = (await sql`
+      SELECT p.id_produto, p.id_categoria
+      FROM produtos p JOIN categorias c ON c.id_categoria = p.id_categoria
+      WHERE p.nome = ${produto} AND c.id_mercado = ${idMercado}
+      LIMIT 1
+    `)[0];
+    if (!prodRow) {
+      console.log(`  (avaliação de produto falhou: "${produto}" não encontrado em ${mercado})`);
+      continue;
+    }
+    const r = await rota('POST', `/api/mercados/${idMercado}/categorias/${prodRow.id_categoria}/produtos/${prodRow.id_produto}/avaliacoes`, {
+      token: tokensClientes[email], body: { nota, texto },
+    });
+    if (r.status === 201) totalAvaliacoesProdutos += 1;
+    else console.log(`  (avaliação de produto falhou: ${r.status} ${r.body.erro || ''})`);
+  }
+  console.log(`  ✓ ${totalAvaliacoesProdutos} avaliações de produtos`);
+
   // 5. Pedidos (contam nos "pedidos entregues" da home; a cada outro fica
   //    "entregue" pra mostrar os dois estados no histórico e no painel)
   let totalPedidos = 0;
@@ -436,7 +484,7 @@ async function logar(email) {
 
   // 6. Resumo
   console.log('\n================ DEMO PRONTA ================');
-  console.log(`Mercados: ${MERCADOS.length} | Produtos: ${totalProdutos} | Avaliações: ${totalAvaliacoes} | Pedidos: ${totalPedidos}`);
+  console.log(`Mercados: ${MERCADOS.length} | Produtos: ${totalProdutos} | Avaliações: ${totalAvaliacoes} + ${totalAvaliacoesProdutos} de produtos | Pedidos: ${totalPedidos}`);
   console.log(`Imagens: ${semBucket ? 'diretas (placehold.co) — bucket do Supabase recusa upload anônimo; corrigir política no painel' : 'enviadas pro bucket'}`);
   console.log('\nContas para apresentar:');
   console.log(`  Vendedor(a): ${VENDEDOR.email} / ${SENHA_DEMO}`);

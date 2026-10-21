@@ -183,6 +183,25 @@ export const api = {
       body: JSON.stringify(dados),
     }),
 
+  // ── Avaliações de produto ─────────────────────────────────────────────────
+  avaliacoesProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`),
+
+  criarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    dados: { nota: number; texto?: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+
   // ── Carrinho ────────────────────────────────────────────────────────────────
   buscarCarrinho: (mercadoId: string | number) =>
     request(`/carrinho/${mercadoId}`),

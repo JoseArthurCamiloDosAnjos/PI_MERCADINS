@@ -26,6 +26,19 @@ async function migrate() {
     )
   `;
 
+  // Avaliações de produto (estrelas por item) — mesmo formato das de mercado
+  await sql`
+    CREATE TABLE IF NOT EXISTS avaliacoes_produtos (
+      id SERIAL PRIMARY KEY,
+      id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+      id_produto INTEGER NOT NULL REFERENCES produtos(id_produto) ON DELETE CASCADE,
+      nota INTEGER NOT NULL CHECK (nota >= 1 AND nota <= 5),
+      texto TEXT DEFAULT '',
+      data_cadastro TIMESTAMP DEFAULT NOW(),
+      UNIQUE(id_usuario, id_produto)
+    )
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS historico_compras (
       id SERIAL PRIMARY KEY,
@@ -163,6 +176,16 @@ async function migrate() {
   // terem a mesma categoria — removida para o cadastro funcionar.
   await sql`
     ALTER TABLE categorias DROP CONSTRAINT IF EXISTS categorias_nome_key
+  `;
+
+  // Horário de funcionamento, salvo como JSON dentro de um texto:
+  //   {"1":["08:00","18:00"],"6":["10:00","14:00"]}
+  // Chave = dia da semana (0 = domingo ... 6 = sábado, igual ao Date do JS).
+  // Dia ausente = fechado naquele dia. Se a hora de FECHAR for menor que a
+  // de ABRIR, o mercado fecha depois da meia-noite (ex.: 18:00 → 02:00).
+  // Valor nulo = mercado ainda não configurou o horário.
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS horario TEXT DEFAULT NULL
   `;
 
   console.log('Tabelas criadas com sucesso!');

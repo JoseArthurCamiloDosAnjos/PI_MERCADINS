@@ -61,6 +61,13 @@ export default function SiteFooter() {
           ))}
         </div>
 
+        <div className="sf-contato">
+          Atendimento:
+          <a href="https://wa.me/5516988755641" target="_blank" rel="noreferrer">(16) 98875-5641</a>
+          <span className="sf-sep">·</span>
+          <a href="mailto:Suporte@mercadins.com.br">Suporte@mercadins.com.br</a>
+        </div>
+
         <div className="sf-copyright">
           © 2026 Mercadins. Todos os direitos reservados.
         </div>

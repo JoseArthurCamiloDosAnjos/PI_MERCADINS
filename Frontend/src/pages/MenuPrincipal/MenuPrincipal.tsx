@@ -908,6 +908,22 @@ export default function Mercadins() {
         </div>
       </main>
 
+      {/* ── Convite a lojistas da região: captação de parceiros ─────── */}
+      <section className="home-parceiro">
+        <div className="container home-parceiro-inner">
+          <div className="home-parceiro-texto">
+            <h2>Tem um mercado, padaria ou açougue?</h2>
+            <p>
+              Chegue a mais clientes na sua cidade: vitrine profissional, pedidos
+              online e gestão completa, no mesmo padrão das lojas desta página.
+            </p>
+          </div>
+          <Link to="/promocional" className="home-parceiro-btn">
+            Conheça os planos <IconArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
       <SiteFooter />
     </div>
   );

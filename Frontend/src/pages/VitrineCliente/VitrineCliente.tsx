@@ -218,6 +218,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [modalDescricao, setModalDescricao] = useState(false);
   const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
 
+  // Título da aba com o nome da loja (sobrescreve o título genérico da rota)
+  useEffect(() => {
+    if (dados?.nome) document.title = `${dados.nome} — Mercadins`;
+  }, [dados?.nome]);
+
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
   const { usuario } = useAuth();

@@ -29,6 +29,11 @@ export default function ProdutoTelaContainer({
   const [corDestaque, setCorDestaque] = useState<string | undefined>(undefined);
   const [carregando, setCarregando] = useState(true);
 
+  // Título da aba com o nome do produto (sobrescreve o título genérico da rota)
+  useEffect(() => {
+    if (produto?.nome) document.title = `${produto.nome} — Mercadins`;
+  }, [produto?.nome]);
+
   useEffect(() => {
     async function carregar() {
       try {

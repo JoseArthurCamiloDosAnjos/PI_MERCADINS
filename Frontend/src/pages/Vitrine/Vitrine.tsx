@@ -6,7 +6,6 @@ import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import DescricaoModal   from '../../components/DescricaoModal';
-import HorarioSemana    from '../../components/HorarioSemana';
 import ToastContainer   from '../../components/Toast';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
@@ -766,9 +765,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
             <p className="vt-local">
               <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
-
-            {/* Semana inteira visível: dias abertos e fechados (mesmo que o cliente vê) */}
-            <HorarioSemana horario={dados.horario} />
           </div>
         </div>
 

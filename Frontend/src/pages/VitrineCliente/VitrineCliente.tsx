@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
+import HorarioSemana from '../../components/HorarioSemana';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
@@ -89,6 +90,8 @@ interface VitrineMercado {
   corIcones?: string;
   /** Tipos de loja declarados no cadastro (ex.: Hortifruti, Padaria) */
   tipos?: string[];
+  /** Horário de funcionamento da semana (JSON do banco) */
+  horario?: unknown;
   categorias: Categoria[];
 }
 
@@ -257,6 +260,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
           tipos: normalizarTipos(mercadoData.mercado.categorias),
+          horario: mercadoData.mercado.horario ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -540,6 +544,9 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                 ))}
               </div>
             )}
+
+            {/* Semana inteira visível: dias abertos e fechados */}
+            <HorarioSemana horario={dados.horario} />
           </div>
         </div>
 

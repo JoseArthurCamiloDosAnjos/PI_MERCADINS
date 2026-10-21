@@ -888,7 +888,7 @@ button {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin: -2px 0 10px;
+  margin: 9px 0 0;
   font-size: 12px;
   font-weight: 700;
   color: #189252;
@@ -909,6 +909,7 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 6px;
   color: #59708f;
   font-size: 13px;
 }

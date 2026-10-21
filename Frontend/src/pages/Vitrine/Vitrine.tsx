@@ -6,6 +6,7 @@ import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import DescricaoModal   from '../../components/DescricaoModal';
+import HorarioSemana    from '../../components/HorarioSemana';
 import ToastContainer   from '../../components/Toast';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
@@ -63,6 +64,8 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
+  /** Horário de funcionamento da semana (JSON do banco) */
+  horario?: unknown;
   categorias: Categoria[];
 }
 
@@ -482,6 +485,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           corTexto: mercadoData.mercado.cor_texto ?? undefined,
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
+          horario: mercadoData.mercado.horario ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -746,6 +750,9 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                 : dados.descricao
               }
             </p>
+
+            {/* Semana inteira visível: dias abertos e fechados (mesmo que o cliente vê) */}
+            <HorarioSemana horario={dados.horario} />
           </div>
         </div>
 

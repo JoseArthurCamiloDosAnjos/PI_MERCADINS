@@ -95,7 +95,7 @@ export default function RegistrarMercado() {
   });
 
   // Plano que será salvo no banco: o escolhido na tela de planos
-  // (ids conhecidos pelo servidor); sem escolha, começa no Básico
+  // (ids conhecidos pelo servidor); sem escolha, começa no Essencial
   const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
     ? planoSelecionado!.id!
     : 'basico';

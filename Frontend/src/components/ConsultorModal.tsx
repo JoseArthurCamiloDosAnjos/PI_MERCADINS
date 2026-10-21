@@ -7,7 +7,7 @@ const EMAIL = "Suporte@mercadins.com.br";
 const TELEFONE_EXIBICAO = "(16) 98875-5641";
 
 const MENSAGEM =
-  "Olá! Estou no site do Mercadins e quero saber mais sobre o plano Personalizado.";
+  "Olá! Estou no site do Mercadins e quero saber mais sobre o plano Premium.";
 
 interface ConsultorModalProps {
   aberto: boolean;
@@ -29,7 +29,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
   const linkWhats =
     `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(MENSAGEM)}`;
   const linkEmail =
-    `mailto:${EMAIL}?subject=${encodeURIComponent("Plano Personalizado - Mercadins")}` +
+    `mailto:${EMAIL}?subject=${encodeURIComponent("Plano Premium - Mercadins")}` +
     `&body=${encodeURIComponent(MENSAGEM)}`;
 
   return (
@@ -47,7 +47,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
         <span className="ct-icone"><IconUser size={36} /></span>
         <h2 className="ct-titulo">Fale com um consultor</h2>
         <p className="ct-descricao">
-          O plano Personalizado é montado sob medida para o porte do seu mercado.
+          O plano Premium é montado sob medida para o porte do seu mercado.
           Conte o que você precisa e montamos a proposta na hora.
         </p>
 

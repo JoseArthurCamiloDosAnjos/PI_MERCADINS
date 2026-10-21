@@ -21,8 +21,10 @@ import {
   IconShare,
   IconLink,
   IconMessage,
+  IconMapPin,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
+import { localizacaoCompleta } from '../../utils/localizacao';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -93,6 +95,11 @@ interface VitrineMercado {
   tipos?: string[];
   /** Horário de funcionamento da semana (JSON do banco) */
   horario?: unknown;
+  /** Endereço da loja (aparece na header da vitrine) */
+  rua?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
   categorias: Categoria[];
 }
 
@@ -252,6 +259,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
           tipos: normalizarTipos(mercadoData.mercado.categorias),
           horario: mercadoData.mercado.horario ?? null,
+          rua: mercadoData.mercado.rua ?? null,
+          bairro: mercadoData.mercado.bairro ?? null,
+          cidade: mercadoData.mercado.cidade ?? null,
+          estado: mercadoData.mercado.estado ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -525,6 +536,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               <span>{(dados.avaliacao ?? 0).toFixed(1)}</span>
               <em className="vtc-avaliacao-cta">· Avaliar</em>
             </button>
+
+            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
+            <p className="vtc-local">
+              <IconMapPin size={15} /> {localizacaoCompleta(dados)}
+            </p>
 
             {dados.tipos && dados.tipos.length > 0 && (
               <div className="vtc-tipos">

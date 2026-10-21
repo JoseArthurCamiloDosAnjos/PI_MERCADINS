@@ -24,6 +24,7 @@ import {
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
 import { tipoPrincipal } from "../../utils/tipoLoja";
+import { localizacao } from "../../utils/localizacao";
 import HorarioSemana from "../../components/HorarioSemana";
 import {
   estaAberto,
@@ -78,13 +79,7 @@ function normalizar(valor: string) {
     .trim();
 }
 
-function localizacao(m: Store) {
-  if (m.bairro && m.cidade) return `${m.bairro} · ${m.cidade}`;
-  if (m.cidade && m.estado) return `${m.cidade} · ${m.estado}`;
-  if (m.cidade) return m.cidade;
-  return "Mercado parceiro";
-}
-
+// Nota da avaliação: "4,8" (vírgula brasileira)
 function formatrarNota(nota?: number) {
   const n = Number(nota ?? 0);
   if (Number.isNaN(n)) return "0,0";

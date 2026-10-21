@@ -300,6 +300,18 @@
 }
 .vt-btn-editar:hover { border-color: var(--vt-cor-icones); color: var(--vt-cor-icones); }
 
+/* Localização da loja (endereço visível, igual o cliente vê) */
+.vt-local {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  max-width: 620px;
+  font-size: 14px;
+  color: #c9d8ef;
+}
+.vt-local svg { flex: 0 0 auto; color: var(--vt-amarelo); }
+
 .vt-desc-mercado {
   font-size: 14px;
   line-height: 1.55;

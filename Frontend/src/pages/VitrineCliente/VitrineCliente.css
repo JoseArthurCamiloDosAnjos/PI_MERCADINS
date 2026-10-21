@@ -466,6 +466,18 @@
   background: rgba(245, 200, 74, 0.08);
 }
 
+/* ─── Localização da loja (endereço visível na header) ─── */
+.vtc-local {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  max-width: 620px;
+  font-size: 14px;
+  color: #c9d8ef;
+}
+.vtc-local svg { flex: 0 0 auto; color: var(--vt-amarelo); }
+
 /* ─── Tipos de loja declarados no cadastro ─── */
 .vtc-tipos {
   display: flex;

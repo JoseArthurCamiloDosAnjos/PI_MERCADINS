@@ -23,11 +23,12 @@ import {
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
+import { tipoPrincipal } from "../../utils/tipoLoja";
+import HorarioSemana from "../../components/HorarioSemana";
 import {
   estaAberto,
   horarioDeHoje,
   parseHorario,
-  resumoSemana,
 } from "../../utils/horario";
 
 type Store = {
@@ -194,11 +195,6 @@ export default function Mercadins() {
   // sem horário, ativo = aberto (compatível com mercados ainda sem rotina)
   const lojaAberta = (store: Store) =>
     estaAberto(parseHorario(store.horario), agora) ?? store.status === "ativo";
-
-  // Dica do badge: a semana inteira, começando por hoje
-  const statusTitulo = (store: Store) =>
-    resumoSemana(parseHorario(store.horario), agora) ||
-    (store.status === "ativo" ? "Mercado ativo" : "Mercado fechado");
 
   // Setas de rolagem da barra de categorias: aparecem só quando existe chip
   // escondido (testa o espaço real da barra em cada mudança de tela/rolagem)
@@ -748,7 +744,6 @@ export default function Mercadins() {
                         className={`store-status ${
                           lojaAberta(store) ? "aberto" : "fechado"
                         }`}
-                        title={statusTitulo(store)}
                       >
                         {lojaAberta(store) ? "Aberto" : "Fechado"}
                       </span>
@@ -778,6 +773,9 @@ export default function Mercadins() {
                     {/* Horário de hoje, quando o mercado configurou */}
                     <LinhaHorario store={store} agora={agora} />
 
+                    {/* Semana inteira visível: dias abertos e fechados */}
+                    <HorarioSemana horario={store.horario} />
+
                     {store.descricao && <p className="store-desc">{store.descricao}</p>}
 
                     <div className="store-meta">
@@ -796,7 +794,7 @@ export default function Mercadins() {
                     className="card-action"
                     onClick={() => irParaMercado(store.slug)}
                   >
-                    Acessar mercado
+                    Acessar {tipoPrincipal(tiposDoMercado(store)).toLowerCase()}
                     <IconArrowRight size={16} />
                   </button>
                 </article>
@@ -905,7 +903,7 @@ export default function Mercadins() {
                     <strong className="home-visto-nome">{store.nome}</strong>
                     <span className="home-visto-local">{localizacao(store)}</span>
                     <span className="home-visto-cta">
-                      Ver mercado <IconArrowRight size={14} />
+                      Ver {tipoPrincipal(tiposDoMercado(store)).toLowerCase()} <IconArrowRight size={14} />
                     </span>
                   </button>
                 ))}
@@ -929,10 +927,7 @@ function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
   if (!texto) return null;
   const fechado = texto.startsWith("Fechado");
   return (
-    <p
-      className={`store-horario ${fechado ? "off" : ""}`}
-      title={resumoSemana(parseHorario(store.horario), agora)}
-    >
+    <p className={`store-horario ${fechado ? "off" : ""}`}>
       {fechado ? <IconX size={13} /> : <IconClock size={13} />} {texto}
     </p>
   );

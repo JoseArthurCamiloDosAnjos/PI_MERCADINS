@@ -73,17 +73,35 @@ export function horarioDeHoje(
   return `Hoje: ${faixa[0]} – ${faixa[1]}`;
 }
 
-// Semana inteira numa linha por dia (tooltip do card), começando por hoje
-export function resumoSemana(
-  horario: HorarioMercado | null,
-  hoje = new Date()
-): string {
-  if (!horario) return "";
-  const partes: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const dia = (hoje.getDay() + i) % 7;
-    const faixa = horario[String(dia)];
-    partes.push(`${DIAS_CURTO[dia]}: ${faixa ? `${faixa[0]}–${faixa[1]}` : "fechado"}`);
+// ─── Semana explícita (sem tooltip) ──────────────────────────────────────────
+
+// Um grupo = dias consecutivos com o MESMO resultado (aberto com a mesma
+// faixa, ou fechado). Ex.: {"1..5":08-18, "6":09-13, ausente domingo}
+//   → Seg a Sex 08:00 – 18:00 / Sáb 09:00 – 13:00 / Dom Fechado
+export interface GrupoHorario {
+  dias: number[];
+  faixa: [string, string] | null;
+}
+
+// Ordem comercial: começa na segunda e termina no domingo
+export function gruposDaSemana(horario: HorarioMercado | null): GrupoHorario[] {
+  if (!horario) return [];
+  const ordem = [1, 2, 3, 4, 5, 6, 0];
+  const grupos: GrupoHorario[] = [];
+  for (const dia of ordem) {
+    const faixa = horario[String(dia)] ?? null;
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && JSON.stringify(ultimo.faixa) === JSON.stringify(faixa)) {
+      ultimo.dias.push(dia);
+    } else {
+      grupos.push({ dias: [dia], faixa });
+    }
   }
-  return partes.join("\n");
+  return grupos;
+}
+
+// Rótulo do grupo: "Sáb" (1 dia) ou "Seg a Sex" (faixa de dias)
+export function rotuloDias(dias: number[]): string {
+  if (dias.length === 1) return DIAS_CURTO[dias[0]];
+  return `${DIAS_CURTO[dias[0]]} a ${DIAS_CURTO[dias[dias.length - 1]]}`;
 }

@@ -16,7 +16,7 @@ export interface Plano {
 export const PLANOS: Plano[] = [
   {
     id: "basico",
-    name: "Básico",
+    name: "Essencial",
     price: "79",
     period: "/mês",
     highlight: false,
@@ -33,24 +33,24 @@ export const PLANOS: Plano[] = [
   },
   {
     id: "profissional",
-    name: "Profissional",
+    name: "Plus",
     price: "149",
     period: "/mês",
     highlight: true,
     badge: "Mais popular",
     features: [
-      "Tudo do Básico, com mais:",
+      "Tudo do Essencial, com mais:",
       "Até 1.500 produtos e 3.000 fotos",
       "Até 500 pedidos por mês e 6 operadores",
       "Cupons e promoções ativos",
       "Relatórios avançados e alertas de estoque",
       "Integração com WhatsApp e suporte em 24h",
     ],
-    cta: "Escolher Profissional",
+    cta: "Escolher Plus",
   },
   {
     id: "personalizado",
-    name: "Personalizado",
+    name: "Premium",
     price: "399",
     period: "/mês",
     highlight: false,
@@ -58,7 +58,7 @@ export const PLANOS: Plano[] = [
     sobConsulta: true,
     aPartirDe: "399",
     features: [
-      "Tudo do Profissional, com mais:",
+      "Tudo do Plus, com mais:",
       "Até 5 lojas com painel consolidado",
       "Até 5.000 produtos e 10.000 fotos",
       "Gerente de conta dedicado no WhatsApp",

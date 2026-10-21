@@ -145,7 +145,7 @@ export default function VerificarEmail() {
         <div className="circle circle-2" />
         <div className="circle circle-3" />
         <div className="logo-wrap">
-          <img className="logo-img" src={logoImg} alt="Mercadins Logo"
+          <img className="logo-img" src={logoImg} alt="Logo do Mercadins"
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

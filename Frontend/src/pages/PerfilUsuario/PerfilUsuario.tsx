@@ -28,7 +28,7 @@ interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastr
 interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
-const TITULOS = ['Meu Perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
+const TITULOS = ['Meu perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -101,7 +101,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
   return (
     <>
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados Favoritos</h2>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados favoritos</h2>
         <div className="pu-circles">
           <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
             <div
@@ -172,7 +172,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações Feitas</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações feitas</h2>
           <button className="pu-btn-link">Ver todas</button>
         </div>
         {avaliacoes.length === 0 ? (
@@ -267,7 +267,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Nova Senha</label>
+              <label className="pu-modal-label">Nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -283,7 +283,7 @@ function TelaSeguranca() {
               <PasswordStrength senha={form.novaSenha} />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Confirmar Nova Senha</label>
+              <label className="pu-modal-label">Confirmar nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -315,7 +315,7 @@ function TelaSeguranca() {
               onClick={enviarConfirmacao}
               disabled={enviando}
             >
-              <IconMail size={15} /> Enviar Código de Confirmação
+              <IconMail size={15} /> Enviar código de confirmação
             </button>
           </div>
         ) : etapa === 'codigo' ? (

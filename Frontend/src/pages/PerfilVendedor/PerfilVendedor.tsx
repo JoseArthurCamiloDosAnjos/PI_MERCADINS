@@ -60,7 +60,7 @@ const NAV_ITEMS = [
   { icon: <IconBell size={18} />, label: 'Comunicação' },
 ];
 
-const TITULOS = ['Painel do Vendedor', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
+const TITULOS = ['Painel do vendedor', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -104,9 +104,9 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
 
   const stats = [
-    { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados Ativos' },
-    { Icon: IconStar, cls: 'gold', val: '0 ★', lbl: 'Avaliação Média' },
-    { Icon: IconPackage, cls: 'gold', val: '0', lbl: 'Pedidos Totais' },
+    { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados ativos' },
+    { Icon: IconStar, cls: 'gold', val: '0 ★', lbl: 'Avaliação média' },
+    { Icon: IconPackage, cls: 'gold', val: '0', lbl: 'Pedidos totais' },
   ];
 
   return (
@@ -127,7 +127,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados Gerenciados</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados gerenciados</h2>
           <button className="pu-btn-link">Gerenciar todos</button>
         </div>
         <div className="pv-mkt-row">
@@ -164,7 +164,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
       <div className="pu-divider" />
 
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconHeart size={14} /></span>Mercados Favoritos</h2>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconHeart size={14} /></span>Mercados favoritos</h2>
         <div className="pu-circles">
           <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
             <div
@@ -231,7 +231,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações Feitas</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações feitas</h2>
           <button className="pu-btn-link">Ver todas</button>
         </div>
         {avaliacoes.length === 0 ? (
@@ -324,7 +324,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Nova Senha</label>
+              <label className="pu-modal-label">Nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -340,7 +340,7 @@ function TelaSeguranca() {
               <PasswordStrength senha={form.novaSenha} />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Confirmar Nova Senha</label>
+              <label className="pu-modal-label">Confirmar nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -372,7 +372,7 @@ function TelaSeguranca() {
               onClick={enviarConfirmacao}
               disabled={enviando}
             >
-              <IconMail size={15} /> Salvar e Confirmar por Email
+              <IconMail size={15} /> Salvar e confirmar por e-mail
             </button>
           </div>
         ) : etapa === 'codigo' ? (

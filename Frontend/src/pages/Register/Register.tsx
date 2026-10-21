@@ -326,7 +326,7 @@ export default function Register() {
           <img
             className="logo-img"
             src={logoImg}
-            alt="Mercadins Logo"
+            alt="Logo do Mercadins"
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -549,7 +549,7 @@ export default function Register() {
                 <input
                   type={showConfirmar ? "text" : "password"}
                   name="confirmar"
-                  placeholder="Confirmar Senha"
+                  placeholder="Confirmar senha"
                   autoComplete="new-password"
                   maxLength={LIMITS.confirmar}
                   onKeyDown={bloquearEspaco}

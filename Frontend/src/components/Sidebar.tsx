@@ -117,7 +117,7 @@ export default function Sidebar({
           {badge && <span className="sb-badge">{badge}</span>}
           {onEditarPerfil && (
             <button className="sb-edit-btn" onClick={() => { onEditarPerfil(); setOpen(false); }}>
-              <IconPencil size={13} /> Editar Perfil
+              <IconPencil size={13} /> Editar perfil
             </button>
           )}
         </div>

@@ -87,7 +87,7 @@ export default function Login() {
           <img
             className="logo-img"
             src={logoImg}
-            alt="Mercadins Logo"
+            alt="Logo do Mercadins"
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

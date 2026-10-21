@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './Vitrine.css';
 import CadastroProduto  from '../../components/CadastroProduto';
 import EditarMercado    from '../../components/EditarMercado';
@@ -428,7 +427,6 @@ function TelaVazia({ onCriar }: { onCriar: () => void }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
-  const navigate = useNavigate();
   const [dados, setDados]                         = useState<VitrineMercado>(MERCADO_PLACEHOLDER);
   const [temAlteracoes, setTemAlteracoes]         = useState(false);
   const [salvandoVitrine, setSalvandoVitrine]     = useState(false);
@@ -693,9 +691,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
               <IconArrowLeft size={15} /> Voltar ao Gerenciamento
             </button>
           )}
-          <button className="vt-btn-voltar vt-btn-voltar--menu" onClick={() => navigate('/')}>
-            Voltar ao menu
-          </button>
         </div>
 
         <div className="vt-topbar-direita">

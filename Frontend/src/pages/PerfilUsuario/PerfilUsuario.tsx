@@ -12,10 +12,6 @@ import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito'
 import './PerfilUsuario.css';
 import {
   IconLock,
-  IconMapPin,
-  IconCreditCard,
-  IconReceipt,
-  IconBell,
   IconStore,
   IconShoppingBag,
   IconStar,
@@ -28,7 +24,7 @@ interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastr
 interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
-const TITULOS = ['Meu perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
+const TITULOS = ['Meu perfil', 'Segurança'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -383,42 +379,6 @@ function TelaSeguranca() {
   );
 }
 
-function TelaEnderecos() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços</h2>
-      <p className="pu-sec-desc">Gerencie seus endereços de entrega.</p>
-    </section>
-  );
-}
-
-function TelaCartoes() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconCreditCard size={14} /></span>Cartões</h2>
-      <p className="pu-sec-desc">Gerencie seus cartões de pagamento.</p>
-    </section>
-  );
-}
-
-function TelaFatura() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconReceipt size={14} /></span>Fatura</h2>
-      <p className="pu-sec-desc">Visualize e baixe suas faturas.</p>
-    </section>
-  );
-}
-
-function TelaComunicacao() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconBell size={14} /></span>Comunicação</h2>
-      <p className="pu-sec-desc">Configure suas preferências de notificação.</p>
-    </section>
-  );
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PerfilUsuario() {
@@ -452,10 +412,6 @@ export default function PerfilUsuario() {
   const TELAS = [
     <TelaPerfil favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
-    <TelaEnderecos />,
-    <TelaCartoes />,
-    <TelaFatura />,
-    <TelaComunicacao />,
   ];
 
   useEffect(() => {

@@ -178,7 +178,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
 
           <div className="pu-modal-header">
             <h2 className="pu-modal-title">Editar perfil</h2>
-            <button className="pu-modal-close" onClick={onFechar}>✕</button>
+            <button className="pu-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
           </div>
 
           <div className="pu-modal-avatar">

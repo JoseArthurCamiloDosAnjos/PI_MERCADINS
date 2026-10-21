@@ -276,7 +276,7 @@ export default function EscolherPaleta({
       <div className="ep-modal">
         <div className="ep-header">
           <h3><IconPaleta size={16} /> Personalizar cores da vitrine</h3>
-          <button className="ep-fechar" onClick={onFechar}><IconX size={15} /></button>
+          <button className="ep-fechar" onClick={onFechar} aria-label="Fechar"><IconX size={15} /></button>
         </div>
 
         <p className="ep-sub">Escolha uma paleta pronta ou crie a sua — os clientes verão essas cores na vitrine.</p>

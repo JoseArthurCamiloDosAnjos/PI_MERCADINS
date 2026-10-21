@@ -70,7 +70,7 @@ export default function Login() {
         <div className="circle circle-1" />
         <div className="circle circle-2" />
         <div className="circle circle-3" />
-        <button className="btn-back" onClick={() => history.back()}>
+        <button className="btn-back" aria-label="Voltar" onClick={() => history.back()}>
           <svg
             width="18"
             height="18"
@@ -167,6 +167,7 @@ export default function Login() {
               <button
                 type="button"
                 className="toggle-senha"
+                aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowSenha((v) => !v)}
               >
                 {showSenha ? (

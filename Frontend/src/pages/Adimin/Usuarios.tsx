@@ -412,7 +412,7 @@ export default function Usuarios() {
       {detalhes && (
         <div className="adm-modal-overlay">
           <div className="adm-modal">
-            <button className="adm-modal-close" onClick={() => setDetalhes(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setDetalhes(null)}>
               <CloseIcon />
             </button>
 
@@ -542,7 +542,7 @@ export default function Usuarios() {
       {editando && (
         <div className="adm-modal-overlay">
           <div className="adm-modal adm-modal-editar">
-            <button className="adm-modal-close" onClick={() => setEditando(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setEditando(null)}>
               <CloseIcon />
             </button>
             <h2>Editar usuário</h2>
@@ -661,7 +661,7 @@ export default function Usuarios() {
       {mercadoDetalhes && (
         <div className="adm-modal-overlay">
           <div className="adm-modal">
-            <button className="adm-modal-close" onClick={() => setMercadoDetalhes(null)}>
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setMercadoDetalhes(null)}>
               <CloseIcon />
             </button>
             <h2>Detalhes do Mercado</h2>

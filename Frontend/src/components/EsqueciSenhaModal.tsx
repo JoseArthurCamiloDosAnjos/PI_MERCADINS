@@ -103,7 +103,7 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        <button className="modal-close" onClick={onClose}>×</button>
+        <button className="modal-close" onClick={onClose} aria-label="Fechar">×</button>
 
         {etapa === "email" ? (
           <>

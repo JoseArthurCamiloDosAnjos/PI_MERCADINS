@@ -319,6 +319,9 @@ export default function MercadinsPromo() {
             <button
               className={`mp-toggle-btn ${billingAnnual ? "mp-toggle-on" : ""}`}
               onClick={() => setBillingAnnual(!billingAnnual)}
+              role="switch"
+              aria-checked={billingAnnual}
+              aria-label="Alternar cobrança mensal ou anual"
             >
               <span className="mp-toggle-knob" />
             </button>

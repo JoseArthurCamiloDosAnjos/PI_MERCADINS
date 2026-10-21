@@ -219,7 +219,7 @@ export default function RegistrarMercado() {
         <div className="circle circle-1" />
         <div className="circle circle-2" />
         <div className="circle circle-3" />
-        <button className="btn-back" onClick={() => navigate(-1)}>
+        <button className="btn-back" aria-label="Voltar" onClick={() => navigate(-1)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>

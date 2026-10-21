@@ -91,7 +91,7 @@ export default function AdicionarMercadoFavorito({
 
         <div className="amf-header">
           <h3><IconStore size={16} /> Adicionar mercado favorito</h3>
-          <button className="amf-fechar" onClick={onFechar}><IconX size={15} /></button>
+          <button className="amf-fechar" onClick={onFechar} aria-label="Fechar"><IconX size={15} /></button>
         </div>
 
         <div className="amf-busca-wrap">

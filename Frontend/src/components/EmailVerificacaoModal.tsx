@@ -101,7 +101,7 @@ export default function EmailVerificacaoModal({ email, onClose }: EmailVerificac
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        <button className="modal-close" onClick={onClose}>×</button>
+        <button className="modal-close" onClick={onClose} aria-label="Fechar">×</button>
 
         <div className="modal-icon-wrap modal-icon-email">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

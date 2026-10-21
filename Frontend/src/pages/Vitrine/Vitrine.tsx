@@ -212,7 +212,7 @@ function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
 
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
-    <button className="vt-produto-card vt-produto-add" onClick={onAdd}>
+    <button className="vt-produto-card vt-produto-add" onClick={onAdd} aria-label="Adicionar ao carrinho">
       <span className="vt-add-icon"><IconPlus size={20} /></span>
     </button>
   );

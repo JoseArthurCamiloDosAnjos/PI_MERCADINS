@@ -259,7 +259,7 @@ function EditarProdutoModal({
       <div className="gm-modal">
         <div className="gm-modal-header">
           <h3>Editar produto</h3>
-          <button className="gm-modal-close" onClick={onFechar}>✕</button>
+          <button className="gm-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
         </div>
 
         <div className="gm-modal-body">
@@ -1246,6 +1246,7 @@ export default function GerenciamentoMercado({
               key={i}
               className={`gm-nav-btn${nav === i ? ' active' : ''}`}
               style={{ animationDelay: `${0.18 + i * 0.06}s` }}
+              aria-label={item.label}
               onClick={() => setNav(i)}
             >
               <span className="gm-nav-icon">{item.icon}</span>

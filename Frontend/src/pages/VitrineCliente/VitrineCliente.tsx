@@ -460,6 +460,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}
             onClick={() => setCarrinhoAberto(true)}
+            aria-label={carrinho.totalItens > 0 ? `Abrir carrinho (${carrinho.totalItens} itens)` : 'Abrir carrinho'}
           >
             <IconCart size={17} />
             {carrinho.totalItens > 0 && <span className="vtc-carrinho-badge">{carrinho.totalItens}</span>}

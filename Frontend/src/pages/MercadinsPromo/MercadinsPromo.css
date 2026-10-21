@@ -357,6 +357,9 @@ html {
   gap: 4px;
 }
 .mp-ai-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   color: #F5C000;
   font-weight: 700;
@@ -510,6 +513,7 @@ html {
 .mp-benefit-icon {
   font-size: 36px;
   margin-bottom: 16px;
+  color: #f5c000;
 }
 .mp-benefit-card h3 {
   font-size: 17px;
@@ -863,6 +867,9 @@ html {
   color: #0D2251;
 }
 .mp-cta-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: rgba(13,34,81,0.6);
 }

@@ -21,6 +21,7 @@ import {
   IconStar,
   IconMail,
   IconInbox,
+  IconInfo,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -158,7 +159,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <span className={`pu-status ${p.status}`}>● {p.status}</span>
                   <PilhaStatus status={p.status} />
                   {p.observacao && (
-                    <p className="pu-hcard-obs" title="Sua observação neste pedido">📝 {p.observacao}</p>
+                    <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
                   )}
                 </div>
               </div>
@@ -251,7 +252,7 @@ function TelaSeguranca() {
         {etapa === 'form' ? (
           <div className="pu-form-block">
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Senha Atual</label>
+              <label className="pu-modal-label">Senha atual</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -297,7 +298,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"
@@ -338,7 +339,7 @@ function TelaSeguranca() {
               />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"

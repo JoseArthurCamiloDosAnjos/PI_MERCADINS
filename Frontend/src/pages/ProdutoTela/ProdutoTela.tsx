@@ -217,7 +217,7 @@ export default function ProdutoTela({
         nota: notaForm,
         texto: textoAval,
       });
-      showToast('sucesso', jaAvaliou ? 'Sua avaliação foi atualizada!' : 'Avaliação enviada, obrigado!');
+      showToast('sucesso', jaAvaliou ? 'Sua avaliação foi atualizada com sucesso.' : 'Avaliação enviada com sucesso.');
       const novo = await api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto) as ResumoAvaliacoes;
       setAvaliacoes(novo);
     } catch (err) {

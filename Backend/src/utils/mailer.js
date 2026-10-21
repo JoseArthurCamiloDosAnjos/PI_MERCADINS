@@ -7,7 +7,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
   await resend.emails.send({
     from: EmailDominio,
     to: email,
-    subject: "Verifique seu email — Mercadins",
+    subject: "Verifique seu e-mail — Mercadins",
     html: `
       <!DOCTYPE html>
       <html>
@@ -15,7 +15,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
         <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
           
           <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
-            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">📩 Verificação de Email</h1>
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Verificação de e-mail</h1>
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
           </div>
 
@@ -37,7 +37,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
 
             <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
               <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
-                ⏱ Este código expira em <strong>24 horas</strong>.<br/>
+                Este código expira em <strong>24 horas</strong>.<br/>
                 ${linkVerificacao ? `Você também pode <a href="${linkVerificacao}" style="color: #0d2a5e; font-weight: 600;">clicando aqui</a>.<br/>` : ''}
                 Se você não solicitou o cadastro, ignore este email.
               </p>
@@ -65,7 +65,7 @@ const enviarEmailRecuperacao = async (email, codigo) => {
         <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
           
           <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
-            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">🔒 Redefinir Senha</h1>
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Redefinir senha</h1>
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
           </div>
 
@@ -81,7 +81,7 @@ const enviarEmailRecuperacao = async (email, codigo) => {
 
             <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
               <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
-                ⏱ Este código expira em <strong>15 minutos</strong>.<br/>
+                Este código expira em <strong>15 minutos</strong>.<br/>
                 Se você não solicitou a redefinição, ignore este email — sua senha permanece a mesma.
               </p>
             </div>
@@ -98,7 +98,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
   await resend.emails.send({
     from: EmailDominio,
     to: email,
-    subject: "Confirme seu novo email — Mercadins",
+    subject: "Confirme seu novo e-mail — Mercadins",
     html: `
       <!DOCTYPE html>
       <html>
@@ -106,7 +106,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
         <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
           
           <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
-            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">✉️ Confirmar novo email</h1>
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Confirmar novo e-mail</h1>
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
           </div>
 
@@ -122,7 +122,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
 
             <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
               <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
-                ⏱ Este código expira em <strong>15 minutos</strong>.<br/>
+                Este código expira em <strong>15 minutos</strong>.<br/>
                 Se você não solicitou a alteração, ignore este email — seu email permanece o mesmo.
               </p>
             </div>

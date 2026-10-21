@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState } from 'react';
 import './EscolherPaleta.css';
-import { IconCheck, IconX } from './Icons';
+import { IconCheck, IconX, IconAlert } from './Icons';
 
 // ─── Paletas prontas ────────────────────────────────────────────────────────
 // Os nomes das variáveis (azulEscuro, amarelo, etc.) são só rótulos internos —
@@ -387,19 +387,19 @@ export default function EscolherPaleta({
               <div className="ep-aviso-contraste">
                 {contrasteTexto.aviso && (
                   <p className="ep-aviso-texto">
-                    <span className="ep-aviso-icone">⚠️</span>
+                    <span className="ep-aviso-icone"><IconAlert size={13} /></span>
                     <span><strong>Texto:</strong> {contrasteTexto.aviso}</span>
                   </p>
                 )}
                 {contrasteTextoSec.aviso && (
                   <p className="ep-aviso-texto">
-                    <span className="ep-aviso-icone">⚠️</span>
+                    <span className="ep-aviso-icone"><IconAlert size={13} /></span>
                     <span><strong>Texto secundário:</strong> {contrasteTextoSec.aviso}</span>
                   </p>
                 )}
                 {contrasteIcones.aviso && (
                   <p className="ep-aviso-texto">
-                    <span className="ep-aviso-icone">⚠️</span>
+                    <span className="ep-aviso-icone"><IconAlert size={13} /></span>
                     <span><strong>Ícones:</strong> {contrasteIcones.aviso}</span>
                   </p>
                 )}
@@ -434,7 +434,7 @@ export default function EscolherPaleta({
       {modalConfirmacao && (
         <div className="ep-confirm-overlay">
           <div className="ep-confirm-modal">
-            <div className="ep-confirm-icone">⚠️</div>
+            <div className="ep-confirm-icone"><IconAlert size={32} /></div>
             <h4 className="ep-confirm-titulo">Contraste pode estar baixo</h4>
             <p className="ep-confirm-texto">
               As cores escolhidas podem tornar o texto ou ícones difíceis de ler,

@@ -309,7 +309,7 @@ function TelaSeguranca() {
         {etapa === 'form' ? (
           <div className="pu-form-block">
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Senha Atual</label>
+              <label className="pu-modal-label">Senha atual</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -355,7 +355,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"
@@ -396,7 +396,7 @@ function TelaSeguranca() {
               />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"

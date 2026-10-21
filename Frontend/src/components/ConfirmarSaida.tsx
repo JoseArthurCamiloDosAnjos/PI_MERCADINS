@@ -1,4 +1,5 @@
 import './ConfirmarSaida.css';
+import { IconAlert } from './Icons';
 
 interface ConfirmarSaidaProps {
   onSalvarESair: () => void;
@@ -18,7 +19,7 @@ export default function ConfirmarSaida({
       <div className="cs-modal">
 
         <div className="cs-icone-wrap">
-          <span className="cs-icone">⚠</span>
+          <span className="cs-icone"><IconAlert size={40} /></span>
         </div>
 
         <div className="cs-conteudo">

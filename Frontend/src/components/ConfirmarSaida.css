@@ -43,6 +43,7 @@
 .cs-icone {
   font-size: 40px;
   line-height: 1;
+  color: #f5c000;
   filter: drop-shadow(0 0 12px rgba(245, 200, 74, 0.4));
   animation: csPulse 2s ease-in-out infinite;
 }

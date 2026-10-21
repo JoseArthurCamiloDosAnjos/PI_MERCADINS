@@ -763,7 +763,8 @@ button {
 }
 
 .store-cover-icon {
-  font-size: 38px;
+  display: grid;
+  place-items: center;
 }
 
 .store-cover:not(.dark) {
@@ -884,6 +885,9 @@ button {
 
 /* Horário de funcionamento de hoje no card */
 .store-horario {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin: -2px 0 10px;
   font-size: 12px;
   font-weight: 700;

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PaginaInstitucional from "./Institucional";
+import { IconMessage, IconMail } from "../../components/Icons";
 
 type Pergunta = {
   pergunta: string;
@@ -60,7 +61,7 @@ export default function Atendimento() {
         <h2>Fale conosco</h2>
         <div className="inst-contato-grid">
           <div className="inst-contato-card">
-            <div className="inst-card-icon" style={{ margin: "0 auto" }}>💬</div>
+            <div className="inst-card-icon" style={{ margin: "0 auto" }}><IconMessage size={22} /></div>
             <h3>WhatsApp</h3>
             <p>Respostas rápidas, de segunda a sábado.</p>
             <a
@@ -74,7 +75,7 @@ export default function Atendimento() {
           </div>
 
           <div className="inst-contato-card">
-            <div className="inst-card-icon" style={{ margin: "0 auto" }}>✉️</div>
+            <div className="inst-card-icon" style={{ margin: "0 auto" }}><IconMail size={22} /></div>
             <h3>E-mail</h3>
             <p>Para assuntos que precisam de anexos ou protocolo.</p>
             <a className="inst-contato-valor" href="mailto:Suporte@mercadins.com.br">

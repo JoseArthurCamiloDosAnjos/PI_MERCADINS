@@ -2,6 +2,7 @@ import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
 import { supabase } from '../services/supabase';
+import { IconUpload } from './Icons';
 import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -299,7 +300,7 @@ export default function CadastroProduto({
                 className="cp-input-file"
                 onChange={(e: ChangeEvent<HTMLInputElement>) => lerArquivos(e.target.files)}
               />
-              <span className="cp-upload-icon">⬆</span>
+              <span className="cp-upload-icon"><IconUpload size={24} /></span>
               <span className="cp-upload-texto">
                 Arraste imagens aqui ou <strong>clique para selecionar</strong>
               </span>

@@ -40,7 +40,7 @@ export default function Login() {
       } else {
         localStorage.removeItem('is_admin_login');
       }
-      showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
+      showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}!`);
       setTimeout(() => {
         const destino = sessionStorage.getItem("posLoginDestino");
         sessionStorage.removeItem("posLoginDestino");
@@ -51,7 +51,7 @@ export default function Login() {
       if (msg.includes("Verifique")) {
         navigate(`/verificar-email?email=${encodeURIComponent(form.email.trim())}`);
       } else {
-        showToast("erro", msg || "Email ou senha incorretos.");
+        showToast("erro", msg || "E-mail ou senha incorretos.");
       }
     } finally {
       setCarregando(false);
@@ -100,11 +100,11 @@ export default function Login() {
           </div>
           <div className="form-header">
             <h1>
-              Bem Vindo
+              Bem-vindo
               <br />
-              de Volta! 👋
+              de volta!
             </h1>
-            <p>Vamos te reconectar aqui abaixo!</p>
+            <p>Acesse a sua conta abaixo.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
@@ -112,7 +112,7 @@ export default function Login() {
               <input
                 type="email"
                 name="email"
-                placeholder="Email:"
+                placeholder="E-mail:"
                 autoComplete="email"
                 maxLength={LIMITS.email}
                 onKeyDown={bloquearEspaco}
@@ -188,7 +188,7 @@ export default function Login() {
               className="forgot"
               onClick={() => setShowEsqueciModal(true)}
             >
-              Esqueci Minha Senha
+              Esqueci minha senha
             </button>
 
             <button type="submit" className="btn btn-secondary" disabled={carregando}>

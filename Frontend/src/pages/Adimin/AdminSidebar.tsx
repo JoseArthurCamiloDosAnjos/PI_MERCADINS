@@ -17,9 +17,9 @@ interface AdminSidebarProps {
 
 const NAV_ITEMS = [
   { icon: <IconBarChart size={18} />, label: 'Dashboard' },
-  { icon: <IconUser size={18} />, label: 'Usuarios' },
-  { icon: <IconReceipt size={18} />, label: 'Relatorios' },
-  { icon: <IconGear size={18} />, label: 'Configuracoes' },
+  { icon: <IconUser size={18} />, label: 'Usuários' },
+  { icon: <IconReceipt size={18} />, label: 'Relatórios' },
+  { icon: <IconGear size={18} />, label: 'Configurações' },
 ]
 
 export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {

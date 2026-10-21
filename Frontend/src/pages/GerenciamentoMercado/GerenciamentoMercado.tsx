@@ -258,7 +258,7 @@ function EditarProdutoModal({
     <div className="gm-modal-overlay">
       <div className="gm-modal">
         <div className="gm-modal-header">
-          <h3>Editar Produto</h3>
+          <h3>Editar produto</h3>
           <button className="gm-modal-close" onClick={onFechar}>✕</button>
         </div>
 
@@ -587,7 +587,7 @@ function SecPedidos({
                 )}
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
-                    📝 {p.observacao}
+                    <IconInfo size={12} /> {p.observacao}
                   </span>
                 )}
               </div>

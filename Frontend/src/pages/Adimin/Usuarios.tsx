@@ -430,7 +430,7 @@ export default function Usuarios() {
             </div>
 
             <div className="adm-modal-section">
-              <h3>Informacoes Pessoais</h3>
+              <h3>Informações pessoais</h3>
               <div className="adm-modal-info-grid">
                 <div>
                   <label>Nome completo</label>
@@ -476,7 +476,7 @@ export default function Usuarios() {
 
             {detalhes.mercados.length > 0 && (
               <div className="adm-modal-section">
-                <h3>Mercados Vinculados ({detalhes.mercados.length})</h3>
+                <h3>Mercados vinculados ({detalhes.mercados.length})</h3>
                 {detalhes.mercados.map(m => (
                   <div key={m.id_mercado} className="adm-mercado-card">
                     <div className="adm-mercado-info">
@@ -496,7 +496,7 @@ export default function Usuarios() {
 
             {detalhes.atividades.length > 0 && (
               <div className="adm-modal-section">
-                <h3>Historico de Atividades</h3>
+                <h3>Histórico de atividades</h3>
                 <div className="adm-atividade-lista">
                   {detalhes.atividades.map((a, i) => (
                     <div key={i} className="adm-atividade-item">
@@ -545,7 +545,7 @@ export default function Usuarios() {
             <button className="adm-modal-close" onClick={() => setEditando(null)}>
               <CloseIcon />
             </button>
-            <h2>Editar Usuario</h2>
+            <h2>Editar usuário</h2>
 
             <div className="adm-form-group">
               <label>Nome</label>
@@ -681,7 +681,7 @@ export default function Usuarios() {
                   <span>{mascararCNPJ(String(mercadoDetalhes.mercado.cnpj ?? ''))}</span>
                 </div>
                 <div>
-                  <label>Email</label>
+                  <label>E-mail</label>
                   <span>{String(mercadoDetalhes.mercado.email ?? '')}</span>
                 </div>
                 <div>
@@ -741,7 +741,7 @@ export default function Usuarios() {
       {confirmandoExclusao && (
         <div className="adm-modal-overlay">
           <div className="adm-modal adm-modal-confirmar">
-            <h2>Excluir Usuario</h2>
+            <h2>Excluir usuário</h2>
             <p>Tem certeza que deseja excluir este usuario? Esta acao nao pode ser desfeita.</p>
             <div className="adm-modal-actions">
               <button className="adm-btn-cancelar" onClick={() => setConfirmandoExclusao(null)}>Cancelar</button>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
+import { IconShoppingCart } from "../../components/Icons";
 import "./Cart.css";
 
 // ---------------------------------------------------------------
@@ -211,7 +212,7 @@ export default function CartScreen({
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
-                    <span className="cart-item__thumb-ph" aria-hidden="true">🛒</span>
+                    <span className="cart-item__thumb-ph" aria-hidden="true"><IconShoppingCart size={26} /></span>
                   )}
                 </div>
 
@@ -297,7 +298,7 @@ export default function CartScreen({
             </div>
             {shipping > 0 && missingForFreeShipping > 0 && (
               <div className="cart-summary__row">
-                <span>Faltam {formatBRL(missingForFreeShipping)} p/ frete grátis</span>
+                <span>Faltam {formatBRL(missingForFreeShipping)} para frete grátis</span>
                 <span> </span>
               </div>
             )}

@@ -1326,3 +1326,59 @@ button {
   font-size: 0.82rem;
   font-weight: 600;
 }
+
+/* ─── Faixa "seja parceiro": captação de lojistas ───────────────────────── */
+.home-parceiro {
+  background: linear-gradient(135deg, var(--navy) 0%, #16336e 100%);
+  border-top: 1px solid rgba(255, 212, 38, 0.18);
+}
+
+.home-parceiro-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 40px 0;
+}
+
+.home-parceiro-texto h2 {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.home-parceiro-texto p {
+  margin: 0;
+  max-width: 640px;
+  color: #9fb2d4;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.home-parceiro-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border-radius: 10px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-parceiro-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255, 212, 38, 0.3);
+}
+
+@media (max-width: 760px) {
+  .home-parceiro-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 30px 0;
+  }
+}

@@ -72,6 +72,32 @@
   font-size: 12px;
 }
 
+/* ─── Linha de contato (mesmos canais da página Atendimento) ───── */
+.sf-contato {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9fb2d4;
+  font-size: 13px;
+}
+
+.sf-contato a {
+  color: #cbd7ed;
+  text-decoration: none;
+}
+
+.sf-contato a:hover {
+  color: #ffd426;
+}
+
+.sf-sep {
+  color: #59708f;
+}
+
 @media (max-width: 800px) {
   .sf-grid {
     grid-template-columns: 1fr 1fr;

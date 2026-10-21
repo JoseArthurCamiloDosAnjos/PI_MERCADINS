@@ -28,7 +28,7 @@ const PASSOS_VENDEDOR = [
   {
     titulo: "Escolha seu plano",
     texto:
-      "Os planos Essencial, Plus e Premium atendem desde o mercado de bairro até a rede com várias lojas.",
+      "Os planos Essencial, Plus e Personalizado atendem desde o mercado de bairro até a rede com várias lojas.",
   },
   {
     titulo: "Cadastre seu mercado",

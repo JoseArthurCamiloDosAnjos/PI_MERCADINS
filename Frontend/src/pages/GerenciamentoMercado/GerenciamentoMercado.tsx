@@ -113,7 +113,7 @@ interface DadosMercado {
 const NOMES_PLANOS: Record<string, string> = {
   basico: 'Essencial',
   profissional: 'Plus',
-  personalizado: 'Premium',
+  personalizado: 'Personalizado',
 };
 
 function formatarBRL(valor: number) {

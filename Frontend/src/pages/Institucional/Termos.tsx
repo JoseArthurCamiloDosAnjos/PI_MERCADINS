@@ -47,7 +47,7 @@ export default function Termos() {
         <h2>5. Planos e assinatura</h2>
         <p>
           Mercados pagam mensalidade conforme o plano escolhido (Essencial,
-          Plus ou Premium), com limites de produtos, fotos e
+          Plus ou Personalizado), com limites de produtos, fotos e
           pedidos. A assinatura é renovada automaticamente até ser cancelada e
           pode ser cancelada a qualquer momento, valendo até o fim do período
           pago.

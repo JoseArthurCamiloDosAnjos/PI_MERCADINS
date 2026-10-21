@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import "./ConsultorModal.css";
+import { IconUser, IconPhone, IconMail } from "./Icons";
 
 const WHATSAPP = "5516988755641";
 const EMAIL = "Suporte@mercadins.com.br";
@@ -43,7 +44,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
           ×
         </button>
 
-        <span className="ct-icone">🤝</span>
+        <span className="ct-icone"><IconUser size={36} /></span>
         <h2 className="ct-titulo">Fale com um consultor</h2>
         <p className="ct-descricao">
           O plano Personalizado é montado sob medida para o porte do seu mercado.
@@ -58,7 +59,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
             rel="noreferrer"
             onClick={onFechar}
           >
-            <span className="ct-btn-icone">📱</span>
+            <span className="ct-btn-icone"><IconPhone size={20} /></span>
             <span className="ct-btn-texto">
               <strong>WhatsApp</strong>
               <small>{TELEFONE_EXIBICAO}</small>
@@ -70,7 +71,7 @@ export default function ConsultorModal({ aberto, onFechar }: ConsultorModalProps
             href={linkEmail}
             onClick={onFechar}
           >
-            <span className="ct-btn-icone">✉️</span>
+            <span className="ct-btn-icone"><IconMail size={20} /></span>
             <span className="ct-btn-texto">
               <strong>E-mail</strong>
               <small>{EMAIL}</small>

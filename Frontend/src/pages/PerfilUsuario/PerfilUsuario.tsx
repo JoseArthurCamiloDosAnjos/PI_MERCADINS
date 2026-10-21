@@ -21,6 +21,7 @@ import {
   IconStar,
   IconMail,
   IconInbox,
+  IconInfo,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -158,7 +159,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <span className={`pu-status ${p.status}`}>● {p.status}</span>
                   <PilhaStatus status={p.status} />
                   {p.observacao && (
-                    <p className="pu-hcard-obs" title="Sua observação neste pedido">📝 {p.observacao}</p>
+                    <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
                   )}
                 </div>
               </div>

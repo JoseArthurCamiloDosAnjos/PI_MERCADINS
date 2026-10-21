@@ -339,8 +339,8 @@ export default function Register() {
             <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
           </div>
           <div className="form-header">
-            <h1>Vamos<br />Começar! 🚀</h1>
-            <p>Crie a sua conta aqui abaixo!</p>
+            <h1>Vamos<br />Começar!</h1>
+            <p>Preencha os dados abaixo para criar a sua conta.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>

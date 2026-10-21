@@ -8,10 +8,18 @@ import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
   IconStore,
+  IconShoppingCart,
   IconArrowLeft,
   IconArrowRight,
   IconCheck,
   IconHeartFilled,
+  IconClock,
+  IconX,
+  IconLeaf,
+  IconSprout,
+  IconBread,
+  IconBottle,
+  IconCutlery,
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
@@ -92,15 +100,15 @@ function tiposDoMercado(store: Store): string[] {
 }
 
 // Visual de cada tipo de loja pro bloco de categoria do card:
-// quadrado escuro com emoji + nome legível (o banco guarda minúsculo sem acento)
-const TIPO_VISUAL: Record<string, { label: string; emoji: string }> = {
-  mercado:      { label: "Mercado",      emoji: "🛒" },
-  hortifruti:   { label: "Hortifruti",   emoji: "🥬" },
-  acougue:      { label: "Açougue",      emoji: "🥩" },
-  padaria:      { label: "Padaria",      emoji: "🥖" },
-  bebidas:      { label: "Bebidas",      emoji: "🥤" },
-  organicos:    { label: "Orgânicos",    emoji: "🌱" },
-  conveniencia: { label: "Conveniência", emoji: "🏪" },
+// quadrado escuro com ícone + nome legível (o banco guarda minúsculo sem acento)
+const TIPO_VISUAL: Record<string, { label: string; Ico: typeof IconStore }> = {
+  mercado:      { label: "Mercado",      Ico: IconShoppingCart },
+  hortifruti:   { label: "Hortifruti",   Ico: IconLeaf },
+  acougue:      { label: "Açougue",      Ico: IconCutlery },
+  padaria:      { label: "Padaria",      Ico: IconBread },
+  bebidas:      { label: "Bebidas",      Ico: IconBottle },
+  organicos:    { label: "Orgânicos",    Ico: IconSprout },
+  conveniencia: { label: "Conveniência", Ico: IconStore },
 };
 
 // Busca por CEP:
@@ -728,7 +736,9 @@ export default function Mercadins() {
                           className="store-cover-img"
                         />
                       ) : (
-                        <span className="store-cover-icon">🏪</span>
+                        <span className="store-cover-icon" aria-hidden="true">
+                          <IconStore size={36} />
+                        </span>
                       )}
                       <span
                         className={`store-status ${
@@ -839,7 +849,7 @@ export default function Mercadins() {
                       />
                     ) : (
                       <span className="home-rank-img home-rank-img--vazio" aria-hidden="true">
-                        🏪
+                        <IconStore size={24} />
                       </span>
                     )}
                     <span className="home-rank-info">
@@ -885,7 +895,7 @@ export default function Mercadins() {
                       />
                     ) : (
                       <span className="home-visto-img home-visto-img--vazio" aria-hidden="true">
-                        🏪
+                        <IconStore size={24} />
                       </span>
                     )}
                     <strong className="home-visto-nome">{store.nome}</strong>
@@ -906,10 +916,10 @@ export default function Mercadins() {
   );
 }
 
-// Bloco visual da categoria no card de mercado: quadrado escuro com emoji
+// Bloco visual da categoria no card de mercado: quadrado escuro com ícone
 // + etiqueta com o nome da categoria (e "+N" quando tem mais tipos).
-// Linha de horário de hoje no card: "🕒 Hoje: 08:00 – 18:00" ou
-// "🚫 Fechado hoje". Mercado sem horário configurado não mostra nada.
+// Linha de horário de hoje no card: "Hoje: 08:00 – 18:00" ou
+// "Fechado hoje". Mercado sem horário configurado não mostra nada.
 function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
   const texto = horarioDeHoje(parseHorario(store.horario), agora);
   if (!texto) return null;
@@ -919,7 +929,7 @@ function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
       className={`store-horario ${fechado ? "off" : ""}`}
       title={resumoSemana(parseHorario(store.horario), agora)}
     >
-      {fechado ? "🚫" : "🕒"} {texto}
+      {fechado ? <IconX size={13} /> : <IconClock size={13} />} {texto}
     </p>
   );
 }
@@ -927,12 +937,12 @@ function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
 function BlocoTipo({ store }: { store: Store }) {
   const tipos = tiposDoMercado(store);
   const principal = (tipos[0] ?? "mercado").toLowerCase();
-  const visual = TIPO_VISUAL[principal] ?? { label: "Mercado", emoji: "🏪" };
+  const visual = TIPO_VISUAL[principal] ?? { label: "Mercado", Ico: IconStore };
   const extras = tipos.length - 1;
   return (
     <span className="store-tipo">
       <span className="store-tipo-quadro" aria-hidden="true">
-        {visual.emoji}
+        <visual.Ico size={18} />
       </span>
       <span className="store-tipo-nome">{visual.label}</span>
       {extras > 0 && <span className="store-tipo-extra">+{extras}</span>}
@@ -977,7 +987,7 @@ function PreviewItem({
         {image ? (
           <img src={image} alt={title} className="preview-img" />
         ) : (
-          <span>🛒</span>
+          <IconShoppingCart size={18} />
         )}
       </span>
       <span className="preview-info">

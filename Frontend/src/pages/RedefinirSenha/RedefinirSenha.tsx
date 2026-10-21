@@ -98,7 +98,7 @@ export default function RedefinirSenha() {
           ) : (
             <>
               <div className="form-header">
-                <h1>Nova Senha 🔒</h1>
+                <h1>Nova senha</h1>
                 <p>Digite e confirme sua nova senha abaixo.</p>
               </div>
 

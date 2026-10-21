@@ -155,6 +155,7 @@
   color: var(--amarelo);
   word-break: break-word;
 }
+.pu-hcard-obs svg { vertical-align: -2px; }
 
 .pu-status {
   display: inline-flex; align-items: center; gap: 4px;
@@ -497,7 +498,7 @@
 @media (max-width: 380px) {
   .pu-hist-grid, .pu-rev-grid { grid-template-columns: 1fr; }
 }
-/* -- Linha do tempo do pedido no histórico do cliente --------------------- */
+/* -- Linha do tempo do pedido no histï¿½rico do cliente --------------------- */
 .pu-timeline {
   list-style: none;
   margin: 8px 0 0;

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import PaginaInstitucional from "./Institucional";
+import { IconShoppingCart, IconStore, IconCreditCard } from "../../components/Icons";
 
 export default function Sobre() {
   return (
@@ -25,7 +26,7 @@ export default function Sobre() {
 
       <div className="inst-cards">
         <div className="inst-card">
-          <div className="inst-card-icon">🛒</div>
+          <div className="inst-card-icon"><IconShoppingCart size={22} /></div>
           <h3>Para você</h3>
           <p>
             Compre dos seus mercados favoritos de onde estiver. Monte o carrinho
@@ -35,7 +36,7 @@ export default function Sobre() {
         </div>
 
         <div className="inst-card">
-          <div className="inst-card-icon">🏪</div>
+          <div className="inst-card-icon"><IconStore size={22} /></div>
           <h3>Para mercados</h3>
           <p>
             Tenha sua loja na internet com catálogo próprio, fotos de produtos,
@@ -44,7 +45,7 @@ export default function Sobre() {
         </div>
 
         <div className="inst-card">
-          <div className="inst-card-icon">💛</div>
+          <div className="inst-card-icon"><IconCreditCard size={22} /></div>
           <h3>Planos para cada momento</h3>
           <p>
             Do mercado de esquina à rede com várias lojas: existe um plano com a

@@ -107,3 +107,23 @@ export const IconMoon = (props: IconProps) => <SvgBase {...props}><path d="M21 1
 export const IconCamera = (props: IconProps) => <SvgBase {...props}><><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></></SvgBase>;
 
 export const IconGear = (props: IconProps) => <SvgBase {...props}><><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></></SvgBase>;
+
+/* ─── Ícones de categoria (substituem os emojis das categorias) ─────────────── */
+
+export const IconLeaf = (props: IconProps) => <SvgBase {...props}><><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></></SvgBase>;
+
+export const IconSprout = (props: IconProps) => <SvgBase {...props}><><path d="M7 20h10" /><path d="M10 20c5.5-2.5.8-6.4 3-10" /><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" /><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" /></></SvgBase>;
+
+export const IconBread = (props: IconProps) => <SvgBase {...props}><><path d="M3 14c0-3.87 4.04-7 9-7s9 3.13 9 7v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2Z" /><path d="M8 10.5 6.5 13" /><path d="M12 9.5 10.5 12" /><path d="M16 10.5 14.5 13" /></></SvgBase>;
+
+export const IconBottle = (props: IconProps) => <SvgBase {...props}><><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M8 6c0 2-2 3-2 6v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8c0-3-2-4-2-6" /><path d="M6 13h12" /></></SvgBase>;
+
+export const IconCutlery = (props: IconProps) => <SvgBase {...props}><><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></></SvgBase>;
+
+/* ─── Ícones utilitários ────────────────────────────────────────────────────── */
+
+export const IconAlert = (props: IconProps) => <SvgBase {...props}><><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></></SvgBase>;
+
+export const IconUpload = (props: IconProps) => <SvgBase {...props}><><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></></SvgBase>;
+
+export const IconTarget = (props: IconProps) => <SvgBase {...props}><><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></></SvgBase>;

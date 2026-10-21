@@ -3,6 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { PLANOS, type Plano } from "./planos";
 import ConsultorModal from "../../components/ConsultorModal";
+import {
+  IconShoppingCart,
+  IconMapPin,
+  IconGear,
+  IconZap,
+  IconPackage,
+  IconStore,
+  IconTarget,
+  IconLock,
+} from "../../components/Icons";
 import "./MercadinsPromo.css";
 import logo from "../../assets/logo2.png";
 
@@ -21,22 +31,22 @@ const StarIcon = () => (
 
 const benefits = [
   {
-    icon: "🛒",
+    icon: <IconShoppingCart size={32} />,
     title: "Venda mais",
     desc: "Seus produtos disponíveis online 24h por dia, 7 dias por semana, alcançando mais clientes.",
   },
   {
-    icon: "📍",
+    icon: <IconMapPin size={32} />,
     title: "Alcance clientes próximos",
     desc: "Quem está perto encontra seu mercado rapidamente com nossa geolocalização inteligente.",
   },
   {
-    icon: "⚙️",
+    icon: <IconGear size={32} />,
     title: "Tudo automatizado",
     desc: "Pedidos e pagamentos processados com facilidade, sem complicação para você.",
   },
   {
-    icon: "🤖",
+    icon: <IconZap size={32} />,
     title: "Inteligência Artificial",
     desc: "Tome decisões mais embasadas com análises e sugestões geradas por IA para seu negócio.",
   },
@@ -193,32 +203,32 @@ export default function MercadinsPromo() {
                 </div>
                 <div className="mp-screen-products">
                   <div className="mp-product-row">
-                    <span className="mp-prod-icon">🥛</span>
+                    <span className="mp-prod-icon"><IconPackage size={15} /></span>
                     <span className="mp-prod-name">Leite Integral</span>
                     <span className="mp-prod-price">R$ 5,49</span>
                   </div>
                   <div className="mp-product-row">
-                    <span className="mp-prod-icon">🍞</span>
+                    <span className="mp-prod-icon"><IconPackage size={15} /></span>
                     <span className="mp-prod-name">Pão Francês</span>
                     <span className="mp-prod-price">R$ 0,79</span>
                   </div>
                   <div className="mp-product-row">
-                    <span className="mp-prod-icon">🧃</span>
+                    <span className="mp-prod-icon"><IconPackage size={15} /></span>
                     <span className="mp-prod-name">Suco de Laranja</span>
                     <span className="mp-prod-price">R$ 8,90</span>
                   </div>
                 </div>
                 <div className="mp-screen-ai">
-                  <span className="mp-ai-label">🤖 IA Mercadins sugere:</span>
+                  <span className="mp-ai-label"><IconZap size={12} /> IA Mercadins sugere:</span>
                   <span className="mp-ai-tip">Aumente estoque de leite — alta demanda prevista</span>
                 </div>
               </div>
             </div>
             <div className="mp-hero-floater mp-floater-1">
-              <span>📦</span> +12 pedidos hoje
+              <IconPackage size={15} /> +12 pedidos hoje
             </div>
             <div className="mp-hero-floater mp-floater-2">
-              <span>⭐</span> 4.9 avaliação
+              <StarIcon /> 4.9 avaliação
             </div>
           </div>
         </div>
@@ -257,12 +267,12 @@ export default function MercadinsPromo() {
             </div>
             <div className="mp-about-cards">
               <div className="mp-info-card mp-info-card-blue">
-                <span className="mp-info-icon">🏪</span>
+                <span className="mp-info-icon"><IconStore size={26} /></span>
                 <strong>Para quem é?</strong>
                 <p>Pequenos e médios comerciantes que precisam competir no mercado digital sem gastar com desenvolvedores.</p>
               </div>
               <div className="mp-info-card mp-info-card-yellow">
-                <span className="mp-info-icon">🎯</span>
+                <span className="mp-info-icon"><IconTarget size={26} /></span>
                 <strong>Nosso objetivo</strong>
                 <p>Facilitar ao máximo a criação de um site profissional para seu estabelecimento começar a vender online.</p>
               </div>
@@ -367,7 +377,7 @@ export default function MercadinsPromo() {
           </div>
 
           <div className="mp-plans-note">
-            <span>✅</span>
+            <span><CheckIcon /></span>
             Planos com cobrança mensal ou anual — no anual você economiza 20%.
           </div>
         </div>
@@ -444,7 +454,7 @@ export default function MercadinsPromo() {
             <span><CheckIcon /> Setup em 5 minutos</span>
             <span><CheckIcon /> Suporte incluso</span>
           </div>
-          <p className="mp-cta-secure">🔒 Conexão segura e criptografada</p>
+          <p className="mp-cta-secure"><IconLock size={14} /> Conexão segura e criptografada</p>
         </div>
       </section>
 
@@ -455,7 +465,7 @@ export default function MercadinsPromo() {
             <img src={logo} alt="Mercadins" className="mp-logo-img" onClick={() => navigate("/")}/>
           </div>
           <p className="mp-footer-tagline">Seu mercado inteligente</p>
-          <p className="mp-footer-copy">© 2025 Mercadins. Todos os direitos reservados.</p>
+          <p className="mp-footer-copy">© 2026 Mercadins. Todos os direitos reservados.</p>
         </div>
       </footer>
 

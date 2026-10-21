@@ -7,6 +7,15 @@ import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.jpeg';
+import {
+  IconShoppingCart,
+  IconStore,
+  IconLeaf,
+  IconSprout,
+  IconBread,
+  IconBottle,
+  IconCutlery,
+} from '../../components/Icons';
 
 interface Form {
   nome: string;
@@ -23,13 +32,13 @@ interface Form {
 // Tipos de loja que o mercado pode declarar (os mesmos atalhos da home).
 // O lojista pode marcar quantos quiser — ex.: Hortifruti E Padaria.
 const TIPOS_LOJA = [
-  { id: 'mercado', nome: 'Mercado', icone: '🏪' },
-  { id: 'hortifruti', nome: 'Hortifruti', icone: '🥬' },
-  { id: 'acougue', nome: 'Açougue', icone: '🥩' },
-  { id: 'padaria', nome: 'Padaria', icone: '🥖' },
-  { id: 'bebidas', nome: 'Bebidas', icone: '🥤' },
-  { id: 'organicos', nome: 'Orgânicos', icone: '🌱' },
-  { id: 'conveniencia', nome: 'Conveniência', icone: '🛒' },
+  { id: 'mercado', nome: 'Mercado', icone: IconShoppingCart },
+  { id: 'hortifruti', nome: 'Hortifruti', icone: IconLeaf },
+  { id: 'acougue', nome: 'Açougue', icone: IconCutlery },
+  { id: 'padaria', nome: 'Padaria', icone: IconBread },
+  { id: 'bebidas', nome: 'Bebidas', icone: IconBottle },
+  { id: 'organicos', nome: 'Orgânicos', icone: IconSprout },
+  { id: 'conveniencia', nome: 'Conveniência', icone: IconStore },
 ];
 
 // Dias da semana do formulário de horário (id = valor do Date: 0 = domingo)
@@ -300,7 +309,7 @@ export default function RegistrarMercado() {
                     aria-pressed={ativa}
                     onClick={() => alternarCategoria(tipo.id)}
                   >
-                    <span aria-hidden="true">{tipo.icone}</span>
+                    <span aria-hidden="true"><tipo.icone size={17} /></span>
                     {tipo.nome}
                   </button>
                 );
@@ -403,7 +412,7 @@ export default function RegistrarMercado() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
-              ) : '🛒 Criar Mercado'}
+              ) : <><IconShoppingCart size={16} /> Criar Mercado</>}
             </button>
 
           </form>

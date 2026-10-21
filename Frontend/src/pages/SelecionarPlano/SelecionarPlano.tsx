@@ -120,7 +120,7 @@ export default function SelecionarPlano() {
         </div>
 
         <p className="sp-note">
-          <span>✅</span> Cobrança mensal ou anual — economize 20% no plano anual.
+          <span><CheckIcon /></span> Cobrança mensal ou anual — economize 20% no plano anual.
         </p>
       </main>
 

@@ -170,7 +170,7 @@ export default function VerificarEmail() {
           ) : (
             <>
               <div className="form-header">
-                <h1>Verifique seu e-mail 📩</h1>
+                <h1>Verifique seu e-mail</h1>
                 <p>Enviamos um código de 6 dígitos para:</p>
               </div>
 

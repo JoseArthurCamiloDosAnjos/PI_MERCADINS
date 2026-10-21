@@ -587,7 +587,7 @@ function SecPedidos({
                 )}
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
-                    📝 {p.observacao}
+                    <IconInfo size={12} /> {p.observacao}
                   </span>
                 )}
               </div>

@@ -40,7 +40,7 @@ export default function Login() {
       } else {
         localStorage.removeItem('is_admin_login');
       }
-      showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}! 👋`);
+      showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}!`);
       setTimeout(() => {
         const destino = sessionStorage.getItem("posLoginDestino");
         sessionStorage.removeItem("posLoginDestino");
@@ -100,11 +100,11 @@ export default function Login() {
           </div>
           <div className="form-header">
             <h1>
-              Bem Vindo
+              Bem-vindo
               <br />
-              de Volta! 👋
+              de volta!
             </h1>
-            <p>Vamos te reconectar aqui abaixo!</p>
+            <p>Acesse a sua conta abaixo.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>

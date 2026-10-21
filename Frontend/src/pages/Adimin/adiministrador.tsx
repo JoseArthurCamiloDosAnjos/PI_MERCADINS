@@ -8,7 +8,7 @@ import Relatorios from './Relatorios'
 import Configuracoes from './Configuracoes'
 import './Admin.css'
 
-const ABAS = ['Dashboard', 'Usuarios', 'Relatorios', 'Configuracoes']
+const ABAS = ['Dashboard', 'Usuários', 'Relatórios', 'Configurações']
 
 export default function Adiministrador() {
   const { usuario } = useAuth()
@@ -18,7 +18,7 @@ export default function Adiministrador() {
   if (!usuario?.is_admin) {
     return (
       <div className="adm-denied">
-        <h1>Acesso Negado</h1>
+        <h1>Acesso negado</h1>
         <p>Você não tem permissão para acessar esta página.</p>
         <button onClick={() => navigate('/')}>Voltar</button>
       </div>

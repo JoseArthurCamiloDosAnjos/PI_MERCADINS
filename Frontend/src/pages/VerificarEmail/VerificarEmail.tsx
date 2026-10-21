@@ -161,7 +161,7 @@ export default function VerificarEmail() {
                   <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
               </div>
-              <h1>Email verificado!</h1>
+              <h1>E-mail verificado!</h1>
               <p>Você já pode fazer login. Redirecionando...</p>
               <div className="rs-sucesso-dots">
                 <span/><span/><span/>

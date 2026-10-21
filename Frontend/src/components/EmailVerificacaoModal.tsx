@@ -91,7 +91,7 @@ export default function EmailVerificacaoModal({ email, onClose }: EmailVerificac
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 className="modal-title">Email verificado!</h2>
+          <h2 className="modal-title">E-mail verificado!</h2>
           <p className="modal-desc">Você já pode fazer login.</p>
         </div>
       </div>

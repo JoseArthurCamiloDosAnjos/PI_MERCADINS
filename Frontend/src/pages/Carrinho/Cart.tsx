@@ -298,7 +298,7 @@ export default function CartScreen({
             </div>
             {shipping > 0 && missingForFreeShipping > 0 && (
               <div className="cart-summary__row">
-                <span>Faltam {formatBRL(missingForFreeShipping)} p/ frete grátis</span>
+                <span>Faltam {formatBRL(missingForFreeShipping)} para frete grátis</span>
                 <span> </span>
               </div>
             )}

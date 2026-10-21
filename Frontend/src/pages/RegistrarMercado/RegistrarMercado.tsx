@@ -237,7 +237,7 @@ export default function RegistrarMercado() {
       <div className="right">
         <div className="form-card">
           <div className="form-header">
-            <h1>Seu Mercado<br />Começa Aqui!</h1>
+            <h1>Seu mercado<br />começa aqui!</h1>
             <p>Preencha os dados do seu estabelecimento.</p>
             {planoSelecionado && (
               <span className="rm-plano-chip">
@@ -262,7 +262,7 @@ export default function RegistrarMercado() {
             </div>
 
             <div className="field">
-              <input placeholder="Email do mercado" type="email" value={form.email}
+              <input placeholder="E-mail do mercado" type="email" value={form.email}
                 onKeyDown={bloquearEspaco}
                 onChange={e => set('email', removeSpecialCharsEmail(removeEmojis(e.target.value)))} />
               <FieldIcon>

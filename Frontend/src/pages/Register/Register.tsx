@@ -228,10 +228,10 @@ export default function Register() {
     }
 
     if (!form.email) {
-      setField("email", "error", "Email é obrigatório.");
+      setField("email", "error", "E-mail é obrigatório.");
       ok = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setField("email", "error", "Email inválido.");
+      setField("email", "error", "E-mail inválido.");
       ok = false;
     } else {
       setField("email", "success", "");
@@ -339,7 +339,7 @@ export default function Register() {
             <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
           </div>
           <div className="form-header">
-            <h1>Vamos<br />Começar!</h1>
+            <h1>Vamos<br />começar!</h1>
             <p>Preencha os dados abaixo para criar a sua conta.</p>
           </div>
 
@@ -486,7 +486,7 @@ export default function Register() {
                 <input
                   type="email"
                   name="email"
-                  placeholder="Email"
+                  placeholder="E-mail"
                   autoComplete="email"
                   maxLength={LIMITS.email}
                   value={form.email}

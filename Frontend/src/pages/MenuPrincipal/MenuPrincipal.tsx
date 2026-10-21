@@ -23,6 +23,7 @@ import {
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
+import { tipoPrincipal } from "../../utils/tipoLoja";
 import HorarioSemana from "../../components/HorarioSemana";
 import {
   estaAberto,
@@ -789,7 +790,7 @@ export default function Mercadins() {
                     className="card-action"
                     onClick={() => irParaMercado(store.slug)}
                   >
-                    Acessar mercado
+                    Acessar {tipoPrincipal(tiposDoMercado(store)).toLowerCase()}
                     <IconArrowRight size={16} />
                   </button>
                 </article>
@@ -898,7 +899,7 @@ export default function Mercadins() {
                     <strong className="home-visto-nome">{store.nome}</strong>
                     <span className="home-visto-local">{localizacao(store)}</span>
                     <span className="home-visto-cta">
-                      Ver mercado <IconArrowRight size={14} />
+                      Ver {tipoPrincipal(tiposDoMercado(store)).toLowerCase()} <IconArrowRight size={14} />
                     </span>
                   </button>
                 ))}

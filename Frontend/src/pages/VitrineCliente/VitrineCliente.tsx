@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import HorarioSemana from '../../components/HorarioSemana';
+import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
@@ -107,16 +108,6 @@ function normalizarTipos(valor: unknown): string[] {
   if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
   return [];
 }
-
-const NOMES_TIPOS: Record<string, string> = {
-  mercado: "Mercado",
-  hortifruti: "Hortifruti",
-  acougue: "Açougue",
-  padaria: "Padaria",
-  bebidas: "Bebidas",
-  organicos: "Orgânicos",
-  conveniencia: "Conveniência",
-};
 
 function formatarPreco(valor?: string) {
   const n = Number(valor ?? 0);

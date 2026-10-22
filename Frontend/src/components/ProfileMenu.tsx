@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { IconUser, IconGear } from "./Icons";
+import { saveReturnUrl } from "../utils/returnUrl";
 import "./ProfileMenu.css";
 
 function getIniciais(nome: string) {
@@ -67,6 +68,7 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
   function irPara(rota: string) {
     setAberto(false);
     onNavigate?.();
+    saveReturnUrl();
     navigate(rota);
   }
 

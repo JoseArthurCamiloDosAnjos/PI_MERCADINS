@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { removeEmojis } from '../hooks/useBlockEmojis';
@@ -45,27 +45,29 @@ export default function AdicionarMercadoFavorito({
 
   const idsFavoritados = new Set(favoritosAtuais.map(f => f.id_mercado));
 
+  // useCallback mantém a referência estável; assim o efeito de carregamento
+  // inicial abaixo executa apenas uma vez, sem reexecutar a cada renderização.
+  // Os setState ficam sempre dentro de callbacks de promessa (contexto
+  // assíncrono), nunca no corpo síncrono do efeito.
+  const carregarMercados = useCallback((termo: string) => {
+    api.listarMercados(termo)
+      .then(dados => setMercados(dados.mercados ?? []))
+      .catch((e: unknown) => showToast('erro', e instanceof Error ? e.message : 'Erro ao buscar mercados.'))
+      .finally(() => setCarregando(false));
+  }, [showToast]);
+
   useEffect(() => {
     inputRef.current?.focus();
     carregarMercados('');
-  }, []);
-
-  async function carregarMercados(termo: string) {
-    setCarregando(true);
-    try {
-      const dados = await api.listarMercados(termo);
-      setMercados(dados.mercados ?? []);
-    } catch (e: unknown) {
-      showToast('erro', e instanceof Error ? e.message : 'Erro ao buscar mercados.');
-    } finally {
-      setCarregando(false);
-    }
-  }
+  }, [carregarMercados]);
 
   function handleBusca(valor: string) {
     setBusca(valor);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => carregarMercados(valor), 350);
+    debounceRef.current = setTimeout(() => {
+      setCarregando(true);
+      carregarMercados(valor);
+    }, 350);
   }
 
   async function toggleFavorito(mercado: MercadoBusca) {
@@ -86,12 +88,12 @@ export default function AdicionarMercadoFavorito({
   }
 
   return (
-    <div className="amf-overlay" onClick={onFechar}>
-      <div className="amf-modal" onClick={e => e.stopPropagation()}>
+    <div className="amf-overlay">
+      <div className="amf-modal">
 
         <div className="amf-header">
           <h3><IconStore size={16} /> Adicionar mercado favorito</h3>
-          <button className="amf-fechar" onClick={onFechar}><IconX size={15} /></button>
+          <button className="amf-fechar" onClick={onFechar} aria-label="Fechar"><IconX size={15} /></button>
         </div>
 
         <div className="amf-busca-wrap">

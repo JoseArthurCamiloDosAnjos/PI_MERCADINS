@@ -163,7 +163,9 @@ export default function Usuarios() {
   }, [busca, filtroTipo, filtroStatus, pagina])
 
   useEffect(() => {
-    carregar()
+    // Adia um instante: assim o carregamento não dispara setState de forma
+    // síncrona dentro do efeito (mesmo comportamento, sem o alerta do React)
+    Promise.resolve().then(carregar)
   }, [carregar])
 
   async function abrirDetalhes(id: number) {
@@ -344,12 +346,12 @@ export default function Usuarios() {
             <table className="adm-table">
               <thead>
                 <tr>
-                  <th>NOME</th>
-                  <th>E-MAIL</th>
-                  <th>TIPO</th>
-                  <th>STATUS</th>
-                  <th>CADASTRO</th>
-                  <th>ULTIMO ACESSO</th>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Cadastro</th>
+                  <th>Último acesso</th>
                   <th></th>
                 </tr>
               </thead>
@@ -408,9 +410,9 @@ export default function Usuarios() {
 
       {/* ─── Modal Detalhes ──────────────────────────────────────── */}
       {detalhes && (
-        <div className="adm-modal-overlay" onClick={() => setDetalhes(null)}>
-          <div className="adm-modal" onClick={e => e.stopPropagation()}>
-            <button className="adm-modal-close" onClick={() => setDetalhes(null)}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal">
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setDetalhes(null)}>
               <CloseIcon />
             </button>
 
@@ -428,7 +430,7 @@ export default function Usuarios() {
             </div>
 
             <div className="adm-modal-section">
-              <h3>Informacoes Pessoais</h3>
+              <h3>Informações pessoais</h3>
               <div className="adm-modal-info-grid">
                 <div>
                   <label>Nome completo</label>
@@ -474,7 +476,7 @@ export default function Usuarios() {
 
             {detalhes.mercados.length > 0 && (
               <div className="adm-modal-section">
-                <h3>Mercados Vinculados ({detalhes.mercados.length})</h3>
+                <h3>Mercados vinculados ({detalhes.mercados.length})</h3>
                 {detalhes.mercados.map(m => (
                   <div key={m.id_mercado} className="adm-mercado-card">
                     <div className="adm-mercado-info">
@@ -494,7 +496,7 @@ export default function Usuarios() {
 
             {detalhes.atividades.length > 0 && (
               <div className="adm-modal-section">
-                <h3>Historico de Atividades</h3>
+                <h3>Histórico de atividades</h3>
                 <div className="adm-atividade-lista">
                   {detalhes.atividades.map((a, i) => (
                     <div key={i} className="adm-atividade-item">
@@ -538,12 +540,12 @@ export default function Usuarios() {
 
       {/* ─── Modal Editar ────────────────────────────────────────── */}
       {editando && (
-        <div className="adm-modal-overlay" onClick={() => setEditando(null)}>
-          <div className="adm-modal adm-modal-editar" onClick={e => e.stopPropagation()}>
-            <button className="adm-modal-close" onClick={() => setEditando(null)}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal adm-modal-editar">
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setEditando(null)}>
               <CloseIcon />
             </button>
-            <h2>Editar Usuario</h2>
+            <h2>Editar usuário</h2>
 
             <div className="adm-form-group">
               <label>Nome</label>
@@ -610,7 +612,7 @@ export default function Usuarios() {
 
             {editando.mercados.length > 0 && (
               <div className="adm-form-group">
-                <label>Mercados Vinculados ({editando.mercados.length})</label>
+                <label>Mercados vinculados ({editando.mercados.length})</label>
                 <div className="adm-editar-mercados">
                   {editando.mercados.slice(0, mercadosVisiveis).map(m => (
                     <div key={m.id_mercado} className="adm-editar-mercado-item">
@@ -657,9 +659,9 @@ export default function Usuarios() {
 
       {/* ─── Modal Detalhes Mercado ──────────────────────────────── */}
       {mercadoDetalhes && (
-        <div className="adm-modal-overlay" onClick={() => setMercadoDetalhes(null)}>
-          <div className="adm-modal" onClick={e => e.stopPropagation()}>
-            <button className="adm-modal-close" onClick={() => setMercadoDetalhes(null)}>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal">
+            <button className="adm-modal-close" aria-label="Fechar" onClick={() => setMercadoDetalhes(null)}>
               <CloseIcon />
             </button>
             <h2>Detalhes do Mercado</h2>
@@ -679,7 +681,7 @@ export default function Usuarios() {
                   <span>{mascararCNPJ(String(mercadoDetalhes.mercado.cnpj ?? ''))}</span>
                 </div>
                 <div>
-                  <label>Email</label>
+                  <label>E-mail</label>
                   <span>{String(mercadoDetalhes.mercado.email ?? '')}</span>
                 </div>
                 <div>
@@ -737,9 +739,9 @@ export default function Usuarios() {
 
       {/* ─── Modal Confirmar Exclusão ────────────────────────────── */}
       {confirmandoExclusao && (
-        <div className="adm-modal-overlay" onClick={() => setConfirmandoExclusao(null)}>
-          <div className="adm-modal adm-modal-confirmar" onClick={e => e.stopPropagation()}>
-            <h2>Excluir Usuario</h2>
+        <div className="adm-modal-overlay">
+          <div className="adm-modal adm-modal-confirmar">
+            <h2>Excluir usuário</h2>
             <p>Tem certeza que deseja excluir este usuario? Esta acao nao pode ser desfeita.</p>
             <div className="adm-modal-actions">
               <button className="adm-btn-cancelar" onClick={() => setConfirmandoExclusao(null)}>Cancelar</button>

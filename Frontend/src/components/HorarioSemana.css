@@ -1,0 +1,53 @@
+/* Caixa de horário da semana — usada nos cards da home e nas vitrines.
+   As variáveis (--hs-*) permitem que cada tema de vitrine adapte as cores. */
+.hs-box {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--hs-borda, #e4eaf3);
+  border-radius: 10px;
+  background: var(--hs-fundo, #f7f9fd);
+}
+
+.hs-titulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 7px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--hs-titulo, #5b6b8c);
+}
+
+.hs-lista {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.hs-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 12px;
+}
+
+.hs-linha dt {
+  font-weight: 700;
+  color: var(--hs-texto, #334155);
+}
+
+.hs-linha dd {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--hs-aberto, #189252);
+}
+
+.hs-linha dd.hs-fechado {
+  color: var(--hs-fechado, #8a94a6);
+}

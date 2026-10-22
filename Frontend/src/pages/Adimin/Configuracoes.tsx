@@ -162,7 +162,7 @@ export default function Configuracoes() {
 
       {/* ─── Senha ─────────────────────────────────────────────── */}
       <div className="adm-config-section">
-        <h3><IconLock size={18} /> Redefinir Senha</h3>
+        <h3><IconLock size={18} /> Redefinir senha</h3>
         <p className="adm-config-desc">Altere sua senha de acesso.</p>
 
         <div className="adm-config-form">

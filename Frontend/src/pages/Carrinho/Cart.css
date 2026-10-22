@@ -298,6 +298,14 @@
   color: var(--text-primary);
 }
 
+/* Aviso de limite de estoque no carrinho */
+.qty-max {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #9aa7b8);
+  white-space: nowrap;
+}
+
 .cart-item__line-total {
   font-family: var(--font-display);
   font-size: 15px;
@@ -470,6 +478,47 @@
 .cart-coupon button:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Observação opcional que vai junto com o pedido */
+.cart-obs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cart-obs__label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cart-obs__textarea {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 54px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.cart-obs__textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.cart-obs__textarea:focus {
+  border-color: var(--accent);
+}
+
+.cart-obs__contador {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .cart-checkout-btn {

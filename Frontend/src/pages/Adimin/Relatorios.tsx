@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { api } from '../../services/api'
 
@@ -34,9 +34,9 @@ interface RelatorioData {
 
 const PERIODO_OPTIONS = [
   { value: 'tudo', label: 'Tudo' },
-  { value: 'dia', label: 'Escolher Dia' },
-  { value: 'mes', label: 'Escolher Mes' },
-  { value: 'ano', label: 'Escolher Ano' },
+  { value: 'dia', label: 'Escolher dia' },
+  { value: 'mes', label: 'Escolher mês' },
+  { value: 'ano', label: 'Escolher ano' },
 ]
 
 const STATUS_COR: Record<string, string> = {
@@ -48,11 +48,11 @@ const STATUS_COR: Record<string, string> = {
 }
 
 const METRICAS_CONFIG: { key: keyof MetricasRelatorio; label: string; color: string; prefix?: string }[] = [
-  { key: 'totalMercados', label: 'Total Mercados', color: '#4a7fd4' },
-  { key: 'pedidosConcluidos', label: 'Pedidos Concluidos', color: '#22c55e' },
-  { key: 'pedidosMes', label: 'Pedidos no Mes', color: '#f59e0b' },
-  { key: 'entregasConcluidas', label: 'Entregas Concluidas', color: '#06b6d4' },
-  { key: 'receitaTotal', label: 'Receita Total', color: '#8b5cf6', prefix: 'R$ ' },
+  { key: 'totalMercados', label: 'Total de mercados', color: '#4a7fd4' },
+  { key: 'pedidosConcluidos', label: 'Pedidos concluídos', color: '#22c55e' },
+  { key: 'pedidosMes', label: 'Pedidos no mês', color: '#f59e0b' },
+  { key: 'entregasConcluidas', label: 'Entregas concluídas', color: '#06b6d4' },
+  { key: 'receitaTotal', label: 'Receita total', color: '#8b5cf6', prefix: 'R$ ' },
 ]
 
 export default function Relatorios() {
@@ -61,12 +61,11 @@ export default function Relatorios() {
   const [dataInicio, setDataInicio] = useState('')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    carregar()
-  }, [periodo, dataInicio])
-
-  function carregar() {
-    setLoading(true)
+  // useCallback com periodo/dataInicio nas dependências: o efeito abaixo
+  // recarrega os dados quando o período muda, sem reexecutar a cada render.
+  // O "loading" já começa true no useState; o setLoading(true) do botão
+  // "Aplicar" fica no handler do formulário (contexto de evento), não aqui.
+  const carregar = useCallback(() => {
     const params = new URLSearchParams()
     params.set('periodo', periodo)
     if (dataInicio) params.set('data_inicio', dataInicio)
@@ -74,10 +73,15 @@ export default function Relatorios() {
       .then(setDados)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }
+  }, [periodo, dataInicio])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
   function handleAplicar(e: React.FormEvent) {
     e.preventDefault()
+    setLoading(true)
     carregar()
   }
 
@@ -121,7 +125,7 @@ export default function Relatorios() {
             placeholder={periodo === 'ano' ? 'AAAA' : undefined}
           />
         )}
-        <button type="submit" className="adm-btn-aplicar">Aplicar Filtros</button>
+        <button type="submit" className="adm-btn-aplicar">Aplicar filtros</button>
       </form>
 
       <div className="adm-stats-grid">

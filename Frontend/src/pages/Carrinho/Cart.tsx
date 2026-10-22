@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
+import { IconShoppingCart } from "../../components/Icons";
 import "./Cart.css";
 
 // ---------------------------------------------------------------
@@ -12,6 +13,8 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string;
+  /** Unidades disponíveis em estoque — trava o "+" do carrinho */
+  estoque?: number;
 }
 
 interface CartScreenProps {
@@ -23,6 +26,8 @@ interface CartScreenProps {
   onBack?: () => void;
   onCheckout?: (items: CartItem[], total: number) => void;
   finalizando?: boolean;
+  observacao?: string;
+  onObservacaoChange?: (valor: string) => void;
   onUpdateQuantity?: (id: string, delta: number) => void;
   onRemoveItem?: (id: string) => void;
   onClearCart?: () => void;
@@ -124,6 +129,8 @@ export default function CartScreen({
   onBack,
   onCheckout,
   finalizando = false,
+  observacao = "",
+  onObservacaoChange,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -146,6 +153,8 @@ export default function CartScreen({
     // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
     const item = items.find((i) => i.id === id);
     if (delta < 0 && (item?.quantity ?? 1) <= 1) return;
+    // Trava no estoque: não deixa passar do disponível
+    if (delta > 0 && item?.estoque != null && item.quantity >= item.estoque) return;
     onUpdateQuantity?.(id, delta);
   };
 
@@ -203,7 +212,7 @@ export default function CartScreen({
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
-                    <span className="cart-item__thumb-ph" aria-hidden="true">🛒</span>
+                    <span className="cart-item__thumb-ph" aria-hidden="true"><IconShoppingCart size={26} /></span>
                   )}
                 </div>
 
@@ -227,11 +236,15 @@ export default function CartScreen({
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.id, 1)}
+                        disabled={item.estoque != null && item.quantity >= item.estoque}
                         aria-label="Aumentar quantidade"
                       >
                         <IconPlus />
                       </button>
                     </div>
+                    {item.estoque != null && item.quantity >= item.estoque && (
+                      <span className="qty-max">Máx. {item.estoque}</span>
+                    )}
                   </div>
                 </div>
 
@@ -285,7 +298,7 @@ export default function CartScreen({
             </div>
             {shipping > 0 && missingForFreeShipping > 0 && (
               <div className="cart-summary__row">
-                <span>Faltam {formatBRL(missingForFreeShipping)} p/ frete grátis</span>
+                <span>Faltam {formatBRL(missingForFreeShipping)} para frete grátis</span>
                 <span> </span>
               </div>
             )}
@@ -300,6 +313,25 @@ export default function CartScreen({
             />
             <button type="button">Aplicar</button>
           </div>
+
+          {/* Observação opcional que vai junto do pedido (ex.: "sem cebola") */}
+          {onObservacaoChange && (
+            <div className="cart-obs">
+              <label className="cart-obs__label" htmlFor="cart-obs">
+                Observação para o lojista (opcional)
+              </label>
+              <textarea
+                id="cart-obs"
+                className="cart-obs__textarea"
+                rows={2}
+                maxLength={300}
+                placeholder="Ex.: sem cebola, entregar na portaria, trocar pela mais fresca…"
+                value={observacao}
+                onChange={(e) => onObservacaoChange(e.target.value)}
+              />
+              <span className="cart-obs__contador">{observacao.length}/300</span>
+            </div>
+          )}
 
           <div className="cart-summary__total">
             <span>Total</span>

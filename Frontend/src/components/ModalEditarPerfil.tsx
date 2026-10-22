@@ -94,8 +94,8 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
 
   async function salvar() {
     if (!form.nome.trim()) return showToast('erro', 'Nome é obrigatório.');
-    if (!form.email.trim()) return showToast('erro', 'Email é obrigatório.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return showToast('erro', 'Email inválido.');
+    if (!form.email.trim()) return showToast('erro', 'E-mail é obrigatório.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return showToast('erro', 'E-mail inválido.');
 
     if (emailAlterado && !mostrarCodigo) {
       setEnviandoCodigo(true);
@@ -173,12 +173,12 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
     <>
       {salvando && <LoadingOverlay mensagem="Salvando perfil..." />}
 
-      <div className="pu-modal-overlay" onClick={onFechar}>
-        <div className="pu-modal" onClick={e => e.stopPropagation()}>
+      <div className="pu-modal-overlay">
+        <div className="pu-modal">
 
           <div className="pu-modal-header">
-            <h2 className="pu-modal-title">Editar Perfil</h2>
-            <button className="pu-modal-close" onClick={onFechar}>✕</button>
+            <h2 className="pu-modal-title">Editar perfil</h2>
+            <button className="pu-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
           </div>
 
           <div className="pu-modal-avatar">
@@ -218,7 +218,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
               />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email</label>
+              <label className="pu-modal-label">E-mail</label>
               <input
                 className="pu-modal-input"
                 type="email"
@@ -298,7 +298,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
                 </div>
                 <div className="pu-status-item">
                   {usuario?.email ? <IconCheck size={14} className="pu-status-ok" /> : <IconX size={14} className="pu-status-fail" />}
-                  <span>Email cadastrado</span>
+                  <span>E-mail cadastrado</span>
                 </div>
                 <div className="pu-status-item">
                   {usuario?.telefone ? <IconCheck size={14} className="pu-status-ok" /> : <IconX size={14} className="pu-status-fail" />}
@@ -315,7 +315,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
           <div className="pu-modal-footer">
             <button className="pu-modal-btn-cancel" onClick={onFechar} disabled={salvando || confirmandoEmail}>Cancelar</button>
             <button className="pu-modal-btn-save" onClick={salvar} disabled={salvando || confirmandoEmail || enviandoCodigo}>
-              {enviandoCodigo ? 'Enviando código...' : confirmandoEmail ? 'Confirmando...' : mostrarCodigo ? 'Confirmar e Salvar' : 'Salvar'}
+              {enviandoCodigo ? 'Enviando código...' : confirmandoEmail ? 'Confirmando...' : mostrarCodigo ? 'Confirmar e salvar' : 'Salvar'}
             </button>
           </div>
 

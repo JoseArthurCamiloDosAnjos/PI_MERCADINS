@@ -27,6 +27,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
               <div className="toast-msg">{t.mensagem}</div>
             </div>
             <button className="toast-close"
+              aria-label="Fechar aviso"
               onClick={(ev) => { ev.stopPropagation(); onDismiss(t.id); }}>×</button>
             <div className="toast-progress" />
           </div>

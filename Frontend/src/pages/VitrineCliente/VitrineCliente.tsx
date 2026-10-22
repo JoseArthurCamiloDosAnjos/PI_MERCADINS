@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
 import DescricaoModal from '../../components/DescricaoModal';
+import AvaliacoesModal from '../../components/AvaliacoesModal';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api } from '../../services/api';
@@ -11,12 +12,21 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
+import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import {
   IconStore,
   IconArrowLeft,
+  IconShare,
+  IconLink,
+  IconMessage,
+  IconMapPin,
+  IconMenu,
+  IconX,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
+import { localizacaoCompleta } from '../../utils/localizacao';
+import { estaAberto, parseHorario, proximaAbertura } from '../../utils/horario';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -83,6 +93,15 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
+  /** Tipos de loja declarados no cadastro (ex.: Hortifruti, Padaria) */
+  tipos?: string[];
+  /** Horário de funcionamento da semana (JSON do banco) */
+  horario?: unknown;
+  /** Endereço da loja (aparece na header da vitrine) */
+  rua?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
   categorias: Categoria[];
 }
 
@@ -92,10 +111,25 @@ interface VitrineClienteProps {
   onVoltar?: () => void;
 }
 
+/** Tipos de loja vindo do banco (lista ou "{mercado,padaria}") */
+function normalizarTipos(valor: unknown): string[] {
+  if (Array.isArray(valor)) return valor.map(String);
+  if (typeof valor === "string") return valor.replace(/[{}"]/g, "").split(",").filter(Boolean);
+  return [];
+}
+
 function formatarPreco(valor?: string) {
   const n = Number(valor ?? 0);
   if (Number.isNaN(n)) return valor ?? '0,00';
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Corta o texto no limite indicado SEM partir palavras no meio
+function cortarEmPalavra(texto: string, max: number) {
+  if (texto.length <= max) return texto;
+  const corte = texto.slice(0, max);
+  const ultimoEspaco = corte.lastIndexOf(' ');
+  return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte).trimEnd();
 }
 
 // ─── ProdutoCard (cliente) ─────────────────────────────────────────────────────
@@ -138,7 +172,13 @@ function ProdutoCardCliente({
   }
 
   return (
-    <button className="vtc-produto-card" onClick={handleClick}>
+    <div
+      className="vtc-produto-card"
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+      role="button"
+      tabIndex={0}
+    >
       <div className="vtc-produto-img">
         {imagens.length > 0
           ? (
@@ -160,7 +200,7 @@ function ProdutoCardCliente({
         <p className="vtc-produto-nome">{produto.nome}</p>
         {produto.preco && <p className="vtc-produto-preco">R$ {formatarPreco(produto.preco)}</p>}
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -172,10 +212,27 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca]           = useState('');
+  const [ordenacao, setOrdenacao]   = useState<'categorias' | 'menor' | 'maior' | 'az'>('categorias');
+  const [menuCompartilhar, setMenuCompartilhar] = useState(false);
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
+  const [catsAberto, setCatsAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
   const [modalDescricao, setModalDescricao] = useState(false);
+  const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
+
+  // Relógio do status: a loja muda entre "Aberto" e "Fechado" sozinha,
+  // sem recarregar a página, quando bate o horário de abrir/fechar
+  const [agoraVitrine, setAgoraVitrine] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgoraVitrine(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Título da aba com o nome da loja (sobrescreve o título genérico da rota)
+  useEffect(() => {
+    if (dados?.nome) document.title = `${dados.nome} — Mercadins`;
+  }, [dados?.nome]);
 
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
@@ -208,7 +265,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
           banner: mercadoData.mercado.banner ?? undefined,
-          avaliacao: mercadoData.mercado.avaliacao ?? 0,
+          avaliacao: Number(mercadoData.mercado.avaliacao ?? 0),
           favoritado: mercadoData.mercado.favoritado ?? false,
           paleta: mercadoData.mercado.paleta ?? 'classico',
           corBase: mercadoData.mercado.cor_base ?? undefined,
@@ -216,6 +273,12 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           corTexto: mercadoData.mercado.cor_texto ?? undefined,
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
+          tipos: normalizarTipos(mercadoData.mercado.categorias),
+          horario: mercadoData.mercado.horario ?? null,
+          rua: mercadoData.mercado.rua ?? null,
+          bairro: mercadoData.mercado.bairro ?? null,
+          cidade: mercadoData.mercado.cidade ?? null,
+          estado: mercadoData.mercado.estado ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -226,7 +289,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       }
     }
     carregarDados();
-  }, [mercadoId]);
+  }, [mercadoId, showToast]);
 
   // Garante que a tela sempre comece do topo depois que os dados (e categorias)
   // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
@@ -249,6 +312,16 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     };
   }, [carregando, dados]);
 
+  // Fecha o menu de compartilhar quando o clique fica fora dele
+  useEffect(() => {
+    if (!menuCompartilhar) return;
+    function fora(e: MouseEvent) {
+      if (!(e.target as HTMLElement).closest('.vtc-share-wrap')) setMenuCompartilhar(false);
+    }
+    document.addEventListener('mousedown', fora);
+    return () => document.removeEventListener('mousedown', fora);
+  }, [menuCompartilhar]);
+
   const categoriasFiltradas = useMemo(() => {
     if (!dados) return [];
     const termo = busca.trim().toLowerCase();
@@ -262,9 +335,42 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       .filter(cat => cat.produtos.length > 0 || !termo);
   }, [dados, busca]);
 
+  // Lista plana de produtos quando o cliente escolhe uma ordenação
+  const modoOrdenado = ordenacao !== 'categorias';
+  const listaOrdenada = useMemo(() => {
+    if (!dados || ordenacao === 'categorias') return [];
+    const termo = busca.trim().toLowerCase();
+    const itens = dados.categorias.flatMap(cat =>
+      cat.produtos
+        .filter(p => !termo || p.nome.toLowerCase().includes(termo))
+        .map(produto => ({ produto, catId: cat.id }))
+    );
+    const preco = (x: { produto: { preco?: unknown } }) => Number(x.produto.preco ?? 0);
+    if (ordenacao === 'menor') itens.sort((a, b) => preco(a) - preco(b));
+    else if (ordenacao === 'maior') itens.sort((a, b) => preco(b) - preco(a));
+    else itens.sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
+    return itens;
+  }, [dados, busca, ordenacao]);
+
+  // Fecha o menu de categorias ao pressionar Esc (mesmo comportamento dos
+  // demais painéis e modais do site).
+  useEffect(() => {
+    if (!catsAberto) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCatsAberto(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [catsAberto]);
+
   function irParaCategoria(id: number) {
     setCategoriaAtiva(id);
     refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function irParaInicio() {
+    setCategoriaAtiva(null);
+    document.querySelector('.vtc-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function handleFavoritar() {
@@ -289,6 +395,31 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     } finally {
       setFavoritando(false);
     }
+  }
+
+  async function handleCopiarLink() {
+    setMenuCompartilhar(false);
+    const url = window.location.href;
+    let copiou: boolean;
+    try {
+      await navigator.clipboard.writeText(url);
+      copiou = true;
+    } catch {
+      // Plano B: navegadores/permissões que bloqueiam a API nova de clipboard
+      try {
+        const area = document.createElement('textarea');
+        area.value = url;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        copiou = document.execCommand('copy');
+        document.body.removeChild(area);
+      } catch {
+        copiou = false;
+      }
+    }
+    showToast(copiou ? 'sucesso' : 'erro', copiou ? 'Link da loja copiado!' : 'Não foi possível copiar o link.');
   }
 
   if (carregando || !dados) {
@@ -356,6 +487,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           <button
             className={`vtc-btn-carrinho ${carrinho.totalItens > 0 ? 'vtc-btn-carrinho--ativo' : ''}`}
             onClick={() => setCarrinhoAberto(true)}
+            aria-label={carrinho.totalItens > 0 ? `Abrir carrinho (${carrinho.totalItens} itens)` : 'Abrir carrinho'}
           >
             <IconCart size={17} />
             {carrinho.totalItens > 0 && <span className="vtc-carrinho-badge">{carrinho.totalItens}</span>}
@@ -382,7 +514,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
           <div className="vtc-header-text">
             <div className="vtc-header-nome-wrap">
-              <h1 className="vtc-nome-mercado">{dados.nome}</h1>
+              <h1 className="vtc-nome-mercado" title={dados.nome}>{dados.nome}</h1>
               <button
                 className={`vtc-btn-favoritar ${dados.favoritado ? 'vtc-btn-favoritar--ativo' : ''}`}
                 onClick={handleFavoritar}
@@ -391,36 +523,123 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               >
                 <IconHeart size={16} filled={!!dados.favoritado} />
               </button>
+              <div className="vtc-share-wrap">
+                <button
+                  className="vtc-btn-share"
+                  onClick={() => setMenuCompartilhar(v => !v)}
+                  title="Compartilhar esta loja"
+                  aria-label="Compartilhar esta loja"
+                  aria-expanded={menuCompartilhar}
+                >
+                  <IconShare size={15} />
+                </button>
+                {menuCompartilhar && (
+                  <div className="vtc-share-menu" role="menu">
+                    <button className="vtc-share-item" role="menuitem" onClick={handleCopiarLink}>
+                      <IconLink size={14} /> Copiar link
+                    </button>
+                    <a
+                      className="vtc-share-item"
+                      role="menuitem"
+                      href={`https://wa.me/?text=${encodeURIComponent(`Olha esta loja no Mercadins: ${dados.nome} — ${window.location.href}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setMenuCompartilhar(false)}
+                    >
+                      <IconMessage size={14} /> Enviar no WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
             <p className="vtc-desc-mercado">
-              {dados.descricao && dados.descricao.length > 100
-                ? <>{dados.descricao.slice(0, 100)}... <button className="vtc-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
+              {dados.descricao && dados.descricao.length > 110
+                ? <>{cortarEmPalavra(dados.descricao, 110)}… <button className="vtc-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
                 : dados.descricao
               }
             </p>
-            <div className="vtc-avaliacao">
+            <button
+              className="vtc-avaliacao vtc-avaliacao-btn"
+              onClick={() => setModalAvaliacoes(true)}
+              title="Ver avaliações e avaliar esta loja"
+            >
               {Array.from({ length: 5 }, (_, i) => (
                 <IconStar key={i} size={13} filled={i < Math.round(dados.avaliacao ?? 0)} />
               ))}
               <span>{(dados.avaliacao ?? 0).toFixed(1)}</span>
-            </div>
+              <em className="vtc-avaliacao-cta">· Avaliar</em>
+            </button>
+
+            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
+            <p className="vtc-local">
+              <IconMapPin size={15} /> {localizacaoCompleta(dados)}
+            </p>
+
+            {/* Status ao vivo: abre e fecha sozinho, sem recarregar a página */}
+            {(() => {
+              const aberta = estaAberto(parseHorario(dados.horario), agoraVitrine) ?? true;
+              const proxima = aberta ? null : proximaAbertura(parseHorario(dados.horario), agoraVitrine);
+              return (
+                <p className={`vtc-status ${aberta ? 'vtc-status--aberto' : 'vtc-status--fechado'}`}>
+                  <span className="vtc-status-dot" aria-hidden="true" />
+                  {aberta ? 'Aberto agora' : 'Fechado agora'}
+                  {proxima ? ` · ${proxima}` : ''}
+                </p>
+              );
+            })()}
+
+            {dados.tipos && dados.tipos.length > 0 && (
+              <div className="vtc-tipos">
+                {dados.tipos.map(tipo => (
+                  <span key={tipo} className="vtc-tipo-chip">
+                    {NOMES_TIPOS[tipo] ?? tipo}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Busca */}
-        <div className="vtc-busca-wrap">
-          <IconSearch size={15} />
-          <input
-            className="vtc-busca-input"
-            placeholder="Buscar produtos nesta loja..."
-            value={busca}
-            onChange={e => setBusca(removeEmojis(e.target.value))}
-          />
+      </header>
+
+      {/* ── Busca + categorias: fixos no topo quando a página rola ───── */}
+      <div className="vtc-filtros">
+        {/* Busca + ordenação */}
+        <div className="vtc-busca-linha">
+          <div className="vtc-busca-wrap">
+            <IconSearch size={15} />
+            <input
+              className="vtc-busca-input"
+              placeholder="Buscar produtos nesta loja..."
+              value={busca}
+              onChange={e => setBusca(removeEmojis(e.target.value))}
+            />
+          </div>
+          <select
+            className="vtc-ordenar"
+            value={ordenacao}
+            onChange={e => setOrdenacao(e.target.value as 'categorias' | 'menor' | 'maior' | 'az')}
+            aria-label="Ordenar produtos"
+          >
+            <option value="categorias">Por categoria</option>
+            <option value="menor">Menor preço</option>
+            <option value="maior">Maior preço</option>
+            <option value="az">A – Z</option>
+          </select>
         </div>
 
-        {/* Tags de categoria */}
+        {/* Menu hambúrguer + tags de categoria */}
         {dados.categorias.length > 0 && (
           <div className="vtc-tags-row">
+            <button
+              className="vtc-btn-cats"
+              onClick={() => setCatsAberto(true)}
+              aria-label="Abrir menu de categorias"
+              aria-expanded={catsAberto}
+            >
+              <IconMenu size={15} />
+              <span>Categorias</span>
+            </button>
             {dados.categorias.map(cat => (
               <button
                 key={cat.id}
@@ -432,11 +651,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             ))}
           </div>
         )}
-      </header>
+      </div>
 
       {/* ── Categorias e produtos ─────────────────────────────────────── */}
       <main className="vtc-main">
-        {categoriasFiltradas.length === 0 ? (
+        {(modoOrdenado ? listaOrdenada.length : categoriasFiltradas.length) === 0 ? (
           <div className="vtc-vazio">
             <span className="vtc-vazio-icone"><IconStore size={26} /></span>
             <p className="vtc-vazio-titulo">Nenhum produto encontrado</p>
@@ -444,6 +663,23 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               {busca ? 'Tente buscar por outro termo.' : 'Esta loja ainda não cadastrou produtos.'}
             </p>
           </div>
+        ) : modoOrdenado ? (
+          <section className="vtc-categoria">
+            <h2 className="vtc-categoria-titulo">
+              {ordenacao === 'menor' ? 'Menor preço' : ordenacao === 'maior' ? 'Maior preço' : 'Ordem alfabética'}
+              {' · '}{listaOrdenada.length} {listaOrdenada.length === 1 ? 'produto' : 'produtos'}
+            </h2>
+            <div className="vtc-produtos-grid">
+              {listaOrdenada.map(({ produto, catId }) => (
+                <ProdutoCardCliente
+                  key={produto.id_produto}
+                  produto={produto}
+                  slug={slug}
+                  categoriaId={catId}
+                />
+              ))}
+            </div>
+          </section>
         ) : (
           categoriasFiltradas.map(cat => (
             <section
@@ -488,6 +724,39 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
         </button>
       )}
 
+      {/* ── Menu de categorias (hambúrguer) ──────────────────────────── */}
+      {catsAberto && (
+        <div className="vtc-cats-overlay" onClick={() => setCatsAberto(false)} />
+      )}
+      <aside
+        className={`vtc-cats-drawer ${catsAberto ? 'aberto' : ''}`}
+        aria-label="Categorias da loja"
+        aria-hidden={!catsAberto}
+      >
+        <div className="vtc-cats-head">
+          <strong>Categorias</strong>
+          <button onClick={() => setCatsAberto(false)} aria-label="Fechar menu de categorias">
+            <IconX size={16} />
+          </button>
+        </div>
+        <button
+          className={`vtc-cats-item ${categoriaAtiva === null ? 'ativo' : ''}`}
+          onClick={() => { setCatsAberto(false); irParaInicio(); }}
+        >
+          Todos os produtos
+        </button>
+        {dados.categorias.map(cat => (
+          <button
+            key={cat.id}
+            className={`vtc-cats-item ${categoriaAtiva === cat.id ? 'ativo' : ''}`}
+            onClick={() => { setCatsAberto(false); irParaCategoria(cat.id); }}
+          >
+            {cat.nome}
+            <span className="vtc-cats-item-qtd">{cat.produtos.length}</span>
+          </button>
+        ))}
+      </aside>
+
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {modalDescricao && (
@@ -495,6 +764,14 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           titulo={dados.nome}
           descricao={dados.descricao}
           onFechar={() => setModalDescricao(false)}
+        />
+      )}
+
+      {modalAvaliacoes && (
+        <AvaliacoesModal
+          mercadoId={dados.id}
+          onFechar={() => setModalAvaliacoes(false)}
+          onAtualizar={media => setDados(d => (d ? { ...d, avaliacao: media } : d))}
         />
       )}
     </div>

@@ -10,7 +10,7 @@ const buscarCarrinho = async (req, res) => {
     const sql = await conectar();
 
     const itens = await sql`
-      SELECT c.id_produto, c.quantidade, p.nome, p.descricao, p.preco, p.imagem, p.id_categoria
+      SELECT c.id_produto, c.quantidade, p.nome, p.descricao, p.preco, p.imagem, p.estoque, p.id_categoria
       FROM carrinho c
       JOIN produtos p ON p.id_produto = c.id_produto
       WHERE c.id_usuario = ${id_usuario}

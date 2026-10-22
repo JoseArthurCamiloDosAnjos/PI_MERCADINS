@@ -228,10 +228,10 @@ export default function Register() {
     }
 
     if (!form.email) {
-      setField("email", "error", "Email é obrigatório.");
+      setField("email", "error", "E-mail é obrigatório.");
       ok = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setField("email", "error", "Email inválido.");
+      setField("email", "error", "E-mail inválido.");
       ok = false;
     } else {
       setField("email", "success", "");
@@ -317,7 +317,7 @@ export default function Register() {
         <div className="circle circle-1" />
         <div className="circle circle-2" />
         <div className="circle circle-3" />
-        <button className="btn-back" onClick={() => history.back()}>
+        <button className="btn-back" aria-label="Voltar" onClick={() => history.back()}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -326,7 +326,7 @@ export default function Register() {
           <img
             className="logo-img"
             src={logoImg}
-            alt="Mercadins Logo"
+            alt="Logo do Mercadins"
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -339,8 +339,8 @@ export default function Register() {
             <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
           </div>
           <div className="form-header">
-            <h1>Vamos<br />Começar! 🚀</h1>
-            <p>Crie a sua conta aqui abaixo!</p>
+            <h1>Vamos<br />começar!</h1>
+            <p>Preencha os dados abaixo para criar a sua conta.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
@@ -480,13 +480,13 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Email */}
+            {/* E-mail */}
             <div className={fieldClass("email")}>
               <div className="field-input-wrap">
                 <input
                   type="email"
                   name="email"
-                  placeholder="Email"
+                  placeholder="E-mail"
                   autoComplete="email"
                   maxLength={LIMITS.email}
                   value={form.email}
@@ -525,7 +525,7 @@ export default function Register() {
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 </span>
-                <button type="button" className="toggle-senha" onClick={() => setShowSenha((v) => !v)}>
+                <button type="button" className="toggle-senha" aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setShowSenha((v) => !v)}>
                   {showSenha ? (
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -549,7 +549,7 @@ export default function Register() {
                 <input
                   type={showConfirmar ? "text" : "password"}
                   name="confirmar"
-                  placeholder="Confirmar Senha"
+                  placeholder="Confirmar senha"
                   autoComplete="new-password"
                   maxLength={LIMITS.confirmar}
                   onKeyDown={bloquearEspaco}
@@ -561,7 +561,7 @@ export default function Register() {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </span>
-                <button type="button" className="toggle-senha" onClick={() => setShowConfirmar((v) => !v)}>
+                <button type="button" className="toggle-senha" aria-label={showConfirmar ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setShowConfirmar((v) => !v)}>
                   {showConfirmar ? (
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -588,7 +588,7 @@ export default function Register() {
 
           <div className="login-link">
             Já tem uma conta?{" "}
-            <a onClick={() => navigate("/auth")} style={{ cursor: "pointer" }}>
+            <a onClick={() => navigate("/auth", { replace: false })} style={{ cursor: "pointer" }}>
               Faça login
             </a>
           </div>

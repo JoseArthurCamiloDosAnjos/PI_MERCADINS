@@ -125,6 +125,122 @@
   color: var(--text-muted);
 }
 
+/* ── TIPOS DE LOJA (categorias múltiplas) ── */
+.rm-section-label small {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: none;
+}
+
+.rm-categorias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rm-categoria-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--input-border);
+  background: #fff;
+  color: var(--text, #334155);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.rm-categoria-chip:hover {
+  border-color: var(--amarelo, #f5c84a);
+}
+
+.rm-categoria-chip--ativa {
+  background: rgba(245, 200, 74, 0.18);
+  border-color: var(--amarelo, #f5c84a);
+  color: var(--navy);
+}
+
+/* ── HORÁRIO DE FUNCIONAMENTO ── */
+.rm-horario {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.rm-horario-dia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.rm-horario-dia.aberto {
+  border-color: var(--amarelo, #f5c84a);
+  background: rgba(245, 200, 74, 0.08);
+}
+
+.rm-horario-dia-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text, #334155);
+  cursor: pointer;
+}
+
+.rm-horario-dia-nome input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--navy);
+  cursor: pointer;
+}
+
+.rm-horario-horas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rm-horario-horas input[type="time"] {
+  padding: 5px 7px;
+  border: 1px solid var(--input-border);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #334155);
+  background: #fff;
+}
+
+.rm-horario-fechado {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.rm-horario-dica {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .rm-grid {

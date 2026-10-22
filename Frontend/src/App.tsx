@@ -4,11 +4,13 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
 import LoadingOverlay from './components/LoadingOverlay'
+import ControleRotas from './components/ControleRotas'
 import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 
 const Login = lazy(() => import('./pages/Login/Login'))
+const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
 const Register = lazy(() => import('./pages/Register/Register'))
 const PerfilUsuario = lazy(() => import('./pages/PerfilUsuario/PerfilUsuario'))
 const PerfilVendedor = lazy(() => import('./pages/PerfilVendedor/PerfilVendedor'))
@@ -24,6 +26,14 @@ const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaC
 const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
 const Administrador = lazy(() => import('./pages/Adimin/adiministrador'))
 const MenuPrincipal = lazy(() => import('./pages/MenuPrincipal/MenuPrincipal'))
+
+const Sobre = lazy(() => import('./pages/Institucional/Sobre'))
+const ComoFunciona = lazy(() => import('./pages/Institucional/ComoFunciona'))
+const MercadosParceiros = lazy(() => import('./pages/Institucional/MercadosParceiros'))
+const Atendimento = lazy(() => import('./pages/Institucional/Atendimento'))
+const Termos = lazy(() => import('./pages/Institucional/Termos'))
+const Privacidade = lazy(() => import('./pages/Institucional/Privacidade'))
+const Cookies = lazy(() => import('./pages/Institucional/Cookies'))
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a vitrine do cliente ───────
 
 function VitrineClienteWrapper() {
@@ -89,8 +99,10 @@ function CartWrapper() {
   const navigate = useNavigate()
   const [mercadoId, setMercadoId] = useState<number | null>(null)
   const [mercadoNome, setMercadoNome] = useState<string>('')
+  const [mercadoLocal, setMercadoLocal] = useState<string>('')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
+  const [observacao, setObservacao] = useState('')
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
 
@@ -103,6 +115,7 @@ function CartWrapper() {
       .then(data => {
         setMercadoId(data.mercado.id_mercado)
         setMercadoNome(data.mercado.nome)
+        setMercadoLocal([data.mercado.cidade, data.mercado.estado].filter(Boolean).join(' · '))
       })
       .catch(() => navigate('/'))
       .finally(() => setCarregando(false))
@@ -115,22 +128,26 @@ function CartWrapper() {
     unitPrice: Number(item.produto.preco ?? 0),
     quantity: item.quantidade,
     imageUrl: item.produto.imagem ?? item.produto.imagens?.[0] ?? '',
+    estoque: item.produto.estoque,
   }))
 
   async function handleCheckout() {
     if (!mercadoId) return
     if (!localStorage.getItem('token')) {
-      showToast('erro', 'Faça login para finalizar o pedido.')
-      navigate('/auth')
+      showToast('erro', 'Faça login para finalizar o pedido. Seus itens ficam salvos no carrinho.')
+      // Pausa curta para o cliente ler o aviso antes de mudar de tela
+      setTimeout(() => navigate('/auth'), 1600)
       return
     }
     setFinalizando(true)
     try {
       await api.criarPedido(mercadoId, {
         itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
+        observacao: observacao.trim() || undefined,
       })
       showToast('sucesso', 'Pedido enviado com sucesso!')
       carrinho.limpar()
+      setObservacao('')
       navigate(`/vitrine/${slug}`)
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.')
@@ -146,10 +163,13 @@ function CartWrapper() {
     <>
       <CartScreen
         storeName={mercadoNome}
+        storeLocation={mercadoLocal}
         initialItems={itensConvertidos}
         onBack={() => navigate(`/vitrine/${slug}`)}
         onCheckout={handleCheckout}
         finalizando={finalizando}
+        observacao={observacao}
+        onObservacaoChange={setObservacao}
         onUpdateQuantity={(id, delta) => carrinho.alterarQuantidade(Number(id), delta)}
         onRemoveItem={(id) => carrinho.remover(Number(id))}
         onClearCart={() => carrinho.limpar()}
@@ -213,8 +233,18 @@ function Rotas() {
       <Routes>
         <Route path="/"                  element={<MenuPrincipal/>} />
         <Route path="/promocional"       element={<MercadinsPromos />}/>
+        <Route path="/sobre"             element={<Sobre />} />
+        <Route path="/como-funciona"     element={<ComoFunciona />} />
+        <Route path="/mercados-parceiros" element={<MercadosParceiros />} />
+        <Route path="/atendimento"       element={<Atendimento />} />
+        <Route path="/termos"            element={<Termos />} />
+        <Route path="/privacidade"       element={<Privacidade />} />
+        <Route path="/cookies"           element={<Cookies />} />
         <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/login"             element={!usuario ? <Login />    : <Navigate to={destino} />} />
+        <Route path="/auth/login"        element={!usuario ? <Login />    : <Navigate to={destino} />} />
         <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
+        <Route path="/register"          element={!usuario ? <Register /> : <Navigate to={destino} />} />
         <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
         <Route path="/verificar-email"   element={<VerificarEmail />} />
         <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
@@ -227,7 +257,7 @@ function Rotas() {
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
         <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
-        <Route path="*"                  element={<Navigate to={destino} />} />
+        <Route path="*"                  element={<PaginaNaoEncontrada />} />
       </Routes>
     </Suspense>
   )
@@ -238,6 +268,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider>
+          <ControleRotas />
           <Rotas />
         </ThemeProvider>
       </AuthProvider>

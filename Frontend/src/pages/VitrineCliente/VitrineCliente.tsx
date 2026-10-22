@@ -514,7 +514,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
           <div className="vtc-header-text">
             <div className="vtc-header-nome-wrap">
-              <h1 className="vtc-nome-mercado">{dados.nome}</h1>
+              <h1 className="vtc-nome-mercado" title={dados.nome}>{dados.nome}</h1>
               <button
                 className={`vtc-btn-favoritar ${dados.favoritado ? 'vtc-btn-favoritar--ativo' : ''}`}
                 onClick={handleFavoritar}

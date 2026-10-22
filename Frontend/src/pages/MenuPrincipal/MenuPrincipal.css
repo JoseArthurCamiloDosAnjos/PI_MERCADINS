@@ -755,6 +755,8 @@ button {
   height: 100%;
   display: block;
   object-fit: cover;
+  /* Mostra um pouco abaixo do centro: o nome gravado na imagem sobe e fica visível */
+  object-position: center 60%;
   transition: transform 0.3s;
 }
 
@@ -903,6 +905,12 @@ button {
   font-size: 17px;
   color: var(--navy);
   font-weight: 800;
+  /* Limitador de nome: no máximo 2 linhas, o resto viza reticências */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .store-local {

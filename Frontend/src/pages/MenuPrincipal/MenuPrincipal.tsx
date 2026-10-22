@@ -780,7 +780,7 @@ export default function Mercadins() {
 
                     <div className="store-title-row">
                       <div>
-                        <h3>{store.nome}</h3>
+                        <h3 title={store.nome}>{store.nome}</h3>
                         <p className="store-local">
                           <IconMapPin size={13} />
                           {localizacao(store)}

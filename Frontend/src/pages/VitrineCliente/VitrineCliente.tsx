@@ -24,6 +24,7 @@ import {
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
 import { localizacaoCompleta } from '../../utils/localizacao';
+import { estaAberto, parseHorario, proximaAbertura } from '../../utils/horario';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -216,6 +217,14 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [favoritando, setFavoritando]       = useState(false);
   const [modalDescricao, setModalDescricao] = useState(false);
   const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
+
+  // Relógio do status: a loja muda entre "Aberto" e "Fechado" sozinha,
+  // sem recarregar a página, quando bate o horário de abrir/fechar
+  const [agoraVitrine, setAgoraVitrine] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgoraVitrine(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Título da aba com o nome da loja (sobrescreve o título genérico da rota)
   useEffect(() => {
@@ -546,6 +555,19 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             <p className="vtc-local">
               <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
+
+            {/* Status ao vivo: abre e fecha sozinho, sem recarregar a página */}
+            {(() => {
+              const aberta = estaAberto(parseHorario(dados.horario), agoraVitrine) ?? true;
+              const proxima = aberta ? null : proximaAbertura(parseHorario(dados.horario), agoraVitrine);
+              return (
+                <p className={`vtc-status ${aberta ? 'vtc-status--aberto' : 'vtc-status--fechado'}`}>
+                  <span className="vtc-status-dot" aria-hidden="true" />
+                  {aberta ? 'Aberto agora' : 'Fechado agora'}
+                  {proxima ? ` · ${proxima}` : ''}
+                </p>
+              );
+            })()}
 
             {dados.tipos && dados.tipos.length > 0 && (
               <div className="vtc-tipos">

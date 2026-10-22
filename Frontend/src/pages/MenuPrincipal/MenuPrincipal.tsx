@@ -30,6 +30,7 @@ import {
   estaAberto,
   horarioDeHoje,
   parseHorario,
+  proximaAbertura,
 } from "../../utils/horario";
 
 type Store = {
@@ -179,12 +180,23 @@ export default function Mercadins() {
   // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
   const [visitados] = useState<string[]>(listarVisitados);
 
-  // Relógio dos cards: recalcula Aberto/Fechado a cada minuto, sem recarregar
+  // Relógio dos cards: recalcula Aberto/Fechado a cada 15 segundos, sem recarregar
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() => setAgora(new Date()), 60_000);
+    const id = setInterval(() => setAgora(new Date()), 15_000);
     return () => clearInterval(id);
   }, []);
+
+  // Card de loja FECHADA clicada: aviso antes de entrar (o cliente escolhe)
+  const [lojaFechada, setLojaFechada] = useState<Store | null>(null);
+  useEffect(() => {
+    if (!lojaFechada) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setLojaFechada(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lojaFechada]);
 
   // Status de funcionamento agora: pelo horário quando a loja configurou;
   // sem horário, ativo = aberto (compatível com mercados ainda sem rotina)
@@ -377,11 +389,27 @@ export default function Mercadins() {
     irParaSecao("mercados");
   }
 
-  function irParaMercado(slug: string) {
-    if (!slug) return;
+  // Abre o mercado direto (chamado depois que o cliente confirma)
+  function abrirMercado(slug: string) {
     registrarVisita(slug);
     navigate(`/vitrine/${slug}`);
   }
+
+  function irParaMercado(slug: string) {
+    if (!slug) return;
+    const store = stores.find(s => s.slug === slug);
+    // Loja fechada agora: mostra o aviso antes de entrar — o cliente decide
+    if (store && !lojaAberta(store)) {
+      setLojaFechada(store);
+      return;
+    }
+    abrirMercado(slug);
+  }
+
+  // Aviso de "loja fechada" (aberto pelo card fechado)
+  const proximaLoja = lojaFechada
+    ? proximaAbertura(parseHorario(lojaFechada.horario))
+    : null;
 
   return (
     <div className="mercadins-page">
@@ -923,6 +951,46 @@ export default function Mercadins() {
           </Link>
         </div>
       </section>
+
+      {/* ── Aviso: loja fechada (o card foi clicado fora do horário) ── */}
+      {lojaFechada && (
+        <div className="mp-aviso-overlay" onClick={() => setLojaFechada(null)}>
+          <div
+            className="mp-aviso"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={`${lojaFechada.nome} está fechada agora`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mp-aviso-icone"><IconClock size={22} /></div>
+            <h3 className="mp-aviso-titulo">{lojaFechada.nome} está fechada agora</h3>
+            <p className="mp-aviso-hora">
+              {horarioDeHoje(parseHorario(lojaFechada.horario)) ?? "Horário de funcionamento não informado"}
+            </p>
+            {proximaLoja && <p className="mp-aviso-prox">{proximaLoja}</p>}
+            <div className="mp-aviso-botoes">
+              <button
+                type="button"
+                className="mp-aviso-btn mp-aviso-btn-sec"
+                onClick={() => setLojaFechada(null)}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="mp-aviso-btn mp-aviso-btn-pri"
+                onClick={() => {
+                  const slug = lojaFechada.slug;
+                  setLojaFechada(null);
+                  abrirMercado(slug);
+                }}
+              >
+                Entrar mesmo assim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SiteFooter />
     </div>

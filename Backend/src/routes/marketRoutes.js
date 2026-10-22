@@ -5,7 +5,7 @@ const autenticarOpcional = require('../middleware/authOpcionalMiddleware');
 const { criarMercado, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado } = require('../controllers/marketController');
 const { favoritarMercado } = require('../controllers/usuarioController');
 const { listarAvaliacoesMercado, criarAvaliacao } = require('../controllers/avaliacaoController');
-const { criarPedido, listarPedidosMercado } = require('../controllers/pedidoController');
+const { criarPedido, listarPedidosMercado, financeiroMercado } = require('../controllers/pedidoController');
 
 router.post('/',            autenticar, criarMercado);
 router.get('/',             listarMercados);
@@ -13,6 +13,7 @@ router.get('/meus',         autenticar, meusMercados);
 router.get('/slug/:slug',   autenticarOpcional, buscarMercadoPorSlug);
 router.post('/:id/pedidos', autenticar, criarPedido);
 router.get('/:id/pedidos',  autenticar, listarPedidosMercado);
+router.get('/:id/financeiro', autenticar, financeiroMercado);
 router.post('/:id/favoritar',  autenticar, favoritarMercado);
 router.delete('/:id/favoritar', autenticar, favoritarMercado);
 router.get('/:id/avaliacoes',  autenticarOpcional, listarAvaliacoesMercado);

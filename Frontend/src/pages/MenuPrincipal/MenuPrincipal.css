@@ -1382,3 +1382,106 @@ button {
     padding: 30px 0;
   }
 }
+
+/* --- Aviso de loja fechada (card clicado fora do horário) ------------------- */
+.mp-aviso-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 40, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 950;
+  animation: mp-aviso-fade 0.18s ease;
+}
+
+@keyframes mp-aviso-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mp-aviso {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.7rem 1.5rem;
+  width: min(380px, 100%);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(8, 20, 50, 0.35);
+  animation: mp-aviso-sobe 0.22s ease;
+}
+
+@keyframes mp-aviso-sobe {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.mp-aviso-icone {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff4d6;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.8rem;
+}
+
+.mp-aviso-titulo {
+  color: var(--navy);
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.mp-aviso-hora {
+  color: #55607a;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.mp-aviso-prox {
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0.35rem 0 0;
+}
+
+.mp-aviso-botoes {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.mp-aviso-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.mp-aviso-btn-sec {
+  background: #fff;
+  border: 1.5px solid #d5dcec;
+  color: var(--navy);
+}
+
+.mp-aviso-btn-sec:hover {
+  background: #f3f6fc;
+}
+
+.mp-aviso-btn-pri {
+  background: var(--navy);
+  border: 1.5px solid var(--navy);
+  color: var(--yellow);
+}
+
+.mp-aviso-btn-pri:hover {
+  background: #16336e;
+  transform: translateY(-1px);
+}

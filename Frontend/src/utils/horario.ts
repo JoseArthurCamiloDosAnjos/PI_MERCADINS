@@ -105,3 +105,36 @@ export function rotuloDias(dias: number[]): string {
   if (dias.length === 1) return DIAS_CURTO[dias[0]];
   return `${DIAS_CURTO[dias[0]]} a ${DIAS_CURTO[dias[dias.length - 1]]}`;
 }
+
+// Nomes por extenso (avisos e pop-ups): "quinta-feira"
+export const DIAS_LONGO = [
+  "domingo", "segunda-feira", "terça-feira", "quarta-feira",
+  "quinta-feira", "sexta-feira", "sábado",
+];
+
+// Quando a loja volta a abrir? "Abre hoje às 14:00" / "Abre amanhã às 08:00" /
+// "Abre quinta-feira às 08:00" — null quando não há horário cadastrado.
+export function proximaAbertura(
+  horario: HorarioMercado | null,
+  agora = new Date()
+): string | null {
+  if (!horario) return null;
+  const minutos = agora.getHours() * 60 + agora.getMinutes();
+  const dia = agora.getDay();
+
+  // Ainda abre hoje (depois de agora)
+  const hoje = horario[String(dia)];
+  if (hoje && minutos < paraMinutos(hoje[0])) {
+    return `Abre hoje às ${hoje[0]}`;
+  }
+
+  // Próximos dias com horário cadastrado
+  for (let i = 1; i <= 7; i++) {
+    const prox = horario[String((dia + i) % 7)];
+    if (prox) {
+      const quando = i === 1 ? "amanhã" : DIAS_LONGO[(dia + i) % 7];
+      return `Abre ${quando} às ${prox[0]}`;
+    }
+  }
+  return null;
+}

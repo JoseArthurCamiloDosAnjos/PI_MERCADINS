@@ -3,7 +3,7 @@ import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
-import { parseHorario, type HorarioMercado } from '../../utils/horario';
+import { parseHorario, estaAberto, type HorarioMercado } from '../../utils/horario';
 import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
@@ -37,6 +37,7 @@ interface Produto {
   descricao?: string;
   imagem?: string;
   preco?: number;
+  custo?: number;
   id_categoria: number;
   categoria: string;
   estoque?: number;
@@ -72,6 +73,25 @@ interface FinanceiroMes {
   mes: string;
   val: number;
 }
+
+// Resumo do mês vindo de GET /api/mercados/:id/financeiro
+interface FinanceiroResumo {
+  ano: number;
+  mes: number;
+  pedidos: number;
+  faturamento: number;
+  ticketMedio: number;
+  custoMercadoria: number;
+  custoFixo: number;
+  lucro: number;           // pode ser negativo (prejuízo)
+  itensSemCusto: number;   // unidades vendidas sem custo cadastrado
+  porStatus: Record<string, number>;
+  serieDiaria: { dia: number; pedidos: number; receita: number }[];
+  topProdutos: { nome: string; qtd: number; receita: number }[];
+}
+
+// Chips dos meses do financeiro
+interface OpcaoMes { ano: number; mes: number; label: string; }
 
 interface MercadoInfo {
   id_mercado: number;
@@ -201,6 +221,13 @@ function EditarProdutoModal({
     return `${reaisFmt},${centavos}`;
   });
   const [estoque, setEstoque] = useState(produto.estoque ?? 0);
+  const [custo, setCusto] = useState(() => {
+    const num = Number(produto.custo ?? 0);
+    if (Number.isNaN(num) || num <= 0) return '';
+    const [reais, centavos = '00'] = num.toFixed(2).split('.');
+    const reaisFmt = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${reaisFmt},${centavos}`;
+  });
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -221,6 +248,23 @@ function EditarProdutoModal({
     setPreco(`${reaisFormatado},${centavosFinal}`);
   }
 
+  function handleChangeCusto(valor: string) {
+    const apenasDigitos = valor.replace(/\D/g, '');
+    if (!apenasDigitos) { setCusto(''); return; }
+    setCusto(apenasDigitos);
+  }
+
+  function handleBlurCusto() {
+    if (!custo) return;
+    const apenasDigitos = custo.replace(/\D/g, '');
+    if (!apenasDigitos) { setCusto(''); return; }
+    const centavos = apenasDigitos.padStart(3, '0');
+    const reais = centavos.slice(0, -2);
+    const centavosFinal = centavos.slice(-2);
+    const reaisFormatado = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    setCusto(`${reaisFormatado},${centavosFinal}`);
+  }
+
   async function handleSalvar() {
     if (!nome.trim()) {
       setErro('O nome é obrigatório.');
@@ -238,6 +282,8 @@ function EditarProdutoModal({
         nome: nome.trim(),
         descricao: descricao.trim() || undefined,
         preco: Number(preco.replace(/\./g, '').replace(',', '.')),
+        // Custo vazio = 0 (produto ainda sem custo cadastrado)
+        custo: custo ? Number(custo.replace(/\./g, '').replace(',', '.')) : 0,
         estoque,
       };
       const atualizado = await api.atualizarProduto(
@@ -293,6 +339,20 @@ function EditarProdutoModal({
               onBlur={handleBlurPreco}
               placeholder="0,00"
             />
+          </label>
+
+          <label className="gm-modal-label">
+            Custo (R$)
+            <input
+              className="gm-modal-input"
+              value={custo}
+              onChange={e => handleChangeCusto(e.target.value)}
+              onBlur={handleBlurCusto}
+              placeholder="0,00"
+            />
+            <small className="gm-modal-dica">
+              Quanto você paga pelo produto — é o que define o lucro no painel financeiro.
+            </small>
           </label>
 
           <label className="gm-modal-label">
@@ -645,74 +705,240 @@ function SecAvaliacoes({
   );
 }
 
+// Rótulos dos status do pedido no quadro de demanda
+const STATUS_DEMANDA: { chave: string; label: string }[] = [
+  { chave: 'pendente', label: 'Pendentes' },
+  { chave: 'preparo', label: 'Em preparo' },
+  { chave: 'caminho', label: 'Saiu para entrega' },
+  { chave: 'entregue', label: 'Entregues' },
+];
+
+// Converte "150000" (digitos) → "1.500,00" para exibir no campo
+function formatarCampoMoeda(digitos: string): string {
+  const limpo = digitos.replace(/\D/g, '');
+  if (!limpo) return '';
+  const centavos = limpo.padStart(3, '0');
+  const reais = centavos.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${reais},${centavos.slice(-2)}`;
+}
+
+// Painel financeiro do mês: quanto entrou, quanto saiu, lucro/prejuízo e demanda
 function SecFinanceiro({
-  financeiro,
-  stats,
+  fin,
   loading,
+  meses,
+  mesAtual,
+  onSelecionarMes,
+  custosFixosInput,
+  onCustosFixosInput,
+  salvandoCustos,
+  onSalvarCustos,
+  onIrProdutos,
   onExportar,
-  totalPedidos,
 }: {
-  financeiro: FinanceiroMes[];
-  stats: Stat[];
+  fin: FinanceiroResumo | null;
   loading: boolean;
+  meses: OpcaoMes[];
+  mesAtual: { ano: number; mes: number };
+  onSelecionarMes: (m: OpcaoMes) => void;
+  custosFixosInput: string;
+  onCustosFixosInput: (v: string) => void;
+  salvandoCustos: boolean;
+  onSalvarCustos: () => void;
+  onIrProdutos: () => void;
   onExportar: () => void;
-  totalPedidos: number;
 }) {
-  const temDados = totalPedidos > 0;
+  const carregando = loading || !fin;
+  const pedidos = fin?.pedidos ?? 0;
+  const lucro = fin?.lucro ?? 0;
+  const prejuizo = lucro < 0;
+  // Vendeu no mês, mas nenhum item tem custo → o "lucro" ainda é chute
+  const avisoSemCusto =
+    (fin?.faturamento ?? 0) > 0 &&
+    (fin?.custoMercadoria ?? 0) === 0 &&
+    (fin?.itensSemCusto ?? 0) > 0;
+
+  const maxDia = Math.max(...(fin?.serieDiaria ?? []).map(d => d.receita), 1);
+  const melhorDia = fin
+    ? fin.serieDiaria.reduce((a, b) => (b.receita > a.receita ? b : a), fin.serieDiaria[0])
+    : null;
+
+  const stats: { val: string; lbl: string; classe?: string }[] = [
+    { val: formatarBRL(fin?.faturamento ?? 0), lbl: 'Faturamento' },
+    { val: formatarBRL(fin?.custoMercadoria ?? 0), lbl: 'Custo da mercadoria' },
+    { val: formatarBRL(fin?.custoFixo ?? 0), lbl: 'Custo fixo do mês' },
+    {
+      val: formatarBRL(Math.abs(lucro)),
+      lbl: prejuizo ? 'Prejuízo do mês' : 'Lucro do mês',
+      classe: prejuizo ? 'gm-red' : 'gm-yellow',
+    },
+    { val: String(pedidos), lbl: 'Pedidos' },
+    { val: formatarBRL(fin?.ticketMedio ?? 0), lbl: 'Ticket médio' },
+  ];
+
   return (
     <div className="gm-section-wrap">
       <div className="gm-sec-row">
         <h2 className="gm-sec-title"><IconCreditCard size={15} /> Financeiro</h2>
-        {temDados && (
+        {pedidos > 0 && (
           <button className="gm-btn-link" onClick={onExportar}>Exportar relatório (CSV)</button>
         )}
       </div>
 
+      {/* Mês analisado */}
+      <div className="gm-meses-chips" role="group" aria-label="Escolher o mês do relatório">
+        {meses.map(m => (
+          <button
+            key={`${m.ano}-${m.mes}`}
+            type="button"
+            className={`gm-mes-chip${mesAtual.ano === m.ano && mesAtual.mes === m.mes ? ' gm-mes-chip--ativo' : ''}`}
+            aria-pressed={mesAtual.ano === m.ano && mesAtual.mes === m.mes}
+            onClick={() => onSelecionarMes(m)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Custos fixos: o valor que sai todo mês (aluguel, luz, salários) */}
+      <div className="gm-fixos-card">
+        <div className="gm-fixos-texto">
+          <strong>Custos fixos mensais</strong>
+          <span>Aluguel, luz, salários e afins — o que sai todo mês mesmo sem vender.</span>
+        </div>
+        <div className="gm-fixos-acoes">
+          <input
+            className="gm-fixos-input"
+            value={custosFixosInput}
+            onChange={e => onCustosFixosInput(e.target.value.replace(/\D/g, ''))}
+            onBlur={() => onCustosFixosInput(formatarCampoMoeda(custosFixosInput))}
+            inputMode="decimal"
+            placeholder="0,00"
+            aria-label="Custos fixos mensais em reais"
+          />
+          <button className="gm-btn-primary" onClick={onSalvarCustos} disabled={salvandoCustos}>
+            {salvandoCustos ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Os números do mês */}
       <div className="gm-stats-row">
         {stats.map((s, i) => (
-          <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
+          <div key={i} className={`gm-stat${carregando ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
             <div className="gm-stat-icon"><IconBarChart size={17} /></div>
             <div>
-              <p className="gm-stat-val">{loading ? '—' : s.val}</p>
+              <p className={`gm-stat-val${s.classe ? ` ${s.classe}` : ''}`}>{carregando ? '—' : s.val}</p>
               <p className="gm-stat-lbl">{s.lbl}</p>
             </div>
           </div>
         ))}
       </div>
 
+      {avisoSemCusto && (
+        <div className="gm-aviso-custo">
+          <p>
+            Você vendeu no mês, mas os produtos ainda estão <strong>sem custo cadastrado</strong> —
+            o lucro mostrado pode não ser o real.
+          </p>
+          <button className="gm-btn-sec" onClick={onIrProdutos}>Informar custos dos produtos</button>
+        </div>
+      )}
+
       <div className="gm-divider" />
 
-      <div className="gm-chart-card gm-chart-card--full">
-        <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}><IconBarChart size={15} /> Receita — Últimos 6 meses</p>
+      {/* Demanda: receita por dia e o que mais saiu */}
+      <div className="gm-dash-grid">
+        <div className="gm-chart-card">
+          <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}>
+            <IconBarChart size={15} /> Receita por dia — {MESES_CURTO[(fin?.mes ?? 1) - 1]}/{fin?.ano ?? ''}
+          </p>
 
-        {loading ? (
-          <div className="gm-chart-loading">
-            {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="gm-bar-skeleton" style={{ height: `${SKELETON_HEIGHTS[i]}%` }} />
-            ))}
+          {carregando ? (
+            <div className="gm-chart-loading">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="gm-bar-skeleton" style={{ height: `${SKELETON_HEIGHTS[i]}%` }} />
+              ))}
+            </div>
+          ) : pedidos === 0 ? (
+            <EmptyState msg="Nenhum pedido neste mês" />
+          ) : (
+            <>
+              <div className="gm-bar-chart gm-bar-chart--lg gm-bar-chart--diario">
+                {(fin?.serieDiaria ?? []).map(d => {
+                  const pct = (d.receita / maxDia) * 100;
+                  return (
+                    <div
+                      key={d.dia}
+                      className="gm-bar-col"
+                      title={`Dia ${d.dia}: ${d.pedidos} pedido${d.pedidos === 1 ? '' : 's'} · ${formatarBRL(d.receita)}`}
+                    >
+                      <div className="gm-bar-outer">
+                        <div
+                          className="gm-bar-inner"
+                          style={{
+                            height: `${Math.max(pct, d.receita > 0 ? 4 : 0)}%`,
+                            animationDelay: `${Math.min(0.1 + d.dia * 0.01, 0.5)}s`,
+                          }}
+                        />
+                      </div>
+                      <span className="gm-bar-label">{d.dia}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {melhorDia && melhorDia.receita > 0 && (
+                <p className="gm-diario-resumo">
+                  Melhor dia: dia {melhorDia.dia} — {melhorDia.pedidos} pedido{melhorDia.pedidos === 1 ? '' : 's'} · {formatarBRL(melhorDia.receita)}
+                </p>
+              )}
+            </>
+          )}
+
+          <div className="gm-legend">
+            <span className="gm-legend-dot gm-legend-dot--rec" /> Receita de pedidos
           </div>
-        ) : !temDados ? (
-          <EmptyState msg="Sem dados financeiros ainda" />
-        ) : (
-          <div className="gm-bar-chart gm-bar-chart--lg">
-            {financeiro.map((f, i) => {
-              const max = Math.max(...financeiro.map(x => x.val), 1);
-              const pct = (f.val / max) * 100;
-              return (
-                <div key={i} className="gm-bar-col">
-                  <span className="gm-bar-val">{f.val > 0 ? formatarBRL(f.val) : '—'}</span>
-                  <div className="gm-bar-outer">
-                    <div className="gm-bar-inner" style={{ height: `${Math.max(pct, f.val > 0 ? 4 : 0)}%`, animationDelay: `${0.1 + i * 0.07}s` }} />
-                  </div>
-                  <span className="gm-bar-label">{f.mes}</span>
+        </div>
+
+        <div className="gm-quick-card">
+          <p className="gm-sec-title" style={{ marginBottom: '1rem' }}>
+            <IconShoppingCart size={15} /> Demanda do mês
+          </p>
+
+          {carregando ? (
+            <div className="gm-quick-list"><LoadingRow /></div>
+          ) : (
+            <div className="gm-quick-list">
+              {STATUS_DEMANDA.map(s => (
+                <div className="gm-quick-row" key={s.chave}>
+                  <span>{s.label}</span>
+                  <strong>{fin?.porStatus?.[s.chave] ?? 0}</strong>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+              {(fin?.itensSemCusto ?? 0) > 0 && (
+                <div className="gm-quick-row">
+                  <span>Itens vendidos sem custo</span>
+                  <strong className="gm-orange">{fin!.itensSemCusto}</strong>
+                </div>
+              )}
+            </div>
+          )}
 
-        <div className="gm-legend">
-          <span className="gm-legend-dot gm-legend-dot--rec" /> Receita de pedidos
+          <p className="gm-sec-subtitle"><IconPackage size={14} /> Mais vendidos</p>
+          {carregando ? (
+            <div className="gm-quick-list"><LoadingRow /></div>
+          ) : (fin?.topProdutos.length ?? 0) === 0 ? (
+            <p className="gm-top-vazio">Sem vendas no mês</p>
+          ) : (
+            <div className="gm-quick-list">
+              {fin!.topProdutos.map(tp => (
+                <div className="gm-quick-row" key={tp.nome}>
+                  <span className="gm-top-nome"><strong>{tp.qtd}x</strong> {tp.nome}</span>
+                  <strong className="gm-yellow">{formatarBRL(tp.receita)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -996,6 +1222,16 @@ export default function GerenciamentoMercado({
   const [avaliacoesLoading, setAvaliacoesLoading] = useState(true);
   const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(false);
 
+  // Painel financeiro (aba Financeiro): mês escolhido + dados do servidor
+  const [finMes, setFinMes] = useState<{ ano: number; mes: number }>(() => {
+    const d = new Date();
+    return { ano: d.getFullYear(), mes: d.getMonth() + 1 };
+  });
+  const [fin, setFin] = useState<FinanceiroResumo | null>(null);
+  const [finLoading, setFinLoading] = useState(true);
+  const [custosFixosInput, setCustosFixosInput] = useState('');
+  const [salvandoCustos, setSalvandoCustos] = useState(false);
+
   const [dados, setDados] = useState<DadosMercado>({
     mercado: null,
     produtos: [],
@@ -1090,6 +1326,50 @@ export default function GerenciamentoMercado({
     })();
   }, [mercadoId]);
 
+  // Financeiro do mês escolhido (faturamento, custos, lucro e demanda)
+  useEffect(() => {
+    let vivo = true;
+    async function carregarFinanceiro() {
+      setFinLoading(true);
+      try {
+        const data: FinanceiroResumo = await api.financeiroMercado(mercadoId, finMes.ano, finMes.mes);
+        if (!vivo) return;
+        setFin(data);
+        setCustosFixosInput(formatarCampoMoeda(
+          String(Math.round((Number(data.custoFixo) || 0) * 100))
+        ));
+      } catch (err) {
+        console.error('Erro ao carregar financeiro:', err);
+        if (vivo) setFin(null);
+      } finally {
+        if (vivo) setFinLoading(false);
+      }
+    }
+    carregarFinanceiro();
+    return () => { vivo = false; };
+  }, [mercadoId, finMes]);
+
+  // Salva os custos fixos mensais do mercado (aluguel, luz, salários...)
+  async function salvarCustosFixos() {
+    const valor = Number(custosFixosInput.replace(/\./g, '').replace(',', '.'));
+    if (!Number.isFinite(valor) || valor < 0) {
+      showToast('erro', 'Informe um valor válido para os custos fixos.');
+      return;
+    }
+    setSalvandoCustos(true);
+    try {
+      await api.atualizarMercado(mercadoId, { custos_fixos: valor });
+      setFin(prev => prev
+        ? { ...prev, custoFixo: valor, lucro: Math.round((prev.faturamento - prev.custoMercadoria - valor) * 100) / 100 }
+        : prev);
+      showToast('sucesso', 'Custos fixos mensais salvos.');
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível salvar os custos fixos.');
+    } finally {
+      setSalvandoCustos(false);
+    }
+  }
+
   // Vendedor avança o status de um pedido (pendente → preparo → caminho → entregue)
   async function handleAvancarStatus(p: Pedido) {
     const proximo = PROXIMO_STATUS[p.statusAtual];
@@ -1123,23 +1403,18 @@ export default function GerenciamentoMercado({
     return porMes;
   }, [pedidos]);
 
-  // Estatísticas financeiras reais do mês atual
-  const statsFinanceiro = useMemo<Stat[]>(() => {
-    const agora = new Date();
-    const doMes = pedidos.filter(p => {
-      const d = new Date(p.data);
-      return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+  // Chips dos últimos 6 meses (para trocar o mês do painel financeiro)
+  const mesesFin = useMemo<OpcaoMes[]>(() => {
+    const hoje = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      return {
+        ano: d.getFullYear(),
+        mes: d.getMonth() + 1,
+        label: `${MESES_CURTO[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`,
+      };
     });
-    const receitaMes   = doMes.reduce((s, p) => s + p.valorNum, 0);
-    const receitaTotal = pedidos.reduce((s, p) => s + p.valorNum, 0);
-    const ticketMedio  = doMes.length > 0 ? receitaMes / doMes.length : 0;
-    return [
-      { val: formatarBRL(receitaMes), lbl: 'Receita do mês' },
-      { val: String(doMes.length), lbl: 'Pedidos no mês' },
-      { val: doMes.length > 0 ? formatarBRL(ticketMedio) : '—', lbl: 'Ticket médio' },
-      { val: formatarBRL(receitaTotal), lbl: 'Receita total' },
-    ];
-  }, [pedidos]);
+  }, []);
 
   // Exporta os pedidos em CSV (abre no Excel/Google Planilhas)
   function handleExportarRelatorio() {
@@ -1161,6 +1436,18 @@ export default function GerenciamentoMercado({
   }
 
   const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
+
+  // Status ao vivo do mercado na lateral: muda entre Aberto/Fechado sozinho,
+  // sem recarregar a página, quando bate o horário configurado.
+  // null = dashboard ainda carregando (chip neutro, sem mentir "Aberto")
+  const [agoraMkt, setAgoraMkt] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgoraMkt(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+  const lojaAbertaAgora = mercado
+    ? estaAberto(parseHorario(mercado.horario ?? null), agoraMkt) ?? true
+    : null;
 
   function handleProdutoSalvo(atualizado: Produto) {
     setDados(prev => ({
@@ -1215,11 +1502,17 @@ export default function GerenciamentoMercado({
       total={avaliacoes.length}
     />,
     <SecFinanceiro
-      financeiro={financeiro}
-      stats={statsFinanceiro}
-      loading={pedidosLoading}
+      fin={fin}
+      loading={finLoading}
+      meses={mesesFin}
+      mesAtual={finMes}
+      onSelecionarMes={setFinMes}
+      custosFixosInput={custosFixosInput}
+      onCustosFixosInput={setCustosFixosInput}
+      salvandoCustos={salvandoCustos}
+      onSalvarCustos={salvarCustosFixos}
+      onIrProdutos={() => setNav(1)}
       onExportar={handleExportarRelatorio}
-      totalPedidos={pedidos.length}
     />,
     <SecInformacoes mercado={mercado} onSalvo={handleInfoSalva} />,
   ];
@@ -1238,7 +1531,21 @@ export default function GerenciamentoMercado({
           </div>
           <p className="gm-mkt-nome">{mercado?.nome ?? 'Carregando...'}</p>
           <p className="gm-mkt-sub">{mercado?.cidade ?? ''} · {mercado?.estado ?? ''}</p>
-          <span className="gm-status-open">● Aberto</span>
+          <span
+            className={`gm-status-open${
+              lojaAbertaAgora === null
+                ? ' gm-status-open--neutro'
+                : lojaAbertaAgora
+                  ? ''
+                  : ' gm-status-open--fechado'
+            }`}
+          >
+            {lojaAbertaAgora === null
+              ? '● …'
+              : lojaAbertaAgora
+                ? '● Aberto agora'
+                : '● Fechado agora'}
+          </span>
         </div>
         <nav className="gm-nav">
           {SIDEBAR_NAV.map((item, i) => (

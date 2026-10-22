@@ -21,6 +21,8 @@ import {
   IconLink,
   IconMessage,
   IconMapPin,
+  IconMenu,
+  IconX,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
 import { localizacaoCompleta } from '../../utils/localizacao';
@@ -214,6 +216,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [menuCompartilhar, setMenuCompartilhar] = useState(false);
   const [categoriaAtiva, setCategoriaAtiva] = useState<number | null>(null);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
+  const [catsAberto, setCatsAberto] = useState(false);
   const [favoritando, setFavoritando]       = useState(false);
   const [modalDescricao, setModalDescricao] = useState(false);
   const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
@@ -286,7 +289,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       }
     }
     carregarDados();
-  }, [mercadoId]);
+  }, [mercadoId, showToast]);
 
   // Garante que a tela sempre comece do topo depois que os dados (e categorias)
   // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
@@ -349,9 +352,25 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     return itens;
   }, [dados, busca, ordenacao]);
 
+  // Fecha o menu de categorias ao pressionar Esc (mesmo comportamento dos
+  // demais painéis e modais do site).
+  useEffect(() => {
+    if (!catsAberto) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCatsAberto(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [catsAberto]);
+
   function irParaCategoria(id: number) {
     setCategoriaAtiva(id);
     refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function irParaInicio() {
+    setCategoriaAtiva(null);
+    document.querySelector('.vtc-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function handleFavoritar() {
@@ -581,6 +600,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           </div>
         </div>
 
+      </header>
+
+      {/* ── Busca + categorias: fixos no topo quando a página rola ───── */}
+      <div className="vtc-filtros">
         {/* Busca + ordenação */}
         <div className="vtc-busca-linha">
           <div className="vtc-busca-wrap">
@@ -605,9 +628,18 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           </select>
         </div>
 
-        {/* Tags de categoria */}
+        {/* Menu hambúrguer + tags de categoria */}
         {dados.categorias.length > 0 && (
           <div className="vtc-tags-row">
+            <button
+              className="vtc-btn-cats"
+              onClick={() => setCatsAberto(true)}
+              aria-label="Abrir menu de categorias"
+              aria-expanded={catsAberto}
+            >
+              <IconMenu size={15} />
+              <span>Categorias</span>
+            </button>
             {dados.categorias.map(cat => (
               <button
                 key={cat.id}
@@ -619,7 +651,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             ))}
           </div>
         )}
-      </header>
+      </div>
 
       {/* ── Categorias e produtos ─────────────────────────────────────── */}
       <main className="vtc-main">
@@ -691,6 +723,39 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           <span>{carrinho.totalItens} {carrinho.totalItens === 1 ? 'item' : 'itens'} · R$ {formatarPreco(String(carrinho.totalValor))}</span>
         </button>
       )}
+
+      {/* ── Menu de categorias (hambúrguer) ──────────────────────────── */}
+      {catsAberto && (
+        <div className="vtc-cats-overlay" onClick={() => setCatsAberto(false)} />
+      )}
+      <aside
+        className={`vtc-cats-drawer ${catsAberto ? 'aberto' : ''}`}
+        aria-label="Categorias da loja"
+        aria-hidden={!catsAberto}
+      >
+        <div className="vtc-cats-head">
+          <strong>Categorias</strong>
+          <button onClick={() => setCatsAberto(false)} aria-label="Fechar menu de categorias">
+            <IconX size={16} />
+          </button>
+        </div>
+        <button
+          className={`vtc-cats-item ${categoriaAtiva === null ? 'ativo' : ''}`}
+          onClick={() => { setCatsAberto(false); irParaInicio(); }}
+        >
+          Todos os produtos
+        </button>
+        {dados.categorias.map(cat => (
+          <button
+            key={cat.id}
+            className={`vtc-cats-item ${categoriaAtiva === cat.id ? 'ativo' : ''}`}
+            onClick={() => { setCatsAberto(false); irParaCategoria(cat.id); }}
+          >
+            {cat.nome}
+            <span className="vtc-cats-item-qtd">{cat.produtos.length}</span>
+          </button>
+        ))}
+      </aside>
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 

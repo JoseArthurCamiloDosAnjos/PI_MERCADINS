@@ -439,14 +439,17 @@
 }
 .vtc-busca-input::placeholder { color: var(--vt-cinza); }
 
-/* Tags de categoria */
+/* Tags de categoria (rolam na horizontal, como no iFood, em vez de quebrar) */
 .vtc-tags-row {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   overflow-x: auto;
   padding-bottom: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.vtc-tags-row::-webkit-scrollbar { display: none; }
 .vtc-tag {
   padding: 7px 18px;
   border-radius: var(--vt-radius-sm);
@@ -496,7 +499,130 @@
   white-space: nowrap;
 }
 
+/* ─── Filtros fixos (busca + categorias) ─────────────────────────────────── */
+/* Ficam logo abaixo da topbar e permanecem visíveis enquanto a página rola,
+   no mesmo estilo de mercados como iFood e Rappi.                            */
+.vtc-filtros {
+  position: sticky;
+  top: 65px; /* altura da .vtc-topbar */
+  z-index: 15;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vt-azul-escuro);
+  border-bottom: 1px solid var(--vt-azul-borda);
+  padding: 0.9rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.vtc-btn-cats {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: 1.5px solid var(--vt-amarelo);
+  border-radius: var(--vt-radius-sm);
+  background: rgba(245, 200, 74, 0.12);
+  color: var(--vt-amarelo);
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.vtc-btn-cats:hover { background: rgba(245, 200, 74, 0.22); }
+
+/* ─── Menu de categorias (hambúrguer) ────────────────────────────────────── */
+.vtc-cats-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 8, 22, 0.6);
+  z-index: 60;
+  animation: vtcOverlayIn 0.2s ease both;
+}
+@keyframes vtcOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+.vtc-cats-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(320px, 88vw);
+  background: var(--vt-azul-escuro);
+  border-left: 1px solid var(--vt-azul-borda);
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 1.1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+}
+.vtc-cats-drawer.aberto { transform: translateX(0); }
+
+.vtc-cats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--vt-azul-borda);
+}
+.vtc-cats-head strong { font-size: 15px; color: var(--vt-cor-texto); }
+.vtc-cats-head button {
+  display: flex;
+  background: none;
+  border: none;
+  color: var(--vt-cinza);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.vtc-cats-head button:hover { background: var(--vt-azul-card); color: var(--vt-amarelo); }
+
+.vtc-cats-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: var(--vt-radius-sm);
+  background: transparent;
+  color: var(--vt-cor-texto-sec);
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vtc-cats-item:hover { background: var(--vt-azul-card); color: var(--vt-cor-texto); }
+.vtc-cats-item.ativo {
+  border-color: var(--vt-amarelo);
+  background: rgba(245, 200, 74, 0.08);
+  color: var(--vt-amarelo);
+}
+.vtc-cats-item-qtd {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--vt-cinza);
+  background: var(--vt-azul-card);
+  padding: 2px 8px;
+  border-radius: var(--vt-radius-full);
+}
+
 /* ─── Main ───────────────────────────────────────────────────────────────── */
+/* A página inteira rola pelo .vtc-shell (rolagem única). O main não pode ter
+   overflow próprio: com flex:1 + overflow:auto ele esmagava o conteúdo para a
+   altura restante e os cards de produto ficavam cortados/sem rolagem.         */
 .vtc-main {
   flex: 1;
   padding: 2rem 2.5rem 5rem;
@@ -506,11 +632,10 @@
   width: 100%;
   box-sizing: border-box;
   background: var(--vt-azul-bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  scroll-margin-top: 190px;
 }
 
-.vtc-categoria { display: flex; flex-direction: column; gap: 1rem; animation: vtcFadeUp 0.4s ease both; scroll-margin-top: 90px; }
+.vtc-categoria { display: flex; flex-direction: column; gap: 1rem; animation: vtcFadeUp 0.4s ease both; scroll-margin-top: 190px; }
 .vtc-categoria-titulo { font-size: 16px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; }
 
 .vtc-produtos-grid { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -731,6 +856,8 @@
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 780px) {
   .vtc-header { padding: 0 1.4rem 1.2rem; }
+  .vtc-filtros { top: 61px; padding: 0.8rem 1.4rem; }
+  .vtc-categoria, .vtc-main { scroll-margin-top: 178px; }
   .vtc-main   { padding: 1.4rem 1.4rem 6rem; gap: 2rem; }
   .vtc-topbar { padding: 0.7rem 1.2rem; }
 }
@@ -749,11 +876,13 @@
   .vtc-banner { height: 120px; }
   .vtc-tags-row { gap: 6px; }
   .vtc-tag { padding: 5px 12px; font-size: 11.5px; }
+  .vtc-btn-cats { padding: 5px 11px; font-size: 11.5px; }
 }
 
 @media (max-width: 400px) {
   .vtc-produto-card { width: 100%; }
   .vtc-header { padding: 0 1rem 1rem; }
+  .vtc-filtros { padding: 0.8rem 1rem; }
   .vtc-busca-wrap { padding: 8px 12px; }
 }
 
@@ -775,7 +904,7 @@
 .vtc-shell[data-tema="claro"] .vtc-modal {
   box-shadow: 0 2px 10px rgba(20, 30, 60, 0.08);
 }
-/* --- Status ao vivo no cabe�alho: Aberto agora / Fechado agora -------------- */
+/* --- Status ao vivo no cabe�alho: Aberto agora / Fechado agora -------------- */
 .vtc-status {
   display: inline-flex;
   align-items: center;

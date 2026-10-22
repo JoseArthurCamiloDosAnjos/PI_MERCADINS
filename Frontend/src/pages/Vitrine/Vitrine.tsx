@@ -507,7 +507,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }
 
     carregarDados();
-  }, [mercadoId]);
+  }, [mercadoId, showToast]);
 
   
   useEffect(() => {

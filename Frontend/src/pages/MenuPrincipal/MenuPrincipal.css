@@ -1157,7 +1157,7 @@ button {
   }
 }
 
-/* -- Se��es da home: melhores avaliados + continue explorando ------------- */
+/* -- Seções da home: melhores avaliados + continue explorando ------------- */
 .home-secao {
   margin-top: 44px;
 }
@@ -1383,7 +1383,7 @@ button {
   }
 }
 
-/* --- Aviso de loja fechada (card clicado fora do hor�rio) ------------------- */
+/* --- Aviso de loja fechada (card clicado fora do horário) ------------------- */
 .mp-aviso-overlay {
   position: fixed;
   inset: 0;

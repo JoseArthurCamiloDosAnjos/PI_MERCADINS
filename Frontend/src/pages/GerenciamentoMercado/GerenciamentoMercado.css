@@ -888,7 +888,7 @@
 }
 .gm-btn-primary:hover { background: var(--amarelo-hover); transform: translateY(-1px); }
 .gm-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-/* --- Financeiro: mês, custos fixos, aviso de custo e gráfico diário -------- */
+/* --- Financeiro: mï¿½s, custos fixos, aviso de custo e grï¿½fico diï¿½rio -------- */
 
 .gm-meses-chips {
   display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;
@@ -946,4 +946,5 @@
 .gm-modal-dica {
   display: block; margin-top: 4px; font-size: 0.72rem;
   color: var(--cinza-texto); font-weight: 400;
+  text-transform: none; /* explicaÃ§Ã£o em caixa baixa, mesmo dentro do label */
 }

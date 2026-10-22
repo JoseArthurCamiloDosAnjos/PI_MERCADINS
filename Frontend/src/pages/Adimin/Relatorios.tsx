@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { api } from '../../services/api'
 
@@ -61,12 +61,11 @@ export default function Relatorios() {
   const [dataInicio, setDataInicio] = useState('')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    carregar()
-  }, [periodo, dataInicio])
-
-  function carregar() {
-    setLoading(true)
+  // useCallback com periodo/dataInicio nas dependências: o efeito abaixo
+  // recarrega os dados quando o período muda, sem reexecutar a cada render.
+  // O "loading" já começa true no useState; o setLoading(true) do botão
+  // "Aplicar" fica no handler do formulário (contexto de evento), não aqui.
+  const carregar = useCallback(() => {
     const params = new URLSearchParams()
     params.set('periodo', periodo)
     if (dataInicio) params.set('data_inicio', dataInicio)
@@ -74,10 +73,15 @@ export default function Relatorios() {
       .then(setDados)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }
+  }, [periodo, dataInicio])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
   function handleAplicar(e: React.FormEvent) {
     e.preventDefault()
+    setLoading(true)
     carregar()
   }
 

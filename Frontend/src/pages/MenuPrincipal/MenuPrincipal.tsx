@@ -176,10 +176,10 @@ export default function Mercadins() {
   // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
   const [visitados] = useState<string[]>(listarVisitados);
 
-  // Relógio dos cards: recalcula Aberto/Fechado a cada minuto, sem recarregar
+  // Relógio dos cards: recalcula Aberto/Fechado a cada 15 segundos, sem recarregar
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() => setAgora(new Date()), 60_000);
+    const id = setInterval(() => setAgora(new Date()), 15_000);
     return () => clearInterval(id);
   }, []);
 

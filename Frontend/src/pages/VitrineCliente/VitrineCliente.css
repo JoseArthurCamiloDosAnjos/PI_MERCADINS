@@ -775,3 +775,31 @@
 .vtc-shell[data-tema="claro"] .vtc-modal {
   box-shadow: 0 2px 10px rgba(20, 30, 60, 0.08);
 }
+/* --- Status ao vivo no cabeçalho: Aberto agora / Fechado agora -------------- */
+.vtc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.vtc-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vtc-status--aberto { color: #189252; }
+.vtc-status--aberto .vtc-status-dot {
+  background: #189252;
+  box-shadow: 0 0 0 3px rgba(24, 146, 82, 0.15);
+}
+
+.vtc-status--fechado { color: #b45309; }
+.vtc-status--fechado .vtc-status-dot {
+  background: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}

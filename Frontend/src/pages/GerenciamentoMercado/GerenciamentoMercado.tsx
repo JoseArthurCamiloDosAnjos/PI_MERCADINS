@@ -3,7 +3,7 @@ import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
-import { parseHorario, type HorarioMercado } from '../../utils/horario';
+import { parseHorario, estaAberto, type HorarioMercado } from '../../utils/horario';
 import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
@@ -1162,6 +1162,18 @@ export default function GerenciamentoMercado({
 
   const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
 
+  // Status ao vivo do mercado na lateral: muda entre Aberto/Fechado sozinho,
+  // sem recarregar a página, quando bate o horário configurado.
+  // null = dashboard ainda carregando (chip neutro, sem mentir "Aberto")
+  const [agoraMkt, setAgoraMkt] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setAgoraMkt(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+  const lojaAbertaAgora = mercado
+    ? estaAberto(parseHorario(mercado.horario ?? null), agoraMkt) ?? true
+    : null;
+
   function handleProdutoSalvo(atualizado: Produto) {
     setDados(prev => ({
       ...prev,
@@ -1238,7 +1250,21 @@ export default function GerenciamentoMercado({
           </div>
           <p className="gm-mkt-nome">{mercado?.nome ?? 'Carregando...'}</p>
           <p className="gm-mkt-sub">{mercado?.cidade ?? ''} · {mercado?.estado ?? ''}</p>
-          <span className="gm-status-open">● Aberto</span>
+          <span
+            className={`gm-status-open${
+              lojaAbertaAgora === null
+                ? ' gm-status-open--neutro'
+                : lojaAbertaAgora
+                  ? ''
+                  : ' gm-status-open--fechado'
+            }`}
+          >
+            {lojaAbertaAgora === null
+              ? '● …'
+              : lojaAbertaAgora
+                ? '● Aberto agora'
+                : '● Fechado agora'}
+          </span>
         </div>
         <nav className="gm-nav">
           {SIDEBAR_NAV.map((item, i) => (

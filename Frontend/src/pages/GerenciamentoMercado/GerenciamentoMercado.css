@@ -97,6 +97,14 @@
   padding: 3px 10px; border-radius: var(--radius-full);
 }
 
+.gm-status-open--fechado {
+  background: #fdf0e0; color: #b45309;
+}
+
+.gm-status-open--neutro {
+  background: #eef1f7; color: #6b7385;
+}
+
 .gm-nav {
   padding: 1rem 0.8rem;
   display: flex; flex-direction: column; gap: 4px;

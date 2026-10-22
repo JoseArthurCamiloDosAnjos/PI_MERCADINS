@@ -482,8 +482,8 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
           return (
             <div key={i} className={`gm-stat${loading ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
               <div className="gm-stat-icon"><StatIcon size={17} /></div>
-              <div>
-                <p className="gm-stat-val">{loading ? '—' : s.val}</p>
+              <div className="gm-stat-info">
+                <p className="gm-stat-val" title={loading ? undefined : s.val}>{loading ? '—' : s.val}</p>
                 <p className="gm-stat-lbl">{s.lbl}</p>
               </div>
             </div>
@@ -827,8 +827,8 @@ function SecFinanceiro({
         {stats.map((s, i) => (
           <div key={i} className={`gm-stat${carregando ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
             <div className="gm-stat-icon"><IconBarChart size={17} /></div>
-            <div>
-              <p className={`gm-stat-val${s.classe ? ` ${s.classe}` : ''}`}>{carregando ? '—' : s.val}</p>
+            <div className="gm-stat-info">
+              <p className={`gm-stat-val${s.classe ? ` ${s.classe}` : ''}`} title={carregando ? undefined : s.val}>{carregando ? '—' : s.val}</p>
               <p className="gm-stat-lbl">{s.lbl}</p>
             </div>
           </div>

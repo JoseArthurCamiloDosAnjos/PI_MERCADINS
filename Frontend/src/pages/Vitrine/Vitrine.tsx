@@ -749,8 +749,8 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
           <div className="vt-header-text">
             <div className="vt-header-nome-wrap">
-              <h1 className="vt-nome-mercado">{dados.nome}</h1>
-              <button className="vt-btn-editar" onClick={() => setModalEditar(true)}>
+              <h1 className="vt-nome-mercado" title={dados.nome}>{dados.nome}</h1>
+              <button className="vt-btn-editar" title="Editar dados da loja" onClick={() => setModalEditar(true)}>
                 <IconPencil size={12} /> Editar
               </button>
             </div>

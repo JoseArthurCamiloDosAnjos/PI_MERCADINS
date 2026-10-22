@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
-import { BASE_URL } from '../../services/api';
+import { BASE_URL, api } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +30,7 @@ export default function RegistrarMercado() {
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
-  const [planoSelecionado] = useState<{ nome: string; cobranca: string } | null>(() => {
+  const [planoSelecionado] = useState<{ id: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
       return salvo ? JSON.parse(salvo) : null;
@@ -125,9 +125,27 @@ export default function RegistrarMercado() {
       if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
 
       showToast('sucesso', 'Mercado cadastrado com sucesso!');
-      localStorage.removeItem('planoSelecionado');
       await refreshMercados(); // atualiza temMercado antes de navegar
-      setTimeout(() => navigate('/vendedor'), 1500);
+
+      if (!planoSelecionado) {
+        setTimeout(() => navigate('/vendedor'), 1500);
+        return;
+      }
+
+      try {
+        const checkout = await api.criarCheckout({
+          codigo_plano: planoSelecionado.id,
+          ciclo: planoSelecionado.cobranca === 'anual' ? 'anual' : 'mensal',
+        });
+        if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
+        localStorage.removeItem('planoSelecionado');
+        showToast('sucesso', 'Redirecionando para o pagamento...');
+        setTimeout(() => { window.location.href = checkout.urlCheckout; }, 800);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Erro ao iniciar o pagamento.';
+        showToast('erro', msg);
+        setTimeout(() => navigate('/vendedor'), 2000);
+      }
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao cadastrar.');
     } finally {

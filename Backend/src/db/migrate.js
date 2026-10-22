@@ -132,6 +132,39 @@ async function migrate() {
     ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_admin TEXT DEFAULT ''
   `;
 
+  // Tabela de assinaturas (planos Asaas)
+  await sql`
+    CREATE TABLE IF NOT EXISTS assinaturas (
+      id SERIAL PRIMARY KEY,
+      id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+      id_mercado INTEGER REFERENCES mercados(id_mercado) ON DELETE SET NULL,
+      codigo_plano TEXT NOT NULL,
+      ciclo TEXT NOT NULL CHECK (ciclo IN ('MENSAL', 'ANUAL')),
+      valor DECIMAL(10,2) NOT NULL,
+      asaas_customer_id TEXT,
+      asaas_subscription_id TEXT,
+      status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'ativa', 'inadimplente', 'cancelada')),
+      proximo_pagamento DATE,
+      criada_em TIMESTAMP DEFAULT NOW(),
+      atualizada_em TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  // Tabela de pagamentos/faturas das assinaturas
+  await sql`
+    CREATE TABLE IF NOT EXISTS pagamentos (
+      id SERIAL PRIMARY KEY,
+      id_assinatura INTEGER NOT NULL REFERENCES assinaturas(id) ON DELETE CASCADE,
+      asaas_payment_id TEXT UNIQUE,
+      valor DECIMAL(10,2) NOT NULL,
+      status TEXT DEFAULT 'PENDING',
+      metodo TEXT DEFAULT '',
+      vencimento DATE,
+      pago_em TIMESTAMP,
+      criado_em TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
   console.log('Tabelas criadas com sucesso!');
 }
 

@@ -16,6 +16,14 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: Assas_API_KEY
+        sync: false
+      - key: Assas_API_URL_Producao
+        value: https://api.asaas.com/
+      - key: Assas_API_URL_Sandbox
+        value: https://api-sandbox.asaas.com/
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false
 
   - type: static_site
     name: mercadins-frontend

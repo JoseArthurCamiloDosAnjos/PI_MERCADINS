@@ -174,6 +174,14 @@ export const api = {
   listarAvaliacoes: () => request('/usuario/avaliacoes'),
   listarHistorico:  () => request('/usuario/historico'),
 
+  // ── Assinaturas (planos) ─────────────────────────────────────────────────────
+  criarCheckout: (dados: { codigo_plano: string; ciclo: 'mensal' | 'anual' }) =>
+    request('/assinaturas/checkout', { method: 'POST', body: JSON.stringify(dados) }),
+  minhaAssinatura: () =>
+    request('/assinaturas/minha'),
+  cancelarAssinatura: (id: number) =>
+    request(`/assinaturas/${id}/cancelar`, { method: 'POST' }),
+
   // ── Admin ───────────────────────────────────────────────────────────────────
   adminDashboard:   ()         => request('/admin/dashboard'),
   adminUsuarios:    (params?: string) => request(`/admin/usuarios${params ? `?${params}` : ''}`),

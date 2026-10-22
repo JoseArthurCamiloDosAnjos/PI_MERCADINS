@@ -10,6 +10,8 @@ const categoriaRoutes        = require('./routes/categoriaRoutes.js')
 const usuarioRoutes          = require('./routes/usuarioRoutes.js')
 const carrinhoRoutes         = require('./routes/carrinhoRoutes.js')
 const adminRoutes            = require('./routes/adminRoutes.js')
+const assinaturaRoutes       = require('./routes/assinaturaRoutes.js')
+const { webhookAsaas }       = require('./controllers/assinaturaController.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -86,6 +88,9 @@ app.use('/api/admin',              adminRoutes)
 
 app.use('/api/mercados/:mercadoId/categorias',                          categoriaRoutes)
 app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoRoutes)
+
+app.use('/api/assinaturas',        assinaturaRoutes)
+app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── 404 para rotas de API não encontradas ─────────────────────────────────────
 app.use('/api', (_req, res) => {

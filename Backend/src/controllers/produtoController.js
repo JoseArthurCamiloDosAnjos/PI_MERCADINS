@@ -67,7 +67,7 @@ const criarProduto = async (req, res) => {
   const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId } = req.params
-  const { nome, descricao, preco, estoque, imagens } = req.body
+  const { nome, descricao, preco, estoque, imagens, custo } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -112,8 +112,9 @@ const criarProduto = async (req, res) => {
       })
     }
 
+    // Custo = quanto o mercado paga pelo produto (base do lucro no painel financeiro)
     const [novoProduto] = await sql`
-      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque)
+      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque, custo)
       VALUES (
         ${nome.trim()},
         ${descricao?.trim() ?? null},
@@ -121,7 +122,8 @@ const criarProduto = async (req, res) => {
         ${parsePreco(preco)},
         ${imagensUrls},
         ${Number(categoriaId)},
-        ${Number(estoque) || 0}
+        ${Number(estoque) || 0},
+        ${Math.max(0, Math.min(99999999, parsePreco(custo)))}
       )
       RETURNING *
     `
@@ -141,7 +143,7 @@ const atualizarProduto = async (req, res) => {
   const id_usuario = req.usuarioId
 
   const { mercadoId, categoriaId, produtoId } = req.params
-  const { nome, descricao, preco, estoque, imagens } = req.body
+  const { nome, descricao, preco, estoque, imagens, custo } = req.body
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
@@ -190,12 +192,18 @@ const atualizarProduto = async (req, res) => {
       }
     }
 
+    // Custo: null = não enviou (mantém o banco); 0 ou valor = grava
+    const custoNovo = custo === undefined || custo === null
+      ? null
+      : Math.max(0, Math.min(99999999, parsePreco(custo)))
+
     const [produtoAtualizado] = await sql`
       UPDATE produtos
       SET nome      = ${nome.trim()},
           descricao = ${descricao?.trim() ?? null},
           imagem    = COALESCE(${imagem ?? null}, imagem),
           preco     = ${parsePreco(preco)},
+          custo     = COALESCE(${custoNovo}, custo),
           imagens   = CASE WHEN ${imagensUrls.length} > 0 THEN ${imagensUrls} ELSE imagens END,
           estoque   = ${Number(estoque) || 0}
       WHERE id_produto   = ${Number(produtoId)}

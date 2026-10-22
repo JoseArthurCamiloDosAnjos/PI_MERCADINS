@@ -419,7 +419,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias, horario } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias, horario, custos_fixos } = req.body;
 
   const banner = banner_url || undefined
   const foto_perfil = foto_perfil_url || undefined
@@ -435,6 +435,16 @@ const atualizarMercado = async (req, res) => {
 
   if (cep && !validarCEP(cep))
     return res.status(400).json({ erro: "CEP inválido" });
+
+  // Custos fixos mensais (aluguel, luz, salários): opcional; quando vier,
+  // precisa ser um número >= 0. Quem não enviu mantém o valor do banco.
+  let custosFixosNovo = undefined;
+  if (custos_fixos !== undefined && custos_fixos !== null) {
+    const v = Number(custos_fixos);
+    if (!Number.isFinite(v) || v < 0 || v > 99999999)
+      return res.status(400).json({ erro: "Custos fixos inválidos" });
+    custosFixosNovo = v;
+  }
 
   const catsEdicao = normalizarCategorias(categorias);
   if (catsEdicao.erro)
@@ -510,6 +520,7 @@ const atualizarMercado = async (req, res) => {
         cor_texto_sec = COALESCE(${cor_texto_sec ?? null}, cor_texto_sec),
         banner       = COALESCE(${banner ?? null}, banner),
         foto_perfil  = COALESCE(${foto_perfil ?? null}, foto_perfil),
+        custos_fixos = COALESCE(${custosFixosNovo ?? null}, custos_fixos),
         categorias   = COALESCE(${catsEdicao.valor}, categorias)
       WHERE id_mercado = ${Number(id)}
       RETURNING *
@@ -635,7 +646,7 @@ const dashboardMercado = async (req, res) => {
 
     // Busca todos os produtos do mercado (via categorias)
     const produtos = await sql`
-      SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.estoque, p.imagens, p.id_categoria, c.nome AS categoria
+      SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.custo, p.estoque, p.imagens, p.id_categoria, c.nome AS categoria
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
       WHERE c.id_mercado = ${Number(id)}

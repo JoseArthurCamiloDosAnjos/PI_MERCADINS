@@ -48,7 +48,8 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: background 0.3s ease;
 }
 
@@ -383,6 +384,8 @@
 }
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
+/* O main rola naturalmente; quem faz a rolagem é o .vt-shell (rolagem única).
+   Com overflow interno aqui, o flex o esmagava e os cards ficavam cortados. */
 .vt-main {
   flex: 1;
   padding: 2rem 2.5rem;
@@ -392,8 +395,6 @@
   width: 100%;
   box-sizing: border-box;
   background: var(--vt-azul-bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Categoria ──────────────────────────────────────────────────────────── */

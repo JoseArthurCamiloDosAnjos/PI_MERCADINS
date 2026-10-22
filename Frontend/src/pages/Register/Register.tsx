@@ -480,7 +480,7 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Email */}
+            {/* E-mail */}
             <div className={fieldClass("email")}>
               <div className="field-input-wrap">
                 <input

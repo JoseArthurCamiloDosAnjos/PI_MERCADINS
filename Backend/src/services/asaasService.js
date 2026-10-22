@@ -8,14 +8,16 @@ const BASE_URL = isProduction
 
 // Catálogo de planos — o preço é SEMPRE definido aqui, nunca pelo cliente.
 // Anual = mensal com 20% de desconto (mesmo cálculo exibido no frontend: floor(mensal * 0.8) * 12).
+// Nomes comerciais iguais aos do frontend (Frontend/src/pages/MercadinsPromo/planos.ts);
+// as chaves ('basico' etc.) são as gravadas no banco e não mudam.
 const PLANOS = {
   basico: {
-    nome: 'Básico',
+    nome: 'Essencial',
     mensal: 79.0,
     anual: Math.floor(79 * 0.8) * 12, // 756.00
   },
   profissional: {
-    nome: 'Profissional',
+    nome: 'Plus',
     mensal: 149.0,
     anual: Math.floor(149 * 0.8) * 12, // 1428.00
   },

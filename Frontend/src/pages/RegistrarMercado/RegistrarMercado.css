@@ -65,6 +65,47 @@
   background: var(--input-border);
 }
 
+/* ── DESCRIÇÃO ── */
+.rm-desc-wrap {
+  margin-bottom: 4px;
+}
+
+.rm-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.8px solid var(--input-border);
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--navy);
+  background: var(--gray);
+  resize: vertical;
+  min-height: 76px;
+  outline: none;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  box-sizing: border-box;
+}
+
+.rm-textarea::placeholder { color: var(--text-muted); }
+.rm-textarea:focus { border-color: var(--navy); background: var(--gray); }
+
+.tema-claro .register-page .rm-textarea {
+  background: #ffffff;
+  border-color: #dde3ef;
+  color: #0d2a5e;
+}
+.tema-claro .register-page .rm-textarea:focus { background: #ffffff; }
+
+.rm-char-count {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.rm-char-count.is-full { color: var(--danger); }
+
 /* ── PLANO ESCOLHIDO ── */
 .rm-plano-chip {
   display: inline-flex;

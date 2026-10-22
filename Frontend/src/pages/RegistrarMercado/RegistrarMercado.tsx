@@ -13,6 +13,7 @@ interface Form {
   email: string;
   telefone: string;
   cnpj: string;
+  descricao: string;
   cep: string;
   estado: string;
   cidade: string;
@@ -40,7 +41,7 @@ export default function RegistrarMercado() {
   });
 
   const [form, setForm] = useState<Form>({
-    nome: '', email: '', telefone: '', cnpj: '',
+    nome: '', email: '', telefone: '', cnpj: '', descricao: '',
     cep: '', estado: '', cidade: '', bairro: '', rua: '',
   });
 
@@ -114,6 +115,7 @@ export default function RegistrarMercado() {
           email: form.email,
           telefone: form.telefone.replace(/\D/g, ''),
           cnpj: form.cnpj.replace(/\D/g, ''),
+          descricao: form.descricao.trim(),
           cep: form.cep.replace(/\D/g, ''),
           estado: form.estado,
           cidade: form.cidade,
@@ -232,6 +234,22 @@ export default function RegistrarMercado() {
                   </svg>
                 </FieldIcon>
               </div>
+            </div>
+
+            <p className="rm-section-label">Descrição</p>
+
+            <div className="rm-desc-wrap">
+              <textarea
+                className="rm-textarea"
+                placeholder="Conte um pouco sobre o seu mercado: especialidades, horário de atendimento, diferenciais..."
+                value={form.descricao}
+                rows={3}
+                maxLength={300}
+                onChange={e => set('descricao', removeEmojis(e.target.value))}
+              />
+              <span className={`rm-char-count ${form.descricao.length >= 300 ? 'is-full' : ''}`}>
+                {form.descricao.length}/300
+              </span>
             </div>
 
             <p className="rm-section-label">Endereço</p>

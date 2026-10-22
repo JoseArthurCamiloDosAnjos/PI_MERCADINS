@@ -64,6 +64,19 @@ async function migrate() {
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS foto_perfil TEXT DEFAULT ''
   `;
 
+  // Adiciona coluna descricao na tabela mercados se não existir
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS descricao TEXT DEFAULT ''
+  `;
+
+  // Garante colunas de endereço separadas (rua e bairro) na tabela mercados
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS rua TEXT DEFAULT ''
+  `;
+  await sql`
+    ALTER TABLE mercados ADD COLUMN IF NOT EXISTS bairro TEXT DEFAULT ''
+  `;
+
   // Adiciona coluna slug se não existir
   await sql`
     ALTER TABLE mercados ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE

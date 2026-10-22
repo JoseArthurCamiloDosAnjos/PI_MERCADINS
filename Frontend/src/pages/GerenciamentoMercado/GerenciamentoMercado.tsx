@@ -75,6 +75,7 @@ interface MercadoInfo {
   cidade: string;
   bairro: string;
   rua: string;
+  descricao?: string;
   foto_perfil?: string;
 }
 
@@ -623,19 +624,19 @@ function SecInformacoes({ mercado }: { mercado: MercadoInfo | null }) {
 
       <div className="gm-info-grid">
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Endereço</span><span className="gm-info-val">{mercado.rua}, {mercado.bairro}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Rua</span><span className="gm-info-val">{mercado.rua || '—'}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Bairro</span><span className="gm-info-val">{mercado.bairro || '—'}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
+        </div>
+        <div className="gm-info-card">
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
           <div className="gm-info-row"><span className="gm-info-lbl"><IconPhone size={13} /> Telefone</span><span className="gm-info-val">{formatarTelefone(mercado.telefone)}</span></div>
           <div className="gm-info-row"><span className="gm-info-lbl"><IconMail size={13} /> Email</span><span className="gm-info-val">{mercado.email}</span></div>
         </div>
         <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Cidade</span><span className="gm-info-val">{mercado.cidade} - {mercado.estado}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> CEP</span><span className="gm-info-val">{formatarCEP(mercado.cep)}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconMapPin size={13} /> Bairro</span><span className="gm-info-val">{mercado.bairro}</span></div>
-        </div>
-        <div className="gm-info-card">
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconCreditCard size={13} /> CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
           <div className="gm-info-row"><span className="gm-info-lbl"><IconStore size={13} /> Nome</span><span className="gm-info-val">{mercado.nome}</span></div>
-          <div className="gm-info-row"><span className="gm-info-lbl"><IconPackage size={13} /> Categorias</span><span className="gm-info-val">—</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconCreditCard size={13} /> CNPJ</span><span className="gm-info-val">{formatarCNPJ(mercado.cnpj)}</span></div>
+          <div className="gm-info-row"><span className="gm-info-lbl"><IconInfo size={13} /> Descrição</span><span className="gm-info-val">{mercado.descricao || '—'}</span></div>
         </div>
       </div>
     </div>

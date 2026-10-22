@@ -205,7 +205,7 @@ export default function EditarMercado({
               value={descricao}
               rows={3}
               maxLength={300}
-              onChange={(e) => setDescricao(removeSpecialChars(removeEmojis(e.target.value)))}
+              onChange={(e) => setDescricao(removeEmojis(e.target.value))}
               placeholder="Uma frase curta sobre o seu mercado"
             />
             <span className="em-char-count">{descricao.length}/300</span>

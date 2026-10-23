@@ -755,8 +755,8 @@ button {
   height: 100%;
   display: block;
   object-fit: cover;
-  /* Mostra um pouco abaixo do centro: o nome gravado na imagem sobe e fica visível */
-  object-position: center 60%;
+  /* Nome gravado no centro da imagem (quadrada) fica exatamente no meio da tarja */
+  object-position: center 50%;
   transition: transform 0.3s;
 }
 

@@ -535,6 +535,47 @@
 .pd-aval-estrelas-item { display: flex; gap: 2px; color: var(--vt-amarelo); flex-shrink: 0; }
 .pd-aval-texto-item { margin: 0; font-size: 13px; color: var(--vt-branco-suave); line-height: 1.55; }
 
+/* Selo "compra verificada": quem avaliou comprou o produto (B8) */
+.pd-aval-verificada {
+  background: rgba(52, 211, 153, 0.18);
+  color: #34d399;
+  border-radius: var(--vt-radius-full);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Foto anexada à avaliação (B8) */
+.pd-aval-foto { display: inline-block; margin-top: 8px; line-height: 0; }
+.pd-aval-foto img {
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--vt-azul-borda);
+  transition: transform 0.15s ease;
+}
+.pd-aval-foto img:hover { transform: scale(1.03); }
+
+/* Campo opcional de link da foto no formulário (B8) */
+.pd-aval-foto-lbl { font-size: 12px; color: var(--vt-cinza); margin-top: 2px; }
+.pd-aval-foto-input {
+  width: 100%;
+  background: var(--vt-azul-bg);
+  border: 1px solid var(--vt-azul-borda);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--vt-branco);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  margin-bottom: 4px;
+}
+.pd-aval-foto-input:focus { border-color: var(--vt-amarelo); }
+
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .pd-main { grid-template-columns: 1fr; }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { IconUser, IconGear } from "./Icons";
+import { IconUser, IconGear, IconHeart } from "./Icons";
 import "./ProfileMenu.css";
 
 function getIniciais(nome: string) {
@@ -107,6 +107,15 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
           >
             <IconUser size={16} />
             Meu perfil
+          </button>
+
+          <button
+            className="pm-item"
+            type="button"
+            onClick={() => irPara("/favoritos")}
+          >
+            <IconHeart size={16} />
+            Meus favoritos
           </button>
 
           {isAdminLogin && (

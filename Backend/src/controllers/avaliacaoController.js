@@ -1,8 +1,30 @@
 const { conectar } = require('../db/neon');
 
 // ─────────────────────────────────────────────
+// B6 — Moderação de avaliações
+// O vendedor (dono/admin da loja) ou o administrador do site pode OCULTAR
+// uma avaliação: ela some do site (e da média), mas continua no banco e
+// pode ser exibida de novo. Nada é apagado.
+// ─────────────────────────────────────────────
+
+// Quem pode moderar: dono/admin do mercado ou administrador do site
+async function podeModerar(sql, idUsuario, mercadoId) {
+  if (idUsuario == null) return false;
+  const [permissao] = await sql`
+    SELECT papel FROM usuarios_mercados
+    WHERE id_usuario = ${idUsuario} AND id_mercado = ${mercadoId}
+  `;
+  if (permissao && ['dono', 'admin'].includes(permissao.papel)) return true;
+  const [admin] = await sql`
+    SELECT is_admin FROM usuarios WHERE id_usuario = ${idUsuario}
+  `;
+  return !!admin?.is_admin;
+}
+
+// ─────────────────────────────────────────────
 // GET /api/mercados/:id/avaliacoes
-// Público (mostra "minha avaliação" se estiver logado)
+// Público (mostra "minha avaliação" se estiver logado).
+// Ocultas ficam de fora do site; o vendedor/admin vê todas (com marcação).
 // ─────────────────────────────────────────────
 const listarAvaliacoesMercado = async (req, res) => {
   const mercadoId = Number(req.params.id);
@@ -22,33 +44,134 @@ const listarAvaliacoesMercado = async (req, res) => {
       return res.status(404).json({ erro: 'Mercado não encontrado.' });
     }
 
+    const moderando = await podeModerar(sql, idUsuario, mercadoId);
+
     const avaliacoes = await sql`
-      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, u.nome
+      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, a.oculta, u.nome
       FROM avaliacoes a
       JOIN usuarios u ON u.id_usuario = a.id_usuario
       WHERE a.id_mercado = ${mercadoId}
       ORDER BY a.data_cadastro DESC
     `;
 
-    const total = avaliacoes.length;
+    // Site: só as visíveis; média e total também só contam as visíveis
+    const visiveis = avaliacoes.filter(a => !a.oculta);
+    const total = visiveis.length;
     const media = total > 0
-      ? avaliacoes.reduce((soma, a) => soma + Number(a.nota), 0) / total
+      ? visiveis.reduce((soma, a) => soma + Number(a.nota), 0) / total
       : 0;
+
+    // Quem modera vê as ocultas também, para poder exibir de novo
+    const lista = moderando ? avaliacoes : visiveis;
 
     res.status(200).json({
       media: Math.round(media * 10) / 10,
       total,
-      avaliacoes: avaliacoes.map(a => ({
+      moderando,
+      avaliacoes: lista.map(a => ({
         id: a.id,
         nota: Number(a.nota),
         texto: a.texto || '',
         data_cadastro: a.data_cadastro,
         cliente: a.nome,
+        oculta: !!a.oculta,
         minha: idUsuario != null && Number(a.id_usuario) === Number(idUsuario),
       })),
     });
   } catch (err) {
     console.error('ERRO listarAvaliacoesMercado:', err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// PUT /api/mercados/:id/avaliacoes/:avaliacaoId — oculta ou exibe (moderação)
+// Body: { oculta: true | false }
+// ─────────────────────────────────────────────
+const alternarVisibilidadeAvaliacao = async (req, res) => {
+  const idUsuario  = req.usuarioId;
+  const mercadoId  = Number(req.params.id);
+  const avaliacaoId = Number(req.params.avaliacaoId);
+  const oculta = req.body?.oculta === true;
+
+  if (!Number.isInteger(mercadoId) || mercadoId <= 0 ||
+      !Number.isInteger(avaliacaoId) || avaliacaoId <= 0) {
+    return res.status(400).json({ erro: 'Avaliação inválida.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    if (!(await podeModerar(sql, idUsuario, mercadoId))) {
+      return res.status(403).json({ erro: 'Apenas o dono da loja ou um administrador pode moderar avaliações.' });
+    }
+
+    const [atualizada] = await sql`
+      UPDATE avaliacoes SET oculta = ${oculta}
+      WHERE id = ${avaliacaoId} AND id_mercado = ${mercadoId}
+      RETURNING id, oculta
+    `;
+    if (!atualizada) {
+      return res.status(404).json({ erro: 'Avaliação não encontrada.' });
+    }
+
+    res.status(200).json({
+      mensagem: oculta ? 'Avaliação ocultada do site.' : 'Avaliação exibida no site novamente.',
+      oculta: !!atualizada.oculta,
+    });
+  } catch (err) {
+    console.error('ERRO alternarVisibilidadeAvaliacao:', err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// GET /api/mercados/:id/avaliacoes-produtos — painel do vendedor:
+// todas as avaliações de PRODUTOS da loja (inclusive ocultas), com o nome
+// do produto, para moderar pelo mesmo painel das avaliações da loja.
+// ─────────────────────────────────────────────
+const listarAvaliacoesProdutosDoMercado = async (req, res) => {
+  const idUsuario = req.usuarioId;
+  const mercadoId = Number(req.params.id);
+
+  if (!Number.isInteger(mercadoId) || mercadoId <= 0) {
+    return res.status(400).json({ erro: 'Mercado inválido.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    if (!(await podeModerar(sql, idUsuario, mercadoId))) {
+      return res.status(403).json({ erro: 'Apenas o dono da loja ou um administrador pode ver estas avaliações.' });
+    }
+
+    const avaliacoes = await sql`
+      SELECT ap.id, ap.id_produto, p.id_categoria, ap.nota, ap.texto, ap.data_cadastro, ap.oculta,
+             p.nome AS produto, u.nome
+      FROM avaliacoes_produtos ap
+      JOIN produtos p ON p.id_produto = ap.id_produto
+      JOIN categorias c ON c.id_categoria = p.id_categoria
+      JOIN usuarios u ON u.id_usuario = ap.id_usuario
+      WHERE c.id_mercado = ${mercadoId}
+      ORDER BY ap.data_cadastro DESC
+      LIMIT 200
+    `;
+
+    res.status(200).json({
+      avaliacoes: avaliacoes.map(a => ({
+        id: a.id,
+        produtoId: Number(a.id_produto),
+        categoriaId: Number(a.id_categoria),
+        produto: a.produto || '',
+        nota: Number(a.nota),
+        texto: a.texto || '',
+        data_cadastro: a.data_cadastro,
+        cliente: a.nome,
+        oculta: !!a.oculta,
+      })),
+    });
+  } catch (err) {
+    console.error('ERRO listarAvaliacoesProdutosDoMercado:', err);
     res.status(500).json({ erro: err.message });
   }
 };
@@ -94,7 +217,7 @@ const criarAvaliacao = async (req, res) => {
     const [dados] = await sql`
       SELECT COALESCE(AVG(nota), 0)::numeric(2,1) AS media, COUNT(*)::int AS total
       FROM avaliacoes
-      WHERE id_mercado = ${mercadoId}
+      WHERE id_mercado = ${mercadoId} AND oculta = FALSE
     `;
 
     res.status(201).json({
@@ -136,28 +259,34 @@ const listarAvaliacoesProduto = async (req, res) => {
       return res.status(404).json({ erro: 'Produto não encontrado.' });
     }
 
+    const moderando = await podeModerar(sql, idUsuario, Number(mercadoId));
+
     const avaliacoes = await sql`
-      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, a.foto, a.verificada, u.nome
+      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, a.foto, a.verificada, a.oculta, u.nome
       FROM avaliacoes_produtos a
       JOIN usuarios u ON u.id_usuario = a.id_usuario
       WHERE a.id_produto = ${prodId}
       ORDER BY a.data_cadastro DESC
     `;
 
-    const total = avaliacoes.length;
+    // Ocultas ficam de fora do site (inclusive da média); quem modera vê todas
+    const visiveis = avaliacoes.filter(a => !a.oculta);
+    const total = visiveis.length;
     const media = total > 0
-      ? avaliacoes.reduce((soma, a) => soma + Number(a.nota), 0) / total
+      ? visiveis.reduce((soma, a) => soma + Number(a.nota), 0) / total
       : 0;
+    const lista = moderando ? avaliacoes : visiveis;
 
     res.status(200).json({
       media: Math.round(media * 10) / 10,
       total,
-      avaliacoes: avaliacoes.map(a => ({
+      avaliacoes: lista.map(a => ({
         id: a.id,
         nota: Number(a.nota),
         texto: a.texto || '',
         foto: a.foto || '',
         verificada: !!a.verificada,
+        oculta: !!a.oculta,
         data_cadastro: a.data_cadastro,
         cliente: a.nome,
         minha: idUsuario != null && Number(a.id_usuario) === Number(idUsuario),
@@ -237,7 +366,7 @@ const criarAvaliacaoProduto = async (req, res) => {
     const [dados] = await sql`
       SELECT COALESCE(AVG(nota), 0)::numeric(2,1) AS media, COUNT(*)::int AS total
       FROM avaliacoes_produtos
-      WHERE id_produto = ${prodId}
+      WHERE id_produto = ${prodId} AND oculta = FALSE
     `;
 
     res.status(201).json({
@@ -254,4 +383,61 @@ const criarAvaliacaoProduto = async (req, res) => {
   }
 };
 
-module.exports = { listarAvaliacoesMercado, criarAvaliacao, listarAvaliacoesProduto, criarAvaliacaoProduto };
+// ─────────────────────────────────────────────
+// PUT /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId/avaliacoes/:avaliacaoId
+// Oculta ou exibe uma avaliação de produto (moderação — B6)
+// ─────────────────────────────────────────────
+const alternarVisibilidadeAvaliacaoProduto = async (req, res) => {
+  const idUsuario = req.usuarioId;
+  const { mercadoId, produtoId, avaliacaoId } = req.params;
+  const prodId = Number(produtoId);
+  const avId = Number(avaliacaoId);
+  const oculta = req.body?.oculta === true;
+
+  if (!Number.isInteger(prodId) || prodId <= 0 ||
+      !Number.isInteger(avId) || avId <= 0) {
+    return res.status(400).json({ erro: 'Avaliação inválida.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    if (!(await podeModerar(sql, idUsuario, Number(mercadoId)))) {
+      return res.status(403).json({ erro: 'Apenas o dono da loja ou um administrador pode moderar avaliações.' });
+    }
+
+    const [atualizada] = await sql`
+      UPDATE avaliacoes_produtos ap
+      SET oculta = ${oculta}
+      FROM produtos p, categorias c
+      WHERE ap.id = ${avId}
+        AND ap.id_produto = ${prodId}
+        AND p.id_produto = ap.id_produto
+        AND p.id_categoria = ${Number(req.params.categoriaId)}
+        AND c.id_categoria = p.id_categoria
+        AND c.id_mercado = ${Number(req.params.mercadoId)}
+      RETURNING ap.id, ap.oculta
+    `;
+    if (!atualizada) {
+      return res.status(404).json({ erro: 'Avaliação não encontrada.' });
+    }
+
+    res.status(200).json({
+      mensagem: oculta ? 'Avaliação ocultada do site.' : 'Avaliação exibida no site novamente.',
+      oculta: !!atualizada.oculta,
+    });
+  } catch (err) {
+    console.error('ERRO alternarVisibilidadeAvaliacaoProduto:', err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
+module.exports = {
+  listarAvaliacoesMercado,
+  criarAvaliacao,
+  listarAvaliacoesProduto,
+  criarAvaliacaoProduto,
+  alternarVisibilidadeAvaliacao,
+  alternarVisibilidadeAvaliacaoProduto,
+  listarAvaliacoesProdutosDoMercado,
+};

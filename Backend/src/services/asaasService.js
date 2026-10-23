@@ -110,10 +110,106 @@ async function cancelarAssinatura(subscriptionId) {
   return chamarApi(`/v3/subscriptions/${subscriptionId}`, { method: 'DELETE' })
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Pagamento de PEDIDO (compra de produtos, não assinatura)
+//  externalReference = "pedido:<id>" → é o que faz o webhook avisar o sistema
+//  de que aquele pedido específico foi pago.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Vencimento da cobrança de pedido: amanhã (Pix costuma pagar em segundos;
+// cartão em até 1 dia é folga suficiente sem prender estoque tempo demais)
+function vencimentoPedido() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+// POST /v3/payments (billingType PIX) — devolve QR code + código copia e cola
+async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference }) {
+  const pagamento = await chamarApi('/v3/payments', {
+    method: 'POST',
+    body: {
+      customer: customerId,
+      billingType: 'PIX',
+      value: valor,
+      description: descricao,
+      dueDate: vencimentoPedido(),
+      externalReference,
+    },
+  })
+  // QR vem embutido em pirBank (encodedImage em base64 + payload copia e cola)
+  const pix = pagamento?.pirBank?.[0] || pagamento?.pixTransaction?.[0] || null
+  return {
+    id: pagamento.id,
+    status: pagamento.status,
+    vencimento: pagamento.dueDate || null,
+    qrCodeBase64: pix?.encodedImage || '',
+    copiaEcola: pix?.payload || '',
+    urlPagamento: pagamento.invoiceUrl || '',
+  }
+}
+
+// POST /v3/payments (billingType CREDIT_CARD) — monta o link de pagamento
+// (o cartão é digitado na página segura do Asaas; o número nunca passa por aqui)
+async function criarPagamentoPedidoCartao({ customerId, valor, descricao, externalReference, redirectUrl }) {
+  const corpo = {
+    customer: customerId,
+    billingType: 'CREDIT_CARD',
+    value: valor,
+    description: descricao,
+    dueDate: vencimentoPedido(),
+    externalReference,
+  }
+  // Criação sem dados de cartão gera o link de pagamento (invoiceUrl) usado
+  // pelo checkout do Asaas; o redirect volta o cliente para o pedido
+  if (redirectUrl) {
+    corpo.callback = { successUrl: redirectUrl, autoRedirect: true }
+  }
+
+  try {
+    const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+    return {
+      id: pagamento.id,
+      status: pagamento.status,
+      vencimento: pagamento.dueDate || null,
+      urlPagamento: pagamento.invoiceUrl || '',
+    }
+  } catch (erro) {
+    // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
+    if (corpo.callback && /dom[ií]nio/i.test(erro.message)) {
+      delete corpo.callback
+      const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+      return {
+        id: pagamento.id,
+        status: pagamento.status,
+        vencimento: pagamento.dueDate || null,
+        urlPagamento: pagamento.invoiceUrl || '',
+      }
+    }
+    throw erro
+  }
+}
+
+// GET /v3/payments/{id} — usado pelo webhook para confirmar o pagamento
+// (nunca confiar só no corpo da mensagem: o status é conferido na fonte)
+async function buscarPagamento(paymentId) {
+  return chamarApi(`/v3/payments/${paymentId}`)
+}
+
+// GET /v3/payments/{id}/pixQrCode — recarrega o QR de um Pix já criado
+// (usado pela tela de acompanhamento quando o cliente recarrega a página)
+async function buscarQrPix(paymentId) {
+  return chamarApi(`/v3/payments/${paymentId}/pixQrCode`)
+}
+
 module.exports = {
   obterPlano,
   criarCustomer,
   criarAssinatura,
   buscarUrlPagamento,
   cancelarAssinatura,
+  criarPagamentoPedidoPix,
+  criarPagamentoPedidoCartao,
+  buscarPagamento,
+  buscarQrPix,
 }

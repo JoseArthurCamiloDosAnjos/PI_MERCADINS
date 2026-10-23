@@ -1,6 +1,7 @@
 const { conectar } = require('../db/neon');
 const asaas = require('../services/asaasService');
 const { validarDadosMercado, criarMercadoCompleto } = require('./marketController');
+const { processarPagamentoPedido } = require('./pedidoController');
 
 // ─────────────────────────────────────────────
 // Cria (ou recupera) o mercado a partir do payload gravado em
@@ -313,6 +314,15 @@ const webhookAsaas = async (req, res) => {
 
   try {
     const sql = await conectar();
+
+    // ── B3: pagamento de PEDIDO (Pix/cartão da compra de produtos) ──────────
+    // Cobranças de pedido vêm com externalReference "pedido:<id>"; as de
+    // assinatura têm subscription. Este ramo roda antes e não mexe nelas.
+    const refExterna = pagamento.externalReference || '';
+    if (String(refExterna).startsWith('pedido:')) {
+      const resultado = await processarPagamentoPedido(sql, evento, pagamento);
+      return res.status(200).json(resultado);
+    }
 
     // Localiza assinatura pelo id da assinatura no Asaas
     const subscriptionId = pagamento.subscription;

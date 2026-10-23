@@ -72,18 +72,30 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
   vencimento.setDate(vencimento.getDate() + 3)
   const nextDueDate = vencimento.toISOString().slice(0, 10)
 
-  return chamarApi('/v3/subscriptions', {
-    method: 'POST',
-    body: {
-      customer: customerId,
-      billingType: 'UNDEFINED',
-      value: valor,
-      cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
-      nextDueDate,
-      description: descricao || 'Assinatura Mercadins',
-      ...(redirectUrl && { redirectUrl }),
-    },
-  })
+  const corpo = {
+    customer: customerId,
+    billingType: 'UNDEFINED',
+    value: valor,
+    cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
+    nextDueDate,
+    description: descricao || 'Assinatura Mercadins',
+  }
+  // Volta automática para o site após o pagamento (docs: redirection-after-payment)
+  if (redirectUrl) {
+    corpo.callback = { successUrl: redirectUrl, autoRedirect: true }
+  }
+
+  try {
+    return await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+  } catch (erro) {
+    // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
+    // (o frontend oferece o botão manual "Ir para o pagamento" como alternativa)
+    if (corpo.callback && /dom[ií]nio/i.test(erro.message)) {
+      delete corpo.callback
+      return chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+    }
+    throw erro
+  }
 }
 
 // GET /v3/payments?subscription=... — retorna o link da primeira cobrança (checkout)

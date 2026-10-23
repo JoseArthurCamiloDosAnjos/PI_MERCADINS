@@ -229,10 +229,13 @@ export default function RegistrarMercado() {
     });
     if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
     localStorage.setItem('aguardandoPagamento', '1');
-    setAguardandoPagamento(true);
     setUrlPagamento(checkout.urlCheckout);
+    setStatusAtual('pendente');
+    setAguardandoPagamento(true);
     showToast('sucesso', 'Redirecionando para o pagamento...');
-    setTimeout(() => { window.location.href = checkout.urlCheckout; }, 800);
+    // Redirect automático é conveniência; se não abrir, a tela de status
+    // já exibe o botão manual "Ir para o pagamento"
+    setTimeout(() => { window.location.href = checkout.urlCheckout; }, 1200);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -331,13 +334,21 @@ export default function RegistrarMercado() {
               Seu mercado será criado automaticamente assim que o pagamento for confirmado.
             </p>
 
+            {/* Link do pagamento — sempre visível enquanto não confirmado,
+                caso o redirect automático não abra o Asaas */}
+            {urlPagamento && statusAtual !== 'ativa' && (
+              <div className="rm-status-acoes">
+                <a href={urlPagamento} className="btn btn-primary">
+                  <IconShoppingCart size={16} /> Ir para o pagamento
+                </a>
+                <p className="rm-status-dica">
+                  Se a página não abrir automaticamente, use o botão acima.
+                </p>
+              </div>
+            )}
+
             {statusAtual === 'pendente' && (
               <div className="rm-status-acoes">
-                {urlPagamento && (
-                  <a href={urlPagamento} className="btn btn-primary" target="_blank" rel="noreferrer">
-                    <IconShoppingCart size={16} /> Continuar pagamento
-                  </a>
-                )}
                 <button
                   className="btn btn-secondary"
                   onClick={async () => {
@@ -373,7 +384,7 @@ export default function RegistrarMercado() {
             )}
 
             {statusAtual === 'ativa' && (
-              <p className="rm-status-ok">Pagamento confirmado! Redirecionando para a área do vendedor…</p>
+              <p className="rm-status-ok">Pagamento confirmado! Redirecionando para o gerenciador do mercado…</p>
             )}
 
             {statusAtual === 'erro' && (

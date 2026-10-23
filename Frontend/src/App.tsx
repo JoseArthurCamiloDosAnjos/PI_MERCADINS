@@ -8,6 +8,7 @@ import ControleRotas from './components/ControleRotas'
 import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
+import CookieBanner from './components/CookieBanner/CookieBanner'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -325,6 +326,7 @@ export default function App() {
         <ThemeProvider>
           <ControleRotas />
           <Rotas />
+          <CookieBanner />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

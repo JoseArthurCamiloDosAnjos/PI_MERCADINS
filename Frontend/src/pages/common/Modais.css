@@ -60,7 +60,7 @@
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  color: #8892a4;
+  color: #5c6a84;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +144,7 @@
 /* ── Descrição ── */
 .modal-desc {
   font-size: 14px;
-  color: #8892a4;
+  color: #5c6a84;
   font-weight: 500;
   line-height: 1.6;
   margin-bottom: 20px;
@@ -168,14 +168,14 @@
   justify-content: center;
 }
 .modal-email-box svg {
-  color: #8892a4;
+  color: #5c6a84;
   flex-shrink: 0;
 }
 
 /* ── Dica/hint ── */
 .modal-hint {
   font-size: 13px;
-  color: #8892a4;
+  color: #5c6a84;
   line-height: 1.6;
   margin-bottom: 24px;
   max-width: 320px;
@@ -204,7 +204,7 @@
 .modal-step span {
   font-size: 11px;
   font-weight: 600;
-  color: #8892a4;
+  color: #5c6a84;
   white-space: nowrap;
 }
 
@@ -250,7 +250,7 @@
 }
 
 .modal-field input::placeholder {
-  color: #8892a4;
+  color: #5c6a84;
 }
 
 .modal-field input:focus {
@@ -272,7 +272,7 @@
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #8892a4;
+  color: #5c6a84;
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -323,7 +323,7 @@
 
 .modal-btn-ghost {
   background: transparent;
-  color: #8892a4;
+  color: #5c6a84;
   border: 1.8px solid #dde3ef;
 }
 .modal-btn-ghost:hover {
@@ -344,7 +344,7 @@
 .modal-footer-text {
   margin-top: 16px;
   font-size: 13px;
-  color: #8892a4;
+  color: #5c6a84;
   font-weight: 500;
 }
 

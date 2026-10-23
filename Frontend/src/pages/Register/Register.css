@@ -35,7 +35,7 @@
 }
 
 /* ── TEMA CLARO ── */
-.tema-claro .register-page { background: #f0f2f7; }
+.tema-claro .register-page { background: #f0f2f7; --text-muted: #5c6a84; }
 .tema-claro .register-page .right { background: #f0f2f7; }
 .tema-claro .register-page .form-header h1 { color: #0d2a5e; }
 .tema-claro .register-page .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }

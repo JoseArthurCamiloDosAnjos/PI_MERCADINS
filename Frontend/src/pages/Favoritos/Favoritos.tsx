@@ -5,7 +5,6 @@ import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import {
   IconArrowLeft,
-  IconHeart,
   IconMapPin,
   IconStore,
 } from '../../components/Icons';
@@ -16,6 +15,15 @@ function IconStar({ size = 14, filled = true }: { size?: number; filled?: boolea
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5}>
       <path d="M12 2.5l2.9 6.3 6.8.7-5.1 4.6 1.5 6.8L12 17.7 5.9 20.9l1.5-6.8-5.1-4.6 6.8-.7L12 2.5Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Coração cheio (mesmo desenho das vitrines)
+function IconHeart({ size = 16, filled = false }: { size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z" />
     </svg>
   );
 }

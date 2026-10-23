@@ -84,6 +84,8 @@ interface Categoria {
 
 interface VitrineMercado {
   id: number;
+  /** Endereço amigável da loja (usado no link e nos dados estruturados) */
+  slug?: string | null;
   logo?: string;
   banner?: string;
   nome: string;
@@ -271,6 +273,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
         setDados({
           id: mercadoData.mercado.id_mercado,
+          slug: mercadoData.mercado.slug ?? null,
           nome: mercadoData.mercado.nome,
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,

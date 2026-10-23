@@ -160,11 +160,48 @@ export const api = {
 
   criarPedido: (
     mercadoId: string | number,
-    dados: { itens: { id_produto: number; quantidade: number }[]; observacao?: string }
+    dados: {
+      itens: { id_produto: number; quantidade: number }[];
+      observacao?: string;
+      tipo_entrega?: 'entrega' | 'retirada';
+      cupom?: string;
+      agendamento?: string;
+    }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
       method: 'POST',
       body:   JSON.stringify(dados),
+    }),
+
+  // ── Cupons de desconto (B3) ────────────────────────────────────────────────
+  cuponsMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/cupons`),
+  criarCupom: (
+    mercadoId: string | number,
+    dados: {
+      codigo: string; tipo: 'percentual' | 'valor'; valor: number;
+      min_pedido?: number; max_usos?: number | null; validade?: string | null;
+    }
+  ) =>
+    request(`/mercados/${mercadoId}/cupons`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+  atualizarCupom: (
+    mercadoId: string | number,
+    cupomId: string | number,
+    dados: Record<string, unknown>
+  ) =>
+    request(`/mercados/${mercadoId}/cupons/${cupomId}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    }),
+  deletarCupom: (mercadoId: string | number, cupomId: string | number) =>
+    request(`/mercados/${mercadoId}/cupons/${cupomId}`, { method: 'DELETE' }),
+  validarCupom: (mercadoId: string | number, codigo: string, subtotal: number) =>
+    request(`/mercados/${mercadoId}/cupons/validar`, {
+      method: 'POST',
+      body: JSON.stringify({ codigo, subtotal }),
     }),
 
   // ── Pedidos do mercado (visão do vendedor) ─────────────────────────────────
@@ -200,7 +237,7 @@ export const api = {
     mercadoId:   string | number,
     categoriaId: string | number,
     produtoId:   string | number,
-    dados: { nota: number; texto?: string }
+    dados: { nota: number; texto?: string; foto?: string }
   ) =>
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`, {
       method: 'POST',

@@ -66,9 +66,14 @@ export default function Sidebar({
     setOpen(false);
   }
 
-  // Usuário comum escolhe o plano antes de criar; admin pula direto para o cadastro
+  // Usuário comum escolhe o plano antes de criar; admin pula direto para o cadastro.
+  // Se já tem pagamento pendente, volta para a tela de status do cadastro.
   function irCriarMercado() {
-    navigate(usuario?.is_admin ? "/registrar-mercado" : "/planos");
+    if (localStorage.getItem('aguardandoPagamento') === '1') {
+      navigate("/registrar-mercado");
+    } else {
+      navigate(usuario?.is_admin ? "/registrar-mercado" : "/planos");
+    }
     setOpen(false);
   }
 

@@ -106,23 +106,30 @@ de novo.
 
 
 --------------------------------------------------------------------------------
-PASSO 6 — COBRANÇA: criar via API (não é link solto)
+PASSO 6 — COBRANÇA: mercado criado APÓS o pagamento
 --------------------------------------------------------------------------------
 
-Você não precisa criar nenhuma página. O fluxo já é esse:
+O mercado NÃO é criado no cadastro. O fluxo é esse:
 
-  1. Usuário escolhe o plano  ->  /registrar-mercado
-  2. Mercado é cadastrado     ->  POST /api/mercados
-  3. Frontend chama           ->  POST /api/assinaturas/checkout
-  4. Backend chama a API do Asaas:
-       POST /v3/customers       (cria o cliente)
-       POST /v3/subscriptions   (cria a assinatura)
-       GET  /v3/payments?subscription=...  (pega o invoiceUrl)
-  5. Frontend redireciona o usuário para o invoiceUrl do Asaas
-     (página de pagamento HOSPEDADA pelo Asaas: PIX, boleto ou cartão)
-  6. Usuário paga  ->  Asaas dispara o WEBHOOK  ->  assinatura vira "ativa"
+  1. Usuário preenche o formulário em /registrar-mercado
+  2. Frontend chama  POST /api/assinaturas/checkout
+       -> o payload do formulário vai junto (campo "mercado")
+       -> o backend VALIDA os dados e grava em assinaturas.dados_mercado (JSONB)
+       -> cria customer + assinatura no Asaas e retorna o invoiceUrl
+  3. Frontend redireciona o usuário para o invoiceUrl (página do Asaas: PIX, boleto ou cartão)
+  4. Usuário paga  ->  Asaas dispara o WEBHOOK  ->  assinatura vira "ativa"
+       -> o backend cria o mercado a partir de dados_mercado (categorias, produtos demo, vínculo dono)
+  5. Usuário volta para /vendedor e o mercado já está lá
 
-Ou seja: a "página" é do próprio Asaas. Seu backend só cria a cobrança.
+Admin (is_admin) pula o pagamento: cria o mercado direto (POST /api/mercados funciona sem checkout).
+
+Fluxo de recuperação:
+  - Se o webhook falhar, /api/assinaturas/minha detecta "ativa + sem mercado" e cria na hora
+  - Se o pagamento ainda está pendente, a tela /registrar-mercado mostra botões
+    "Continuar pagamento" / "Já paguei — atualizar status" / "Cancelar"
+
+Ou seja: a "página" é do próprio Asaas. Seu backend só cria a cobrança e
+espera o webhook para materializar o mercado.
 
 
 --------------------------------------------------------------------------------
@@ -163,12 +170,14 @@ PASSO 8 — Checklist final
 [ ] Conta Asaas criada e painel em SANDBOX (sandbox.asaas.com)
 [ ] Chave da API sandbox gerada e salva em  Backend/.env  como Assas_API_KEY
 [ ] Backend reiniciado depois de mexer no .env
-[ ] Token gerado e salvo em  Backend/.env  como ASAAS_WEBHOOK_TOKEN
+[ ] Token gerado e salva em  Backend/.env  como ASAAS_WEBHOOK_TOKEN
 [ ] Webhook cadastrado no painel Asaas com URL + MESMO token
 [ ] Eventos PAYMENT_CONFIRMED / PAYMENT_RECEIVED / PAYMENT_OVERDUE assinados
-[ ] Cadastro de mercado com plano redireciona pro Asaas (sem página própria)
+[ ] Cadastro de mercado SEM plano redireciona para /planos (usuário comum)
+[ ] Cadastro de mercado COM plano grava dados_mercado e redireciona pro Asaas
+[ ] Após pagar, webhook cria o mercado automaticamente (categorias + produtos demo)
 [ ] Após pagar, painel Asaas mostra o envio do webhook com status 200
-[ ] No banco, a assinatura muda de "pendente" para "ativa"
+[ ] No banco, a assinatura muda de "pendente" para "ativa" e id_mercado é preenchido
 
 
 --------------------------------------------------------------------------------

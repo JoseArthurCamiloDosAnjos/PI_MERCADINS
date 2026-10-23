@@ -241,6 +241,92 @@
   line-height: 1.5;
 }
 
+/* ── TELA DE STATUS (aguardando pagamento) ── */
+.rm-status-card {
+  text-align: center;
+  padding-top: 60px;
+}
+
+.rm-status-card h1 {
+  font-size: 22px;
+  color: var(--navy);
+  margin-bottom: 10px;
+}
+
+.rm-status-sub {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.rm-status-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.rm-status-acoes .btn {
+  width: 100%;
+  max-width: 320px;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rm-status-card .btn-secondary {
+  background: #fff;
+  color: var(--navy);
+  border: 1.8px solid var(--navy);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.rm-status-card .btn-secondary:hover { background: var(--gray, #f1f5f9); transform: translateY(-1px); }
+
+.rm-status-card .btn-outline {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.rm-status-card .btn-outline:hover { border-color: var(--danger, #dc2626); color: var(--danger, #dc2626); }
+
+.rm-status-ok {
+  font-size: 14px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.rm-status-erro {
+  font-size: 13px;
+  color: var(--danger, #dc2626);
+  font-weight: 600;
+}
+
+.rm-status-carregando {
+  font-size: 13px;
+  color: var(--text-muted);
+  animation: rm-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rm-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .rm-grid {

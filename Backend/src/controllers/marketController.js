@@ -135,132 +135,211 @@ function normalizarHorario(horario) {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/mercados — Criar novo mercado
-// Requer autenticação — vincula ao usuário logado
+// Valida e normaliza os dados de um mercado.
+// Reaproveitado pelo cadastro direto (admin) e pelo checkout do plano
+// (payload que só vira mercado DEPOIS que o pagamento confirma).
 // ─────────────────────────────────────────────
-
-const criarMercado = async (req, res) => {
-  const id_usuario = req.usuarioId;
-
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario } = req.body;
+function validarDadosMercado(dados = {}) {
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua,
+    descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones,
+    cor_texto_sec, plano, categorias, horario } = dados;
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
-    return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
+    return { erro: "Todos os campos são obrigatórios" };
 
   if (!validarEmailSimples(email))
-    return res.status(400).json({ erro: "Email inválido" });
+    return { erro: "Email inválido" };
 
   if (!validarTelefone(telefone))
-    return res.status(400).json({ erro: "Telefone inválido" });
+    return { erro: "Telefone inválido" };
 
   if (!validarCNPJ(cnpj))
-    return res.status(400).json({ erro: "CNPJ inválido" });
+    return { erro: "CNPJ inválido" };
 
   if (!validarCEP(cep))
-    return res.status(400).json({ erro: "CEP inválido" });
+    return { erro: "CEP inválido" };
 
-  const catsCriacao = normalizarCategorias(categorias);
-  if (catsCriacao.erro)
-    return res.status(400).json({ erro: catsCriacao.erro });
+  const cats = normalizarCategorias(categorias);
+  if (cats.erro)
+    return { erro: cats.erro };
 
   const horarioNovo = normalizarHorario(horario);
   if (horarioNovo.erro)
-    return res.status(400).json({ erro: horarioNovo.erro });
+    return { erro: horarioNovo.erro };
 
-  const cnpjLimpo     = limparMascara(cnpj);
-  const cepLimpo      = limparMascara(cep);
-  const telefoneLimpo = limparMascara(telefone);
-  const planoLimpo    = normalizarPlano(plano);
+  return {
+    dados: {
+      nome: nome.trim(),
+      email: email.trim().toLowerCase(),
+      telefone: limparMascara(telefone),
+      cnpj: limparMascara(cnpj),
+      cep: limparMascara(cep),
+      estado: estado.trim().toUpperCase(),
+      cidade: cidade.trim(),
+      bairro: bairro.trim(),
+      rua: rua.trim(),
+      descricao: descricao?.trim() || null,
+      paleta: paleta ?? 'classico',
+      cor_base: cor_base ?? '',
+      cor_destaque: cor_destaque ?? '',
+      cor_texto: cor_texto ?? '',
+      cor_icones: cor_icones ?? '',
+      cor_texto_sec: cor_texto_sec ?? '',
+      plano: normalizarPlano(plano),
+      cats,
+      horario: horarioNovo,
+    },
+  };
+}
+
+// ─────────────────────────────────────────────
+// Cria o mercado a partir de dados JÁ validados (ver validarDadosMercado).
+// Usado pelo cadastro direto (admin) e pela confirmação de pagamento
+// (webhook do Asaas / recuperação em /api/assinaturas/minha).
+// Lança Error com .status em conflito.
+// ─────────────────────────────────────────────
+async function criarMercadoCompleto(sql, id_usuario, d) {
+  // Duplicidade de CNPJ ou email — se já for DO PRÓPRIO usuário, devolve o
+  // mercado dele (a recuperação de pagamento não pode gerar loja duplicada)
+  const existente = await sql`
+    SELECT m.id_mercado, um.id_usuario AS dono_id
+    FROM mercados m
+    LEFT JOIN usuarios_mercados um ON um.id_mercado = m.id_mercado AND um.papel = 'dono'
+    WHERE m.cnpj = ${d.cnpj} OR m.email = ${d.email}
+  `;
+
+  if (existente.length > 0) {
+    const todosDoUsuario = existente.every(
+      (e) => e.dono_id != null && Number(e.dono_id) === Number(id_usuario)
+    );
+    if (todosDoUsuario) {
+      const [jaExistente] = await sql`
+        SELECT * FROM mercados WHERE id_mercado = ${existente[0].id_mercado}
+      `;
+      await sql`
+        INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
+        SELECT ${id_usuario}, ${jaExistente.id_mercado}, 'dono'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM usuarios_mercados
+          WHERE id_usuario = ${id_usuario} AND id_mercado = ${jaExistente.id_mercado}
+        )
+      `;
+      return jaExistente;
+    }
+    const erro = new Error("CNPJ ou email já cadastrado");
+    erro.status = 409;
+    throw erro;
+  }
+
+  // Gera slug único
+  let slug = gerarSlug(d.nome);
+  const slugExistente = await sql`
+    SELECT id_mercado FROM mercados WHERE slug = ${slug}
+  `;
+  if (slugExistente.length > 0) {
+    slug = `${slug}-${Date.now()}`;
+  }
+
+  // Cria o mercado
+  const [novoMercado] = await sql`
+    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario)
+    VALUES (
+      ${d.nome},
+      ${d.email},
+      ${d.telefone},
+      ${d.cnpj},
+      ${d.cep},
+      ${d.estado},
+      ${d.cidade},
+      ${d.bairro},
+      ${d.rua},
+      ${d.descricao},
+      ${slug},
+      ${d.paleta},
+      ${d.cor_base},
+      ${d.cor_destaque},
+      ${d.cor_texto},
+      ${d.cor_icones},
+      ${d.cor_texto_sec},
+      ${d.plano},
+      ${d.cats.valor},
+      ${d.horario?.valor ?? null}
+    )
+    RETURNING *
+  `;
+
+  // Vincula o mercado ao usuário com papel 'dono'
+  await sql`
+    INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
+    VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
+  `;
+
+  // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
+  // tabela "categorias" — é daí que a página do mercado lê as abas de
+  // produtos. Sem isso a vitrine do mercado novo ficava sempre vazia.
+  if (d.cats.lista.length > 0) {
+    const nomesBonitos = d.cats.lista.map((c) => LABELS_CATEGORIAS[c] ?? c);
+    const linhasCategorias = await sql`
+      INSERT INTO categorias (id_mercado, nome)
+      SELECT ${novoMercado.id_mercado}, UNNEST(${nomesBonitos}::text[])
+      RETURNING id_categoria
+    `;
+
+    // Semente de demonstração: cada categoria ganha um produto de teste,
+    // para a vitrine já abrir com conteúdo. O vendedor edita ou apaga e
+    // cadastra os produtos reais em seguida.
+    if (linhasCategorias.length > 0) {
+      await sql`
+        INSERT INTO produtos (nome, descricao, id_categoria, preco, estoque)
+        SELECT
+          'Cesta de demonstração — ' || initcap(c.nome),
+          'Produto criado automaticamente no cadastro. Edite ou apague e cadastre seus produtos reais.',
+          c.id_categoria,
+          ROUND((2 + random() * 28)::numeric, 2),
+          20 + floor(random() * 80)::int
+        FROM categorias c
+        WHERE c.id_mercado = ${novoMercado.id_mercado}
+      `;
+    }
+  }
+
+  return novoMercado;
+}
+
+// ─────────────────────────────────────────────
+// POST /api/mercados — Criar novo mercado
+// Só o admin cria direto pela API; o usuário comum cria apenas após a
+// confirmação do pagamento (webhook do Asaas ou /api/assinaturas/minha).
+// ─────────────────────────────────────────────
+const criarMercado = async (req, res) => {
+  const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();
 
-    // Verifica duplicidade de CNPJ ou email
-    const existente = await sql`
-      SELECT id_mercado FROM mercados
-      WHERE cnpj = ${cnpjLimpo} OR email = ${email.trim().toLowerCase()}
+    const [usuario] = await sql`
+      SELECT is_admin FROM usuarios WHERE id_usuario = ${id_usuario}
     `;
-
-    if (existente.length > 0)
-      return res.status(409).json({ erro: "CNPJ ou email já cadastrado" });
-
-    // Gera slug único
-    let slug = gerarSlug(nome);
-    const slugExistente = await sql`
-      SELECT id_mercado FROM mercados WHERE slug = ${slug}
-    `;
-    if (slugExistente.length > 0) {
-      slug = `${slug}-${Date.now()}`;
+    if (!usuario?.is_admin) {
+      return res.status(403).json({
+        erro: "Seu mercado será criado assim que o pagamento for confirmado.",
+      });
     }
 
-    // Cria o mercado
-    const [novoMercado] = await sql`
-      INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario)
-      VALUES (
-        ${nome.trim()},
-        ${email.trim().toLowerCase()},
-        ${telefoneLimpo},
-        ${cnpjLimpo},
-        ${cepLimpo},
-        ${estado.trim().toUpperCase()},
-        ${cidade.trim()},
-        ${bairro.trim()},
-        ${rua.trim()},
-        ${descricao?.trim() || null},
-        ${slug},
-        ${paleta ?? 'classico'},
-        ${cor_base ?? ''},
-        ${cor_destaque ?? ''},
-        ${cor_texto ?? ''},
-        ${cor_icones ?? ''},
-        ${cor_texto_sec ?? ''},
-        ${planoLimpo},
-        ${catsCriacao.valor},
-        ${horarioNovo.valor ?? null}
-      )
-      RETURNING *
-    `;
+    const validacao = validarDadosMercado(req.body);
+    if (validacao.erro)
+      return res.status(400).json({ erro: validacao.erro });
 
-    // Vincula o mercado ao usuário logado com papel 'dono'
-    await sql`
-      INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
-      VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
-    `;
-
-    // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
-    // tabela "categorias" — é daí que a página do mercado lê as abas de
-    // produtos. Sem isso a vitrine do mercado novo ficava sempre vazia.
-    if (catsCriacao.lista.length > 0) {
-      const nomesBonitos = catsCriacao.lista.map((c) => LABELS_CATEGORIAS[c] ?? c);
-      const linhasCategorias = await sql`
-        INSERT INTO categorias (id_mercado, nome)
-        SELECT ${novoMercado.id_mercado}, UNNEST(${nomesBonitos}::text[])
-        RETURNING id_categoria
-      `;
-
-      // Semente de demonstração: cada categoria ganha um produto de teste,
-      // para a vitrine já abrir com conteúdo. O vendedor edita ou apaga e
-      // cadastra os produtos reais em seguida.
-      if (linhasCategorias.length > 0) {
-        await sql`
-          INSERT INTO produtos (nome, descricao, id_categoria, preco, estoque)
-          SELECT
-            'Cesta de demonstração — ' || initcap(c.nome),
-            'Produto criado automaticamente no cadastro. Edite ou apague e cadastre seus produtos reais.',
-            c.id_categoria,
-            ROUND((2 + random() * 28)::numeric, 2),
-            20 + floor(random() * 80)::int
-          FROM categorias c
-          WHERE c.id_mercado = ${novoMercado.id_mercado}
-        `;
-      }
-    }
+    const novoMercado = await criarMercadoCompleto(sql, id_usuario, validacao.dados);
 
     res.status(201).json({
       mensagem: "Mercado criado com sucesso!",
       mercado: novoMercado,
     });
   } catch (err) {
+    if (err.status === 409) {
+      return res.status(409).json({ erro: err.message });
+    }
     console.error("ERRO criarMercado:", err);
     res.status(500).json({ erro: err.message });
   }
@@ -721,4 +800,6 @@ module.exports = {
   deletarMercado,
   meusMercados,
   dashboardMercado,
+  validarDadosMercado,
+  criarMercadoCompleto,
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
@@ -55,11 +55,16 @@ function FieldIcon({ children }: { children: React.ReactNode }) {
 
 export default function RegistrarMercado() {
   const navigate = useNavigate();
-  const { refreshMercados } = useAuth(); // corrigido: era refreshUsuario
+  const { refreshMercados, usuario } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [categorias, setCategorias] = useState<string[]>([]);
+  const [aguardandoPagamento, setAguardandoPagamento] = useState(
+    () => localStorage.getItem('aguardandoPagamento') === '1'
+  );
+  const [urlPagamento, setUrlPagamento] = useState<string | null>(null);
+  const [statusAtual, setStatusAtual] = useState<'pendente' | 'ativa' | 'erro' | null>(null);
 
   function alternarCategoria(id: string) {
     setCategorias(atual =>
@@ -86,6 +91,7 @@ export default function RegistrarMercado() {
       return { ...h, [dia]: nova };
     });
   }
+
   const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
@@ -155,6 +161,75 @@ export default function RegistrarMercado() {
     }
   }
 
+  // Admin sem plano: cria direto (paga de volta pelo webhook, mas não precisa)
+  async function criarDireto() {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+    const res = await fetch(`${BASE_URL}/api/mercados`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nome: form.nome,
+        email: form.email,
+        telefone: form.telefone.replace(/\D/g, ''),
+        cnpj: form.cnpj.replace(/\D/g, ''),
+        descricao: form.descricao.trim(),
+        cep: form.cep.replace(/\D/g, ''),
+        estado: form.estado,
+        cidade: form.cidade,
+        bairro: form.bairro,
+        rua: form.rua,
+        plano: planoId,
+        categorias,
+        horario: horarioEnvioLocal(),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
+    showToast('sucesso', 'Mercado cadastrado com sucesso!');
+    await refreshMercados();
+    setTimeout(() => navigate('/vendedor'), 1200);
+  }
+
+  function horarioEnvioLocal() {
+    return Object.fromEntries(
+      Object.entries(horario).filter(([, faixa]) => faixa !== null) as [string, [string, string]][]
+    );
+  }
+
+  // Usuário comum: cria assinatura + retorna link de pagamento (mercado vem depois)
+  async function criarCheckout() {
+    const checkout = await api.criarCheckout({
+      codigo_plano: planoId,
+      ciclo: planoSelecionado?.cobranca === 'anual' ? 'anual' : 'mensal',
+      mercado: {
+        nome: form.nome,
+        email: form.email,
+        telefone: form.telefone.replace(/\D/g, ''),
+        cnpj: form.cnpj.replace(/\D/g, ''),
+        descricao: form.descricao.trim(),
+        cep: form.cep.replace(/\D/g, ''),
+        estado: form.estado,
+        cidade: form.cidade,
+        bairro: form.bairro,
+        rua: form.rua,
+        plano: planoId,
+        categorias,
+        horario: horarioEnvioLocal(),
+      },
+    });
+    if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
+    localStorage.setItem('aguardandoPagamento', '1');
+    setAguardandoPagamento(true);
+    setUrlPagamento(checkout.urlCheckout);
+    showToast('sucesso', 'Redirecionando para o pagamento...');
+    setTimeout(() => { window.location.href = checkout.urlCheckout; }, 800);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.nome || !form.email || !form.telefone || !form.cnpj || !form.cep || !form.estado || !form.cidade || !form.bairro || !form.rua)
@@ -163,10 +238,7 @@ export default function RegistrarMercado() {
     if (categorias.length === 0)
       return showToast('erro', 'Escolha ao menos um tipo de loja.');
 
-    // Horário: manda só os dias marcados como abertos, checando os horários
-    const horarioEnvio = Object.fromEntries(
-      Object.entries(horario).filter(([, faixa]) => faixa !== null) as [string, [string, string]][]
-    );
+    const horarioEnvio = horarioEnvioLocal();
     const diaRuim = Object.values(horarioEnvio).find(f => !f[0] || !f[1] || f[0] === f[1]);
     if (diaRuim)
       return showToast('erro', 'Confira o horário: abertura e fechamento precisam ser diferentes.');
@@ -176,53 +248,14 @@ export default function RegistrarMercado() {
 
     setSalvando(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/mercados`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          nome: form.nome,
-          email: form.email,
-          telefone: form.telefone.replace(/\D/g, ''),
-          cnpj: form.cnpj.replace(/\D/g, ''),
-          descricao: form.descricao.trim(),
-          cep: form.cep.replace(/\D/g, ''),
-          estado: form.estado,
-          cidade: form.cidade,
-          bairro: form.bairro,
-          rua: form.rua,
-          plano: planoId,
-          categorias,
-          horario: horarioEnvio,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
-
-      showToast('sucesso', 'Mercado cadastrado com sucesso!');
-      await refreshMercados(); // atualiza temMercado antes de navegar
-
-      if (!planoSelecionado) {
-        setTimeout(() => navigate('/vendedor'), 1500);
+      // Admin sem plano escolhido: cria direto sem pagamento
+      if (usuario?.is_admin && !planoSelecionado) {
+        await criarDireto();
         return;
       }
 
-      try {
-        const checkout = await api.criarCheckout({
-          codigo_plano: planoId,
-          ciclo: planoSelecionado.cobranca === 'anual' ? 'anual' : 'mensal',
-        });
-        if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
-        localStorage.removeItem('planoSelecionado');
-        showToast('sucesso', 'Redirecionando para o pagamento...');
-        setTimeout(() => { window.location.href = checkout.urlCheckout; }, 800);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erro ao iniciar o pagamento.';
-        showToast('erro', msg);
-        setTimeout(() => navigate('/vendedor'), 2000);
-      }
+      // Usuário comum (ou admin com plano): só cria após o pagamento
+      await criarCheckout();
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao cadastrar.');
     } finally {
@@ -230,6 +263,136 @@ export default function RegistrarMercado() {
     }
   }
 
+  // Ao abrir com a flag de pagamento pendente, verifica o status da assinatura
+  useEffect(() => {
+    if (!aguardandoPagamento) return;
+    let cancelado = false;
+
+    async function verificar() {
+      try {
+        const r = await api.minhaAssinatura();
+        if (cancelado) return;
+        if (r?.assinatura?.status === 'ativa') {
+          // Pagamento confirmou → mercado já criado pelo webhook
+          localStorage.removeItem('aguardandoPagamento');
+          setStatusAtual('ativa');
+          showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
+          await refreshMercados();
+          setTimeout(() => navigate('/vendedor'), 1500);
+        } else if (r?.assinatura?.status === 'pendente') {
+          setStatusAtual('pendente');
+          setUrlPagamento(r.urlPagamento || null);
+        } else {
+          // Sem assinatura ou outro status → volta ao formulário
+          localStorage.removeItem('aguardandoPagamento');
+          setAguardandoPagamento(false);
+        }
+      } catch {
+        if (!cancelado) setStatusAtual('erro');
+      }
+    }
+
+    verificar();
+    return () => { cancelado = true; };
+  }, [aguardandoPagamento, navigate, refreshMercados, showToast]);
+
+  // ── Tela de status (aguardando pagamento) ────────────────────────────────
+  if (aguardandoPagamento) {
+    return (
+      <div className="register-page">
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <div className="left">
+          <div className="left-bg" />
+          <div className="circle circle-1" />
+          <div className="circle circle-2" />
+          <div className="circle circle-3" />
+          <div className="logo-wrap">
+            <img className="logo-img" src={logoImg} alt="Mercadins"
+              onClick={() => navigate('/')}
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <span className="logo-tagline">Seu mercado inteligente</span>
+          </div>
+        </div>
+        <div className="right">
+          <div className="form-card rm-status-card">
+            <h1>Aguardando pagamento</h1>
+            <p className="rm-status-sub">
+              Seu mercado será criado automaticamente assim que o pagamento for confirmado.
+            </p>
+
+            {statusAtual === 'pendente' && (
+              <div className="rm-status-acoes">
+                {urlPagamento && (
+                  <a href={urlPagamento} className="btn btn-primary" target="_blank" rel="noreferrer">
+                    <IconShoppingCart size={16} /> Continuar pagamento
+                  </a>
+                )}
+                <button
+                  className="btn btn-secondary"
+                  onClick={async () => {
+                    try {
+                      const r = await api.minhaAssinatura();
+                      if (r?.assinatura?.status === 'ativa') {
+                        localStorage.removeItem('aguardandoPagamento');
+                        showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
+                        await refreshMercados();
+                        setTimeout(() => navigate('/vendedor'), 1200);
+                      } else {
+                        showToast('info', 'Pagamento ainda não confirmado. Tente novamente em instantes.');
+                      }
+                    } catch {
+                      showToast('erro', 'Erro ao verificar pagamento.');
+                    }
+                  }}
+                >
+                  Já paguei — atualizar status
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    localStorage.removeItem('aguardandoPagamento');
+                    setAguardandoPagamento(false);
+                    setStatusAtual(null);
+                  }}
+                >
+                  Cancelar e voltar ao formulário
+                </button>
+              </div>
+            )}
+
+            {statusAtual === 'ativa' && (
+              <p className="rm-status-ok">Pagamento confirmado! Redirecionando para a área do vendedor…</p>
+            )}
+
+            {statusAtual === 'erro' && (
+              <div className="rm-status-acoes">
+                <p className="rm-status-erro">Não foi possível verificar o status do pagamento.</p>
+                <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+                  Tentar novamente
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    localStorage.removeItem('aguardandoPagamento');
+                    setAguardandoPagamento(false);
+                    setStatusAtual(null);
+                  }}
+                >
+                  Voltar ao formulário
+                </button>
+              </div>
+            )}
+
+            {!statusAtual && (
+              <p className="rm-status-carregando">Verificando status do pagamento…</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Formulário de cadastro ───────────────────────────────────────────────
   return (
     <div className="register-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -448,7 +611,7 @@ export default function RegistrarMercado() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
-              ) : <><IconShoppingCart size={16} /> Criar mercado</>}
+              ) : <><IconShoppingCart size={16} /> {usuario?.is_admin && !planoSelecionado ? 'Criar mercado' : 'Ir para pagamento'}</>}
             </button>
 
           </form>

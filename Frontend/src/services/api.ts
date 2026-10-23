@@ -224,7 +224,11 @@ export const api = {
   listarHistorico:  () => request('/usuario/historico'),
 
   // ── Assinaturas (planos) ─────────────────────────────────────────────────────
-  criarCheckout: (dados: { codigo_plano: string; ciclo: 'mensal' | 'anual' }) =>
+  criarCheckout: (dados: {
+    codigo_plano: string;
+    ciclo: 'mensal' | 'anual';
+    mercado: Record<string, unknown>;
+  }) =>
     request('/assinaturas/checkout', { method: 'POST', body: JSON.stringify(dados) }),
   minhaAssinatura: () =>
     request('/assinaturas/minha'),

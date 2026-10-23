@@ -176,6 +176,12 @@ async function migrate() {
     )
   `;
 
+  // Dados do mercado a ser criado APÓS a confirmação do pagamento
+  // (o cadastro NÃO cria mais o mercado: o webhook cria quando o Asaas pagar)
+  await sql`
+    ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS dados_mercado JSONB
+  `;
+
   // Tabela de pagamentos/faturas das assinaturas
   await sql`
     CREATE TABLE IF NOT EXISTS pagamentos (

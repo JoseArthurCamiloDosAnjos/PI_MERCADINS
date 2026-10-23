@@ -14,8 +14,7 @@
   --warning: #f39c12;
 }
 
-html, body {
-  height: 100%;
+.register-page {
   font-family: var(--font);
 }
 
@@ -678,7 +677,6 @@ html, body {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  body { flex-direction: column; overflow: auto; }
   .register-page {
     flex-direction: column;
     overflow-y: auto;

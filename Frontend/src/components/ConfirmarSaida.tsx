@@ -15,26 +15,26 @@ export default function ConfirmarSaida({
   salvando = false,
 }: ConfirmarSaidaProps) {
   return (
-    <div className="cs-overlay" role="dialog" aria-modal="true" aria-label="Alterações não salvas">
-      <div className="cs-modal">
+    <div className="cfs-overlay" role="dialog" aria-modal="true" aria-label="Alterações não salvas">
+      <div className="cfs-modal">
 
-        <div className="cs-icone-wrap">
-          <span className="cs-icone"><IconAlert size={40} /></span>
+        <div className="cfs-icone-wrap">
+          <span className="cfs-icone"><IconAlert size={40} /></span>
         </div>
 
-        <div className="cs-conteudo">
-          <h2 className="cs-titulo">Alterações não salvas</h2>
-          <p className="cs-descricao">
+        <div className="cfs-conteudo">
+          <h2 className="cfs-titulo">Alterações não salvas</h2>
+          <p className="cfs-descricao">
             Você fez alterações na vitrine que ainda não foram salvas.
             O que deseja fazer?
           </p>
         </div>
 
-        <div className="cs-acoes">
+        <div className="cfs-acoes">
 
           {/* 1º — Continuar editando (ação segura, destaque neutro) */}
           <button
-            className="cs-btn cs-btn--cancelar"
+            className="cfs-btn cfs-btn--cancelar"
             onClick={onCancelar}
             disabled={salvando}
           >
@@ -43,19 +43,19 @@ export default function ConfirmarSaida({
 
           {/* 2º — Salvar e sair (ação recomendada, destaque amarelo) */}
           <button
-            className={`cs-btn cs-btn--salvar ${salvando ? 'cs-btn--carregando' : ''}`}
+            className={`cfs-btn cfs-btn--salvar ${salvando ? 'cfs-btn--carregando' : ''}`}
             onClick={onSalvarESair}
             disabled={salvando}
           >
             {salvando
-              ? <><span className="cs-spinner" /> Salvando…</>
+              ? <><span className="cfs-spinner" /> Salvando…</>
               : <>✓ Salvar e sair</>
             }
           </button>
 
           {/* 3º — Sair sem salvar (ação destrutiva, vermelho) */}
           <button
-            className="cs-btn cs-btn--sair"
+            className="cfs-btn cfs-btn--sair"
             onClick={onSairSemSalvar}
             disabled={salvando}
           >

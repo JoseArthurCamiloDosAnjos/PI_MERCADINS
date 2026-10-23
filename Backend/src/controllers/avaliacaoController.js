@@ -137,7 +137,7 @@ const listarAvaliacoesProduto = async (req, res) => {
     }
 
     const avaliacoes = await sql`
-      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, u.nome
+      SELECT a.id, a.id_usuario, a.nota, a.texto, a.data_cadastro, a.foto, a.verificada, u.nome
       FROM avaliacoes_produtos a
       JOIN usuarios u ON u.id_usuario = a.id_usuario
       WHERE a.id_produto = ${prodId}
@@ -156,6 +156,8 @@ const listarAvaliacoesProduto = async (req, res) => {
         id: a.id,
         nota: Number(a.nota),
         texto: a.texto || '',
+        foto: a.foto || '',
+        verificada: !!a.verificada,
         data_cadastro: a.data_cadastro,
         cliente: a.nome,
         minha: idUsuario != null && Number(a.id_usuario) === Number(idUsuario),
@@ -175,7 +177,7 @@ const criarAvaliacaoProduto = async (req, res) => {
   const idUsuario = req.usuarioId;
   const { mercadoId, categoriaId, produtoId } = req.params;
   const prodId = Number(produtoId);
-  const { nota, texto } = req.body;
+  const { nota, texto, foto } = req.body;
 
   const notaNum = Number(nota);
 
@@ -184,6 +186,15 @@ const criarAvaliacaoProduto = async (req, res) => {
   }
   if (!Number.isInteger(notaNum) || notaNum < 1 || notaNum > 5) {
     return res.status(400).json({ erro: 'Escolha uma nota de 1 a 5 estrelas.' });
+  }
+
+  // Foto é opcional: quando vem, precisa ser um link de imagem http(s)
+  let fotoLimpa = '';
+  if (typeof foto === 'string' && foto.trim()) {
+    fotoLimpa = foto.trim().slice(0, 500);
+    if (!/^https?:\/\/\S+$/i.test(fotoLimpa)) {
+      return res.status(400).json({ erro: 'Foto inválida — use um link de imagem começando com http:// ou https://.' });
+    }
   }
 
   try {
@@ -203,12 +214,24 @@ const criarAvaliacaoProduto = async (req, res) => {
 
     const textoLimpo = typeof texto === 'string' ? texto.trim().slice(0, 500) : '';
 
+    // Selo "compra verificada": só recebe quem já comprou este produto.
+    // O pedido guarda os ids comprados em produto_ids (ex.: "12,31,44").
+    const [compra] = await sql`
+      SELECT 1 FROM historico_compras
+      WHERE id_usuario = ${idUsuario}
+        AND produto_ids != ''
+        AND string_to_array(produto_ids, ',') @> ARRAY[${String(prodId)}]
+      LIMIT 1
+    `;
+    const verificada = !!compra;
+
     // Sobe ou atualiza a avaliação do usuário neste produto
     await sql`
-      INSERT INTO avaliacoes_produtos (id_usuario, id_produto, nota, texto)
-      VALUES (${idUsuario}, ${prodId}, ${notaNum}, ${textoLimpo})
+      INSERT INTO avaliacoes_produtos (id_usuario, id_produto, nota, texto, foto, verificada)
+      VALUES (${idUsuario}, ${prodId}, ${notaNum}, ${textoLimpo}, ${fotoLimpa}, ${verificada})
       ON CONFLICT (id_usuario, id_produto)
-      DO UPDATE SET nota = EXCLUDED.nota, texto = EXCLUDED.texto, data_cadastro = NOW()
+      DO UPDATE SET nota = EXCLUDED.nota, texto = EXCLUDED.texto, foto = EXCLUDED.foto,
+                    verificada = EXCLUDED.verificada, data_cadastro = NOW()
     `;
 
     const [dados] = await sql`
@@ -218,9 +241,12 @@ const criarAvaliacaoProduto = async (req, res) => {
     `;
 
     res.status(201).json({
-      mensagem: 'Avaliação registrada com sucesso.',
+      mensagem: verificada
+        ? 'Avaliação registrada com selo de compra verificada.'
+        : 'Avaliação registrada com sucesso.',
       media: Number(dados.media),
       total: dados.total,
+      verificada,
     });
   } catch (err) {
     console.error('ERRO criarAvaliacaoProduto:', err);

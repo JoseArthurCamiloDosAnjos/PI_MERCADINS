@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { resolverPaleta } from '../../components/EscolherPaleta';
+import { aplicarSeo } from '../../utils/seo';
+import JsonLd from '../../components/JsonLd';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import {
@@ -205,6 +207,17 @@ export default function ProdutoTela({
     return () => { vivo = false; };
   }, [mercado.id, categoriaId, produto.id_produto]);
 
+  // Título e prévia de compartilhamento acompanham o produto aberto (SEO)
+  useEffect(() => {
+    aplicarSeo({
+      titulo: `${produto.nome} — ${mercado.nome} — Mercadins`,
+      descricao: produto.descricao
+        ? produto.descricao.replace(/\s+/g, ' ').trim().slice(0, 150)
+        : `${produto.nome} à venda na ${mercado.nome} — peça pelo Mercadins.`,
+      imagem: imagens[0],
+    });
+  }, [produto, mercado, imagens]);
+
   const jaAvaliou = !!avaliacoes?.avaliacoes.some(a => a.minha);
   // Média exibida: ao vivo depois que carrega (atualiza após enviar)
   const mediaExibida = avaliacoes ? avaliacoes.media : (produto.avaliacao ?? 0);
@@ -296,6 +309,35 @@ export default function ProdutoTela({
 
   return (
     <div className="pd-shell" data-tema={tema} style={estiloPaleta}>
+
+      {/* Dados estruturados do produto para o Google (preço, estoque, nota) */}
+      <JsonLd
+        dados={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: produto.nome,
+          image: imagens[0] ?? undefined,
+          description: produto.descricao ?? undefined,
+          brand: { '@type': 'Brand', name: mercado.nome },
+          ...(totalExibida > 0
+            ? {
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: mediaExibida,
+                  ratingCount: totalExibida,
+                },
+              }
+            : {}),
+          offers: {
+            '@type': 'Offer',
+            price: Number(produto.preco ?? 0),
+            priceCurrency: 'BRL',
+            availability: (produto.estoque ?? 0) > 0
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+          },
+        }}
+      />
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="pd-topbar">

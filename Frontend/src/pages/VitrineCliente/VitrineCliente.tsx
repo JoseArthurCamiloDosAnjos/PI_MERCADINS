@@ -14,6 +14,8 @@ import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
+import { aplicarSeo } from '../../utils/seo';
+import JsonLd from '../../components/JsonLd';
 import {
   IconStore,
   IconArrowLeft,
@@ -304,6 +306,19 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     carregarDados();
   }, [mercadoId, showToast]);
 
+  // Título, descrição e prévia de compartilhamento acompanham a loja aberta (SEO)
+  useEffect(() => {
+    if (!dados) return;
+    const resumo = dados.descricao
+      ? cortarEmPalavra(dados.descricao.replace(/\s+/g, ' ').trim(), 140)
+      : 'Peça online com entrega em casa.';
+    aplicarSeo({
+      titulo: `${dados.nome} — Mercadins`,
+      descricao: `${dados.nome} — ${resumo}`,
+      imagem: dados.logo ?? dados.banner ?? undefined,
+    });
+  }, [dados]);
+
   // Garante que a tela sempre comece do topo depois que os dados (e categorias)
   // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
   // topbar quando o navegador reancora o scroll com múltiplas categorias/imagens.
@@ -476,6 +491,25 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
   return (
     <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
+
+      {/* Dados estruturados da loja para o Google (busca local) */}
+      <JsonLd
+        dados={{
+          '@context': 'https://schema.org',
+          '@type': 'Store',
+          name: dados.nome,
+          image: dados.logo ?? undefined,
+          telephone: dados.telefone ?? undefined,
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: [dados.rua, dados.bairro].filter(Boolean).join(', ') || undefined,
+            addressLocality: dados.cidade ?? undefined,
+            addressRegion: dados.estado ?? undefined,
+            addressCountry: 'BR',
+          },
+          url: `${window.location.origin}/vitrine/${dados.slug ?? ''}`,
+        }}
+      />
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">

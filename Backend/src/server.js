@@ -91,6 +91,9 @@ app.use('/api/admin',              adminRoutes)
 app.use('/api/mercados/:mercadoId/categorias',                          categoriaRoutes)
 app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoRoutes)
 
+// ── Sitemap dinâmico (SEO - C6): páginas institucionais + vitrines ativas ─────
+app.use('/',                   require('./routes/sitemapRoutes'))
+
 // ── 404 para rotas de API não encontradas ─────────────────────────────────────
 app.use('/api', (_req, res) => {
   res.status(404).json({ erro: 'Rota da API não encontrada' })

@@ -92,20 +92,38 @@ const criarCheckout = async (req, res) => {
           });
         }
       }
-      // Pendente/inadimplente → devolve o link de pagamento existente
+      // Pendente/inadimplente → tenta retomar o link de pagamento existente
       if (assinaturaExistente.asaas_subscription_id) {
-        const urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
-        return res.json({
-          mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
+        let urlCheckout = null;
+        try {
+          urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
+        } catch { /* assinatura morta no Asaas — cancela e refaz abaixo */ }
+
+        if (urlCheckout) {
+          return res.json({
+            mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
+            status: assinaturaExistente.status,
+            idAssinatura: assinaturaExistente.id,
+            urlCheckout,
+          });
+        }
+
+        // Assinatura pendente sem cobrança válida (restou de um fluxo antigo
+        // ou o Asaas expirou) → cancela e cria uma nova
+        try {
+          await asaas.cancelarAssinatura(assinaturaExistente.asaas_subscription_id);
+        } catch { /* pode já estar cancelada no Asaas */ }
+        await sql`
+          UPDATE assinaturas
+          SET status = 'cancelada', atualizada_em = NOW()
+          WHERE id = ${assinaturaExistente.id}
+        `;
+      } else {
+        return res.status(409).json({
+          erro: 'Você já possui uma assinatura ativa ou pendente.',
           status: assinaturaExistente.status,
-          idAssinatura: assinaturaExistente.id,
-          urlCheckout: urlCheckout || null,
         });
       }
-      return res.status(409).json({
-        erro: 'Você já possui uma assinatura ativa ou pendente.',
-        status: assinaturaExistente.status,
-      });
     }
 
     // Dados do usuário para o customer

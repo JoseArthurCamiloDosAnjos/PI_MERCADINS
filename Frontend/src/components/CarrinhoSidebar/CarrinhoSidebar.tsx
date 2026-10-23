@@ -111,11 +111,15 @@ export default function CarrinhoSidebar({
                         <button
                           type="button"
                           onClick={() => carrinho.alterarQuantidade(item.produto.id_produto, 1)}
+                          disabled={item.produto.estoque != null && item.quantidade >= item.produto.estoque}
                           aria-label="Aumentar quantidade"
                         >
                           <IconPlusMini />
                         </button>
                       </div>
+                      {item.produto.estoque != null && item.quantidade >= item.produto.estoque && (
+                        <span className="cs-max">Máx. {item.produto.estoque}</span>
+                      )}
                       <span className="cs-item-total">{formatBRL(preco * item.quantidade)}</span>
                     </div>
                   </div>

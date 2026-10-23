@@ -185,6 +185,9 @@
 .cs-overlay[data-tema="claro"] .cs-stepper button { background: #e8ecf5; }
 .cs-stepper button:hover:not(:disabled) { background: var(--vt-amarelo, #f5c518); color: #0a1628; }
 .cs-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Aviso de limite de estoque na gaveta do carrinho */
+.cs-max { font-size: 11px; font-weight: 700; color: var(--cinza-texto, #9aa7b8); white-space: nowrap; }
 .cs-stepper span { font-size: 13px; font-weight: 800; min-width: 14px; text-align: center; }
 
 .cs-item-total { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo, #f5c518); }

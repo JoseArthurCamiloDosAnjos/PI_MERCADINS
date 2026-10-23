@@ -142,7 +142,7 @@ export default function EditarMercado({
               onChange={handleLogo}
             />
             <p className="em-logo-hint">Clique na imagem para trocar a logo</p>
-            <p className="em-recomendacao">📐 Tamanho recomendado para a foto de perfil: <strong>300×300px</strong> (formato quadrado, ideal para visualização nítida)</p>
+            <p className="em-recomendacao">Tamanho recomendado para a foto de perfil: <strong>300×300px</strong> (formato quadrado, ideal para visualização nítida)</p>
           </div>
 
           {/* ── Banner ─────────────────────────────────────────────────── */}
@@ -178,7 +178,7 @@ export default function EditarMercado({
                 Remover banner
               </button>
             )}
-            <p className="em-recomendacao">📐 Tamanho recomendado para a imagem de fundo: <strong>1200×400px</strong> (proporção 3:1, preenche toda a área)</p>
+            <p className="em-recomendacao">Tamanho recomendado para a imagem de fundo: <strong>1200×400px</strong> (proporção 3:1, preenche toda a área)</p>
           </div>
 
           {/* ── Nome ─────────────────────────────────────────────────── */}
@@ -205,7 +205,7 @@ export default function EditarMercado({
               value={descricao}
               rows={3}
               maxLength={300}
-              onChange={(e) => setDescricao(removeSpecialChars(removeEmojis(e.target.value)))}
+              onChange={(e) => setDescricao(removeEmojis(e.target.value))}
               placeholder="Uma frase curta sobre o seu mercado"
             />
             <span className="em-char-count">{descricao.length}/300</span>

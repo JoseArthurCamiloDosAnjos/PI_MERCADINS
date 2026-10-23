@@ -84,14 +84,14 @@ export default function EmailVerificacaoModal({ email, onClose }: EmailVerificac
 
   if (sucesso) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-overlay">
+        <div className="modal-card">
           <div className="modal-icon-wrap modal-icon-email" style={{ background: "#2ecc71" }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 className="modal-title">Email verificado!</h2>
+          <h2 className="modal-title">E-mail verificado!</h2>
           <p className="modal-desc">Você já pode fazer login.</p>
         </div>
       </div>
@@ -99,9 +99,9 @@ export default function EmailVerificacaoModal({ email, onClose }: EmailVerificac
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>×</button>
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <button className="modal-close" onClick={onClose} aria-label="Fechar">×</button>
 
         <div className="modal-icon-wrap modal-icon-email">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -1,0 +1,222 @@
+================================================================================
+  MERCADINS — PASSO A PASSO: CONFIGURAR A API DO ASAAS
+================================================================================
+
+Resumo: faltam 3 coisas pra funcionar.
+  1) Chave da API no Backend/.env          -> faz a criação da cobrança funcionar
+  2) Webhook cadastrado no painel Asaas    -> faz o pagamento ser CONFIRMADO sozinho
+  3) Token do webhook no Backend/.env      -> faz o Asaas ser aceito pelo seu servidor
+
+Nada disso é código: é configuração sua no painel do Asaas + no .env.
+
+
+--------------------------------------------------------------------------------
+PASSO 1 — Criar conta no Asaas (ambiente SANDBOX = testes grátis)
+--------------------------------------------------------------------------------
+
+1. Acesse: https://www.asaas.com/  -> "Criar conta grátis"
+2. Depois de logar, ative o ambiente de TESTES (sandbox):
+   - No topo do painel do Asaas, clique no seu perfil/conta
+   - Ative a opção "Ambiente de testes" (ou acesse https://sandbox.asaas.com)
+3. Confirme que o painel está em modo SANDBOX (o endereço deve ser
+   sandbox.asaas.com e o fundo costuma ficar com destaque de "TESTES").
+
+Importante: a chave de produção NÃO funciona no sandbox (e vice-versa).
+Local você usa SEMPRE a chave sandbox.
+
+
+--------------------------------------------------------------------------------
+PASSO 2 — Gerar a chave da API (sandbox)
+--------------------------------------------------------------------------------
+
+1. No painel sandbox, vá em:  Integrações  ->  API
+   (direto: https://sandbox.asaas.com/docs/api)
+2. Clique em "Criar chave" / "Gerar novo token"
+3. Dê um nome, ex.: "mercadins-local"
+4. Deixe marcada a permissão de LEITURA E ESCRITA (precisa criar customers,
+   subscriptions e consultar pagamentos)
+5. Copie o token gerado (começa com $aact_...). Ele só aparece uma vez.
+
+
+--------------------------------------------------------------------------------
+PASSO 3 — Colocar a chave no Backend/.env
+--------------------------------------------------------------------------------
+
+Abra o arquivo:  Backend/.env
+
+Preencha a linha que já existe (deixada vazia):
+
+    Assas_API_KEY=$aact_XXXXXXXXXXXXXXXX
+
+E confirme que as outras linhas estão assim:
+
+    Assas_API_URL_Sandbox=https://api-sandbox.asaas.com/
+    Assas_API_URL_Producao=https://api.asaas.com/
+
+O código (Backend/src/services/asaasService.js) usa a URL sandbox quando
+NODE_ENV não é production. Ou seja: rodando local, ele vai no sandbox. OK.
+
+Depois REINICIE o backend:
+    cd Backend
+    node src/server.js
+
+Teste rápido: cadastre um mercado com plano e veja se não aparece mais
+"Chave da API do Asaas não configurada (Assas_API_KEY)."
+
+
+--------------------------------------------------------------------------------
+PASSO 4 — Gerar o TOKEN do webhook
+--------------------------------------------------------------------------------
+
+1. Gere um token aleatório você mesmo. Exemplos:
+   - Windows (PowerShell):  -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 40 | % {[char]$_})
+   - Qualquer lugar: use qualquer sequência longa, ex.: mercadins_webhook_9f3a7b2c1d
+2. Salve no Backend/.env:
+
+    ASAAS_WEBHOOK_TOKEN=cole_aqui_o_token_que_gerou
+
+3. Anote esse valor: você vai colocar EXATAMENTE o mesmo no painel do Asaas.
+
+
+--------------------------------------------------------------------------------
+PASSO 5 — Cadastrar o webhook no painel do Asaas
+--------------------------------------------------------------------------------
+
+1. No painel do Asaas (sandbox), vá em:  Integrações  ->  Webhooks
+   (direto: https://sandbox.asaas.com/myApplications)
+2. Clique em "Criar webhook" e preencha:
+
+    URL de notificação:  https://pi-mercadins.onrender.com/api/webhooks/asaas
+    E-mail (se pedir):   o seu e-mail
+    Token de segurança:  <o MESMO valor de ASAAS_WEBHOOK_TOKEN>
+
+3. Ative/assine os eventos (tipo de notificação):
+
+    PAYMENT_CONFIRMED     <- pagamento confirmado (assinatura vira ATIVA)
+    PAYMENT_RECEIVED      <- pagamento recebido
+    PAYMENT_OVERDUE       <- atrasou (assinatura vira INADIMPLENTE)
+    SUBSCRIPTION_DELETED  <- assinatura cancelada
+
+4. Salve.
+
+O backend recebe esses eventos em Backend/src/controllers/assinaturaController.js
+(webhookAsaas) e já valida o header "webhook-security-token" contra o
+ASAAS_WEBHOOK_TOKEN. Se o token não bater, ele responde 401 e o Asaas tenta
+de novo.
+
+
+--------------------------------------------------------------------------------
+PASSO 6 — COBRANÇA: mercado criado APÓS o pagamento
+--------------------------------------------------------------------------------
+
+O mercado NÃO é criado no cadastro. O fluxo é esse:
+
+  1. Usuário preenche o formulário em /registrar-mercado
+  2. Frontend chama  POST /api/assinaturas/checkout
+       -> o payload do formulário vai junto (campo "mercado")
+       -> o backend VALIDA os dados e grava em assinaturas.dados_mercado (JSONB)
+       -> cria customer + assinatura no Asaas e retorna o invoiceUrl
+  3. Frontend redireciona o usuário para o invoiceUrl (página do Asaas: PIX, boleto ou cartão)
+  4. Usuário paga  ->  Asaas dispara o WEBHOOK  ->  assinatura vira "ativa"
+       -> o backend cria o mercado a partir de dados_mercado (categorias, produtos demo, vínculo dono)
+  5. Usuário volta para /vendedor e o mercado já está lá
+
+Admin (is_admin) pula o pagamento: cria o mercado direto (POST /api/mercados funciona sem checkout).
+
+Fluxo de recuperação:
+  - Se o webhook falhar, /api/assinaturas/minha detecta "ativa + sem mercado" e cria na hora
+  - Se o pagamento ainda está pendente, a tela /registrar-mercado mostra botões
+    "Continuar pagamento" / "Já paguei — atualizar status" / "Cancelar"
+
+Ou seja: a "página" é do próprio Asaas. Seu backend só cria a cobrança e
+espera o webhook para materializar o mercado.
+
+
+--------------------------------------------------------------------------------
+PASSO 7 — Testar o webhook
+--------------------------------------------------------------------------------
+
+O Asaas não consegue acessar "localhost". Duas opções:
+
+OPÇÃO A — Testar já em produção (mais simples)
+  1. Dê commit e push; o Render sobe o backend
+  2. Confira que as variáveis existem no painel do RENDER do backend:
+       Assas_API_KEY            (a SANDBOX, ou a de produção se quiser cobrar de verdade)
+       Assas_API_URL_Producao   = https://api.asaas.com/
+       Assas_API_URL_Sandbox    = https://api-sandbox.asaas.com/
+       ASAAS_WEBHOOK_TOKEN      = mesmo do painel do Asaas
+  3. Faça um pagamento de teste (sandbox tem cartão/cartão de teste e PIX fake)
+  4. No painel Asaas, em Webhooks, veja "Últimos envios": precisa aparecer 200 OK
+  5. No Render, veja os logs: deve aparecer "recebido: true"
+
+OPÇÃO B — Testar local com túnel (ngrok ou cloudflared)
+  1. Suba o backend local:   cd Backend && node src/server.js
+  2. Abra o túnel na porta 3001:
+       ngrok:    ngrok http 3001
+       cloudflared:  cloudflared tunnel --url http://localhost:3001
+  3. Copie a URL gerada (ex.: https://abc123.ngrok-free.app)
+  4. No painel do Asaas, coloque no webhook:
+       https://abc123.ngrok-free.app/api/webhooks/asaas
+  5. No .env do Backend use:
+       Assas_API_KEY=$aact_...   (sandbox)
+       Assas_API_URL_Sandbox=https://api-sandbox.asaas.com/
+  6. Refaça um pagamento de teste no sandbox
+
+
+--------------------------------------------------------------------------------
+PASSO 8 — Checklist final
+--------------------------------------------------------------------------------
+
+[ ] Conta Asaas criada e painel em SANDBOX (sandbox.asaas.com)
+[ ] Chave da API sandbox gerada e salva em  Backend/.env  como Assas_API_KEY
+[ ] Backend reiniciado depois de mexer no .env
+[ ] Token gerado e salva em  Backend/.env  como ASAAS_WEBHOOK_TOKEN
+[ ] Webhook cadastrado no painel Asaas com URL + MESMO token
+[ ] Eventos PAYMENT_CONFIRMED / PAYMENT_RECEIVED / PAYMENT_OVERDUE assinados
+[ ] Cadastro de mercado SEM plano redireciona para /planos (usuário comum)
+[ ] Cadastro de mercado COM plano grava dados_mercado e redireciona pro Asaas
+[ ] Após pagar, webhook cria o mercado automaticamente (categorias + produtos demo)
+[ ] Após pagar, painel Asaas mostra o envio do webhook com status 200
+[ ] No banco, a assinatura muda de "pendente" para "ativa" e id_mercado é preenchido
+
+
+--------------------------------------------------------------------------------
+PROBLEMAS COMUNS
+--------------------------------------------------------------------------------
+
+"Chave da API do Asaas não configurada (Assas_API_KEY)."
+  -> A linha no Backend/.env está vazia ou o backend não foi reiniciado.
+
+"Erro na API do Asaas (401). Chave inválida"  (ou similar)
+  -> Chave de produção no sandbox, ou sandbox na produção.
+     Confira qual URL o código está usando (produção x sandbox).
+
+"Erro na API do Asaas (400)..." com dados do cliente
+  -> CPF/CNPJ ou e-mail inválido/inexistente no sandbox.
+     No sandbox, use dados fictícios válidos (o próprio painel tem "dados de teste").
+
+Webhook nunca chega / assinatura fica "pendente" pra sempre
+  1. Webhook cadastrado no painel do Asaas? URL correta com /api/webhooks/asaas?
+  2. Token do painel = token do ASAAS_WEBHOOK_TOKEN? (mesmo valor, sem aspas)
+  3. Logs do webhook no painel Asaas mostram 200 ou 401/erro?
+     - 401 -> token diferente
+     - 404 -> URL errada ou backend não publicado
+  4. No Render, as variáveis Assas_API_KEY e ASAAS_WEBHOOK_TOKEN estão preenchidas?
+
+Página branca/erro ao cadastrar mercado
+  -> Veja o console do navegador (F12) e o terminal do backend: a mensagem
+     de erro da API do Asaas aparece lá.
+
+
+--------------------------------------------------------------------------------
+ARQUIVOS ENVOLVIDOS
+--------------------------------------------------------------------------------
+
+  Backend/.env                              -> chaves (você preenche)
+  Backend/src/services/asaasService.js      -> chama a API do Asaas
+  Backend/src/controllers/assinaturaController.js -> checkout + webhook
+  Backend/src/routes/assinaturaRoutes.js    -> /api/assinaturas/*
+  Backend/src/server.js:93                  -> rota do webhook
+  Frontend/src/pages/RegistrarMercado/RegistrarMercado.tsx -> redireciona pro Asaas
+
+================================================================================

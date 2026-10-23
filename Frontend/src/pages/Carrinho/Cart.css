@@ -298,6 +298,14 @@
   color: var(--text-primary);
 }
 
+/* Aviso de limite de estoque no carrinho */
+.qty-max {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #9aa7b8);
+  white-space: nowrap;
+}
+
 .cart-item__line-total {
   font-family: var(--font-display);
   font-size: 15px;
@@ -470,6 +478,237 @@
 .cart-coupon button:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Linha de desconto do cupom e aviso de pedido mínimo */
+.cart-summary__row.is-desconto span:last-child {
+  color: var(--success);
+}
+
+.cart-summary__row.is-aviso span:first-child {
+  color: var(--warning, #d97706);
+  font-weight: 600;
+}
+
+/* Como quer receber: entrega ou retirada no balcão */
+.cart-delivery {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-delivery__legenda {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.cart-delivery__opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--bg-panel);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--text-secondary);
+}
+
+.cart-delivery__opcao input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.cart-delivery__opcao.is-ativa {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
+.cart-delivery__texto {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-delivery__texto strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.cart-delivery__opcao.is-ativa .cart-delivery__texto strong {
+  color: var(--text-primary);
+}
+
+.cart-delivery__texto small {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Como quer pagar: na entrega, Pix ou cartão (B3) */
+.cart-payment {
+  border: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-payment__legenda {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.cart-payment__opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--bg-panel);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--text-secondary);
+}
+
+.cart-payment__opcao input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.cart-payment__opcao.is-ativa {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
+.cart-payment__texto {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-payment__texto strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.cart-payment__texto small {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Cupom aplicado com sucesso */
+.cart-coupon--aplicado {
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.cart-coupon__codigo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+
+.cart-coupon--aplicado button {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.cart-coupon--aplicado button:hover {
+  color: var(--danger, #e05252);
+  border: 0;
+}
+
+/* Agendamento: quando o cliente quer receber ou retirar */
+.cart-agendamento {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cart-agendamento__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cart-agendamento__select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.cart-agendamento__select:focus {
+  border-color: var(--accent);
+}
+
+/* Observação opcional que vai junto com o pedido */
+.cart-obs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cart-obs__label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cart-obs__textarea {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 54px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.cart-obs__textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.cart-obs__textarea:focus {
+  border-color: var(--accent);
+}
+
+.cart-obs__contador {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .cart-checkout-btn {

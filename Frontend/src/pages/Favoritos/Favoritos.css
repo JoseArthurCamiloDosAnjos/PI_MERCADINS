@@ -1,0 +1,230 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Página "Meus favoritos" — visual claro do site cliente
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.favoritos-page {
+  min-height: 100vh;
+  background: #f2f4f8;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #0d1b2a;
+}
+
+/* Barra superior */
+.favoritos-topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ef;
+}
+
+.favoritos-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #dde3ef;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0d2a5e;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.favoritos-voltar:hover { background: #f0f2f7; }
+
+.favoritos-titulo { display: flex; align-items: baseline; gap: 12px; }
+.favoritos-titulo h1 { margin: 0; font-size: 21px; color: #0d2a5e; }
+.favoritos-titulo span { font-size: 13px; color: #5a6b8c; }
+
+/* Conteúdo */
+.favoritos-conteudo {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 26px 28px 60px;
+}
+
+/* Grade de cards */
+.favoritos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.favorito-card {
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.favorito-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(13, 42, 94, 0.1);
+}
+
+/* Foto da loja (botão que abre a vitrine) */
+.favorito-foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 130px;
+  background: linear-gradient(145deg, #0d2858, #1843a0);
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.65);
+}
+.favorito-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.favorito-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+  flex: 1;
+}
+
+.favorito-nome {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0d2a5e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorito-local {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #5a6b8c;
+}
+.favorito-local svg { color: #1843a0; flex-shrink: 0; }
+
+.favorito-nota {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #5a6b8c;
+}
+.favorito-nota svg { color: #f5c518; }
+.favorito-nota strong { color: #0d2a5e; }
+
+.favorito-chip {
+  align-self: flex-start;
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Ações do card */
+.favorito-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.favorito-ver {
+  flex: 1;
+  background: #0d2a5e;
+  color: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.favorito-ver:hover:not(:disabled) { background: #1843a0; }
+.favorito-ver:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.favorito-remover {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #e3e9f4;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e05252;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.favorito-remover:hover:not(:disabled) { background: rgba(224, 82, 82, 0.08); }
+.favorito-remover:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Estado vazio */
+.favoritos-vazio {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.favoritos-vazio-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  color: #e05252;
+  margin-bottom: 18px;
+}
+
+.favoritos-vazio h2 { margin: 0 0 8px; font-size: 19px; color: #0d2a5e; }
+.favoritos-vazio p { margin: 0 0 22px; font-size: 14px; color: #5a6b8c; line-height: 1.6; }
+
+.favoritos-cta {
+  background: #f5c518;
+  color: #0d2a5e;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.favoritos-cta:hover { background: #f7d567; }
+
+/* Esqueleto de carregamento */
+.favorito-card--skeleton { pointer-events: none; }
+.favorito-foto--skeleton { background: #e3e9f4; animation: favoritosPulso 1.3s ease-in-out infinite; }
+.favorito-linha-skel {
+  height: 13px;
+  border-radius: 6px;
+  background: #e3e9f4;
+  animation: favoritosPulso 1.3s ease-in-out infinite;
+}
+
+@keyframes favoritosPulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+  .favoritos-topbar { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+  .favoritos-conteudo { padding: 18px 16px 50px; }
+  .favoritos-grid { grid-template-columns: 1fr; }
+}

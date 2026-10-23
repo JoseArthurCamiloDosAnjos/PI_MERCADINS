@@ -1,0 +1,11 @@
+# Robots do Mercadins — permite a indexação de todo o site público
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /perfil
+Disallow: /favoritos
+Disallow: /vendedor
+Disallow: /auth
+
+# Sitemap dinâmico (gerado no backend a partir dos mercados ativos)
+Sitemap: https://pi-mercadins.onrender.com/sitemap.xml

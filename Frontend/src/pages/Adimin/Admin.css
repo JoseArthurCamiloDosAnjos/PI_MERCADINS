@@ -1526,3 +1526,6 @@
     padding: 18px;
   }
 }
+
+/* Carregamento da aba (lazy) */
+.adm-carregando { color: #8892a4; font-size: 14px; padding: 2rem; text-align: center; }

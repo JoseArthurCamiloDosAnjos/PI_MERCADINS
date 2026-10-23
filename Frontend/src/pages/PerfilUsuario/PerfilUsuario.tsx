@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -12,22 +13,19 @@ import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito'
 import './PerfilUsuario.css';
 import {
   IconLock,
-  IconMapPin,
-  IconCreditCard,
-  IconReceipt,
-  IconBell,
   IconStore,
   IconShoppingBag,
   IconStar,
   IconMail,
   IconInbox,
+  IconInfo,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
-const TITULOS = ['Meu Perfil', 'Segurança', 'Endereços', 'Cartões', 'Fatura', 'Comunicação'];
+const TITULOS = ['Meu perfil', 'Segurança'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -39,7 +37,7 @@ function getIniciais(nome: string) {
 
 function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void }) {
   return (
-    <button type="button" className="pu-input-eye" onClick={onToggle} tabIndex={-1}>
+    <button type="button" className="pu-input-eye" onClick={onToggle} aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'} tabIndex={-1}>
       {visivel ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -58,18 +56,62 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
+// Linha do tempo do pedido: pendente → preparo → caminho → entregue.
+// Mostra em que etapa o pedido está e o que já foi concluído.
+const ETAPAS_PEDIDO = [
+  { chave: 'pendente', label: 'Pedido recebido' },
+  { chave: 'preparo',  label: 'Em preparo' },
+  { chave: 'caminho',  label: 'A caminho' },
+  { chave: 'entregue', label: 'Entregue' },
+] as const;
+
+// Nomes amigáveis dos status (inclusive os novos: aguardando pagamento e cancelado)
+const NOMES_STATUS: Record<string, string> = {
+  aguardando_pagamento: 'Aguardando pagamento',
+  pendente: 'Recebido pela loja',
+  preparo: 'Em preparo',
+  caminho: 'A caminho',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
+function PilhaStatus({ status }: { status: string }) {
+  const idxAtual = ETAPAS_PEDIDO.findIndex(e => e.chave === status);
+  // Fora do fluxo normal (aguardando pagamento/cancelado) não há etapas a marcar
+  if (idxAtual < 0) return null;
+  const atual = idxAtual;
+  return (
+    <ol className="pu-timeline" aria-label="Etapas do pedido">
+      {ETAPAS_PEDIDO.map((etapa, i) => {
+        const feita = i < atual;
+        const ativa = i === atual;
+        return (
+          <li
+            key={etapa.chave}
+            className={`pu-timeline-item${feita ? ' feita' : ''}${ativa ? ' ativa' : ''}`}
+          >
+            <span className="pu-timeline-ponto" aria-hidden="true">{feita ? '✓' : ''}</span>
+            <span className="pu-timeline-label">{etapa.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
   favoritos: Favorito[];
   historico: Historico[];
   avaliacoes: Avaliacao[];
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
+  const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
 
   return (
     <>
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados Favoritos</h2>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados favoritos</h2>
         <div className="pu-circles">
           <div className="pu-circ-item" style={{ animationDelay: '0.3s' }}>
             <div
@@ -124,7 +166,18 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <p className="pu-hcard-nome">{p.mercado}</p>
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {p.status}</span>
+                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
+                  <PilhaStatus status={p.status} />
+                  <button
+                    className="pu-hcard-acompanhar"
+                    type="button"
+                    onClick={() => navigate(`/pedidos/${p.id}`)}
+                  >
+                    Acompanhar pedido
+                  </button>
+                  {p.observacao && (
+                    <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -136,7 +189,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
 
       <section>
         <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações Feitas</h2>
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Avaliações feitas</h2>
           <button className="pu-btn-link">Ver todas</button>
         </div>
         {avaliacoes.length === 0 ? (
@@ -216,7 +269,7 @@ function TelaSeguranca() {
         {etapa === 'form' ? (
           <div className="pu-form-block">
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Senha Atual</label>
+              <label className="pu-modal-label">Senha atual</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -231,7 +284,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Nova Senha</label>
+              <label className="pu-modal-label">Nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -247,7 +300,7 @@ function TelaSeguranca() {
               <PasswordStrength senha={form.novaSenha} />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Confirmar Nova Senha</label>
+              <label className="pu-modal-label">Confirmar nova senha</label>
               <div className="pu-input-wrap">
                 <input
                   className="pu-modal-input"
@@ -262,7 +315,7 @@ function TelaSeguranca() {
               </div>
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"
@@ -279,7 +332,7 @@ function TelaSeguranca() {
               onClick={enviarConfirmacao}
               disabled={enviando}
             >
-              <IconMail size={15} /> Enviar Código de Confirmação
+              <IconMail size={15} /> Enviar código de confirmação
             </button>
           </div>
         ) : etapa === 'codigo' ? (
@@ -303,7 +356,7 @@ function TelaSeguranca() {
               />
             </div>
             <div className="pu-modal-group">
-              <label className="pu-modal-label">Email de Confirmação</label>
+              <label className="pu-modal-label">E-mail de confirmação</label>
               <input
                 className="pu-modal-input"
                 type="email"
@@ -347,42 +400,6 @@ function TelaSeguranca() {
   );
 }
 
-function TelaEnderecos() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços</h2>
-      <p className="pu-sec-desc">Gerencie seus endereços de entrega.</p>
-    </section>
-  );
-}
-
-function TelaCartoes() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconCreditCard size={14} /></span>Cartões</h2>
-      <p className="pu-sec-desc">Gerencie seus cartões de pagamento.</p>
-    </section>
-  );
-}
-
-function TelaFatura() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconReceipt size={14} /></span>Fatura</h2>
-      <p className="pu-sec-desc">Visualize e baixe suas faturas.</p>
-    </section>
-  );
-}
-
-function TelaComunicacao() {
-  return (
-    <section>
-      <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconBell size={14} /></span>Comunicação</h2>
-      <p className="pu-sec-desc">Configure suas preferências de notificação.</p>
-    </section>
-  );
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PerfilUsuario() {
@@ -416,10 +433,6 @@ export default function PerfilUsuario() {
   const TELAS = [
     <TelaPerfil favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
-    <TelaEnderecos />,
-    <TelaCartoes />,
-    <TelaFatura />,
-    <TelaComunicacao />,
   ];
 
   useEffect(() => {

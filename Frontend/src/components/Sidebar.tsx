@@ -5,15 +5,12 @@ import { useNavigate } from "react-router-dom";
 import {
   IconUser,
   IconLock,
-  IconMapPin,
-  IconCreditCard,
-  IconReceipt,
-  IconBell,
   IconPlus,
   IconMenu,
   IconX,
   IconPencil,
 } from "./Icons";
+import { getReturnUrl } from "../utils/returnUrl";
 
 interface NavItem {
   icon: ReactNode;
@@ -33,13 +30,11 @@ interface SidebarProps {
   showCriarMercado?: boolean;
 }
 
+// Só abas com funcionalidade real: dados do perfil e segurança da conta.
+// (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
-  { icon: <IconUser size={18} />, label: "Perfil" },
+  { icon: <IconUser size={18} />, label: "Meu perfil" },
   { icon: <IconLock size={18} />, label: "Segurança" },
-  { icon: <IconMapPin size={18} />, label: "Endereços" },
-  { icon: <IconCreditCard size={18} />, label: "Cartões" },
-  { icon: <IconReceipt size={18} />, label: "Fatura" },
-  { icon: <IconBell size={18} />, label: "Comunicação" },
 ];
 
 export default function Sidebar({
@@ -71,16 +66,21 @@ export default function Sidebar({
     setOpen(false);
   }
 
-  // Usuário comum escolhe o plano antes de criar; admin pula direto para o cadastro
+  // Usuário comum escolhe o plano antes de criar; admin pula direto para o cadastro.
+  // Se já tem pagamento pendente, volta para a tela de status do cadastro.
   function irCriarMercado() {
-    navigate(usuario?.is_admin ? "/registrar-mercado" : "/planos");
+    if (localStorage.getItem('aguardandoPagamento') === '1') {
+      navigate("/registrar-mercado");
+    } else {
+      navigate(usuario?.is_admin ? "/registrar-mercado" : "/planos");
+    }
     setOpen(false);
   }
 
-  // Sai do perfil e volta para a tela anterior (ou para o início, se não houver histórico)
+  // Sai do perfil e volta para a página anterior (ou para o início)
   function sairDoPerfil() {
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate("/");
+    const returnUrl = getReturnUrl();
+    navigate(returnUrl);
     setOpen(false);
   }
 
@@ -117,7 +117,7 @@ export default function Sidebar({
           {badge && <span className="sb-badge">{badge}</span>}
           {onEditarPerfil && (
             <button className="sb-edit-btn" onClick={() => { onEditarPerfil(); setOpen(false); }}>
-              <IconPencil size={13} /> Editar Perfil
+              <IconPencil size={13} /> Editar perfil
             </button>
           )}
         </div>

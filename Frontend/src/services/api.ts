@@ -57,6 +57,13 @@ export const api = {
   },
   dashboardMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/dashboard`),
+  // Painel financeiro do mês: faturamento, custos, lucro e demanda
+  financeiroMercado: (mercadoId: string | number, ano: number, mes: number) =>
+    request(`/mercados/${mercadoId}/financeiro?ano=${ano}&mes=${mes}`),
+
+  // ── Busca de produtos (todos os mercados) ──────────────────────────────────
+  buscarProdutos: (q: string) =>
+    request(`/busca/produtos?q=${encodeURIComponent(q)}`),
 
   // ── Categorias ───────────────────────────────────────────────────────────────
   listarCategorias: (mercadoId: string | number) =>
@@ -99,7 +106,7 @@ export const api = {
   criarProduto: (
     mercadoId:   string | number,
     categoriaId: string | number,
-    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number }
+    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number; custo?: number }
   ) => {
     return request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos`, {
       method: 'POST',
@@ -109,6 +116,7 @@ export const api = {
         imagens: dados.imagens ?? [],
         preco: dados.preco,
         estoque: dados.estoque,
+        custo: dados.custo,
       }),
     })
   },
@@ -117,7 +125,7 @@ export const api = {
     mercadoId:   string | number,
     categoriaId: string | number,
     produtoId:   string | number,
-    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number }
+    dados: { nome: string; descricao?: string; imagens?: string[]; preco?: number; estoque?: number; custo?: number }
   ) => {
     return request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}`, {
       method: 'PUT',
@@ -127,6 +135,7 @@ export const api = {
         imagens: dados.imagens ?? [],
         preco: dados.preco,
         estoque: dados.estoque,
+        custo: dados.custo,
       }),
     })
   },
@@ -151,11 +160,114 @@ export const api = {
 
   criarPedido: (
     mercadoId: string | number,
-    dados: { itens: { id_produto: number; quantidade: number }[] }
+    dados: {
+      itens: { id_produto: number; quantidade: number }[];
+      observacao?: string;
+      tipo_entrega?: 'entrega' | 'retirada';
+      cupom?: string;
+      agendamento?: string;
+      forma_pagamento?: 'presencial' | 'pix' | 'cartao';
+    }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
       method: 'POST',
       body:   JSON.stringify(dados),
+    }),
+
+  // ── Pedidos do cliente (acompanhamento B4) ────────────────────────────────
+  meusPedidos: () =>
+    request('/pedidos/meus'),
+  detalharPedido: (pedidoId: string | number) =>
+    request(`/pedidos/${pedidoId}`),
+
+  // ── Cupons de desconto (B3) ────────────────────────────────────────────────
+  cuponsMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/cupons`),
+  criarCupom: (
+    mercadoId: string | number,
+    dados: {
+      codigo: string; tipo: 'percentual' | 'valor'; valor: number;
+      min_pedido?: number; max_usos?: number | null; validade?: string | null;
+    }
+  ) =>
+    request(`/mercados/${mercadoId}/cupons`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+  atualizarCupom: (
+    mercadoId: string | number,
+    cupomId: string | number,
+    dados: Record<string, unknown>
+  ) =>
+    request(`/mercados/${mercadoId}/cupons/${cupomId}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    }),
+  deletarCupom: (mercadoId: string | number, cupomId: string | number) =>
+    request(`/mercados/${mercadoId}/cupons/${cupomId}`, { method: 'DELETE' }),
+  validarCupom: (mercadoId: string | number, codigo: string, subtotal: number) =>
+    request(`/mercados/${mercadoId}/cupons/validar`, {
+      method: 'POST',
+      body: JSON.stringify({ codigo, subtotal }),
+    }),
+
+  // ── Pedidos do mercado (visão do vendedor) ─────────────────────────────────
+  listarPedidosMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/pedidos`),
+  atualizarStatusPedido: (
+    pedidoId: string | number,
+    status: 'pendente' | 'preparo' | 'caminho' | 'entregue'
+  ) =>
+    request(`/pedidos/${pedidoId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+
+  // ── Avaliações do mercado ─────────────────────────────────────────────────
+  avaliacoesMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes`),
+  criarAvaliacao: (mercadoId: string | number, dados: { nota: number; texto?: string }) =>
+    request(`/mercados/${mercadoId}/avaliacoes`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+  // ── Moderação de avaliações (B6) — vendedor/admin oculta ou exibe ─────────
+  moderarAvaliacao: (mercadoId: string | number, avaliacaoId: string | number, oculta: boolean) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ oculta }),
+    }),
+  avaliacoesProdutosMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes-produtos`),
+  moderarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number,
+    oculta: boolean
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ oculta }),
+    }),
+
+  // ── Avaliações de produto ─────────────────────────────────────────────────
+  avaliacoesProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`),
+
+  criarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    dados: { nota: number; texto?: string; foto?: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
     }),
 
   // ── Carrinho ────────────────────────────────────────────────────────────────
@@ -173,6 +285,18 @@ export const api = {
   listarFavoritos:  () => request('/usuario/favoritos'),
   listarAvaliacoes: () => request('/usuario/avaliacoes'),
   listarHistorico:  () => request('/usuario/historico'),
+
+  // ── Assinaturas (planos) ─────────────────────────────────────────────────────
+  criarCheckout: (dados: {
+    codigo_plano: string;
+    ciclo: 'mensal' | 'anual';
+    mercado: Record<string, unknown>;
+  }) =>
+    request('/assinaturas/checkout', { method: 'POST', body: JSON.stringify(dados) }),
+  minhaAssinatura: () =>
+    request('/assinaturas/minha'),
+  cancelarAssinatura: (id: number) =>
+    request(`/assinaturas/${id}/cancelar`, { method: 'POST' }),
 
   // ── Admin ───────────────────────────────────────────────────────────────────
   adminDashboard:   ()         => request('/admin/dashboard'),

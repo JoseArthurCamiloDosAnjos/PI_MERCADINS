@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { IconUser, IconGear } from "./Icons";
+import { IconUser, IconGear, IconHeart, IconShoppingCart } from "./Icons";
+import { saveReturnUrl } from "../utils/returnUrl";
 import "./ProfileMenu.css";
 
 function getIniciais(nome: string) {
@@ -67,6 +68,7 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
   function irPara(rota: string) {
     setAberto(false);
     onNavigate?.();
+    saveReturnUrl();
     navigate(rota);
   }
 
@@ -107,6 +109,24 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
           >
             <IconUser size={16} />
             Meu perfil
+          </button>
+
+          <button
+            className="pm-item"
+            type="button"
+            onClick={() => irPara("/favoritos")}
+          >
+            <IconHeart size={16} />
+            Meus favoritos
+          </button>
+
+          <button
+            className="pm-item"
+            type="button"
+            onClick={() => irPara("/pedidos")}
+          >
+            <IconShoppingCart size={16} />
+            Meus pedidos
           </button>
 
           {isAdminLogin && (

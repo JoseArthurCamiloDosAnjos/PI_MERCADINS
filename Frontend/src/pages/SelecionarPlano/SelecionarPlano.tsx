@@ -40,7 +40,11 @@ export default function SelecionarPlano() {
           </svg>
           Voltar
         </button>
-        <div className="sp-logo">
+        <div
+          className="sp-logo"
+          onClick={() => navigate('/')}
+          title="Voltar ao início"
+        >
           <img src={logo} alt="Mercadins" />
           <span>Mercadins</span>
         </div>
@@ -116,7 +120,7 @@ export default function SelecionarPlano() {
         </div>
 
         <p className="sp-note">
-          <span>✅</span> Cobrança mensal ou anual — economize 20% no plano anual.
+          <span><CheckIcon /></span> Cobrança mensal ou anual — economize 20% no plano anual.
         </p>
       </main>
 

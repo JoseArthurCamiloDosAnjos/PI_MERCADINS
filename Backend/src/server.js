@@ -9,7 +9,11 @@ const produtoRoutes          = require('./routes/produtoRoutes.js')
 const categoriaRoutes        = require('./routes/categoriaRoutes.js')
 const usuarioRoutes          = require('./routes/usuarioRoutes.js')
 const carrinhoRoutes         = require('./routes/carrinhoRoutes.js')
+const pedidoRoutes           = require('./routes/pedidoRoutes.js')
+const buscaRoutes            = require('./routes/buscaRoutes.js')
 const adminRoutes            = require('./routes/adminRoutes.js')
+const assinaturaRoutes       = require('./routes/assinaturaRoutes.js')
+const { webhookAsaas }       = require('./controllers/assinaturaController.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -81,11 +85,19 @@ app.use('/api/mercados',          marketRoutes)
 app.use('/api/usuarios-mercados', usuariosMercadosRoutes)
 app.use('/api/usuario',           usuarioRoutes)
 app.use('/api/carrinho',          carrinhoRoutes)
+app.use('/api/pedidos',           pedidoRoutes)
+app.use('/api/busca',            buscaRoutes)
 
 app.use('/api/admin',              adminRoutes)
 
 app.use('/api/mercados/:mercadoId/categorias',                          categoriaRoutes)
 app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoRoutes)
+
+app.use('/api/assinaturas',        assinaturaRoutes)
+app.post('/api/webhooks/asaas',    webhookAsaas)
+
+// ── Sitemap dinâmico (SEO - C6): páginas institucionais + vitrines ativas ─────
+app.use('/',                   require('./routes/sitemapRoutes'))
 
 // ── 404 para rotas de API não encontradas ─────────────────────────────────────
 app.use('/api', (_req, res) => {

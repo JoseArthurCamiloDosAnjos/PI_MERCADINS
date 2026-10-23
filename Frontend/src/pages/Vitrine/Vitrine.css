@@ -48,7 +48,8 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: background 0.3s ease;
 }
 
@@ -96,17 +97,6 @@
   display: flex;
   align-items: center;
   gap: 18px;
-}
-
-/* "Voltar ao menu" — versão em pílula para não confundir com o voltar contextual */
-.vt-btn-voltar--menu {
-  border: 1px solid var(--vt-azul-borda);
-  border-radius: var(--vt-radius-full);
-  padding: 0.3rem 0.95rem;
-}
-.vt-btn-voltar--menu:hover {
-  border-color: var(--vt-amarelo);
-  color: var(--vt-amarelo);
 }
 
 .vt-topbar-direita {
@@ -215,7 +205,8 @@
 .vt-header {
   background: var(--vt-azul-escuro);
   border-bottom: 1px solid var(--vt-azul-borda);
-  padding: 0 2.5rem 1.4rem;
+  /* Espaço no topo: a identidade fica inteira dentro do header, sem invadir o banner */
+  padding: 1.5rem 2.5rem 1.4rem;
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -227,11 +218,11 @@
   overflow: visible;
 }
 
+/* Identidade (logo + nome + informações) inteira dentro do header, abaixo do banner */
 .vt-header-identity {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 1.2rem;
-  margin-top: -34px;
 }
 
 /* Logo */
@@ -289,39 +280,62 @@
 /* Nome e descrição */
 .vt-header-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-bottom: 4px; }
 .vt-header-nome-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* Limitador de nome: no máximo 2 linhas, o resto vira reticências */
 .vt-nome-mercado {
   font-size: 21px;
   font-weight: 800;
   color: var(--vt-cor-texto);
   margin: 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
+/* Editar sempre visível e legível (mesmo contraste em todas as lojas) */
 .vt-btn-editar {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: transparent;
-  border: 1px solid var(--vt-azul-item);
-  color: var(--vt-cinza);
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 4px 12px;
+  flex-shrink: 0;
+  background: rgba(245, 200, 74, 0.14);
+  border: 1px solid var(--vt-amarelo);
+  color: var(--vt-amarelo);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 14px;
   border-radius: var(--vt-radius-full);
   cursor: pointer;
   transition: all 0.2s;
 }
-.vt-btn-editar:hover { border-color: var(--vt-cor-icones); color: var(--vt-cor-icones); }
+.vt-btn-editar:hover { background: var(--vt-amarelo); color: var(--vt-azul-escuro); border-color: var(--vt-amarelo); }
+
+/* Localização da loja (endereço visível, igual o cliente vê) */
+.vt-local {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  max-width: 620px;
+  font-size: 14px;
+  color: #c9d8ef;
+}
+.vt-local svg { flex: 0 0 auto; color: var(--vt-amarelo); }
 
 .vt-desc-mercado {
-  font-size: 13px;
-  color: var(--vt-cinza);
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c9d8ef;
   margin: 0;
+  max-width: 620px;
 }
 .vt-btn-leia-mais {
   background: none;
   border: none;
-  color: var(--vt-cor-icones);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--vt-amarelo);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
@@ -380,6 +394,8 @@
 }
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
+/* O main rola naturalmente; quem faz a rolagem é o .vt-shell (rolagem única).
+   Com overflow interno aqui, o flex o esmagava e os cards ficavam cortados. */
 .vt-main {
   flex: 1;
   padding: 2rem 2.5rem;
@@ -389,8 +405,6 @@
   width: 100%;
   box-sizing: border-box;
   background: var(--vt-azul-bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Categoria ──────────────────────────────────────────────────────────── */
@@ -672,7 +686,7 @@
 
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 780px) {
-  .vt-header { padding: 0 1.4rem 1.2rem; }
+  .vt-header { padding: 1.1rem 1.4rem 1.2rem; }
   .vt-main   { padding: 1.4rem 1.4rem; gap: 2rem; }
   .vt-topbar { padding: 0.7rem 1.2rem; }
 }
@@ -681,7 +695,7 @@
   .vt-topbar { flex-wrap: wrap; gap: 8px; }
   .vt-topbar-direita { width: 100%; }
   .vt-topbar-mercado-nome { display: none; }
-  .vt-header-identity { margin-top: -28px; gap: 1rem; }
+  .vt-header-identity { gap: 1rem; }
   .vt-logo-img, .vt-logo-placeholder { width: 60px; height: 60px; }
   .vt-nome-mercado { font-size: 17px; }
   .vt-produto-card { width: calc(50% - 6px); }
@@ -690,12 +704,12 @@
   .vt-banner { height: 120px; }
   .vt-tags-row { gap: 6px; }
   .vt-tag { padding: 5px 12px; font-size: 11.5px; }
-  .vt-header { padding: 0 1rem 1rem; }
+  .vt-header { padding: 1rem; }
 }
 
 @media (max-width: 400px) {
   .vt-produto-card { width: 100%; }
-  .vt-header { padding: 0 0.8rem 0.8rem; }
+  .vt-header { padding: 0.9rem 0.8rem 0.8rem; }
   .vt-busca-wrap { padding: 8px 12px; }
 }
 

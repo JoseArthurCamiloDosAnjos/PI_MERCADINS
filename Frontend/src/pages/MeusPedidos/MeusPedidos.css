@@ -1,0 +1,393 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Página "Meus pedidos" — acompanhamento ao vivo (B4)
+   Visual claro do site cliente (mesma base da página de favoritos)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.meuspedidos-page {
+  min-height: 100vh;
+  background: #f2f4f8;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #0d1b2a;
+}
+
+/* Barra superior */
+.meuspedidos-topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ef;
+}
+
+.meuspedidos-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #dde3ef;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0d2a5e;
+  cursor: pointer;
+}
+
+.meuspedidos-voltar:hover { background: #f0f2f7; }
+
+.meuspedidos-titulo h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #0d2a5e;
+}
+
+.meuspedidos-titulo p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #8892a4;
+}
+
+.meuspedidos-conteudo {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ---------------- Lista de pedidos ---------------- */
+.mp-card {
+  background: #ffffff;
+  border: 1px solid #dde3ef;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
+.mp-card:hover {
+  box-shadow: 0 6px 20px rgba(13, 42, 94, 0.08);
+  transform: translateY(-1px);
+}
+
+.mp-card__linha1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-card__mercado {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0d2a5e;
+  margin: 0;
+}
+
+.mp-card__numero {
+  font-size: 12.5px;
+  color: #8892a4;
+  margin: 2px 0 0;
+}
+
+.mp-card__total {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a3a7a;
+  white-space: nowrap;
+}
+
+.mp-card__itens {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+.mp-card__rodape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: #8892a4;
+}
+
+/* Selo de status (mesmo conceito do painel do vendedor) */
+.mp-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mp-status--aguardando_pagamento { background: #fff4d6; color: #8a6100; }
+.mp-status--pendente             { background: #e8effc; color: #1a3a7a; }
+.mp-status--preparo              { background: #fdf3d7; color: #7a5c00; }
+.mp-status--caminho              { background: #dff5e7; color: #14663a; }
+.mp-status--entregue             { background: #d6f2e0; color: #14532d; }
+.mp-status--cancelado            { background: #fde8ea; color: #9b1c2c; }
+
+/* ---------------- Detalhe / acompanhamento ---------------- */
+.mp-detalhe-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #dde3ef;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0d2a5e;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.mp-painel {
+  background: #ffffff;
+  border: 1px solid #dde3ef;
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.mp-painel__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-painel__topo h2 {
+  margin: 0;
+  font-size: 17px;
+  color: #0d2a5e;
+}
+
+.mp-painel__sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #8892a4;
+}
+
+/* Linha do tempo do status */
+.mp-timeline {
+  display: flex;
+  align-items: flex-start;
+  margin: 28px 0 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.mp-timeline__passo {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  font-size: 12.5px;
+  color: #8892a4;
+}
+
+.mp-timeline__passo::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #dde3ef;
+  margin: 0 auto 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.mp-timeline__passo::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: -50%;
+  width: 100%;
+  height: 3px;
+  background: #dde3ef;
+  z-index: 0;
+}
+
+.mp-timeline__passo:first-child::after { display: none; }
+
+.mp-timeline__passo.is-feito { color: #14663a; font-weight: 700; }
+.mp-timeline__passo.is-feito::before { background: #22c55e; }
+.mp-timeline__passo.is-feito::after  { background: #22c55e; }
+
+.mp-timeline__passo.is-atual { color: #1a3a7a; font-weight: 700; }
+.mp-timeline__passo.is-atual::before {
+  background: #1a3a7a;
+  box-shadow: 0 0 0 4px rgba(26, 58, 122, 0.15);
+}
+
+/* Resumo em linhas */
+.mp-info {
+  margin-top: 22px;
+  border-top: 1px solid #eef1f7;
+  padding-top: 16px;
+  font-size: 13.5px;
+  color: #4a5568;
+}
+
+.mp-info__linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.mp-info__linha strong { color: #0d2a5e; }
+
+.mp-info__linha.is-total {
+  border-top: 1px solid #eef1f7;
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 15px;
+}
+
+/* ---------------- Bloco do Pix ---------------- */
+.mp-pix {
+  margin-top: 22px;
+  border: 1px solid #f0d48a;
+  background: #fffaf0;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.mp-pix h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: #8a6100;
+}
+
+.mp-pix p.mp-pix__aviso {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #8a6100;
+}
+
+.mp-pix__qr {
+  display: inline-block;
+  background: #ffffff;
+  border: 1px solid #e6d39a;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.mp-pix__qr img { display: block; width: 200px; height: 200px; }
+
+.mp-pix__codigo {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.mp-pix__codigo input {
+  flex: 1;
+  max-width: 420px;
+  border: 1px solid #e6d39a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #4a5568;
+  background: #ffffff;
+}
+
+.mp-pix__copiar {
+  border: 1px solid #8a6100;
+  background: #ffffff;
+  color: #8a6100;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mp-pix__copiar:hover { background: #fff4d6; }
+
+.mp-pix__vencimento {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: #8a6100;
+}
+
+.mp-pix__status {
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: #8a6100;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pontinho que pulsa enquanto espera o pagamento */
+.mp-pix__status::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f5b90c;
+  animation: mp-pulsa 1.4s ease-in-out infinite;
+}
+
+@keyframes mp-pulsa {
+  0%, 100% { opacity: .35; transform: scale(.85); }
+  50%      { opacity: 1;  transform: scale(1.1);  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-pix__status::before { animation: none; }
+  .mp-card:hover { transform: none; }
+}
+
+/* Estados vazios / carregando */
+.mp-vazio {
+  background: #ffffff;
+  border: 1px dashed #c9d4e8;
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #8892a4;
+}
+
+.mp-vazio h3 { margin: 0 0 6px; color: #0d2a5e; font-size: 16px; }
+.mp-vazio p  { margin: 0; font-size: 13.5px; }
+
+.mp-skeleton {
+  height: 92px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #e7ebf3 25%, #f2f4f8 50%, #e7ebf3 75%);
+  background-size: 200% 100%;
+  animation: mp-carregando 1.3s ease-in-out infinite;
+  margin-bottom: 14px;
+}
+
+@keyframes mp-carregando {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-skeleton { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .meuspedidos-topbar { padding: 14px 16px; }
+  .meuspedidos-titulo h1 { font-size: 16.5px; }
+  .mp-painel { padding: 18px 16px; }
+  .mp-pix__codigo { flex-direction: column; }
+  .mp-timeline__passo { font-size: 10.5px; }
+}

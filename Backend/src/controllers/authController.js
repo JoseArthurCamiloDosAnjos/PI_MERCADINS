@@ -71,7 +71,6 @@ const signUp = async (req, res) => {
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
     await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
-    console.log("Email enviado para:", email);
 
     res
       .status(201)
@@ -149,7 +148,6 @@ const reenviarCodigoVerificacao = async (req, res) => {
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
     await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
-    console.log("Email de verificação reenviado para:", email);
 
     res.json({ mensagem: "Novo código enviado! Verifique seu email." });
   } catch (err) {
@@ -357,7 +355,6 @@ const reenviarRecuperacao = async (req, res) => {
     `;
 
     await enviarEmailRecuperacao(email, codigo);
-    console.log("Email de recuperação reenviado para:", email);
 
     res.json({ mensagem: "Novo código enviado! Verifique seu email." });
   } catch (err) {

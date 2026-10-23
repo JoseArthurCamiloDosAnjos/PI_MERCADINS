@@ -318,6 +318,8 @@
   transition: background 0.2s;
 }
 .pd-stepper-btn:hover { background: var(--vt-amarelo); color: var(--vt-azul-escuro); }
+.pd-stepper-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pd-stepper-btn:disabled:hover { background: transparent; color: inherit; }
 .pd-stepper-valor { font-size: 13px; font-weight: 800; color: var(--vt-branco); min-width: 16px; text-align: center; }
 
 .pd-acoes { display: flex; gap: 12px; }
@@ -335,13 +337,21 @@
   color: var(--vt-branco);
 }
 .pd-btn-comprar:hover:not(:disabled) { background: var(--vt-azul-claro); transform: translateY(-1px); }
-.pd-btn-comprar:disabled { opacity: 0.7; cursor: wait; }
+.pd-btn-comprar:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .pd-btn-adicionar {
   background: var(--vt-amarelo);
   color: var(--vt-azul-escuro);
 }
-.pd-btn-adicionar:hover { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
+.pd-btn-adicionar:hover:not(:disabled) { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
+.pd-btn-adicionar:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Aviso quando a quantidade chegou ao máximo do estoque */
+.pd-estoque-max {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--vt-amarelo);
+}
 
 /* Caixa de informações (vendedor / serviços / pagamento) */
 .pd-caixa-info {
@@ -371,6 +381,201 @@
 }
 .pd-caixa-lista svg { flex-shrink: 0; color: var(--vt-amarelo); }
 
+/* ─── Avaliações do produto ──────────────────────────────────────────────── */
+.pd-avaliacoes {
+  grid-column: 1 / -1; /* largura inteira, abaixo da galeria + info */
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md);
+  padding: 22px 24px;
+  margin-top: 6px;
+}
+
+.pd-aval-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pd-aval-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--vt-branco);
+}
+.pd-aval-resumo { display: flex; align-items: center; gap: 9px; }
+.pd-aval-media {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--vt-amarelo);
+}
+.pd-aval-estrelas { display: flex; gap: 2px; color: var(--vt-amarelo); }
+.pd-aval-total { font-size: 12.5px; color: var(--vt-cinza); font-weight: 600; }
+
+/* Formulário de avaliação */
+.pd-aval-form,
+.pd-aval-login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md);
+  padding: 16px 18px;
+}
+.pd-aval-login { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.pd-aval-login p { margin: 0; font-size: 13.5px; color: var(--vt-branco-suave); font-weight: 600; }
+
+.pd-aval-form-titulo { margin: 0; font-size: 13px; font-weight: 800; color: var(--vt-branco-suave); }
+.pd-aval-form-linha { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pd-aval-picker { display: flex; align-items: center; gap: 4px; }
+.pd-aval-estrela-btn {
+  display: flex;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--vt-azul-item);
+  transition: transform 0.12s, color 0.12s;
+}
+.pd-aval-estrela-btn.ativa { color: var(--vt-amarelo); }
+.pd-aval-estrela-btn:hover { transform: scale(1.18); }
+.pd-aval-dica {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--vt-amarelo);
+}
+
+.pd-aval-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 64px;
+  background: var(--vt-azul-item);
+  border: 1.5px solid transparent;
+  border-radius: var(--vt-radius-md);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--vt-branco);
+}
+.pd-aval-textarea::placeholder { color: var(--vt-cinza); }
+.pd-aval-textarea:focus { outline: none; border-color: var(--vt-azul-medio); }
+
+.pd-aval-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  border: none;
+  border-radius: var(--vt-radius-full);
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pd-aval-btn:hover:not(:disabled) { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
+.pd-aval-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Lista de avaliações */
+.pd-aval-lista { display: flex; flex-direction: column; gap: 12px; }
+.pd-aval-vazio {
+  margin: 0;
+  padding: 14px 0;
+  font-size: 13px;
+  color: var(--vt-cinza);
+  text-align: center;
+}
+
+.pd-aval-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md);
+  padding: 14px 16px;
+}
+.pd-aval-item-topo { display: flex; align-items: center; gap: 10px; }
+.pd-aval-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--vt-azul-medio);
+  color: var(--vt-branco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+.pd-aval-quem { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pd-aval-quem strong { font-size: 13.5px; color: var(--vt-branco); display: flex; align-items: center; gap: 7px; }
+.pd-aval-badge {
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  border-radius: var(--vt-radius-full);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pd-aval-data { font-size: 11.5px; color: var(--vt-cinza); }
+.pd-aval-estrelas-item { display: flex; gap: 2px; color: var(--vt-amarelo); flex-shrink: 0; }
+.pd-aval-texto-item { margin: 0; font-size: 13px; color: var(--vt-branco-suave); line-height: 1.55; }
+
+/* Selo "compra verificada": quem avaliou comprou o produto (B8) */
+.pd-aval-verificada {
+  background: rgba(52, 211, 153, 0.18);
+  color: #34d399;
+  border-radius: var(--vt-radius-full);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Foto anexada à avaliação (B8) */
+.pd-aval-foto { display: inline-block; margin-top: 8px; line-height: 0; }
+.pd-aval-foto img {
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--vt-azul-borda);
+  transition: transform 0.15s ease;
+}
+.pd-aval-foto img:hover { transform: scale(1.03); }
+
+/* Campo opcional de link da foto no formulário (B8) */
+.pd-aval-foto-lbl { font-size: 12px; color: var(--vt-cinza); margin-top: 2px; }
+.pd-aval-foto-input {
+  width: 100%;
+  background: var(--vt-azul-bg);
+  border: 1px solid var(--vt-azul-borda);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--vt-branco);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  margin-bottom: 4px;
+}
+.pd-aval-foto-input:focus { border-color: var(--vt-amarelo); }
+
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .pd-main { grid-template-columns: 1fr; }
@@ -391,6 +596,8 @@
   .pd-carrocel-seta { width: 30px; height: 30px; font-size: 16px; }
   .pd-carrocel-seta--prev { left: 6px; }
   .pd-carrocel-seta--next { right: 6px; }
+  .pd-avaliacoes { padding: 16px; }
+  .pd-aval-head { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 
 /* ─── Modo claro (mesma convenção usada em Vitrine/VitrineCliente) ───────── */

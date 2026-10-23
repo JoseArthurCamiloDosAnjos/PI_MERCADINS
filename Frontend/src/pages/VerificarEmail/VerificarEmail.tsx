@@ -145,7 +145,7 @@ export default function VerificarEmail() {
         <div className="circle circle-2" />
         <div className="circle circle-3" />
         <div className="logo-wrap">
-          <img className="logo-img" src={logoImg} alt="Mercadins Logo"
+          <img className="logo-img" src={logoImg} alt="Logo do Mercadins"
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -161,7 +161,7 @@ export default function VerificarEmail() {
                   <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
               </div>
-              <h1>Email verificado!</h1>
+              <h1>E-mail verificado!</h1>
               <p>Você já pode fazer login. Redirecionando...</p>
               <div className="rs-sucesso-dots">
                 <span/><span/><span/>
@@ -170,7 +170,7 @@ export default function VerificarEmail() {
           ) : (
             <>
               <div className="form-header">
-                <h1>Verifique seu e-mail 📩</h1>
+                <h1>Verifique seu e-mail</h1>
                 <p>Enviamos um código de 6 dígitos para:</p>
               </div>
 

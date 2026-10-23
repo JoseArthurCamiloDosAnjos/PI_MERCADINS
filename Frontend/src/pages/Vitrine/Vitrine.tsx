@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './Vitrine.css';
 import CadastroProduto  from '../../components/CadastroProduto';
 import EditarMercado    from '../../components/EditarMercado';
@@ -20,7 +19,9 @@ import {
   IconCheck,
   IconX,
   IconArrowLeft,
+  IconMapPin,
 } from '../../components/Icons';
+import { localizacaoCompleta } from '../../utils/localizacao';
 
 // ─── Ícones locais (mesmos usados na VitrineCliente) ──────────────────────────
 
@@ -64,6 +65,13 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
+  /** Horário de funcionamento da semana (JSON do banco) */
+  horario?: unknown;
+  /** Endereço da loja (aparece na header da vitrine) */
+  rua?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
   categorias: Categoria[];
 }
 
@@ -137,6 +145,14 @@ function formatarPreco(valor?: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Corta o texto no limite indicado sem partir palavras no meio
+function cortarEmPalavra(texto: string, max: number) {
+  if (texto.length <= max) return texto;
+  const corte = texto.slice(0, max);
+  const ultimoEspaco = corte.lastIndexOf(' ');
+  return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte).trimEnd();
+}
+
 // ─── ProdutoCard ──────────────────────────────────────────────────────────────
 
 interface ProdutoCardProps {
@@ -195,7 +211,7 @@ function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
 
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
-    <button className="vt-produto-card vt-produto-add" onClick={onAdd}>
+    <button className="vt-produto-card vt-produto-add" onClick={onAdd} aria-label="Adicionar ao carrinho">
       <span className="vt-add-icon"><IconPlus size={20} /></span>
     </button>
   );
@@ -420,7 +436,6 @@ function TelaVazia({ onCriar }: { onCriar: () => void }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
-  const navigate = useNavigate();
   const [dados, setDados]                         = useState<VitrineMercado>(MERCADO_PLACEHOLDER);
   const [temAlteracoes, setTemAlteracoes]         = useState(false);
   const [salvandoVitrine, setSalvandoVitrine]     = useState(false);
@@ -476,6 +491,11 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           corTexto: mercadoData.mercado.cor_texto ?? undefined,
           corTextoSec: mercadoData.mercado.cor_texto_sec ?? undefined,
           corIcones: mercadoData.mercado.cor_icones ?? undefined,
+          horario: mercadoData.mercado.horario ?? null,
+          rua: mercadoData.mercado.rua ?? null,
+          bairro: mercadoData.mercado.bairro ?? null,
+          cidade: mercadoData.mercado.cidade ?? null,
+          estado: mercadoData.mercado.estado ?? null,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -487,7 +507,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     }
 
     carregarDados();
-  }, [mercadoId]);
+  }, [mercadoId, showToast]);
 
   
   useEffect(() => {
@@ -685,9 +705,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
               <IconArrowLeft size={15} /> Voltar ao Gerenciamento
             </button>
           )}
-          <button className="vt-btn-voltar vt-btn-voltar--menu" onClick={() => navigate('/')}>
-            Voltar ao menu
-          </button>
         </div>
 
         <div className="vt-topbar-direita">
@@ -732,16 +749,21 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
           <div className="vt-header-text">
             <div className="vt-header-nome-wrap">
-              <h1 className="vt-nome-mercado">{dados.nome}</h1>
-              <button className="vt-btn-editar" onClick={() => setModalEditar(true)}>
+              <h1 className="vt-nome-mercado" title={dados.nome}>{dados.nome}</h1>
+              <button className="vt-btn-editar" title="Editar dados da loja" onClick={() => setModalEditar(true)}>
                 <IconPencil size={12} /> Editar
               </button>
             </div>
             <p className="vt-desc-mercado">
-              {dados.descricao && dados.descricao.length > 100
-                ? <>{dados.descricao.slice(0, 100)}... <button className="vt-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
+              {dados.descricao && dados.descricao.length > 110
+                ? <>{cortarEmPalavra(dados.descricao, 110)}… <button className="vt-btn-leia-mais" onClick={() => setModalDescricao(true)}>Leia mais</button></>
                 : dados.descricao
               }
+            </p>
+
+            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
+            <p className="vt-local">
+              <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
           </div>
         </div>

@@ -469,6 +469,8 @@
 .gm-pedido-status--caminho  { background: var(--verde-medio); color: var(--verde-claro); }
 .gm-pedido-status--preparo  { background: var(--pendente-bg); color: var(--pendente-texto); }
 .gm-pedido-status--novo     { background: var(--novo-bg);     color: var(--novo-texto); }
+.gm-pedido-status--aguardando { background: rgba(96,165,250,0.15); color: #93c5fd; }
+.gm-pedido-status--cancelado  { background: rgba(248,113,113,0.15); color: #fca5a5; }
 
 .gm-pedido-acao {
   font-family: var(--font);
@@ -517,6 +519,35 @@
 .gm-rev-nome  { font-size: 11px; font-weight: 700; color: var(--branco-suave); margin: 0; }
 .gm-stars     { color: var(--amarelo); font-size: 12px; letter-spacing: 1.5px; }
 .gm-rev-text  { font-size: 10px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.5; }
+
+/* ─── Moderação de avaliações (B6) ──────────────────────────────────────── */
+/* Avaliação ocultada pelo vendedor: aparece esmaecida, só para ele */
+.gm-review-card--oculta { opacity: 0.55; border-style: dashed; }
+.gm-review-card--oculta:hover { transform: none; border-color: #fca5a5; }
+
+.gm-rev-oculta-badge {
+  margin-left: auto;
+  font-size: 9px; font-weight: 700;
+  padding: 3px 8px; border-radius: var(--radius-full);
+  background: rgba(248,113,113,0.15); color: #fca5a5;
+  white-space: nowrap;
+}
+
+.gm-rev-produto { font-size: 10px; font-weight: 700; color: var(--amarelo); margin: 4px 0 0; }
+
+.gm-rev-moderar {
+  margin-top: 10px; width: 100%;
+  font-family: var(--font); font-size: 10px; font-weight: 700;
+  color: var(--branco-suave);
+  background: transparent;
+  border: 1px dashed var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 6px 10px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.gm-rev-moderar:hover { border-color: var(--amarelo); color: var(--amarelo); }
+.gm-rev-moderar.is-exibir { border-style: solid; color: var(--verde-claro); border-color: var(--verde-medio); }
+.gm-rev-moderar.is-exibir:hover { border-color: var(--verde-claro); }
 
 /* ─── Informações ───────────────────────────────────────────────────────── */
 .gm-info-grid {

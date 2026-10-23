@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -64,9 +65,21 @@ const ETAPAS_PEDIDO = [
   { chave: 'entregue', label: 'Entregue' },
 ] as const;
 
+// Nomes amigáveis dos status (inclusive os novos: aguardando pagamento e cancelado)
+const NOMES_STATUS: Record<string, string> = {
+  aguardando_pagamento: 'Aguardando pagamento',
+  pendente: 'Recebido pela loja',
+  preparo: 'Em preparo',
+  caminho: 'A caminho',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
 function PilhaStatus({ status }: { status: string }) {
   const idxAtual = ETAPAS_PEDIDO.findIndex(e => e.chave === status);
-  const atual = idxAtual >= 0 ? idxAtual : 0;
+  // Fora do fluxo normal (aguardando pagamento/cancelado) não há etapas a marcar
+  if (idxAtual < 0) return null;
+  const atual = idxAtual;
   return (
     <ol className="pu-timeline" aria-label="Etapas do pedido">
       {ETAPAS_PEDIDO.map((etapa, i) => {
@@ -92,6 +105,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
   avaliacoes: Avaliacao[];
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
+  const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
 
   return (
@@ -152,8 +166,15 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
                   <p className="pu-hcard-nome">{p.mercado}</p>
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {p.status}</span>
+                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
                   <PilhaStatus status={p.status} />
+                  <button
+                    className="pu-hcard-acompanhar"
+                    type="button"
+                    onClick={() => navigate(`/pedidos/${p.id}`)}
+                  >
+                    Acompanhar pedido
+                  </button>
                   {p.observacao && (
                     <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
                   )}

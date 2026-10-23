@@ -346,6 +346,32 @@
   color: #f87171;
 }
 
+/* Pagamento online ainda não confirmado pelo Asaas */
+.pu-status.aguardando_pagamento {
+  background: rgba(37, 99, 235, 0.12);
+  color: #60a5fa;
+}
+
+/* Botão que leva para a tela de acompanhamento ao vivo do pedido (B4) */
+.pu-hcard-acompanhar {
+  margin-top: 8px;
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #dde3ef;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a3a7a;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pu-hcard-acompanhar:hover {
+  background: #f0f2f7;
+  border-color: #1a3a7a;
+}
+
 /* AVALIAÇÕES */
 .pu-rev-grid {
   display: grid;

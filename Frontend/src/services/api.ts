@@ -166,12 +166,19 @@ export const api = {
       tipo_entrega?: 'entrega' | 'retirada';
       cupom?: string;
       agendamento?: string;
+      forma_pagamento?: 'presencial' | 'pix' | 'cartao';
     }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
       method: 'POST',
       body:   JSON.stringify(dados),
     }),
+
+  // ── Pedidos do cliente (acompanhamento B4) ────────────────────────────────
+  meusPedidos: () =>
+    request('/pedidos/meus'),
+  detalharPedido: (pedidoId: string | number) =>
+    request(`/pedidos/${pedidoId}`),
 
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>
@@ -223,6 +230,25 @@ export const api = {
     request(`/mercados/${mercadoId}/avaliacoes`, {
       method: 'POST',
       body: JSON.stringify(dados),
+    }),
+  // ── Moderação de avaliações (B6) — vendedor/admin oculta ou exibe ─────────
+  moderarAvaliacao: (mercadoId: string | number, avaliacaoId: string | number, oculta: boolean) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ oculta }),
+    }),
+  avaliacoesProdutosMercado: (mercadoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes-produtos`),
+  moderarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number,
+    oculta: boolean
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ oculta }),
     }),
 
   // ── Avaliações de produto ─────────────────────────────────────────────────

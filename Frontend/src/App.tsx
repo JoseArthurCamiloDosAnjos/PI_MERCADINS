@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
 import LoadingOverlay from './components/LoadingOverlay'
 import ControleRotas from './components/ControleRotas'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
@@ -26,6 +27,7 @@ const Vitrine = lazy(() => import('./pages/Vitrine/Vitrine'))
 const VitrineCliente = lazy(() => import('./pages/VitrineCliente/VitrineCliente'))
 const ProdutoTelaContainer = lazy(() => import('./pages/ProdutoTela/ProdutoTelaContainer'))
 const CartScreen = lazy(() => import('./pages/Carrinho/Cart'))
+const MeusPedidos = lazy(() => import('./pages/MeusPedidos/MeusPedidos'))
 const Administrador = lazy(() => import('./pages/Adimin/adiministrador'))
 const MenuPrincipal = lazy(() => import('./pages/MenuPrincipal/MenuPrincipal'))
 
@@ -96,6 +98,27 @@ function ProdutoTelaWrapper() {
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a tela de carrinho ───────
 
+// A5 — Escolhas do carrinho (entrega, cupom, agendamento) ficam guardadas no
+// navegador por mercado: se o cliente fechar a página ou recarregar, tudo volta
+// como estava. O cupom é revalidado no servidor ao voltar (o desconto nunca
+// sai do navegador).
+const chaveEscolhas = (mercadoId: number) => `carrinho_escolhas_${mercadoId}`;
+
+function carregarEscolhas(mercadoId: number): { tipoEntrega?: 'entrega' | 'retirada'; cupom?: string; agendamento?: string } {
+  try {
+    const raw = localStorage.getItem(chaveEscolhas(mercadoId));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function salvarEscolhas(mercadoId: number, escolhas: { tipoEntrega?: 'entrega' | 'retirada'; cupom?: string; agendamento?: string }) {
+  try {
+    localStorage.setItem(chaveEscolhas(mercadoId), JSON.stringify(escolhas));
+  } catch { /* navegador sem espaço: as escolhas apenas não persistem */ }
+}
+
 function CartWrapper() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
@@ -107,16 +130,23 @@ function CartWrapper() {
   const [pedidoMinimo, setPedidoMinimo] = useState<number>(0)
   const [ofereceEntrega, setOfereceEntrega] = useState<boolean>(true)
   const [ofereceRetirada, setOfereceRetirada] = useState<boolean>(true)
-  // Estado do carrinho: como receber, cupom e agendamento (B2/B3/B10)
+  // Estado do carrinho: como receber, cupom, agendamento e pagamento (B2/B3/B10)
   const [tipoEntrega, setTipoEntrega] = useState<'entrega' | 'retirada'>('entrega')
   const [cupom, setCupom] = useState<{ codigo: string; desconto: number } | null>(null)
   const [verificandoCupom, setVerificandoCupom] = useState(false)
   const [agendamento, setAgendamento] = useState('')
+  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'pix' | 'cartao'>('presencial')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
+  // Subtotal atual para revalidar o cupom restaurado (A5)
+  const subtotalItens = carrinho.itens.reduce(
+    (s, i) => s + Number(i.produto.preco ?? 0) * i.quantidade, 0
+  )
+  // Referência do cupom já revalidado nesta visita (evita revalidar em loop)
+  const [cupomRestaurado, setCupomRestaurado] = useState<string | null>(null)
 
   useEffect(() => {
     if (!slug) {
@@ -133,14 +163,49 @@ function CartWrapper() {
         setPedidoMinimo(Number(m.pedido_minimo) || 0)
         setOfereceEntrega(m.oferece_entrega !== false)
         setOfereceRetirada(m.oferece_retirada !== false)
+
+        // A5 — devolve as escolhas guardadas na última visita a esta loja
+        const salvas = carregarEscolhas(m.id_mercado)
+        if (salvas.agendamento) setAgendamento(salvas.agendamento)
+        if (salvas.cupom) setCupomRestaurado(salvas.cupom)
         // Mercado só faz entrega? já nasce em "entrega"; só retira? em "retirada"
         if (m.oferece_entrega === false && m.oferece_retirada !== false) {
           setTipoEntrega('retirada')
+        } else if (salvas.tipoEntrega) {
+          // Respeita o que o cliente tinha escolhido (se ainda for permitido)
+          if (salvas.tipoEntrega === 'entrega' && m.oferece_entrega !== false) setTipoEntrega('entrega')
+          if (salvas.tipoEntrega === 'retirada' && m.oferece_retirada !== false) setTipoEntrega('retirada')
         }
       })
       .catch(() => navigate('/'))
       .finally(() => setCarregando(false))
   }, [slug, navigate])
+
+  // A5 — Revalida o cupom restaurado no servidor quando os itens carregam
+  useEffect(() => {
+    if (!mercadoId || !cupomRestaurado || cupom || subtotalItens <= 0) return
+    let vivo = true
+    api.validarCupom(mercadoId, cupomRestaurado, subtotalItens)
+      .then(resultado => {
+        if (vivo) setCupom({ codigo: resultado.codigo, desconto: Number(resultado.desconto) })
+      })
+      .catch(() => {
+        // Cupom não vale mais (expirou, mudou o mínimo...): descarta em silêncio
+        if (vivo && mercadoId) salvarEscolhas(mercadoId, { ...carregarEscolhas(mercadoId), cupom: undefined })
+      })
+      .finally(() => { if (vivo) setCupomRestaurado(null) })
+    return () => { vivo = false }
+  }, [mercadoId, cupomRestaurado, cupom, subtotalItens])
+
+  // A5 — Toda mudança de escolha é gravada no navegador
+  useEffect(() => {
+    if (!mercadoId) return
+    salvarEscolhas(mercadoId, {
+      tipoEntrega,
+      cupom: cupom?.codigo,
+      agendamento,
+    })
+  }, [mercadoId, tipoEntrega, cupom, agendamento])
 
   const itensConvertidos = carrinho.itens.map(item => ({
     id: String(item.produto.id_produto),
@@ -179,19 +244,40 @@ function CartWrapper() {
     }
     setFinalizando(true)
     try {
-      await api.criarPedido(mercadoId, {
+      const resposta = await api.criarPedido(mercadoId, {
         itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
         observacao: observacao.trim() || undefined,
         tipo_entrega: tipoEntrega,
         cupom: cupom?.codigo || undefined,
         agendamento: agendamento || undefined,
+        forma_pagamento: formaPagamento,
       })
-      showToast('sucesso', 'Pedido enviado com sucesso!')
+      const idPedido = resposta.pedido?.id
+
+      // Pagamento com cartão: manda direto para a página segura do Asaas
+      // (o número do cartão é digitado lá; depois de pagar, o Asaas devolve
+      // o cliente para a página de acompanhamento deste pedido)
+      if (formaPagamento === 'cartao' && resposta.pagamento?.urlPagamento) {
+        carrinho.limpar()
+        setObservacao('')
+        setCupom(null)
+        setAgendamento('')
+        if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega })
+        window.location.href = resposta.pagamento.urlPagamento
+        return
+      }
+
+      // Pix ou pagar na entrega: cai na página de acompanhamento do pedido.
+      // No Pix, o QR code fica lá e a página atualiza sozinha quando pagar.
       carrinho.limpar()
       setObservacao('')
       setCupom(null)
       setAgendamento('')
-      navigate(`/vitrine/${slug}`)
+      if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega })
+      showToast('sucesso', formaPagamento === 'pix'
+        ? 'Pedido criado! Pague com o Pix para a loja iniciar o preparo.'
+        : 'Pedido enviado com sucesso!')
+      navigate(idPedido ? `/pedidos/${idPedido}` : '/pedidos')
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.')
     } finally {
@@ -228,6 +314,8 @@ function CartWrapper() {
         onRemoverCupom={() => setCupom(null)}
         agendamento={agendamento}
         onAgendamentoChange={setAgendamento}
+        formaPagamento={formaPagamento}
+        onFormaPagamentoChange={setFormaPagamento}
       />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
@@ -304,6 +392,9 @@ function Rotas() {
         <Route path="/verificar-email"   element={<VerificarEmail />} />
         <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
         <Route path="/favoritos"         element={usuario ? <Favoritos /> : <Navigate to="/auth" />} />
+        {/* B4 — Acompanhamento de pedidos (cliente logado) */}
+        <Route path="/pedidos"           element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
+        <Route path="/pedidos/:pedidoId" element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
         <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
@@ -325,7 +416,10 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <ControleRotas />
-          <Rotas />
+          {/* A4 — Se algo quebrar por um bug, o cliente vê uma tela amigável */}
+          <ErrorBoundary>
+            <Rotas />
+          </ErrorBoundary>
           <CookieBanner />
         </ThemeProvider>
       </AuthProvider>

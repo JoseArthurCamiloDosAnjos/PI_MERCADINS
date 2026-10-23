@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { IconUser, IconGear, IconHeart } from "./Icons";
+import { IconUser, IconGear, IconHeart, IconShoppingCart } from "./Icons";
 import { saveReturnUrl } from "../utils/returnUrl";
 import "./ProfileMenu.css";
 
@@ -118,6 +118,15 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
           >
             <IconHeart size={16} />
             Meus favoritos
+          </button>
+
+          <button
+            className="pm-item"
+            type="button"
+            onClick={() => irPara("/pedidos")}
+          >
+            <IconShoppingCart size={16} />
+            Meus pedidos
           </button>
 
           {isAdminLogin && (

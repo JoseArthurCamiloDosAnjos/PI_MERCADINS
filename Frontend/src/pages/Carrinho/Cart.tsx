@@ -53,6 +53,10 @@ interface CartScreenProps {
   // ── Agendamento: quando o cliente quer receber/retirar ────────────────────
   agendamento?: string;
   onAgendamentoChange?: (valor: string) => void;
+
+  // ── Pagamento (B3): pagar na entrega, Pix ou cartão ──────────────────────
+  formaPagamento?: "presencial" | "pix" | "cartao";
+  onFormaPagamentoChange?: (forma: "presencial" | "pix" | "cartao") => void;
 }
 
 const formatBRL = (value: number) =>
@@ -131,6 +135,20 @@ const IconStore = () => (
   </svg>
 );
 
+const IconPix = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2.5 21.5 12 12 21.5 2.5 12 12 2.5Z" />
+    <path d="M8 8.5 12 12.5 16 8.5M8 15.5l4-4 4 4" />
+  </svg>
+);
+
+const IconCard = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2.5" />
+    <path d="M2 10h20" />
+  </svg>
+);
+
 const IconTag = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
@@ -172,6 +190,8 @@ export default function CartScreen({
   onRemoverCupom,
   agendamento = "",
   onAgendamentoChange,
+  formaPagamento = "presencial",
+  onFormaPagamentoChange,
 }: CartScreenProps) {
   // Os itens vêm do componente pai (useCarrinho) — fonte única de verdade,
   // sincronizada com o navegador (localStorage) e com o banco.
@@ -484,6 +504,55 @@ export default function CartScreen({
             </div>
           )}
 
+          {/* Como quer pagar: na entrega, Pix agora ou cartão online (B3) */}
+          {items.length > 0 && onFormaPagamentoChange && (
+            <fieldset className="cart-payment">
+              <legend className="cart-payment__legenda">Como quer pagar?</legend>
+              <label className={`cart-payment__opcao ${formaPagamento === "presencial" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="forma-pagamento"
+                  value="presencial"
+                  checked={formaPagamento === "presencial"}
+                  onChange={() => onFormaPagamentoChange("presencial")}
+                />
+                <IconStore />
+                <span className="cart-payment__texto">
+                  <strong>Pagar na entrega</strong>
+                  <small>Dinheiro ou cartão na entrega/retirada</small>
+                </span>
+              </label>
+              <label className={`cart-payment__opcao ${formaPagamento === "pix" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="forma-pagamento"
+                  value="pix"
+                  checked={formaPagamento === "pix"}
+                  onChange={() => onFormaPagamentoChange("pix")}
+                />
+                <IconPix />
+                <span className="cart-payment__texto">
+                  <strong>Pix agora</strong>
+                  <small>QR code na tela; confirma em segundos</small>
+                </span>
+              </label>
+              <label className={`cart-payment__opcao ${formaPagamento === "cartao" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="forma-pagamento"
+                  value="cartao"
+                  checked={formaPagamento === "cartao"}
+                  onChange={() => onFormaPagamentoChange("cartao")}
+                />
+                <IconCard />
+                <span className="cart-payment__texto">
+                  <strong>Cartão de crédito</strong>
+                  <small>Página segura do Asaas</small>
+                </span>
+              </label>
+            </fieldset>
+          )}
+
           <div className="cart-summary__total">
             <span>Total</span>
             <strong>{formatBRL(total)}</strong>
@@ -495,7 +564,15 @@ export default function CartScreen({
             disabled={items.length === 0 || finalizando || faltaMinimo}
             type="button"
           >
-            {finalizando ? 'Enviando…' : faltaMinimo ? 'Abaixo do pedido mínimo' : 'Finalizar pedido'}
+            {finalizando
+              ? 'Enviando…'
+              : faltaMinimo
+                ? 'Abaixo do pedido mínimo'
+                : formaPagamento === 'pix'
+                  ? 'Criar pedido e pagar com Pix'
+                  : formaPagamento === 'cartao'
+                    ? 'Ir para o pagamento do cartão'
+                    : 'Finalizar pedido'}
             {!finalizando && !faltaMinimo && <IconArrowRight />}
           </button>
 

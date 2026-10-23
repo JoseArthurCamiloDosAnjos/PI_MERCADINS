@@ -54,8 +54,8 @@ interface Pedido {
   preco: string;
   valorNum: number;   // valor numérico (para o financeiro)
   data: string;       // data ISO da compra
-  status: 'entregue' | 'caminho' | 'preparo' | 'novo';   // chave visual (badge)
-  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue'; // valor real do banco
+  status: 'entregue' | 'caminho' | 'preparo' | 'novo' | 'aguardando' | 'cancelado';   // chave visual (badge)
+  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado'; // valor real do banco
   label: string;
   observacao?: string;
   // Entrega, retirada, cupom e agendamento (B2/B3/B10)
@@ -64,13 +64,20 @@ interface Pedido {
   agendamento?: string;
   cupom?: string;
   desconto: number;
+  // Como o cliente vai pagar (B3): na entrega, Pix ou cartão
+  formaPagamento: 'presencial' | 'pix' | 'cartao';
 }
 
 interface Avaliacao {
+  id: number;
   iniciais: string;
   nome: string;
   n: number;
   texto: string;
+  oculta: boolean;      // B6 — ocultada pelo vendedor (some do site)
+  produto?: string;     // avaliações de produtos mostram o nome do item
+  produtoId?: number;
+  categoriaId?: number;
 }
 
 interface Stat {
@@ -156,18 +163,21 @@ function formatarBRL(valor: number) {
 }
 
 // ─── Status dos pedidos ───────────────────────────────────────────────────────
-// 'pendente' é o status inicial de todo pedido (chave visual: 'novo')
-const STATUS_PEDIDO: Record<
-  'pendente' | 'preparo' | 'caminho' | 'entregue',
-  { chave: Pedido['status']; label: string }
-> = {
+// 'pendente' é o status inicial de todo pedido pago/na entrega (chave: 'novo');
+// pagamentos online entram como 'aguardando_pagamento' e só viram 'pendente'
+// quando o Asaas confirma o Pix/cartão
+const STATUS_PEDIDO: Record<string, { chave: Pedido['status']; label: string }> = {
+  aguardando_pagamento: { chave: 'aguardando', label: 'Aguardando pagamento' },
   pendente: { chave: 'novo',     label: 'Novo' },
   preparo:  { chave: 'preparo',  label: 'Em preparo' },
   caminho:  { chave: 'caminho',  label: 'A caminho' },
   entregue: { chave: 'entregue', label: 'Entregue' },
+  cancelado: { chave: 'cancelado', label: 'Cancelado' },
 };
 
-const PROXIMO_STATUS: Partial<Record<'pendente' | 'preparo' | 'caminho' | 'entregue', 'pendente' | 'preparo' | 'caminho' | 'entregue'>> = {
+// Próximo passo de cada status de fluxo normal. Aguardando pagamento e
+// cancelado não têm próximo passo (o pagamento confirma ou o pedido cai fora).
+const PROXIMO_STATUS: Partial<Record<Pedido['statusAtual'], 'pendente' | 'preparo' | 'caminho' | 'entregue'>> = {
   pendente: 'preparo',
   preparo:  'caminho',
   caminho:  'entregue',
@@ -680,16 +690,19 @@ function SecPedidos({
                   >
                     {STATUS_PEDIDO[proximo].label} →
                   </button>
-                ) : (
+                ) : p.statusAtual === 'entregue' ? (
                   <span className="gm-pedido-check" title="Pedido concluído">✓</span>
+                ) : (
+                  // Aguardando pagamento ou cancelado: sem ação para o vendedor
+                  <span className="gm-pedido-check" title="Sem ação disponível">—</span>
                 )}
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
                     <IconInfo size={12} /> {p.observacao}
                   </span>
                 )}
-                {(p.tipoEntrega === 'retirada' || p.taxaEntrega > 0 || p.cupom || p.agendamento) && (
-                  <span className="gm-pedido-obs" title="Entrega, agendamento e cupom do pedido">
+                {(p.tipoEntrega === 'retirada' || p.taxaEntrega > 0 || p.cupom || p.agendamento || p.formaPagamento !== 'presencial') && (
+                  <span className="gm-pedido-obs" title="Entrega, agendamento, pagamento e cupom do pedido">
                     <IconTruck size={12} />{' '}
                     {p.tipoEntrega === 'retirada'
                       ? 'Retirada no balcão'
@@ -697,6 +710,7 @@ function SecPedidos({
                         ? `Entrega ${formatarBRL(p.taxaEntrega)}`
                         : 'Entrega grátis'}
                     {p.agendamento ? ` · ${p.agendamento}` : ''}
+                    {p.formaPagamento === 'pix' ? ' · Pago com Pix' : p.formaPagamento === 'cartao' ? ' · Pago com cartão' : ''}
                     {p.cupom ? ` · Cupom ${p.cupom} (− ${formatarBRL(p.desconto)})` : ''}
                   </span>
                 )}
@@ -709,18 +723,62 @@ function SecPedidos({
   );
 }
 
+// B6 — Iniciais do cliente para o avatar (reaproveitado nas duas listas)
+function iniciaisDe(nome: string) {
+  return nome
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(p => p[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+// Cartão de avaliação com o botão de moderação (B6): quem modera vê
+// "Ocultar do site"; as ocultas aparecem marcadas e com "Exibir no site"
+function CartaoAvaliacao({ a, onAlternar }: { a: Avaliacao; onAlternar?: () => void }) {
+  return (
+    <div className={`gm-review-card${a.oculta ? ' gm-review-card--oculta' : ''}`}>
+      <div className="gm-rev-header">
+        <div className="gm-rev-avatar">{a.iniciais}</div>
+        <p className="gm-rev-nome">{a.nome}</p>
+        {a.oculta && <span className="gm-rev-oculta-badge">Oculta do site</span>}
+      </div>
+      <Stars n={a.n} />
+      {a.produto && <p className="gm-rev-produto">{a.produto}</p>}
+      <p className="gm-rev-text">{a.texto}</p>
+      {onAlternar && (
+        <button
+          className={`gm-rev-moderar${a.oculta ? ' is-exibir' : ''}`}
+          onClick={onAlternar}
+          type="button"
+        >
+          {a.oculta ? 'Exibir no site' : 'Ocultar do site'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function SecAvaliacoes({
   avaliacoes,
+  avaliacoesProdutos,
   loading,
   expandidas,
   onAlternar,
   total,
+  moderando,
+  onModerar,
+  onModerarProduto,
 }: {
   avaliacoes: Avaliacao[];
+  avaliacoesProdutos: Avaliacao[];
   loading: boolean;
   expandidas: boolean;
   onAlternar: () => void;
   total: number;
+  moderando: boolean;
+  onModerar: (a: Avaliacao) => void;
+  onModerarProduto: (a: Avaliacao) => void;
 }) {
   return (
     <div className="gm-section-wrap">
@@ -739,17 +797,32 @@ function SecAvaliacoes({
         <EmptyState msg="Nenhuma avaliação ainda" />
       ) : (
         <div className="gm-reviews-grid">
-          {avaliacoes.map((a, i) => (
-            <div key={i} className="gm-review-card" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
-              <div className="gm-rev-header">
-                <div className="gm-rev-avatar">{a.iniciais}</div>
-                <p className="gm-rev-nome">{a.nome}</p>
-              </div>
-              <Stars n={a.n} />
-              <p className="gm-rev-text">{a.texto}</p>
-            </div>
+          {avaliacoes.map((a) => (
+            <CartaoAvaliacao
+              key={a.id}
+              a={a}
+              onAlternar={moderando ? () => onModerar(a) : undefined}
+            />
           ))}
         </div>
+      )}
+
+      {/* B6 — Moderação das avaliações de PRODUTOS da loja (só o dono vê) */}
+      {moderando && avaliacoesProdutos.length > 0 && (
+        <>
+          <div className="gm-sec-row" style={{ marginTop: 22 }}>
+            <h2 className="gm-sec-title"><IconStar size={15} /> Avaliações de produtos</h2>
+          </div>
+          <div className="gm-reviews-grid">
+            {avaliacoesProdutos.map((a) => (
+              <CartaoAvaliacao
+                key={`p${a.id}`}
+                a={a}
+                onAlternar={() => onModerarProduto(a)}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -1555,6 +1628,8 @@ export default function GerenciamentoMercado({
   const [pedidosLoading, setPedidosLoading] = useState(true);
   const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [avaliacoesProdutos, setAvaliacoesProdutos] = useState<Avaliacao[]>([]);
+  const [avaliacoesModerando, setAvaliacoesModerando] = useState(false);
   const [avaliacoesLoading, setAvaliacoesLoading] = useState(true);
   const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(false);
 
@@ -1610,10 +1685,11 @@ export default function GerenciamentoMercado({
         setPedidos(
           (data.pedidos ?? []).map((p: {
             id: number; cliente: string; itens: string; valorTotal: number;
-            dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue';
+            dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
             observacao?: string;
             tipoEntrega?: 'entrega' | 'retirada'; taxaEntrega?: number;
             agendamento?: string; cupom?: string; desconto?: number;
+            formaPagamento?: 'presencial' | 'pix' | 'cartao';
           }): Pedido => {
             const info = STATUS_PEDIDO[p.status] ?? STATUS_PEDIDO.pendente;
             return {
@@ -1633,6 +1709,7 @@ export default function GerenciamentoMercado({
               agendamento: (p.agendamento ?? '').trim(),
               cupom: (p.cupom ?? '').trim(),
               desconto: Number(p.desconto) || 0,
+              formaPagamento: p.formaPagamento ?? 'presencial',
             };
           })
         );
@@ -1643,24 +1720,44 @@ export default function GerenciamentoMercado({
       }
     })();
 
-    // Avaliações reais recebidas pelo mercado
+    // Avaliações reais recebidas pelo mercado (com moderação B6)
     (async () => {
       setAvaliacoesLoading(true);
       try {
         const data = await api.avaliacoesMercado(mercadoId);
+        setAvaliacoesModerando(!!data.moderando);
         setAvaliacoes(
-          (data.avaliacoes ?? []).map((a: { nota: number; texto: string; cliente: string }): Avaliacao => ({
-            iniciais: a.cliente
-              .split(/\s+/)
-              .filter(Boolean)
-              .slice(0, 2)
-              .map(p => p[0]?.toUpperCase() ?? '')
-              .join(''),
+          (data.avaliacoes ?? []).map((a: {
+            id: number; nota: number; texto: string; cliente: string; oculta?: boolean;
+          }): Avaliacao => ({
+            id: a.id,
+            iniciais: iniciaisDe(a.cliente),
             nome: a.cliente,
             n: a.nota,
             texto: a.texto || 'Sem comentário.',
+            oculta: !!a.oculta,
           }))
         );
+        // B6 — Avaliações de produtos (só chegam para quem modera)
+        if (data.moderando) {
+          const produtos = await api.avaliacoesProdutosMercado(mercadoId);
+          setAvaliacoesProdutos(
+            (produtos.avaliacoes ?? []).map((a: {
+              id: number; nota: number; texto: string; cliente: string;
+              oculta?: boolean; produto?: string; produtoId?: number; categoriaId?: number;
+            }): Avaliacao => ({
+              id: a.id,
+              iniciais: iniciaisDe(a.cliente),
+              nome: a.cliente,
+              n: a.nota,
+              texto: a.texto || 'Sem comentário.',
+              oculta: !!a.oculta,
+              produto: a.produto || '',
+              produtoId: a.produtoId,
+              categoriaId: a.categoriaId,
+            }))
+          );
+        }
       } catch (err) {
         console.error('Erro ao carregar avaliações:', err);
       } finally {
@@ -1729,6 +1826,29 @@ export default function GerenciamentoMercado({
     }
   }
 
+  // B6 — Vendedor oculta ou exibe uma avaliação da loja no site
+  async function handleModerarAvaliacao(a: Avaliacao) {
+    try {
+      const resultado = await api.moderarAvaliacao(mercadoId, a.id, !a.oculta);
+      setAvaliacoes(prev => prev.map(x => (x.id === a.id ? { ...x, oculta: resultado.oculta } : x)));
+      showToast('sucesso', resultado.mensagem);
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível moderar a avaliação.');
+    }
+  }
+
+  // B6 — Vendedor oculta ou exibe uma avaliação de produto no site
+  async function handleModerarAvaliacaoProduto(a: Avaliacao) {
+    if (!a.produtoId || !a.categoriaId) return;
+    try {
+      const resultado = await api.moderarAvaliacaoProduto(mercadoId, a.categoriaId, a.produtoId, a.id, !a.oculta);
+      setAvaliacoesProdutos(prev => prev.map(x => (x.id === a.id ? { ...x, oculta: resultado.oculta } : x)));
+      showToast('sucesso', resultado.mensagem);
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível moderar a avaliação.');
+    }
+  }
+
   // Receita real por mês (últimos 6 meses), calculada dos pedidos recebidos
   const financeiro = useMemo<FinanceiroMes[]>(() => {
     const agora = new Date();
@@ -1737,6 +1857,8 @@ export default function GerenciamentoMercado({
       const ref = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
       const total = pedidos
         .filter(p => {
+          // Cancelados e ainda não pagos não entram no faturamento
+          if (p.statusAtual === 'cancelado' || p.statusAtual === 'aguardando_pagamento') return false;
           const d = new Date(p.data);
           return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
         })
@@ -1839,10 +1961,14 @@ export default function GerenciamentoMercado({
     />,
     <SecAvaliacoes
       avaliacoes={avaliacoesExpandidas ? avaliacoes : avaliacoes.slice(0, 4)}
+      avaliacoesProdutos={avaliacoesProdutos}
       loading={avaliacoesLoading}
       expandidas={avaliacoesExpandidas}
       onAlternar={() => setAvaliacoesExpandidas(v => !v)}
       total={avaliacoes.length}
+      moderando={avaliacoesModerando}
+      onModerar={handleModerarAvaliacao}
+      onModerarProduto={handleModerarAvaliacaoProduto}
     />,
     <SecCupons mercadoId={mercadoId} />,
     <SecFinanceiro

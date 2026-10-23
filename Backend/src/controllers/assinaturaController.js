@@ -143,12 +143,20 @@ const criarCheckout = async (req, res) => {
     });
     const customerId = customer.id;
 
+    // Após pagar, o Asaas devolve o usuário para /registrar-mercado
+    // (a tela detecta o pagamento via ?pagamento=1 e leva para o gerenciador)
+    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const redirectUrl = frontendUrl
+      ? `${frontendUrl}/registrar-mercado?pagamento=1`
+      : undefined;
+
     // Assinatura no Asaas
     const assinaturaAsaas = await asaas.criarAssinatura({
       customerId,
       valor: plano.valor,
       ciclo: cicloDb,
       descricao: `Plano ${plano.nome} Mercadins — ${cicloDb === 'ANUAL' ? 'anual' : 'mensal'}`,
+      redirectUrl,
     });
 
     // Link de checkout da primeira cobrança

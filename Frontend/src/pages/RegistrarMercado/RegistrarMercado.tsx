@@ -60,9 +60,14 @@ export default function RegistrarMercado() {
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [categorias, setCategorias] = useState<string[]>([]);
-  const [aguardandoPagamento, setAguardandoPagamento] = useState(
-    () => localStorage.getItem('aguardandoPagamento') === '1'
-  );
+  // Flag persistida no localStorage OU vinda do redirect do Asaas (?pagamento=1)
+  const [aguardandoPagamento, setAguardandoPagamento] = useState(() => {
+    if (new URLSearchParams(window.location.search).get('pagamento') === '1') {
+      localStorage.setItem('aguardandoPagamento', '1');
+      return true;
+    }
+    return localStorage.getItem('aguardandoPagamento') === '1';
+  });
   const [urlPagamento, setUrlPagamento] = useState<string | null>(null);
   const [statusAtual, setStatusAtual] = useState<'pendente' | 'ativa' | 'erro' | null>(null);
 
@@ -263,9 +268,11 @@ export default function RegistrarMercado() {
     }
   }
 
-  // Ao abrir com a flag de pagamento pendente, verifica o status da assinatura
+  // Ao abrir com a flag de pagamento pendente (ou voltando do Asaas com
+  // ?pagamento=1), verifica o status da assinatura
   useEffect(() => {
     if (!aguardandoPagamento) return;
+
     let cancelado = false;
 
     async function verificar() {
@@ -278,7 +285,11 @@ export default function RegistrarMercado() {
           setStatusAtual('ativa');
           showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
           await refreshMercados();
-          setTimeout(() => navigate('/vendedor'), 1500);
+          // Vai direto para o gerenciador do mercado criado
+          const idMercado = r.assinatura.id_mercado ?? r.mercado?.id_mercado;
+          setTimeout(() => {
+            navigate(idMercado ? `/vendedor/mercado/${idMercado}` : '/vendedor');
+          }, 1200);
         } else if (r?.assinatura?.status === 'pendente') {
           setStatusAtual('pendente');
           setUrlPagamento(r.urlPagamento || null);
@@ -336,7 +347,8 @@ export default function RegistrarMercado() {
                         localStorage.removeItem('aguardandoPagamento');
                         showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
                         await refreshMercados();
-                        setTimeout(() => navigate('/vendedor'), 1200);
+                        const idM = r.assinatura.id_mercado ?? r.mercado?.id_mercado;
+                        setTimeout(() => navigate(idM ? `/vendedor/mercado/${idM}` : '/vendedor'), 1200);
                       } else {
                         showToast('info', 'Pagamento ainda não confirmado. Tente novamente em instantes.');
                       }

@@ -66,7 +66,7 @@ async function criarCustomer({ nome, email, cpfCnpj, mobilePhone }) {
 }
 
 // POST /v3/subscriptions — billingType UNDEFINED deixa o cliente escolher PIX/boleto/cartão no checkout
-async function criarAssinatura({ customerId, valor, ciclo, descricao }) {
+async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUrl }) {
   // Vencimento em 3 dias (margem segura para boleto)
   const vencimento = new Date()
   vencimento.setDate(vencimento.getDate() + 3)
@@ -81,6 +81,7 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao }) {
       cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
       nextDueDate,
       description: descricao || 'Assinatura Mercadins',
+      ...(redirectUrl && { redirectUrl }),
     },
   })
 }

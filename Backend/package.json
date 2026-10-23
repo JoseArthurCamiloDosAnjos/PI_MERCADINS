@@ -4,6 +4,7 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
+    "auditar-sql": "node scripts/auditar-sql.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
     "dev:neon": "nodemon src/server.js --db=neon",
@@ -32,3 +33,4 @@
     "nodemon": "^3.1.14"
   }
 }
+

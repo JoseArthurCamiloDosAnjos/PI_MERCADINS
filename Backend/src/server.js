@@ -96,6 +96,9 @@ app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoR
 app.use('/api/assinaturas',        assinaturaRoutes)
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
+// ── Sitemap dinâmico (SEO - C6): páginas institucionais + vitrines ativas ─────
+app.use('/',                   require('./routes/sitemapRoutes'))
+
 // ── 404 para rotas de API não encontradas ─────────────────────────────────────
 app.use('/api', (_req, res) => {
   res.status(404).json({ erro: 'Rota da API não encontrada' })

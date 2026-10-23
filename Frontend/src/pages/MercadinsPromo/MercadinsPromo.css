@@ -12,12 +12,7 @@
      --text-dark:   #0D2251
 ============================================================ */
 
-/* RESET & BASE */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html {
-  scroll-behavior: smooth;
-}
+/* Reset e rolagem suave definidos uma única vez no index.css */
 
 [id] {
   scroll-margin-top: 80px;

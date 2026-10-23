@@ -17,12 +17,16 @@ export interface CartItem {
   estoque?: number;
 }
 
+/** Cupom aplicado no carrinho (o desconto vem do backend) */
+export interface CupomAplicado {
+  codigo: string;
+  desconto: number;
+}
+
 interface CartScreenProps {
   storeName?: string;
   storeLocation?: string;
   initialItems?: CartItem[];
-  freeShippingThreshold?: number;
-  shippingFee?: number;
   onBack?: () => void;
   onCheckout?: (items: CartItem[], total: number) => void;
   finalizando?: boolean;
@@ -31,43 +35,39 @@ interface CartScreenProps {
   onUpdateQuantity?: (id: string, delta: number) => void;
   onRemoveItem?: (id: string) => void;
   onClearCart?: () => void;
-}
 
-// ---------------------------------------------------------------
-// Dados de exemplo (mesmos produtos da vitrine "Mercadins")
-// ---------------------------------------------------------------
-const DEFAULT_ITEMS: CartItem[] = [
-  {
-    id: "1",
-    name: "Galacia",
-    category: "Bebida",
-    unitPrice: 21.0,
-    quantity: 2,
-    imageUrl:
-      "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=200&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Esqueleto do grau",
-    category: "Bebida",
-    unitPrice: 30.2,
-    quantity: 1,
-    imageUrl:
-      "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=200&h=200&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Bebida do ney",
-    category: "Comida",
-    unitPrice: 231.24,
-    quantity: 1,
-    imageUrl:
-      "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop",
-  },
-];
+  // ── Entrega e retirada (vêm do cadastro do mercado) ───────────────────────
+  taxaEntrega?: number;
+  pedidoMinimo?: number;
+  ofereceEntrega?: boolean;
+  ofereceRetirada?: boolean;
+  tipoEntrega?: "entrega" | "retirada";
+  onTipoEntregaChange?: (tipo: "entrega" | "retirada") => void;
+
+  // ── Cupom de desconto ─────────────────────────────────────────────────────
+  cupom?: CupomAplicado | null;
+  verificandoCupom?: boolean;
+  onAplicarCupom?: (codigo: string) => void;
+  onRemoverCupom?: () => void;
+
+  // ── Agendamento: quando o cliente quer receber/retirar ────────────────────
+  agendamento?: string;
+  onAgendamentoChange?: (valor: string) => void;
+}
 
 const formatBRL = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+// Opções de agendamento (escolha simples, sem calendário)
+const OPCOES_AGENDAMENTO = [
+  "Quanto antes",
+  "Hoje de manhã",
+  "Hoje à tarde",
+  "Hoje à noite",
+  "Amanhã de manhã",
+  "Amanhã à tarde",
+  "Amanhã à noite",
+];
 
 // ---------------------------------------------------------------
 // Ícones (SVG inline, sem dependências externas)
@@ -117,15 +117,41 @@ const IconArrowRight = () => (
   </svg>
 );
 
+const IconTruck = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z" />
+    <circle cx="5.5" cy="18.5" r="2.5" />
+    <circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+);
+
+const IconStore = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l1.5-5h15L21 9M3 9h18v11H3zM3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+  </svg>
+);
+
+const IconTag = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+    <circle cx="7" cy="7" r="1.2" />
+  </svg>
+);
+
+const IconCalendar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+  </svg>
+);
+
 // ---------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------
 export default function CartScreen({
   storeName = "Mercadins",
   storeLocation = "Guariba · SP",
-  initialItems = DEFAULT_ITEMS,
-  freeShippingThreshold = 100,
-  shippingFee = 8.9,
+  initialItems = [],
   onBack,
   onCheckout,
   finalizando = false,
@@ -134,6 +160,18 @@ export default function CartScreen({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  taxaEntrega = 0,
+  pedidoMinimo = 0,
+  ofereceEntrega = true,
+  ofereceRetirada = true,
+  tipoEntrega = "entrega",
+  onTipoEntregaChange,
+  cupom = null,
+  verificandoCupom = false,
+  onAplicarCupom,
+  onRemoverCupom,
+  agendamento = "",
+  onAgendamentoChange,
 }: CartScreenProps) {
   // Os itens vêm do componente pai (useCarrinho) — fonte única de verdade,
   // sincronizada com o navegador (localStorage) e com o banco.
@@ -145,9 +183,28 @@ export default function CartScreen({
     () => items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
     [items]
   );
-  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : shippingFee;
-  const total = subtotal + shipping;
-  const missingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+
+  // Apenas uma forma disponível = escolhida sozinha, sem seletor
+  const soEntrega = ofereceEntrega && !ofereceRetirada;
+  const soRetirada = !ofereceEntrega && ofereceRetirada;
+  const tipoEfetivo: "entrega" | "retirada" = soRetirada
+    ? "retirada"
+    : soEntrega
+      ? "entrega"
+      : tipoEntrega;
+
+  // Taxa: cobrada só na entrega; no balcão é grátis
+  const taxa = tipoEfetivo === "retirada" || subtotal === 0 ? 0 : taxaEntrega;
+  // Desconto do cupom (nunca passa do subtotal)
+  const desconto = Math.min(cupom?.desconto ?? 0, subtotal);
+  const total = Math.max(0, subtotal - desconto) + taxa;
+
+  // Pedido mínimo: só para entrega, e só quando tem item no carrinho
+  const faltaMinimo =
+    tipoEfetivo === "entrega" &&
+    pedidoMinimo > 0 &&
+    subtotal > 0 &&
+    subtotal < pedidoMinimo;
 
   const updateQuantity = (id: string, delta: number) => {
     // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
@@ -165,7 +222,14 @@ export default function CartScreen({
   const clearCart = () => onClearCart?.();
 
   const handleCheckout = () => {
+    if (faltaMinimo) return;
     onCheckout?.(items, total);
+  };
+
+  const aplicarCupom = () => {
+    const codigo = coupon.trim();
+    if (!codigo || verificandoCupom) return;
+    onAplicarCupom?.(codigo);
   };
 
   return (
@@ -287,32 +351,119 @@ export default function CartScreen({
             Resumo do pedido
           </h2>
 
+          {/* Como quer receber: entrega ou retirada no balcão */}
+          {items.length > 0 && ofereceEntrega && ofereceRetirada && (
+            <fieldset className="cart-delivery">
+              <legend className="cart-delivery__legenda">Como quer receber?</legend>
+              <label className={`cart-delivery__opcao ${tipoEfetivo === "entrega" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="tipo-entrega"
+                  value="entrega"
+                  checked={tipoEfetivo === "entrega"}
+                  onChange={() => onTipoEntregaChange?.("entrega")}
+                />
+                <IconTruck />
+                <span className="cart-delivery__texto">
+                  <strong>Entrega</strong>
+                  <small>{taxaEntrega > 0 ? formatBRL(taxaEntrega) : "Grátis"}</small>
+                </span>
+              </label>
+              <label className={`cart-delivery__opcao ${tipoEfetivo === "retirada" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="tipo-entrega"
+                  value="retirada"
+                  checked={tipoEfetivo === "retirada"}
+                  onChange={() => onTipoEntregaChange?.("retirada")}
+                />
+                <IconStore />
+                <span className="cart-delivery__texto">
+                  <strong>Retirar no balcão</strong>
+                  <small>Grátis</small>
+                </span>
+              </label>
+            </fieldset>
+          )}
+
           <div className="cart-summary__rows">
             <div className="cart-summary__row">
               <span>Subtotal</span>
               <span>{formatBRL(subtotal)}</span>
             </div>
-            <div className={`cart-summary__row ${shipping === 0 ? "is-free" : ""}`}>
-              <span>Entrega</span>
-              <span>{shipping === 0 ? "Grátis" : formatBRL(shipping)}</span>
+            {desconto > 0 && cupom && (
+              <div className="cart-summary__row is-desconto">
+                <span>Cupom {cupom.codigo}</span>
+                <span>− {formatBRL(desconto)}</span>
+              </div>
+            )}
+            <div className={`cart-summary__row ${taxa === 0 ? "is-free" : ""}`}>
+              <span>{tipoEfetivo === "retirada" ? "Retirada no balcão" : "Entrega"}</span>
+              <span>{taxa === 0 ? "Grátis" : formatBRL(taxa)}</span>
             </div>
-            {shipping > 0 && missingForFreeShipping > 0 && (
-              <div className="cart-summary__row">
-                <span>Faltam {formatBRL(missingForFreeShipping)} para frete grátis</span>
+            {faltaMinimo && (
+              <div className="cart-summary__row is-aviso">
+                <span>
+                  Faltam {formatBRL(pedidoMinimo - subtotal)} para o pedido mínimo de{" "}
+                  {formatBRL(pedidoMinimo)}
+                </span>
                 <span> </span>
               </div>
             )}
           </div>
 
-          <div className="cart-coupon">
-            <input
-              type="text"
-              placeholder="Cupom de desconto"
-              value={coupon}
-              onChange={(e) => setCoupon(removeEmojis(e.target.value))}
-            />
-            <button type="button">Aplicar</button>
-          </div>
+          {/* Cupom de desconto */}
+          {!cupom ? (
+            <div className="cart-coupon">
+              <label htmlFor="cart-coupon" className="sr-only">Cupom de desconto</label>
+              <input
+                id="cart-coupon"
+                type="text"
+                placeholder="Cupom de desconto"
+                value={coupon}
+                onChange={(e) => setCoupon(removeEmojis(e.target.value))}
+                onKeyDown={(e) => { if (e.key === "Enter") aplicarCupom(); }}
+              />
+              <button
+                type="button"
+                onClick={aplicarCupom}
+                disabled={!coupon.trim() || verificandoCupom}
+              >
+                {verificandoCupom ? "Verificando…" : "Aplicar"}
+              </button>
+            </div>
+          ) : (
+            <div className="cart-coupon cart-coupon--aplicado">
+              <span className="cart-coupon__codigo">
+                <IconTag />
+                Cupom <strong>{cupom.codigo}</strong> aplicado — {formatBRL(desconto)} de desconto
+              </span>
+              <button type="button" onClick={onRemoverCupom} aria-label="Remover cupom">
+                Remover
+              </button>
+            </div>
+          )}
+
+          {/* Quando quer receber (entrega ou retirada) */}
+          {items.length > 0 && onAgendamentoChange && (
+            <div className="cart-agendamento">
+              <label className="cart-agendamento__label" htmlFor="cart-agendamento">
+                <IconCalendar />
+                {tipoEfetivo === "retirada" ? "Quando pretende retirar?" : "Quando quer receber?"}
+              </label>
+              <select
+                id="cart-agendamento"
+                className="cart-agendamento__select"
+                value={agendamento}
+                onChange={(e) => onAgendamentoChange(e.target.value)}
+              >
+                <option value="">Sem preferência</option>
+                {OPCOES_AGENDAMENTO.map((op) => (
+                  <option key={op} value={op}>{op}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Observação opcional que vai junto do pedido (ex.: "sem cebola") */}
           {onObservacaoChange && (
@@ -341,11 +492,11 @@ export default function CartScreen({
           <button
             className="cart-checkout-btn"
             onClick={handleCheckout}
-            disabled={items.length === 0 || finalizando}
+            disabled={items.length === 0 || finalizando || faltaMinimo}
             type="button"
           >
-            {finalizando ? 'Enviando…' : 'Finalizar pedido'}
-            {!finalizando && <IconArrowRight />}
+            {finalizando ? 'Enviando…' : faltaMinimo ? 'Abaixo do pedido mínimo' : 'Finalizar pedido'}
+            {!finalizando && !faltaMinimo && <IconArrowRight />}
           </button>
 
           <div className="cart-summary__secure">

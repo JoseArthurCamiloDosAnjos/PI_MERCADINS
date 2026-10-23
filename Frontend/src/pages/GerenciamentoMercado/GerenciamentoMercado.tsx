@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -21,6 +22,8 @@ import {
   IconPhone,
   IconMail,
   IconStore,
+  IconTag,
+  IconTruck,
 } from '../../components/Icons';
 
 // Alturas fixas para o skeleton do gráfico (evita Math.random no render)
@@ -55,6 +58,12 @@ interface Pedido {
   statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue'; // valor real do banco
   label: string;
   observacao?: string;
+  // Entrega, retirada, cupom e agendamento (B2/B3/B10)
+  tipoEntrega: 'entrega' | 'retirada';
+  taxaEntrega: number;
+  agendamento?: string;
+  cupom?: string;
+  desconto: number;
 }
 
 interface Avaliacao {
@@ -108,6 +117,11 @@ interface MercadoInfo {
   descricao?: string;
   foto_perfil?: string;
   horario?: string | null;
+  // Entrega e retirada (B2)
+  taxa_entrega?: number | string | null;
+  pedido_minimo?: number | string | null;
+  oferece_entrega?: boolean | null;
+  oferece_retirada?: boolean | null;
 }
 
 interface ResumoDashboard {
@@ -166,6 +180,7 @@ const SIDEBAR_NAV: { icon: ReactNode; label: string }[] = [
   { icon: <IconPackage size={18} />, label: 'Produtos' },
   { icon: <IconShoppingCart size={18} />, label: 'Pedidos' },
   { icon: <IconStar size={18} />, label: 'Avaliações' },
+  { icon: <IconTag size={18} />, label: 'Cupons' },
   { icon: <IconCreditCard size={18} />, label: 'Financeiro' },
   { icon: <IconInfo size={18} />, label: 'Informações' },
 ];
@@ -572,7 +587,16 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
         <EmptyState msg="Nenhum produto cadastrado ainda" />
       ) : (
         <div className="gm-prod-row">
-          {produtos.map((p) => (
+          {produtos.map((p) => {
+            // Margem sobre o custo cadastrado (B6): o lojista vê o quanto cada
+            // unidade dá de lucro; sem custo, não calcula.
+            const preco = Number(p.preco) || 0;
+            const custo = Number(p.custo) || 0;
+            const temCusto = custo > 0 && preco > 0;
+            const margem = temCusto ? preco - custo : 0;
+            const margemPct = temCusto ? (margem / custo) * 100 : 0;
+            const estoque = p.estoque ?? 0;
+            return (
             <div key={p.id_produto} className="gm-prod-card">
               <div className="gm-prod-img">
                 {p.imagem ? <img src={p.imagem} alt={p.nome} /> : <IconPackage size={26} />}
@@ -581,13 +605,26 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
                 <p className="gm-prod-nome">{p.nome}</p>
                 {p.preco != null && <p className="gm-prod-preco">R$ {Number(p.preco).toFixed(2)}</p>}
                 <p className="gm-prod-categoria">{p.categoria}</p>
+                {/* Estoque: avisa quando está acabando ou esgotado */}
+                {estoque <= 0 ? (
+                  <span className="gm-prod-estoque gm-prod-estoque--esgotado">Esgotado</span>
+                ) : estoque <= 5 ? (
+                  <span className="gm-prod-estoque gm-prod-estoque--baixo">Estoque baixo: {estoque} un.</span>
+                ) : null}
+                {/* Margem de lucro por unidade */}
+                {temCusto && (
+                  <p className="gm-prod-margem" title={`Custo: ${formatarBRL(custo)} por unidade`}>
+                    Margem: {formatarBRL(margem)} ({margemPct.toFixed(0)}%)
+                  </p>
+                )}
                 {p.descricao && <p className="gm-prod-desc">{p.descricao}</p>}
               </div>
               <button className="gm-prod-editar" onClick={() => onEditar(p)} title="Editar produto">
                 ✎
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -649,6 +686,18 @@ function SecPedidos({
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
                     <IconInfo size={12} /> {p.observacao}
+                  </span>
+                )}
+                {(p.tipoEntrega === 'retirada' || p.taxaEntrega > 0 || p.cupom || p.agendamento) && (
+                  <span className="gm-pedido-obs" title="Entrega, agendamento e cupom do pedido">
+                    <IconTruck size={12} />{' '}
+                    {p.tipoEntrega === 'retirada'
+                      ? 'Retirada no balcão'
+                      : p.taxaEntrega > 0
+                        ? `Entrega ${formatarBRL(p.taxaEntrega)}`
+                        : 'Entrega grátis'}
+                    {p.agendamento ? ` · ${p.agendamento}` : ''}
+                    {p.cupom ? ` · Cupom ${p.cupom} (− ${formatarBRL(p.desconto)})` : ''}
                   </span>
                 )}
               </div>
@@ -981,6 +1030,212 @@ function SecInformacoes({ mercado, onSalvo }: {
   return <InfoConteudo mercado={mercado} onSalvo={onSalvo} />;
 }
 
+// ─── Cupons de desconto (B3) ─────────────────────────────────────────────────
+// O vendedor cria cupons (percentual ou valor fixo) com pedido mínimo, limite
+// de usos e validade. O cliente digita o código no carrinho e o backend
+// confere se ainda vale antes de aplicar o desconto.
+
+interface Cupom {
+  id: number;
+  codigo: string;
+  tipo: 'percentual' | 'valor';
+  valor: number;
+  minPedido: number;
+  maxUsos: number | null;
+  usos: number;
+  validade: string | null;
+  ativo: boolean;
+}
+
+function SecCupons({ mercadoId }: { mercadoId: number }) {
+  const { toasts, showToast, dismissToast } = useToast();
+  const [cupons, setCupons] = useState<Cupom[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [form, setForm] = useState({
+    codigo: '', tipo: 'percentual' as 'percentual' | 'valor',
+    valor: '', min_pedido: '', max_usos: '', validade: '',
+  });
+
+  // Carrega os cupons do mercado (padrão do painel: async dentro do efeito)
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      try {
+        const data = await api.cuponsMercado(mercadoId);
+        if (vivo) setCupons(data.cupons ?? []);
+      } catch {
+        // silencioso: a seção mostra a lista vazia
+      } finally {
+        if (vivo) setLoading(false);
+      }
+    })();
+    return () => { vivo = false; };
+  }, [mercadoId]);
+
+  // Recarrega após criar/ativar/apagar (fora do efeito, direto nas ações)
+  async function recarregar() {
+    try {
+      const data = await api.cuponsMercado(mercadoId);
+      setCupons(data.cupons ?? []);
+    } catch {
+      // silencioso
+    }
+  }
+
+  async function criar() {
+    const codigo = form.codigo.trim().toUpperCase();
+    const valor = Number(form.valor);
+    if (codigo.length < 3) { setErro('O código precisa de pelo menos 3 letras ou números.'); return; }
+    if (!Number.isFinite(valor) || valor <= 0) { setErro('Informe um valor maior que zero.'); return; }
+    if (form.tipo === 'percentual' && valor > 100) { setErro('Cupom percentual não pode passar de 100%.'); return; }
+
+    setSalvando(true);
+    setErro('');
+    try {
+      await api.criarCupom(mercadoId, {
+        codigo,
+        tipo: form.tipo,
+        valor,
+        min_pedido: form.min_pedido ? Number(form.min_pedido) : undefined,
+        max_usos: form.max_usos ? Number(form.max_usos) : null,
+        validade: form.validade || null,
+      });
+      showToast('sucesso', `Cupom ${codigo} criado com sucesso.`);
+      setForm({ codigo: '', tipo: 'percentual', valor: '', min_pedido: '', max_usos: '', validade: '' });
+      setMostrarForm(false);
+      recarregar();
+    } catch (err: unknown) {
+      setErro(err instanceof Error ? err.message : 'Erro ao criar o cupom.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function alternarAtivo(c: Cupom) {
+    try {
+      await api.atualizarCupom(mercadoId, c.id, { ativo: !c.ativo });
+      showToast('sucesso', c.ativo ? `Cupom ${c.codigo} desativado.` : `Cupom ${c.codigo} ativado.`);
+      recarregar();
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Erro ao atualizar o cupom.');
+    }
+  }
+
+  async function remover(c: Cupom) {
+    if (!window.confirm(`Apagar o cupom ${c.codigo}? Quem já usou mantém o histórico.`)) return;
+    try {
+      await api.deletarCupom(mercadoId, c.id);
+      showToast('sucesso', `Cupom ${c.codigo} removido.`);
+      recarregar();
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Erro ao remover o cupom.');
+    }
+  }
+
+  function formatarValidade(v: string | null) {
+    if (!v) return 'sem prazo';
+    return `até ${new Date(v + 'T12:00:00').toLocaleDateString('pt-BR')}`;
+  }
+
+  return (
+    <div className="gm-section-wrap">
+      <div className="gm-sec-row">
+        <h2 className="gm-sec-title"><IconTag size={15} /> Cupons de desconto</h2>
+        <button className="gm-btn-link" onClick={() => { setErro(''); setMostrarForm(v => !v); }}>
+          {mostrarForm ? 'Fechar' : 'Novo cupom'}
+        </button>
+      </div>
+
+      {mostrarForm && (
+        <div className="gm-cupom-form">
+          <div className="gm-info-edit-grid">
+            <label className="gm-info-campo">
+              Código
+              <input className="gm-modal-input" value={form.codigo} maxLength={30}
+                placeholder="Ex.: BEMVINDO10"
+                onChange={e => setForm(f => ({ ...f, codigo: e.target.value.toUpperCase() }))} />
+            </label>
+            <label className="gm-info-campo">
+              Tipo
+              <select className="gm-modal-input" value={form.tipo}
+                onChange={e => setForm(f => ({ ...f, tipo: e.target.value as 'percentual' | 'valor' }))}>
+                <option value="percentual">Percentual (%)</option>
+                <option value="valor">Valor fixo (R$)</option>
+              </select>
+            </label>
+            <label className="gm-info-campo">
+              {form.tipo === 'percentual' ? 'Percentual (%)' : 'Valor (R$)'}
+              <input className="gm-modal-input" type="number" min="0" step="0.01" value={form.valor}
+                onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} />
+            </label>
+            <label className="gm-info-campo">
+              Pedido mínimo (R$, opcional)
+              <input className="gm-modal-input" type="number" min="0" step="0.01" value={form.min_pedido}
+                onChange={e => setForm(f => ({ ...f, min_pedido: e.target.value }))} />
+            </label>
+            <label className="gm-info-campo">
+              Limite de usos (opcional)
+              <input className="gm-modal-input" type="number" min="1" step="1" value={form.max_usos}
+                onChange={e => setForm(f => ({ ...f, max_usos: e.target.value }))} />
+            </label>
+            <label className="gm-info-campo">
+              Válido até (opcional)
+              <input className="gm-modal-input" type="date" value={form.validade}
+                onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} />
+            </label>
+          </div>
+          {erro && <p className="gm-info-erro">{erro}</p>}
+          <div className="gm-info-acoes">
+            <button className="gm-btn-link" onClick={() => setMostrarForm(false)} disabled={salvando}>
+              Cancelar
+            </button>
+            <button className="gm-btn-primary" onClick={criar} disabled={salvando}>
+              {salvando ? 'Salvando…' : 'Criar cupom'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        Array.from({ length: 3 }, (_, i) => <LoadingRow key={i} />)
+      ) : cupons.length === 0 ? (
+        <EmptyState msg="Nenhum cupom criado ainda — crie o primeiro para atrair clientes" />
+      ) : (
+        <div className="gm-cupom-lista">
+          {cupons.map((c, i) => (
+            <div key={c.id} className={`gm-cupom-row${c.ativo ? '' : ' gm-cupom-row--inativo'}`} style={{ animationDelay: `${0.05 + i * 0.05}s` }}>
+              <span className="gm-cupom-codigo"><IconTag size={13} /> {c.codigo}</span>
+              <span className="gm-cupom-desconto">
+                {c.tipo === 'percentual' ? `${c.valor}% de desconto` : `${formatarBRL(c.valor)} de desconto`}
+              </span>
+              <span className="gm-cupom-info">
+                {c.minPedido > 0 ? `mínimo ${formatarBRL(c.minPedido)}` : 'sem pedido mínimo'}
+              </span>
+              <span className="gm-cupom-info">
+                {c.usos} {c.maxUsos != null ? `de ${c.maxUsos} usos` : 'usos'}
+              </span>
+              <span className="gm-cupom-info">{formatarValidade(c.validade)}</span>
+              <span className={`gm-cupom-status${c.ativo ? ' gm-cupom-status--ativo' : ''}`}>
+                {c.ativo ? 'Ativo' : 'Inativo'}
+              </span>
+              <button className="gm-pedido-acao" onClick={() => alternarAtivo(c)}>
+                {c.ativo ? 'Desativar' : 'Ativar'}
+              </button>
+              <button className="gm-cupom-apagar" onClick={() => remover(c)} title="Apagar cupom">
+                Apagar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
+}
+
 // Modo leitura + edição em linha dos dados do mercado. O "Editar" carrega os
 // valores atuais (inclusive o horário) nos campos; o "Salvar" grava no banco
 // (PUT /api/mercados/:id) e atualiza a tela com a resposta; o "Cancelar"
@@ -995,6 +1250,10 @@ function InfoConteudo({ mercado, onSalvo }: {
   const [form, setForm] = useState({
     nome: '', telefone: '', email: '', rua: '', bairro: '',
     cidade: '', estado: '', cep: '',
+  });
+  // Entrega e retirada (B2): taxa, pedido mínimo e quais formas a loja aceita
+  const [entrega, setEntrega] = useState({
+    taxa: '', minimo: '', ofereceEntrega: true, ofereceRetirada: true,
   });
   const [horario, setHorario] = useState<Record<string, [string, string] | null>>({});
 
@@ -1030,6 +1289,12 @@ function InfoConteudo({ mercado, onSalvo }: {
       rua: mercado.rua ?? '', bairro: mercado.bairro ?? '', cidade: mercado.cidade ?? '',
       estado: mercado.estado ?? '', cep: mercado.cep ?? '',
     });
+    setEntrega({
+      taxa: mercado.taxa_entrega != null ? String(Number(mercado.taxa_entrega)) : '0',
+      minimo: mercado.pedido_minimo != null ? String(Number(mercado.pedido_minimo)) : '0',
+      ofereceEntrega: mercado.oferece_entrega !== false,
+      ofereceRetirada: mercado.oferece_retirada !== false,
+    });
     setHorario(parseHorario(mercado.horario) ?? {});
     setErro('');
     setEditando(true);
@@ -1061,6 +1326,17 @@ function InfoConteudo({ mercado, onSalvo }: {
       setErro('Confira o horário: abertura e fechamento precisam ser diferentes.');
       return;
     }
+    // Entrega e retirada: a loja precisa oferecer pelo menos uma forma
+    if (!entrega.ofereceEntrega && !entrega.ofereceRetirada) {
+      setErro('A loja precisa oferecer entrega ou retirada no balcão (marque pelo menos uma).');
+      return;
+    }
+    const taxa = Number(entrega.taxa.replace(',', '.')) || 0;
+    const minimo = Number(entrega.minimo.replace(',', '.')) || 0;
+    if (taxa < 0 || minimo < 0) {
+      setErro('Taxa de entrega e pedido mínimo não podem ser negativos.');
+      return;
+    }
 
     setSalvando(true);
     setErro('');
@@ -1075,6 +1351,10 @@ function InfoConteudo({ mercado, onSalvo }: {
         estado: form.estado.trim(),
         cep: form.cep.replace(/\D/g, ''),
         horario: horarioEnvio,
+        taxa_entrega: taxa,
+        pedido_minimo: minimo,
+        oferece_entrega: entrega.ofereceEntrega,
+        oferece_retirada: entrega.ofereceRetirada,
       });
       setEditando(false);
       onSalvo({ ...mercado, ...form, ...(res.mercado ?? {}) } as MercadoInfo);
@@ -1168,6 +1448,30 @@ function InfoConteudo({ mercado, onSalvo }: {
             })}
           </div>
 
+          <p className="gm-info-subtitulo"><IconTruck size={13} /> Entrega e retirada</p>
+          <div className="gm-info-entrega">
+            <label className="gm-info-campo">
+              Taxa de entrega (R$)
+              <input className="gm-modal-input" type="number" min="0" step="0.01" value={entrega.taxa}
+                onChange={e => setEntrega(x => ({ ...x, taxa: e.target.value }))} />
+            </label>
+            <label className="gm-info-campo">
+              Pedido mínimo para entrega (R$, 0 = sem mínimo)
+              <input className="gm-modal-input" type="number" min="0" step="0.01" value={entrega.minimo}
+                onChange={e => setEntrega(x => ({ ...x, minimo: e.target.value }))} />
+            </label>
+            <label className="gm-info-check">
+              <input type="checkbox" checked={entrega.ofereceEntrega}
+                onChange={e => setEntrega(x => ({ ...x, ofereceEntrega: e.target.checked }))} />
+              Faz entrega
+            </label>
+            <label className="gm-info-check">
+              <input type="checkbox" checked={entrega.ofereceRetirada}
+                onChange={e => setEntrega(x => ({ ...x, ofereceRetirada: e.target.checked }))} />
+              Aceita retirada no balcão
+            </label>
+          </div>
+
           {erro && <p className="gm-info-erro">{erro}</p>}
 
           <div className="gm-info-acoes">
@@ -1197,6 +1501,28 @@ function InfoConteudo({ mercado, onSalvo }: {
             <div className="gm-info-row"><span className="gm-info-lbl"><IconInfo size={13} /> Descrição</span><span className="gm-info-val">{mercado.descricao || '—'}</span></div>
             <div className="gm-info-row"><span className="gm-info-lbl"><IconClock size={13} /> Horário</span><span className="gm-info-val">{resumirHorario(parseHorario(mercado.horario))}</span></div>
           </div>
+          <div className="gm-info-card">
+            <div className="gm-info-row">
+              <span className="gm-info-lbl"><IconTruck size={13} /> Entrega</span>
+              <span className="gm-info-val">
+                {mercado.oferece_entrega === false
+                  ? 'não faz'
+                  : Number(mercado.taxa_entrega) > 0
+                    ? formatarBRL(Number(mercado.taxa_entrega))
+                    : 'grátis'}
+              </span>
+            </div>
+            <div className="gm-info-row">
+              <span className="gm-info-lbl"><IconShoppingCart size={13} /> Mínimo entrega</span>
+              <span className="gm-info-val">
+                {Number(mercado.pedido_minimo) > 0 ? formatarBRL(Number(mercado.pedido_minimo)) : 'sem mínimo'}
+              </span>
+            </div>
+            <div className="gm-info-row">
+              <span className="gm-info-lbl"><IconStore size={13} /> Retirada</span>
+              <span className="gm-info-val">{mercado.oferece_retirada === false ? 'não aceita' : 'aceita no balcão'}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -1215,8 +1541,16 @@ export default function GerenciamentoMercado({
   onAbrirVitrine: () => void;
 }) {
   const [nav, setNav] = useState(0);
+  const navigate = useNavigate();
   const {toasts, showToast, dismissToast } = useToast();
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
+  // Quem tem mais de uma loja troca de painel pelo seletor da sidebar (B9)
+  const [meusMercados, setMeusMercados] = useState<{ id_mercado: number; nome: string }[]>([]);
+  useEffect(() => {
+    api.meusMercados()
+      .then(data => setMeusMercados((data.mercados ?? []).map((m: { id_mercado: number; nome: string }) => ({ id_mercado: m.id_mercado, nome: m.nome }))))
+      .catch(() => setMeusMercados([]));
+  }, [mercadoId]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [pedidosLoading, setPedidosLoading] = useState(true);
   const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
@@ -1278,6 +1612,8 @@ export default function GerenciamentoMercado({
             id: number; cliente: string; itens: string; valorTotal: number;
             dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue';
             observacao?: string;
+            tipoEntrega?: 'entrega' | 'retirada'; taxaEntrega?: number;
+            agendamento?: string; cupom?: string; desconto?: number;
           }): Pedido => {
             const info = STATUS_PEDIDO[p.status] ?? STATUS_PEDIDO.pendente;
             return {
@@ -1292,6 +1628,11 @@ export default function GerenciamentoMercado({
               statusAtual: p.status,
               label: info.label,
               observacao: (p.observacao ?? '').trim(),
+              tipoEntrega: p.tipoEntrega === 'retirada' ? 'retirada' : 'entrega',
+              taxaEntrega: Number(p.taxaEntrega) || 0,
+              agendamento: (p.agendamento ?? '').trim(),
+              cupom: (p.cupom ?? '').trim(),
+              desconto: Number(p.desconto) || 0,
             };
           })
         );
@@ -1503,6 +1844,7 @@ export default function GerenciamentoMercado({
       onAlternar={() => setAvaliacoesExpandidas(v => !v)}
       total={avaliacoes.length}
     />,
+    <SecCupons mercadoId={mercadoId} />,
     <SecFinanceiro
       fin={fin}
       loading={finLoading}
@@ -1549,6 +1891,22 @@ export default function GerenciamentoMercado({
                 : '● Fechado agora'}
           </span>
         </div>
+        {/* Troca de loja para quem gerencia mais de um mercado (B9) */}
+        {meusMercados.length > 1 && (
+          <label className="gm-trocar-loja">
+            <span className="gm-trocar-loja__lbl">Minha loja</span>
+            <select
+              className="gm-trocar-loja__select"
+              value={mercadoId}
+              onChange={e => navigate(`/vendedor/mercado/${e.target.value}`)}
+              aria-label="Trocar de loja"
+            >
+              {meusMercados.map(m => (
+                <option key={m.id_mercado} value={m.id_mercado}>{m.nome}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <nav className="gm-nav">
           {SIDEBAR_NAV.map((item, i) => (
             <button

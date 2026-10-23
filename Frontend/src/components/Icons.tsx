@@ -30,6 +30,10 @@ export const IconCreditCard = (props: IconProps) => <SvgBase {...props}><><rect 
 
 export const IconReceipt = (props: IconProps) => <SvgBase {...props}><><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2V2Z" /><line x1="8" y1="7" x2="16" y2="7" /><line x1="8" y1="11" x2="16" y2="11" /><line x1="8" y1="15" x2="12" y2="15" /></></SvgBase>;
 
+export const IconTag = (props: IconProps) => <SvgBase {...props}><><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><circle cx="7" cy="7" r="1.2" /></></SvgBase>;
+
+export const IconTruck = (props: IconProps) => <SvgBase {...props}><><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></></SvgBase>;
+
 export const IconBell = (props: IconProps) => <SvgBase {...props}><><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></></SvgBase>;
 
 export const IconStore = (props: IconProps) => <SvgBase {...props}><><path d="M3 9l1-5h16l1 5" /><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" /><path d="M9 21v-6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6" /><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0" /></></SvgBase>;

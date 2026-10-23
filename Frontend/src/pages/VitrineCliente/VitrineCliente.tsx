@@ -14,6 +14,8 @@ import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
+import { aplicarSeo } from '../../utils/seo';
+import JsonLd from '../../components/JsonLd';
 import {
   IconStore,
   IconArrowLeft,
@@ -23,6 +25,7 @@ import {
   IconMapPin,
   IconMenu,
   IconX,
+  IconTruck,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
 import { localizacaoCompleta } from '../../utils/localizacao';
@@ -81,6 +84,8 @@ interface Categoria {
 
 interface VitrineMercado {
   id: number;
+  /** Endereço amigável da loja (usado no link e nos dados estruturados) */
+  slug?: string | null;
   logo?: string;
   banner?: string;
   nome: string;
@@ -102,6 +107,13 @@ interface VitrineMercado {
   bairro?: string | null;
   cidade?: string | null;
   estado?: string | null;
+  /** Telefone da loja (usado no botão de WhatsApp) */
+  telefone?: string | null;
+  /** Entrega e retirada (vêm do cadastro da loja) */
+  taxaEntrega?: number | null;
+  pedidoMinimo?: number | null;
+  ofereceEntrega?: boolean | null;
+  ofereceRetirada?: boolean | null;
   categorias: Categoria[];
 }
 
@@ -261,6 +273,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
         setDados({
           id: mercadoData.mercado.id_mercado,
+          slug: mercadoData.mercado.slug ?? null,
           nome: mercadoData.mercado.nome,
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
@@ -279,6 +292,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           bairro: mercadoData.mercado.bairro ?? null,
           cidade: mercadoData.mercado.cidade ?? null,
           estado: mercadoData.mercado.estado ?? null,
+          telefone: mercadoData.mercado.telefone ?? null,
+          taxaEntrega: Number(mercadoData.mercado.taxa_entrega) || 0,
+          pedidoMinimo: Number(mercadoData.mercado.pedido_minimo) || 0,
+          ofereceEntrega: mercadoData.mercado.oferece_entrega !== false,
+          ofereceRetirada: mercadoData.mercado.oferece_retirada !== false,
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -290,6 +308,19 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     }
     carregarDados();
   }, [mercadoId, showToast]);
+
+  // Título, descrição e prévia de compartilhamento acompanham a loja aberta (SEO)
+  useEffect(() => {
+    if (!dados) return;
+    const resumo = dados.descricao
+      ? cortarEmPalavra(dados.descricao.replace(/\s+/g, ' ').trim(), 140)
+      : 'Peça online com entrega em casa.';
+    aplicarSeo({
+      titulo: `${dados.nome} — Mercadins`,
+      descricao: `${dados.nome} — ${resumo}`,
+      imagem: dados.logo ?? dados.banner ?? undefined,
+    });
+  }, [dados]);
 
   // Garante que a tela sempre comece do topo depois que os dados (e categorias)
   // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
@@ -464,6 +495,25 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   return (
     <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
 
+      {/* Dados estruturados da loja para o Google (busca local) */}
+      <JsonLd
+        dados={{
+          '@context': 'https://schema.org',
+          '@type': 'Store',
+          name: dados.nome,
+          image: dados.logo ?? undefined,
+          telephone: dados.telefone ?? undefined,
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: [dados.rua, dados.bairro].filter(Boolean).join(', ') || undefined,
+            addressLocality: dados.cidade ?? undefined,
+            addressRegion: dados.estado ?? undefined,
+            addressCountry: 'BR',
+          },
+          url: `${window.location.origin}/vitrine/${dados.slug ?? ''}`,
+        }}
+      />
+
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
         <button
@@ -575,6 +625,27 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
 
+            {/* Como a loja entrega (taxa, mínimo e retirada) — vem do cadastro */}
+            {(() => {
+              const entrega = dados.ofereceEntrega !== false;
+              const retirada = dados.ofereceRetirada !== false;
+              if (!entrega && !retirada) return null;
+              const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+              const partes: string[] = [];
+              if (entrega) {
+                const taxa = Number(dados.taxaEntrega) || 0;
+                partes.push(taxa > 0 ? `Entrega ${brl(taxa)}` : 'Entrega grátis');
+                const minimo = Number(dados.pedidoMinimo) || 0;
+                if (minimo > 0) partes.push(`mínimo ${brl(minimo)}`);
+              }
+              if (retirada) partes.push('Retirada no balcão');
+              return (
+                <p className="vtc-entrega-info">
+                  <IconTruck size={15} /> {partes.join(' · ')}
+                </p>
+              );
+            })()}
+
             {/* Status ao vivo: abre e fecha sozinho, sem recarregar a página */}
             {(() => {
               const aberta = estaAberto(parseHorario(dados.horario), agoraVitrine) ?? true;
@@ -597,6 +668,24 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                 ))}
               </div>
             )}
+
+            {/* Falar com a loja no WhatsApp (usa o telefone do cadastro) */}
+            {(() => {
+              const tel = (dados.telefone ?? '').replace(/\D/g, '');
+              // Números brasileiros: 55 + DDD + número
+              const wa = tel ? (tel.startsWith('55') ? tel : `55${tel}`) : '';
+              if (wa.length < 12) return null;
+              return (
+                <a
+                  className="vtc-btn-whatsapp"
+                  href={`https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Vim pelo site Mercadins e gostaria de falar com a ${dados.nome}.`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <IconMessage size={15} /> Falar no WhatsApp
+                </a>
+              );
+            })()}
           </div>
         </div>
 

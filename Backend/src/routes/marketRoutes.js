@@ -6,6 +6,7 @@ const { criarMercado, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, 
 const { favoritarMercado } = require('../controllers/usuarioController');
 const { listarAvaliacoesMercado, criarAvaliacao } = require('../controllers/avaliacaoController');
 const { criarPedido, listarPedidosMercado, financeiroMercado } = require('../controllers/pedidoController');
+const { listarCupons, criarCupom, atualizarCupom, deletarCupom, validarCupomNoCarrinho } = require('../controllers/cupomController');
 
 router.post('/',            autenticar, criarMercado);
 router.get('/',             listarMercados);
@@ -18,6 +19,12 @@ router.post('/:id/favoritar',  autenticar, favoritarMercado);
 router.delete('/:id/favoritar', autenticar, favoritarMercado);
 router.get('/:id/avaliacoes',  autenticarOpcional, listarAvaliacoesMercado);
 router.post('/:id/avaliacoes', autenticar, criarAvaliacao);
+// Cupons de desconto (B3): CRUD do vendedor + validação no carrinho do cliente
+router.get('/:id/cupons',          autenticar, listarCupons);
+router.post('/:id/cupons',         autenticar, criarCupom);
+router.post('/:id/cupons/validar', autenticar, validarCupomNoCarrinho);
+router.put('/:id/cupons/:cupomId',    autenticar, atualizarCupom);
+router.delete('/:id/cupons/:cupomId', autenticar, deletarCupom);
 router.get('/:id',          autenticarOpcional, buscarMercadoPorId);
 router.get('/:id/dashboard', autenticar, dashboardMercado);
 router.put('/:id',          autenticar, atualizarMercado);

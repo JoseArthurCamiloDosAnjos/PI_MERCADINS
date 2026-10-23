@@ -1,0 +1,70 @@
+name: Backup do banco (Neon)
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Backup automático do banco de produção (item C3)
+#
+#  Gera um pg_dump completo do banco Neon toda segunda-feira e guarda o
+#  arquivo como artefato do GitHub (acessível em Actions → esta execução →
+#  Artifacts). Também pode ser disparado na mão (Run workflow) a qualquer
+#  momento, por exemplo antes de uma mudança grande.
+#
+#  Configuração única necessária: cadastrar o segredo DATABASE_URL_NEON em
+#  Settings → Secrets and variables → Actions (a mesma URL usada no Render).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # Segunda-feira, 06:00 UTC (03:00 em Brasília)
+    - cron: '0 6 * * 1'
+  # Disparo manual pelo botão "Run workflow"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Conferir o cliente PostgreSQL
+        run: |
+          if ! command -v pg_dump >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          pg_dump --version
+
+      - name: Gerar o backup do banco
+        env:
+          DATABASE_URL_NEON: ${{ secrets.DATABASE_URL_NEON }}
+        run: |
+          # Sem o segredo cadastrado, falha com mensagem clara (não gera backup vazio)
+          if [ -z "$DATABASE_URL_NEON" ]; then
+            echo "::error::Segredo DATABASE_URL_NEON não está cadastrado no repositório (Settings → Secrets → Actions)."
+            exit 1
+          fi
+
+          DATA=$(date +%Y-%m-%d)
+          ARQUIVO="backup-mercadins-$DATA.dump"
+
+          # Formato .dump (padrão do pg_dump: compacto e permite restaurar partes)
+          pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL_NEON" > "$ARQUIVO"
+
+          # Confere se o arquivo não saiu vazio ou corrompido
+          TAMANHO=$(stat -c%s "$ARQUIVO")
+          if [ "$TAMANHO" -lt 1024 ]; then
+            echo "::error::Backup gerado com apenas $TAMANHO bytes — possível falha de conexão."
+            exit 1
+          fi
+          pg_restore --list "$ARQUIVO" > /dev/null
+          echo "Backup válido: $ARQUIVO ($(( TAMANHO / 1024 )) KB)"
+
+      - name: Guardar o backup como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-banco-${{ github.run_number }}
+          path: backup-mercadins-*.dump
+          # Artefatos do GitHub são privados e ficam 90 dias no plano gratuito
+          retention-days: 90
+          if-no-files-found: error

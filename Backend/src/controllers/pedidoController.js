@@ -1,10 +1,43 @@
 const { conectar } = require('../db/neon');
+const { enviarEmailPedidoConfirmado, enviarEmailStatusPedido } = require('../utils/mailer');
+
+// ─────────────────────────────────────────────
+// E-mails do pedido — busca os dados prontos e dispara sem travar a resposta
+// (quem chama usa .catch(...); provedor fora do ar não derruba o pedido).
+// ─────────────────────────────────────────────
+async function montarDadosPedidoParaEmail(sql, idPedido) {
+  const [dados] = await sql`
+    SELECT h.id, h.produtos, h.valor_total, h.taxa_entrega, h.desconto, h.cupom_codigo,
+           h.tipo_entrega, h.agendamento, h.status,
+           u.email, u.nome AS cliente, m.nome AS mercado
+    FROM historico_compras h
+    JOIN usuarios u ON u.id_usuario = h.id_usuario
+    JOIN mercados m ON m.id_mercado = h.id_mercado
+    WHERE h.id = ${idPedido}
+  `;
+  if (!dados || !dados.email) return null;
+  return {
+    numero: dados.id,
+    cliente: dados.cliente,
+    mercado: dados.mercado,
+    itens: dados.produtos,
+    valorTotal: Number(dados.valor_total) || 0,
+    desconto: Number(dados.desconto) || 0,
+    cupom: dados.cupom_codigo || '',
+    taxa: Number(dados.taxa_entrega) || 0,
+    total: (Number(dados.valor_total) || 0) - (Number(dados.desconto) || 0) + (Number(dados.taxa_entrega) || 0),
+    tipoEntrega: dados.tipo_entrega === 'retirada' ? 'retirada' : 'entrega',
+    agendamento: dados.agendamento || '',
+    email: dados.email,
+    status: dados.status || 'pendente',
+  };
+}
 
 // POST /api/mercados/:id/pedidos — cria um pedido a partir do carrinho do usuário
 const criarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const mercadoId  = Number(req.params.id);
-  const { itens, observacao } = req.body;
+  const { itens, observacao, tipo_entrega, cupom, agendamento } = req.body;
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return res.status(400).json({ erro: 'Informe os itens do pedido.' });
@@ -24,9 +57,18 @@ const criarPedido = async (req, res) => {
     return res.status(400).json({ erro: 'Mercado inválido.' });
   }
 
+  // Entrega pelo cliente ou retirada no balcão (padrão: entrega)
+  const tipoEntrega = tipo_entrega === 'retirada' ? 'retirada' : 'entrega';
+
   // Observação é opcional: máx. 300 caracteres, sem caracteres de controle
   const observacaoLimpa = typeof observacao === 'string'
     ? observacao.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
+    : '';
+
+  // Agendamento é opcional: quando o cliente quer receber/retirar
+  // (ex.: "Hoje à tarde", "Amanhã de manhã") — máx. 60 caracteres
+  const agendamentoLimpo = typeof agendamento === 'string'
+    ? agendamento.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 60)
     : '';
 
   try {
@@ -46,6 +88,23 @@ const criarPedido = async (req, res) => {
 
     if (produtos.length !== idsProdutos.length) {
       return res.status(400).json({ erro: 'Alguns produtos não pertencem a este mercado.' });
+    }
+
+    // Regras de entrega do mercado (taxa, mínimo e quais formas aceita)
+    const [mercado] = await sql`
+      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada
+      FROM mercados
+      WHERE id_mercado = ${mercadoId}
+    `;
+    if (!mercado) {
+      return res.status(404).json({ erro: 'Mercado não encontrado.' });
+    }
+
+    if (tipoEntrega === 'entrega' && mercado.oferece_entrega === false) {
+      return res.status(400).json({ erro: 'Este mercado não faz entrega — escolha retirar no balcão.' });
+    }
+    if (tipoEntrega === 'retirada' && mercado.oferece_retirada === false) {
+      return res.status(400).json({ erro: 'Este mercado não permite retirada no balcão.' });
     }
 
     const mapaProdutos = new Map(produtos.map(p => [Number(p.id_produto), p]));
@@ -70,11 +129,78 @@ const criarPedido = async (req, res) => {
       resumo.push(`${quantidade}x ${produto.nome}`);
     }
 
+    // Pedido mínimo só vale para entrega (na retirada o cliente pega no balcão)
+    const pedidoMinimo = Number(mercado.pedido_minimo) || 0;
+    if (tipoEntrega === 'entrega' && pedidoMinimo > 0 && valorTotal < pedidoMinimo) {
+      return res.status(400).json({
+        erro: `Pedido mínimo de R$ ${pedidoMinimo.toFixed(2).replace('.', ',')} para entrega.`,
+      });
+    }
+
+    // Cupom de desconto (opcional) — conferido no banco, nunca no navegador
+    let desconto = 0;
+    let cupomRegistro = null;
+    if (typeof cupom === 'string' && cupom.trim()) {
+      const codigo = cupom.trim().toUpperCase().slice(0, 30);
+      const [registro] = await sql`
+        SELECT * FROM cupons
+        WHERE id_mercado = ${mercadoId}
+          AND upper(codigo) = ${codigo}
+          AND ativo = TRUE
+      `;
+      if (!registro) {
+        return res.status(400).json({ erro: 'Cupom inválido ou desativado.' });
+      }
+      if (registro.validade) {
+        // validade chega como meia-noite (fuso do banco): compara até o fim do dia
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const validade = new Date(registro.validade);
+        validade.setHours(23, 59, 59, 999);
+        if (hoje > validade) {
+          return res.status(400).json({ erro: 'Este cupom expirou.' });
+        }
+      }
+      if (registro.max_usos != null && Number(registro.usos) >= Number(registro.max_usos)) {
+        return res.status(400).json({ erro: 'Este cupom já atingiu o limite de usos.' });
+      }
+      const minPedido = Number(registro.min_pedido) || 0;
+      if (valorTotal < minPedido) {
+        return res.status(400).json({
+          erro: `Este cupom exige pedido mínimo de R$ ${minPedido.toFixed(2).replace('.', ',')}.`,
+        });
+      }
+      desconto = registro.tipo === 'percentual'
+        ? valorTotal * (Number(registro.valor) / 100)
+        : Number(registro.valor);
+      desconto = Math.min(Math.round(desconto * 100) / 100, valorTotal);
+      cupomRegistro = registro;
+    }
+
+    // Taxa: cobrada só na entrega; no balcão é grátis
+    const taxaEntrega = tipoEntrega === 'entrega' ? Number(mercado.taxa_entrega) || 0 : 0;
+
+    // Ids dos produtos comprados — usados pelo selo "compra verificada" da
+    // avaliação de produto (quem já comprou pode receber o selo)
+    const produtoIds = idsProdutos.join(',');
+
     const [pedido] = await sql`
-      INSERT INTO historico_compras (id_usuario, id_mercado, produtos, valor_total, status, observacao)
-      VALUES (${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, 'pendente', ${observacaoLimpa})
-      RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao
+      INSERT INTO historico_compras (
+        id_usuario, id_mercado, produtos, valor_total, status, observacao,
+        tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, produto_ids
+      )
+      VALUES (
+        ${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, 'pendente', ${observacaoLimpa},
+        ${tipoEntrega}, ${taxaEntrega.toFixed(2)}, ${agendamentoLimpo}, ${cupomRegistro ? cupomRegistro.codigo : ''}, ${desconto.toFixed(2)}, ${produtoIds}
+      )
+      RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao,
+                tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto
     `;
+
+    // Cupom usado: soma 1 no contador de usos
+    if (cupomRegistro) {
+      await sql`UPDATE cupons SET usos = usos + 1 WHERE id = ${cupomRegistro.id}`;
+    }
 
     // Remove do carrinho apenas os produtos que foram comprados
     await sql`
@@ -84,7 +210,18 @@ const criarPedido = async (req, res) => {
         AND id_produto = ANY(${idsProdutos})
     `;
 
-    res.status(201).json({ mensagem: 'Pedido criado com sucesso.', pedido });
+    // E-mail de confirmação para o cliente (dispara sem segurar a resposta)
+    montarDadosPedidoParaEmail(sql, pedido.id)
+      .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
+      .catch((err) => console.error('Falha no e-mail de confirmação do pedido:', err.message));
+
+    res.status(201).json({
+      mensagem: 'Pedido criado com sucesso.',
+      pedido: {
+        ...pedido,
+        total: valorTotal - desconto + taxaEntrega,
+      },
+    });
   } catch (err) {
     console.error('ERRO criarPedido:', err);
     res.status(500).json({ erro: 'Não foi possível registrar o pedido. Tente novamente.' });
@@ -113,7 +250,9 @@ const listarPedidosMercado = async (req, res) => {
     }
 
     const pedidos = await sql`
-      SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao, u.nome AS cliente
+      SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao,
+             h.tipo_entrega, h.taxa_entrega, h.agendamento, h.cupom_codigo, h.desconto,
+             u.nome AS cliente
       FROM historico_compras h
       JOIN usuarios u ON u.id_usuario = h.id_usuario
       WHERE h.id_mercado = ${mercadoId}
@@ -130,6 +269,11 @@ const listarPedidosMercado = async (req, res) => {
         dataCompra: p.data_compra,
         status: p.status || 'pendente',
         observacao: p.observacao || '',
+        tipoEntrega: p.tipo_entrega === 'retirada' ? 'retirada' : 'entrega',
+        taxaEntrega: Number(p.taxa_entrega) || 0,
+        agendamento: p.agendamento || '',
+        cupom: p.cupom_codigo || '',
+        desconto: Number(p.desconto) || 0,
       })),
     });
   } catch (err) {
@@ -185,6 +329,11 @@ const atualizarStatusPedido = async (req, res) => {
       WHERE id = ${pedidoId}
       RETURNING id, status
     `;
+
+    // Avisa o cliente por e-mail (fire-and-forget: falha de e-mail não afeta o pedido)
+    montarDadosPedidoParaEmail(sql, pedidoId)
+      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, status))
+      .catch((err) => console.error('Falha no e-mail de status do pedido:', err.message));
 
     res.status(200).json({ mensagem: 'Status atualizado com sucesso.', pedido: atualizado });
   } catch (err) {

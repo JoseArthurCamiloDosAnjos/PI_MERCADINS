@@ -13,6 +13,7 @@
     <title>Mercadins — Delivery de mercados perto de você</title>
 
     <!-- SEO -->
+    <link rel="canonical" href="https://mercadins.com.br/" />
     <meta name="description" content="Mercadins: encontre e compre nos mercados, padarias, açougues e hortifrutis da sua região com entrega em casa. Peça pelo site e acompanhe seu pedido." />
     <meta name="keywords" content="delivery, mercados, supermercado, padaria, açougue, hortifruti, compras online, mercado perto de mim" />
     <meta name="author" content="Mercadins" />
@@ -25,11 +26,31 @@
     <meta property="og:title" content="Mercadins — Delivery de mercados perto de você" />
     <meta property="og:description" content="Encontre e compre nos mercados da sua região com entrega em casa. Peça pelo site e acompanhe seu pedido." />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://mercadins.com.br/" />
+    <meta property="og:image" content="https://mercadins.com.br/pwa-512x512.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Mercadins — Delivery de mercados perto de você" />
     <meta name="twitter:description" content="Encontre e compre nos mercados da sua região com entrega em casa." />
+    <meta name="twitter:image" content="https://mercadins.com.br/pwa-512x512.png" />
+
+    <!-- Dados estruturados: ajuda o Google a entender o site (busca local) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Mercadins",
+        "url": "https://mercadins.com.br/",
+        "description": "Delivery de mercados, padarias, açougues e hortifrutis da sua região.",
+        "inLanguage": "pt-BR",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://mercadins.com.br/?busca={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

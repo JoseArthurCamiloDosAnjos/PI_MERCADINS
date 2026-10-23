@@ -135,6 +135,42 @@ function normalizarHorario(horario) {
 }
 
 // ─────────────────────────────────────────────
+// Entrega e retirada do mercado (B2):
+//   taxa_entrega:   R$ cobrados por entrega (0 = entrega grátis)
+//   pedido_minimo:  valor mínimo em produtos para aceitar pedido de entrega
+//   oferece_entrega / oferece_retirada: quais formas o mercado aceita
+// Campos não enviados ficam como estão no banco (edição parcial).
+// ─────────────────────────────────────────────
+function normalizarEntrega(body) {
+  const saida = { taxa: undefined, minimo: undefined, entrega: undefined, retirada: undefined };
+  const { taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = body;
+
+  if (taxa_entrega !== undefined && taxa_entrega !== null && taxa_entrega !== '') {
+    const v = Number(taxa_entrega);
+    if (!Number.isFinite(v) || v < 0 || v > 9999)
+      return { erro: 'Taxa de entrega inválida (use um valor de 0 a 9999).' };
+    saida.taxa = v;
+  }
+  if (pedido_minimo !== undefined && pedido_minimo !== null && pedido_minimo !== '') {
+    const v = Number(pedido_minimo);
+    if (!Number.isFinite(v) || v < 0 || v > 999999)
+      return { erro: 'Pedido mínimo inválido (use um valor de 0 a 999999).' };
+    saida.minimo = v;
+  }
+  if (oferece_entrega !== undefined && oferece_entrega !== null) {
+    if (typeof oferece_entrega !== 'boolean')
+      return { erro: 'Opção de entrega inválida.' };
+    saida.entrega = oferece_entrega;
+  }
+  if (oferece_retirada !== undefined && oferece_retirada !== null) {
+    if (typeof oferece_retirada !== 'boolean')
+      return { erro: 'Opção de retirada inválida.' };
+    saida.retirada = oferece_retirada;
+  }
+  return saida;
+}
+
+// ─────────────────────────────────────────────
 // Valida e normaliza os dados de um mercado.
 // Reaproveitado pelo cadastro direto (admin) e pelo checkout do plano
 // (payload que só vira mercado DEPOIS que o pagamento confirma).
@@ -142,7 +178,12 @@ function normalizarHorario(horario) {
 function validarDadosMercado(dados = {}) {
   const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua,
     descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones,
-    cor_texto_sec, plano, categorias, horario } = dados;
+    cor_texto_sec, plano, categorias, horario,
+    taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = dados;
+
+  const entrega = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
+  if (entrega.erro)
+    return { erro: entrega.erro };
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return { erro: "Todos os campos são obrigatórios" };
@@ -188,6 +229,7 @@ function validarDadosMercado(dados = {}) {
       plano: normalizarPlano(plano),
       cats,
       horario: horarioNovo,
+      entrega,
     },
   };
 }
@@ -242,7 +284,7 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
 
   // Cria o mercado
   const [novoMercado] = await sql`
-    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario)
+    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada)
     VALUES (
       ${d.nome},
       ${d.email},
@@ -263,7 +305,11 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
       ${d.cor_texto_sec},
       ${d.plano},
       ${d.cats.valor},
-      ${d.horario?.valor ?? null}
+      ${d.horario?.valor ?? null},
+      ${Number(d.entrega?.taxa ?? 0).toFixed(2)},
+      ${Number(d.entrega?.minimo ?? 0).toFixed(2)},
+      ${d.entrega?.entrega ?? true},
+      ${d.entrega?.retirada ?? true}
     )
     RETURNING *
   `;
@@ -498,7 +544,7 @@ const atualizarMercado = async (req, res) => {
     return res.status(401).json({ erro: "Não autenticado" });
 
   const { id } = req.params;
-  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias, horario, custos_fixos } = req.body;
+  const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, banner_url, foto_perfil_url, categorias, horario, custos_fixos, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = req.body;
 
   const banner = banner_url || undefined
   const foto_perfil = foto_perfil_url || undefined
@@ -524,6 +570,11 @@ const atualizarMercado = async (req, res) => {
       return res.status(400).json({ erro: "Custos fixos inválidos" });
     custosFixosNovo = v;
   }
+
+  // Entrega e retirada (taxa, mínimo e opções) — mesmo critério dos custos
+  const entregaEdicao = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
+  if (entregaEdicao.erro)
+    return res.status(400).json({ erro: entregaEdicao.erro });
 
   const catsEdicao = normalizarCategorias(categorias);
   if (catsEdicao.erro)
@@ -600,6 +651,10 @@ const atualizarMercado = async (req, res) => {
         banner       = COALESCE(${banner ?? null}, banner),
         foto_perfil  = COALESCE(${foto_perfil ?? null}, foto_perfil),
         custos_fixos = COALESCE(${custosFixosNovo ?? null}, custos_fixos),
+        taxa_entrega = COALESCE(${entregaEdicao.taxa ?? null}, taxa_entrega),
+        pedido_minimo = COALESCE(${entregaEdicao.minimo ?? null}, pedido_minimo),
+        oferece_entrega = COALESCE(${entregaEdicao.entrega ?? null}, oferece_entrega),
+        oferece_retirada = COALESCE(${entregaEdicao.retirada ?? null}, oferece_retirada),
         categorias   = COALESCE(${catsEdicao.valor}, categorias)
       WHERE id_mercado = ${Number(id)}
       RETURNING *

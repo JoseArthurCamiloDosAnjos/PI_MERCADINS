@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { resolverPaleta } from '../../components/EscolherPaleta';
+import { aplicarSeo } from '../../utils/seo';
+import JsonLd from '../../components/JsonLd';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import {
@@ -100,6 +102,8 @@ export interface AvaliacaoProduto {
   id: number;
   nota: number;
   texto: string;
+  foto?: string;
+  verificada?: boolean;
   data_cadastro: string;
   cliente: string;
   minha: boolean;
@@ -181,6 +185,7 @@ export default function ProdutoTela({
   const [notaForm, setNotaForm]     = useState(0);
   const [notaHover, setNotaHover]   = useState(0);
   const [textoAval, setTextoAval]   = useState('');
+  const [fotoAval, setFotoAval]     = useState('');
   const [enviandoAval, setEnviandoAval] = useState(false);
 
   useEffect(() => {
@@ -195,11 +200,23 @@ export default function ProdutoTela({
         if (minha) {
           setNotaForm(minha.nota);
           setTextoAval(minha.texto);
+          setFotoAval(minha.foto ?? '');
         }
       })
       .catch(() => { /* sem avaliações segue zerado */ });
     return () => { vivo = false; };
   }, [mercado.id, categoriaId, produto.id_produto]);
+
+  // Título e prévia de compartilhamento acompanham o produto aberto (SEO)
+  useEffect(() => {
+    aplicarSeo({
+      titulo: `${produto.nome} — ${mercado.nome} — Mercadins`,
+      descricao: produto.descricao
+        ? produto.descricao.replace(/\s+/g, ' ').trim().slice(0, 150)
+        : `${produto.nome} à venda na ${mercado.nome} — peça pelo Mercadins.`,
+      imagem: imagens[0],
+    });
+  }, [produto, mercado, imagens]);
 
   const jaAvaliou = !!avaliacoes?.avaliacoes.some(a => a.minha);
   // Média exibida: ao vivo depois que carrega (atualiza após enviar)
@@ -211,11 +228,18 @@ export default function ProdutoTela({
       showToast('erro', 'Escolha uma nota de 1 a 5 estrelas.');
       return;
     }
+    // Foto é opcional, mas quando preenchida precisa ser um link de imagem
+    const foto = fotoAval.trim();
+    if (foto && !/^https?:\/\/\S+$/i.test(foto)) {
+      showToast('erro', 'A foto precisa ser um link começando com http:// ou https://.');
+      return;
+    }
     setEnviandoAval(true);
     try {
       await api.criarAvaliacaoProduto(mercado.id, categoriaId, produto.id_produto, {
         nota: notaForm,
         texto: textoAval,
+        foto: foto || undefined,
       });
       showToast('sucesso', jaAvaliou ? 'Sua avaliação foi atualizada com sucesso.' : 'Avaliação enviada com sucesso.');
       const novo = await api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto) as ResumoAvaliacoes;
@@ -285,6 +309,35 @@ export default function ProdutoTela({
 
   return (
     <div className="pd-shell" data-tema={tema} style={estiloPaleta}>
+
+      {/* Dados estruturados do produto para o Google (preço, estoque, nota) */}
+      <JsonLd
+        dados={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: produto.nome,
+          image: imagens[0] ?? undefined,
+          description: produto.descricao ?? undefined,
+          brand: { '@type': 'Brand', name: mercado.nome },
+          ...(totalExibida > 0
+            ? {
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: mediaExibida,
+                  ratingCount: totalExibida,
+                },
+              }
+            : {}),
+          offers: {
+            '@type': 'Offer',
+            price: Number(produto.preco ?? 0),
+            priceCurrency: 'BRL',
+            availability: (produto.estoque ?? 0) > 0
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+          },
+        }}
+      />
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="pd-topbar">
@@ -520,6 +573,18 @@ export default function ProdutoTela({
                 value={textoAval}
                 onChange={e => setTextoAval(e.target.value)}
               />
+              <label className="pd-aval-foto-lbl" htmlFor="pd-aval-foto">
+                Link de uma foto do produto que você comprou (opcional)
+              </label>
+              <input
+                id="pd-aval-foto"
+                className="pd-aval-foto-input"
+                type="url"
+                maxLength={500}
+                placeholder="https://..."
+                value={fotoAval}
+                onChange={e => setFotoAval(e.target.value)}
+              />
               <button
                 className="pd-aval-btn"
                 onClick={handleEnviarAvaliacao}
@@ -550,6 +615,14 @@ export default function ProdutoTela({
                     <div className="pd-aval-quem">
                       <strong>
                         {a.cliente} {a.minha && <span className="pd-aval-badge">você</span>}
+                        {a.verificada && (
+                          <span
+                            className="pd-aval-verificada"
+                            title="Quem avaliou comprou este produto no Mercadins"
+                          >
+                            compra verificada
+                          </span>
+                        )}
                       </strong>
                       <span className="pd-aval-data">
                         {new Date(a.data_cadastro).toLocaleDateString('pt-BR', {
@@ -564,6 +637,20 @@ export default function ProdutoTela({
                     </span>
                   </div>
                   {a.texto && <p className="pd-aval-texto-item">{a.texto}</p>}
+                  {a.foto && (
+                    <a
+                      className="pd-aval-foto"
+                      href={a.foto}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={a.foto}
+                        alt={`Foto do produto enviada por ${a.cliente}`}
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
                 </article>
               ))
             )}

@@ -60,10 +60,21 @@ const listarHistorico = async (req, res) => {
   }
 };
 
-// Monta a lista de favoritos do usuário (formato usado pelo perfil)
+// Monta a lista de favoritos do usuário (usada pelo perfil e pela página de
+// favoritos): traz os dados da loja necessários para abrir a vitrine e mostrar
+// foto, cidade, nota e situação da loja.
 async function montarFavoritos(sql, id_usuario) {
   return await sql`
-    SELECT f.id, f.id_mercado, m.nome, f.data_cadastro
+    SELECT f.id, f.id_mercado, f.data_cadastro,
+           m.nome, m.slug, m.foto_perfil, m.cidade, m.estado, m.status,
+           COALESCE(
+             (SELECT ROUND(AVG(nota), 1) FROM avaliacoes a WHERE a.id_mercado = m.id_mercado),
+             0
+           )::float AS avaliacao,
+           COALESCE(
+             (SELECT COUNT(*) FROM avaliacoes a WHERE a.id_mercado = m.id_mercado),
+             0
+           )::int AS num_avaliacoes
     FROM favoritos f
     INNER JOIN mercados m ON m.id_mercado = f.id_mercado
     WHERE f.id_usuario = ${id_usuario}

@@ -12,8 +12,7 @@
   --danger: #e05252;
 }
 
-html, body {
-  height: 100%;
+.login-page {
   font-family: var(--font);
 }
 
@@ -34,7 +33,7 @@ html, body {
 }
 
 /* ── TEMA CLARO ── */
-.tema-claro .login-page { background: #f0f2f7; }
+.tema-claro .login-page { background: #f0f2f7; --text-muted: #5c6a84; }
 .tema-claro .login-page .right { background: #f0f2f7; }
 .tema-claro .login-page .form-header h1 { color: #0d2a5e; }
 .tema-claro .login-page .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
@@ -368,7 +367,6 @@ html, body {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  body { flex-direction: column; overflow: auto; }
   .login-page {
     flex-direction: column;
     overflow-y: auto;

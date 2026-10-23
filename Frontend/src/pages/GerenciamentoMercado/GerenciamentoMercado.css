@@ -953,3 +953,83 @@
   color: var(--cinza-texto); font-weight: 400;
   text-transform: none; /* explicação em caixa baixa, mesmo dentro do label */
 }
+
+/* ── Estoque e margem por produto (B6) ──────────────────────────────────── */
+.gm-prod-estoque {
+  display: inline-block; margin-top: 5px; padding: 2px 8px;
+  border-radius: var(--radius-full); font-size: 0.68rem; font-weight: 700;
+}
+.gm-prod-estoque--baixo { background: var(--pendente-bg); color: var(--pendente-texto); }
+.gm-prod-estoque--esgotado { background: rgba(248,113,113,0.15); color: #f87171; }
+
+.gm-prod-margem {
+  margin: 5px 0 0; font-size: 0.7rem; font-weight: 600;
+  color: var(--verde-texto);
+}
+
+/* ── Cupons de desconto (B3) ────────────────────────────────────────────── */
+.gm-cupom-form {
+  background: var(--azul-card); border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;
+}
+
+.gm-cupom-lista { display: flex; flex-direction: column; gap: 8px; }
+
+.gm-cupom-row {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  background: var(--azul-card); border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md); padding: 0.7rem 1rem;
+  animation: gmFadeUp 0.3s ease both;
+}
+.gm-cupom-row--inativo { opacity: 0.55; }
+
+.gm-cupom-codigo {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-weight: 800; font-size: 0.85rem; color: var(--amarelo);
+  letter-spacing: 0.03em;
+}
+
+.gm-cupom-desconto { font-size: 0.78rem; font-weight: 700; color: var(--branco); }
+
+.gm-cupom-info { font-size: 0.74rem; color: var(--cinza-texto); }
+
+.gm-cupom-status {
+  margin-left: auto; padding: 2px 10px; border-radius: var(--radius-full);
+  font-size: 0.68rem; font-weight: 700;
+  background: rgba(148,163,184,0.15); color: #94a3b8;
+}
+.gm-cupom-status--ativo { background: var(--verde-bg); color: var(--verde-texto); }
+
+.gm-cupom-apagar {
+  background: none; border: 1px solid rgba(248,113,113,0.4); color: #f87171;
+  border-radius: var(--radius-sm); padding: 4px 10px; font-size: 0.72rem;
+  font-weight: 600; cursor: pointer; transition: background 0.15s ease;
+}
+.gm-cupom-apagar:hover { background: rgba(248,113,113,0.12); }
+
+/* ── Entrega e retirada na aba Informações (B2) ─────────────────────────── */
+.gm-info-entrega {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem; align-items: end; margin-bottom: 0.8rem;
+}
+
+.gm-info-check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.8rem; color: var(--branco-suave); cursor: pointer;
+  align-self: end; padding-bottom: 8px;
+}
+.gm-info-check input { accent-color: var(--amarelo); width: 16px; height: 16px; cursor: pointer; }
+
+/* ── Troca de loja na sidebar (B9) ─────────────────────────────────────── */
+.gm-trocar-loja { display: flex; flex-direction: column; gap: 4px; padding: 0 14px 10px; }
+.gm-trocar-loja__lbl {
+  font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--cinza-texto);
+}
+.gm-trocar-loja__select {
+  width: 100%; background: var(--azul-card); color: var(--branco);
+  border: 1px solid var(--azul-borda); border-radius: var(--radius-sm);
+  padding: 7px 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  outline: none; transition: border-color 0.15s ease;
+}
+.gm-trocar-loja__select:focus { border-color: var(--amarelo); }

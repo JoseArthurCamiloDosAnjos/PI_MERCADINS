@@ -45,8 +45,13 @@ const listarHistorico = async (req, res) => {
   try {
     const sql = await conectar();
 
+    // itens_json: cópia dos itens comprados (id + quantidade) — é o que
+    // permite "recomprar": a tela reconstrói o carrinho com ele. slug: leva
+    // o cliente de volta à vitrine da loja. forma_pagamento: a tela só oferece
+    // "cancelar pedido" enquanto o cliente ainda não pagou.
     const historico = await sql`
-      SELECT h.id, h.id_mercado, m.nome AS mercado, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao
+      SELECT h.id, h.id_mercado, m.nome AS mercado, m.slug, h.produtos, h.valor_total,
+             h.data_compra, h.status, h.observacao, h.itens_json, h.forma_pagamento
       FROM historico_compras h
       INNER JOIN mercados m ON m.id_mercado = h.id_mercado
       WHERE h.id_usuario = ${id_usuario}

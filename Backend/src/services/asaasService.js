@@ -202,6 +202,12 @@ async function buscarQrPix(paymentId) {
   return chamarApi(`/v3/payments/${paymentId}/pixQrCode`)
 }
 
+// DELETE /v3/payments/{id} — cancela uma cobrança ainda não paga
+// (usado quando o cliente cancela um pedido que aguardava Pix/cartão)
+async function cancelarPagamento(paymentId) {
+  return chamarApi(`/v3/payments/${paymentId}`, { method: 'DELETE' })
+}
+
 module.exports = {
   obterPlano,
   criarCustomer,
@@ -212,4 +218,5 @@ module.exports = {
   criarPagamentoPedidoCartao,
   buscarPagamento,
   buscarQrPix,
+  cancelarPagamento,
 }

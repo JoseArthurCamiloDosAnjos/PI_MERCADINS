@@ -724,6 +724,237 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
 }
 
 // ─────────────────────────────────────────────
+// Item 4 — Cancelar pedido pelo CLIENTE
+// POST /api/pedidos/:id/cancelar
+//
+// O cliente desiste de um pedido que ainda não foi preparado. Só pode cancelar
+// quem é dono do pedido (o vendedor NÃO cancela pelo cliente). Regras:
+//   • Pendente (paga na entrega) ou aguardando pagamento → pode cancelar
+//   • Em preparo / a caminho / entregue → tarde demais (loja já começou)
+//   • Cancelado → não faz nada (idempotente)
+// Ao cancelar: devolve o estoque (itens_json), cancela a cobrança Pix/cartão
+// no Asaas (se houver) e avisa o cliente por e-mail.
+// ─────────────────────────────────────────────
+const cancelarPedido = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  const pedidoId   = Number(req.params.id);
+
+  if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
+    return res.status(400).json({ erro: 'Pedido inválido.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    const [pedido] = await sql`
+      SELECT id, id_usuario, id_mercado, status, forma_pagamento, asaas_payment_id, itens_json
+      FROM historico_compras
+      WHERE id = ${pedidoId}
+    `;
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    }
+
+    // Só o dono do pedido pode cancelá-lo
+    if (Number(pedido.id_usuario) !== Number(id_usuario)) {
+      return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
+    }
+
+    // Já cancelado: nada a fazer (responde ok para a tela não quebrar)
+    if (pedido.status === 'cancelado') {
+      return res.status(200).json({ mensagem: 'Este pedido já estava cancelado.', pedido: { id: pedido.id, status: 'cancelado' } });
+    }
+
+    // Só dá para cancelar antes da loja começar o preparo
+    if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
+      return res.status(400).json({
+        erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
+      });
+    }
+
+    // Pedido pago por Pix/cartão (ele nasce "aguardando_pagamento" e vira
+    // "pendente" quando o pagamento é confirmado) não pode ser cancelado pela
+    // tela: o dinheiro já saiu do cliente e só a loja resolve o estorno.
+    if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
+      return res.status(400).json({
+        erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
+      });
+    }
+
+    // Cancela o pedido (o WHERE protege contra corrida com o webhook do Asaas)
+    const [cancelado] = await sql`
+      UPDATE historico_compras
+      SET status = 'cancelado', motivo_cancelamento = 'Cancelado pelo cliente'
+      WHERE id = ${pedido.id} AND status IN ('pendente', 'aguardando_pagamento')
+      RETURNING id, status
+    `;
+    if (!cancelado) {
+      // O status mudou nesse meio-tempo (ex.: webhook confirmou o pagamento)
+      return res.status(409).json({ erro: 'Este pedido não pode mais ser cancelado.' });
+    }
+
+    // Devolve o estoque que foi baixado na compra
+    await devolverEstoque(sql, pedido.itens_json);
+
+    // Se havia uma cobrança Pix/cartão pendente, cancela no Asaas para não
+    // deixar um QR "vivo" que o cliente poderia pagar depois
+    if (pedido.asaas_payment_id) {
+      try {
+        await asaas.cancelarPagamento(pedido.asaas_payment_id);
+      } catch (err) {
+        // Asaas fora do ar ou cobrança já paga: o pedido local já está cancelado
+        console.error(`Falha ao cancelar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
+      }
+    }
+
+    // Avisa o cliente por e-mail (fire-and-forget: falha de e-mail não quebra)
+    montarDadosPedidoParaEmail(sql, pedido.id)
+      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
+      .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
+
+    res.status(200).json({
+      mensagem: 'Pedido cancelado. O estoque dos produtos voltou para a loja.',
+      pedido: { id: pedido.id, status: 'cancelado' },
+    });
+  } catch (err) {
+    console.error('ERRO cancelarPedido:', err);
+    res.status(500).json({ erro: 'Não foi possível cancelar o pedido. Tente novamente.' });
+  }
+};
+
+// ─────────────────────────────────────────────
+// Item 3 — Recomprar: devolve os produtos de um pedido com os dados ATUAIS
+// GET /api/pedidos/:id/itens-recompra
+//
+// O histórico guarda apenas "id + quantidade" (itens_json). Para a tela
+// reconstruir o carrinho ela precisa do nome, preço, foto e estoque de hoje —
+// é isso que este endpoint devolve. O que saiu de linha ou ficou sem estoque
+// é descartado aqui (a tela não recebe item que não dá para comprar).
+// Só o dono do pedido pode consultar.
+// ─────────────────────────────────────────────
+
+// Pedidos antigos (anteriores à migração 005) não têm a foto dos itens. O
+// resumo deles foi gravado como texto no formato "2x Banana prata (kg)" — daí
+// recuperamos o nome e a quantidade e procuramos o produto ATUAL da mesma loja
+// (se o item sumiu do cardápio ou ficou sem estoque, ele simplesmente sai).
+async function reconstruirItensAntigos(sql, pedido) {
+  const resumo = String(pedido.produtos || '');
+  const linhas = resumo
+    .split(',')
+    .map(texto => {
+      const partes = texto.trim().match(/^(\d+)\s*x\s+(.+)$/i);
+      if (!partes) return null;
+      return { quantidade: Number(partes[1]), nome: partes[2].trim() };
+    })
+    .filter(linha => linha && linha.quantidade > 0 && linha.nome);
+
+  const itens = [];
+  for (const linha of linhas) {
+    const [p] = await sql`
+      SELECT p.id_produto, p.id_categoria, p.nome, p.descricao, p.preco, p.imagem, p.estoque
+      FROM produtos p
+      JOIN categorias c ON c.id_categoria = p.id_categoria
+      WHERE c.id_mercado = ${pedido.id_mercado}
+        AND lower(p.nome) = lower(${linha.nome})
+      LIMIT 1
+    `;
+    if (!p || Number(p.estoque) <= 0) continue;
+
+    const estoque = Number(p.estoque) || 0;
+    itens.push({
+      id_produto:   Number(p.id_produto),
+      id_categoria: Number(p.id_categoria),
+      nome:         p.nome,
+      descricao:    p.descricao || '',
+      preco:        p.preco,
+      imagem:       p.imagem || '',
+      estoque,
+      quantidade:   Math.max(1, Math.min(linha.quantidade, estoque)),
+    });
+  }
+  return itens;
+}
+
+const itensParaRecompra = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  const pedidoId   = Number(req.params.id);
+
+  if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
+    return res.status(400).json({ erro: 'Pedido inválido.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    const [pedido] = await sql`
+      SELECT id, id_usuario, id_mercado, itens_json, produtos
+      FROM historico_compras
+      WHERE id = ${pedidoId}
+    `;
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    }
+    if (Number(pedido.id_usuario) !== Number(id_usuario)) {
+      return res.status(403).json({ erro: 'Você não pode recomprar este pedido.' });
+    }
+
+    let bruto = pedido.itens_json;
+    if (typeof bruto === 'string') {
+      try { bruto = JSON.parse(bruto); } catch { bruto = null; }
+    }
+
+    let itens = [];
+
+    if (Array.isArray(bruto) && bruto.length > 0) {
+      // Caminho normal: foto dos itens gravada na hora da compra
+      const ids = bruto
+        .map(i => Number(i?.id_produto))
+        .filter(n => Number.isInteger(n) && n > 0);
+
+      const produtos = await sql`
+        SELECT id_produto, id_categoria, nome, descricao, preco, imagem, estoque
+        FROM produtos
+        WHERE id_produto = ANY(${ids}) AND estoque > 0
+        ORDER BY nome ASC
+      `;
+      const porId = new Map(produtos.map(p => [Number(p.id_produto), p]));
+
+      itens = bruto
+        .map(i => {
+          const p = porId.get(Number(i?.id_produto));
+          if (!p) return null;
+          const estoque = Number(p.estoque) || 0;
+          const quantidade = Math.max(1, Math.min(Number(i?.quantidade) || 1, estoque));
+          return {
+            id_produto:   Number(p.id_produto),
+            id_categoria: Number(p.id_categoria),
+            nome:         p.nome,
+            descricao:    p.descricao || '',
+            preco:        p.preco,
+            imagem:       p.imagem || '',
+            estoque,
+            quantidade,
+          };
+        })
+        .filter(Boolean);
+    } else {
+      // Pedido antigo (feito antes da foto dos itens existir): reconstrói a
+      // partir do resumo gravado, no formato "2x Banana prata (kg)"
+      itens = await reconstruirItensAntigos(sql, pedido);
+    }
+
+    if (itens.length === 0) {
+      return res.status(400).json({ erro: 'Os itens deste pedido não estão mais disponíveis.' });
+    }
+
+    res.status(200).json({ itens });
+  } catch (err) {
+    console.error('ERRO itensParaRecompra:', err);
+    res.status(500).json({ erro: 'Não foi possível montar o carrinho deste pedido.' });
+  }
+};
+
+// ─────────────────────────────────────────────
 // B4 — Acompanhamento do pedido (visão do CLIENTE)
 // GET /api/pedidos/meus — lista dos pedidos que o cliente fez
 // ─────────────────────────────────────────────
@@ -873,6 +1104,8 @@ module.exports = {
   criarPedido,
   listarPedidosMercado,
   atualizarStatusPedido,
+  cancelarPedido,
+  itensParaRecompra,
   financeiroMercado,
   processarPagamentoPedido,
   meusPedidos,

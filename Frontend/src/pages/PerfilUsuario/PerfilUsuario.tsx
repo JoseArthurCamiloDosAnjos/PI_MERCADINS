@@ -20,8 +20,6 @@ import {
   IconInbox,
   IconInfo,
   IconMessage,
-  IconPlus,
-  IconArrowRight,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -285,10 +283,6 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
   onPedidoCancelado: (id: number) => void;
 }) {
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
-  const navigate = useNavigate();
-  // Último pedido cuja loja ainda existe no site — base do convite
-  // "Deseja adicionar mais algum item?" logo abaixo da lista do histórico
-  const ultimaLojaComSlug = historico.find(p => p.slug);
   // Avisos (sucesso/erro) das ações do histórico: recomprar e cancelar pedido
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -342,43 +336,16 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
             <span>Seus pedidos aparecerão aqui assim que você comprar em um mercado.</span>
           </div>
         ) : (
-          <>
-            <div className="pu-hist-grid">
-              {historico.map(p => (
-                <CardPedido
-                  key={p.id}
-                  p={p}
-                  showToast={showToast}
-                  onPedidoCancelado={onPedidoCancelado}
-                />
-              ))}
-            </div>
-
-            {/* Abaixo do último item: convida a adicionar mais alguma coisa
-                ao carrinho (aparece só quando dá para recomprar — ou seja,
-                quando o pedido ainda tem loja cadastrada) */}
-            {ultimaLojaComSlug && (
-              <div className="pu-hist-mais">
-                <div className="pu-hist-mais-texto">
-                  <span className="pu-hist-mais-icone" aria-hidden="true"><IconPlus size={16} /></span>
-                  <div>
-                    <strong>Deseja adicionar mais algum item?</strong>
-                    <p>
-                      Entre na loja de {ultimaLojaComSlug.mercado} e monte um carrinho do seu
-                      jeito. Você também pode usar “Comprar de novo” em qualquer pedido acima.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="pu-hist-mais-btn"
-                  onClick={() => navigate(`/vitrine/${ultimaLojaComSlug.slug}`)}
-                >
-                  Adicionar mais itens <IconArrowRight size={15} />
-                </button>
-              </div>
-            )}
-          </>
+          <div className="pu-hist-grid">
+            {historico.map(p => (
+              <CardPedido
+                key={p.id}
+                p={p}
+                showToast={showToast}
+                onPedidoCancelado={onPedidoCancelado}
+              />
+            ))}
+          </div>
         )}
       </section>
 

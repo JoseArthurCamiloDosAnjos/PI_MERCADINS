@@ -317,6 +317,10 @@ export default function CartScreen({
 
   const clearCart = () => onClearCart?.();
 
+  // Nome da loja citado no convite "Deseja adicionar mais algum item?"
+  // (vazio só enquanto a tela ainda carrega o mercado)
+  const nomeLoja = storeName.trim() || "a loja";
+
   const handleCheckout = () => {
     if (faltaMinimo) return;
     // Entrega: a loja precisa saber onde entregar — endereço é obrigatório
@@ -451,6 +455,24 @@ export default function CartScreen({
                 </div>
               </div>
             ))}
+
+            {/* Abaixo do último item: convida a adicionar mais produtos,
+                citando a loja que o cliente acabou de abrir */}
+            <div className="cart-addmais">
+              <div className="cart-addmais__texto">
+                <span className="cart-addmais__icone" aria-hidden="true"><IconStore /></span>
+                <div>
+                  <strong>Deseja adicionar mais algum item?</strong>
+                  <p>
+                    Volte para {nomeLoja} e continue comprando: os itens já
+                    adicionados continuam guardados aqui no carrinho.
+                  </p>
+                </div>
+              </div>
+              <button type="button" className="cart-addmais__botao" onClick={onBack}>
+                Adicionar mais itens
+              </button>
+            </div>
           </div>
         ) : (
           <div className="cart-empty">

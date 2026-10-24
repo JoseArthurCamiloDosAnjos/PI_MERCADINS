@@ -550,6 +550,35 @@
   color: var(--text-secondary);
 }
 
+/* Aviso de loja fechada — aparece logo abaixo das opções de entrega/retirada
+   e diz quando a compra poderá ser retirada ou quando ela vai chegar */
+.cart-aviso-fechado {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.cart-aviso-fechado svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.cart-aviso-fechado p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.cart-aviso-fechado strong {
+  color: var(--text-primary);
+}
+
 /* Como quer pagar: na entrega, Pix ou cartão (B3) */
 .cart-payment {
   border: 0;

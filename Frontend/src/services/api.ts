@@ -179,6 +179,12 @@ export const api = {
     request('/pedidos/meus'),
   detalharPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}`),
+  // Cliente cancela o próprio pedido (ainda não preparado)
+  cancelarPedido: (pedidoId: string | number) =>
+    request(`/pedidos/${pedidoId}/cancelar`, { method: 'POST' }),
+  // Produtos do pedido com preço/estoque atuais, para recomprar
+  itensRecompra: (pedidoId: string | number) =>
+    request(`/pedidos/${pedidoId}/itens-recompra`),
 
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>
@@ -285,6 +291,11 @@ export const api = {
   listarFavoritos:  () => request('/usuario/favoritos'),
   listarAvaliacoes: () => request('/usuario/avaliacoes'),
   listarHistorico:  () => request('/usuario/historico'),
+
+  // ── Depoimentos sobre a plataforma ─────────────────────────────────────────
+  listarDepoimentos: () => request('/depoimentos'),
+  criarDepoimento: (dados: { nota: number; texto: string }) =>
+    request('/depoimentos', { method: 'POST', body: JSON.stringify(dados) }),
 
   // ── Assinaturas (planos) ─────────────────────────────────────────────────────
   criarCheckout: (dados: {

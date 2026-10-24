@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import { IconShoppingCart } from "../../components/Icons";
+import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
 import "./Cart.css";
 
 // ---------------------------------------------------------------
@@ -43,6 +44,9 @@ interface CartScreenProps {
   ofereceRetirada?: boolean;
   tipoEntrega?: "entrega" | "retirada";
   onTipoEntregaChange?: (tipo: "entrega" | "retirada") => void;
+  // Horário de funcionamento da loja (JSON de mercados.horario) — usado para
+  // avisar, quando a loja está fechada, quando a compra poderá ser retirada
+  horario?: string | null;
 
   // ── Cupom de desconto ─────────────────────────────────────────────────────
   cupom?: CupomAplicado | null;
@@ -184,6 +188,7 @@ export default function CartScreen({
   ofereceRetirada = true,
   tipoEntrega = "entrega",
   onTipoEntregaChange,
+  horario = null,
   cupom = null,
   verificandoCupom = false,
   onAplicarCupom,
@@ -225,6 +230,12 @@ export default function CartScreen({
     pedidoMinimo > 0 &&
     subtotal > 0 &&
     subtotal < pedidoMinimo;
+
+  // Loja aberta ou fechada AGORA? null = a loja ainda não cadastrou horário
+  // (aí não mostramos aviso nenhum). "Abre amanhã às 08:00" etc.
+  const horarioMercado = useMemo(() => parseHorario(horario), [horario]);
+  const lojaAberta = estaAberto(horarioMercado);
+  const proximaAbre = proximaAbertura(horarioMercado);
 
   const updateQuantity = (id: string, delta: number) => {
     // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
@@ -404,6 +415,30 @@ export default function CartScreen({
                 </span>
               </label>
             </fieldset>
+          )}
+
+          {/* Loja fechada: avisa quando a compra poderá ser retirada ou quando
+              ela vai chegar (o pedido só é preparado quando a loja abrir) */}
+          {items.length > 0 && lojaAberta === false && (
+            <div className="cart-aviso-fechado" role="status">
+              <IconStore />
+              <p>
+                <strong>A loja está fechada agora.</strong>{" "}
+                {tipoEfetivo === "retirada" ? (
+                  <>
+                    {proximaAbre ? `${proximaAbre}. ` : ""}
+                    Quando a loja abrir, o seu pedido será preparado e você poderá
+                    retirar no balcão.
+                  </>
+                ) : (
+                  <>
+                    {proximaAbre ? `${proximaAbre}. ` : ""}
+                    Quando a loja abrir, o seu pedido será preparado e sairá para
+                    entrega — é assim que a sua compra vai chegar.
+                  </>
+                )}
+              </p>
+            </div>
           )}
 
           <div className="cart-summary__rows">

@@ -9,6 +9,7 @@ import {
   IconMenu,
   IconX,
   IconPencil,
+  IconMessage,
 } from "./Icons";
 import { getReturnUrl } from "../utils/returnUrl";
 
@@ -30,11 +31,13 @@ interface SidebarProps {
   showCriarMercado?: boolean;
 }
 
-// Só abas com funcionalidade real: dados do perfil e segurança da conta.
+// Só abas com funcionalidade real: dados do perfil, segurança da conta e
+// depoimento sobre a plataforma.
 // (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
   { icon: <IconUser size={18} />, label: "Meu perfil" },
   { icon: <IconLock size={18} />, label: "Segurança" },
+  { icon: <IconMessage size={18} />, label: "Depoimentos" },
 ];
 
 export default function Sidebar({

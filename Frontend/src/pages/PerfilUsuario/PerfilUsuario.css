@@ -352,24 +352,143 @@
   color: #60a5fa;
 }
 
-/* Botão que leva para a tela de acompanhamento ao vivo do pedido (B4) */
+/* Botão que leva para a tela de acompanhamento ao vivo do pedido (B4).
+   Deixado grande e com fundo escuro para ser o botão mais fácil de achar
+   no cartão (leitura à distância, público mais velho). */
 .pu-hcard-acompanhar {
-  margin-top: 8px;
-  align-self: flex-start;
-  background: none;
-  border: 1px solid #dde3ef;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #1a3a7a;
+  margin-top: 10px;
+  width: 100%;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #1a3a7a;
+  border: 1px solid #1a3a7a;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .pu-hcard-acompanhar:hover {
-  background: #f0f2f7;
-  border-color: #1a3a7a;
+  background: #12295a;
+  border-color: #12295a;
+}
+
+.pu-hcard-acompanhar:active {
+  transform: translateY(1px);
+}
+
+/* Linha com as outras ações do pedido: recomprar e cancelar */
+.pu-hcard-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pu-hcard-recomprar,
+.pu-hcard-cancelar {
+  flex: 1 1 auto;
+  min-width: 130px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Comprar de novo — botão sólido (ação principal do cartão) */
+.pu-hcard-recomprar {
+  background: var(--amarelo);
+  border: 1.5px solid var(--amarelo);
+  color: #0a1f4e;
+}
+
+.pu-hcard-recomprar:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.pu-hcard-recomprar:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Cancelar pedido — contorno discreto, para não confundir com o principal */
+.pu-hcard-cancelar {
+  background: none;
+  border: 1.5px solid #e2574c;
+  color: #e2574c;
+}
+
+.pu-hcard-cancelar:hover {
+  background: rgba(226, 87, 76, 0.12);
+}
+
+/* Confirmação em linha: evita cancelar sem querer */
+.pu-hcard-confirma {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1.5px dashed #e2574c;
+  border-radius: 10px;
+  background: rgba(226, 87, 76, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--branco);
+}
+
+.pu-hcard-confirma-botoes {
+  display: flex;
+  gap: 8px;
+}
+
+.pu-hcard-confirma-sim {
+  background: #e2574c;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.pu-hcard-confirma-sim:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.pu-hcard-confirma-nao {
+  background: none;
+  border: 1.5px solid var(--azul-item);
+  color: var(--cinza-texto);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+/* O que foi comprado neste pedido */
+.pu-hcard-itens {
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cinza-texto);
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 /* AVALIAÇÕES */
@@ -960,4 +1079,172 @@
 .pu-timeline-item.ativa .pu-timeline-label {
   color: var(--amarelo);
   font-weight: 700;
+}
+
+/* ─── DEPOIMENTOS (aba "Depoimentos") ──────────────────────────────────────── */
+
+.pu-dep-intro {
+  font-size: 13px;
+  color: var(--cinza-texto);
+  line-height: 1.6;
+  margin: 6px 0 14px;
+}
+
+.pu-dep-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.pu-dep-nota {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pu-dep-estrelas {
+  display: flex;
+  gap: 6px;
+}
+
+.pu-dep-estrela {
+  background: none;
+  border: none;
+  padding: 2px;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--azul-borda);
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.pu-dep-estrela:hover {
+  transform: scale(1.12);
+}
+
+.pu-dep-estrela.ativa {
+  color: var(--amarelo);
+}
+
+.pu-dep-texto {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  background: var(--azul-sidebar);
+  border: 1.5px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  color: var(--branco);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pu-dep-texto:focus {
+  border-color: var(--azul-claro);
+}
+
+.pu-dep-texto::placeholder {
+  color: var(--cinza-texto);
+}
+
+.pu-dep-resumo {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--amarelo);
+}
+
+.pu-dep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.pu-dep-card {
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  opacity: 0;
+  animation: popIn 0.4s ease forwards;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.pu-dep-card:hover {
+  border-color: var(--amarelo);
+  transform: translateY(-3px);
+}
+
+.pu-dep-card-topo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pu-dep-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--azul-medio);
+  color: var(--amarelo);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pu-dep-nome {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--branco);
+}
+
+.pu-dep-eu {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--amarelo);
+  border: 1px solid var(--amarelo);
+  background: rgba(245, 197, 24, 0.12);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.pu-dep-texto-lista {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--cinza-texto);
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.pu-dep-data {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--cinza-texto);
+}
+
+@media (max-width: 720px) {
+  .pu-dep-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pu-hcard-acoes {
+    flex-direction: column;
+  }
+
+  .pu-hcard-recomprar,
+  .pu-hcard-cancelar {
+    width: 100%;
+  }
 }

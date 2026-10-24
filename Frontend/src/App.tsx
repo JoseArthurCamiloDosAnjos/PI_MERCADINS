@@ -130,6 +130,8 @@ function CartWrapper() {
   const [pedidoMinimo, setPedidoMinimo] = useState<number>(0)
   const [ofereceEntrega, setOfereceEntrega] = useState<boolean>(true)
   const [ofereceRetirada, setOfereceRetirada] = useState<boolean>(true)
+  // Horário de funcionamento da loja (aviso de mercado fechado no carrinho)
+  const [horarioMercado, setHorarioMercado] = useState<string | null>(null)
   // Estado do carrinho: como receber, cupom, agendamento e pagamento (B2/B3/B10)
   const [tipoEntrega, setTipoEntrega] = useState<'entrega' | 'retirada'>('entrega')
   const [cupom, setCupom] = useState<{ codigo: string; desconto: number } | null>(null)
@@ -163,6 +165,7 @@ function CartWrapper() {
         setPedidoMinimo(Number(m.pedido_minimo) || 0)
         setOfereceEntrega(m.oferece_entrega !== false)
         setOfereceRetirada(m.oferece_retirada !== false)
+        setHorarioMercado(typeof m.horario === 'string' ? m.horario : null)
 
         // A5 — devolve as escolhas guardadas na última visita a esta loja
         const salvas = carregarEscolhas(m.id_mercado)
@@ -306,6 +309,7 @@ function CartWrapper() {
         pedidoMinimo={pedidoMinimo}
         ofereceEntrega={ofereceEntrega}
         ofereceRetirada={ofereceRetirada}
+        horario={horarioMercado}
         tipoEntrega={tipoEntrega}
         onTipoEntregaChange={setTipoEntrega}
         cupom={cupom}

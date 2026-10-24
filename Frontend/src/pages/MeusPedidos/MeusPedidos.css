@@ -353,6 +353,104 @@
   .mp-card:hover { transform: none; }
 }
 
+/* ---------------- Pedido cancelado / cancelar pedido (item 4) --------------- */
+.mp-cancelado {
+  margin-top: 22px;
+  border: 1px solid #f3c2c8;
+  background: #fdeff1;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.mp-cancelado strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14.5px;
+  color: #9b1c2c;
+}
+
+.mp-cancelado p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #7a4450;
+}
+
+.mp-cancelar {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.mp-cancelar__botao {
+  background: #ffffff;
+  border: 1.5px solid #e2574c;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #c0392b;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mp-cancelar__botao:hover { background: #fdeff1; }
+
+.mp-cancelar__dica {
+  margin: 0;
+  font-size: 12px;
+  color: #8892a4;
+}
+
+.mp-cancelar-confirmacao {
+  margin-top: 22px;
+  border: 1.5px dashed #e2574c;
+  background: #fff7f8;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9b1c2c;
+}
+
+.mp-cancelar-confirmacao__botoes {
+  display: flex;
+  gap: 8px;
+}
+
+.mp-cancelar-confirmacao__sim {
+  background: #e2574c;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.mp-cancelar-confirmacao__sim:disabled { opacity: 0.6; cursor: wait; }
+
+.mp-cancelar-confirmacao__nao {
+  background: #ffffff;
+  border: 1.5px solid #dde3ef;
+  border-radius: var(--radius-full, 999px);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f7396;
+  cursor: pointer;
+}
+
+.mp-cancelar-confirmacao__nao:disabled { opacity: 0.6; cursor: wait; }
+
 /* Estados vazios / carregando */
 .mp-vazio {
   background: #ffffff;

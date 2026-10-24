@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { useToast } from '../../hooks/useToast';
-import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword } from '../../hooks/useBlockEmojis';
+import { useToast, type Toast } from '../../hooks/useToast';
+import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword, removeEmojis } from '../../hooks/useBlockEmojis';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
@@ -19,13 +19,33 @@ import {
   IconMail,
   IconInbox,
   IconInfo,
+  IconMessage,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; }
+// slug: leva o cliente de volta à loja quando ele clica em "Comprar de novo"
+// forma_pagamento: a tela só oferece cancelar enquanto o cliente ainda não pagou
+interface Historico { id: number; id_mercado: number; mercado: string; slug?: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; forma_pagamento?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
+interface Depoimento { id: number; nota: number; texto: string; cliente: string; data_cadastro: string; minha: boolean; }
 
-const TITULOS = ['Meu perfil', 'Segurança'];
+type ShowToast = (tipo: Toast['tipo'], mensagem: string) => void;
+
+// Formato de um item salvo no navegador pelo useCarrinho (localStorage)
+interface ItemCarrinhoLocal {
+  produto: {
+    id_produto: number;
+    id_categoria?: number;
+    nome?: string;
+    descricao?: string;
+    preco?: string;
+    imagem?: string;
+    estoque?: number;
+  };
+  quantidade: number;
+}
+
+const TITULOS = ['Meu perfil', 'Segurança', 'Depoimentos'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -99,14 +119,172 @@ function PilhaStatus({ status }: { status: string }) {
   );
 }
 
-function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
+// ─── Card de uma compra no histórico ──────────────────────────────────────────
+// Mostra o que foi comprado, o status e os botões de ação:
+//   • "Acompanhar pedido" — leva para a tela de acompanhamento ao vivo
+//   • "Comprar de novo"   — reconstrói o carrinho com os itens da compra
+//   • "Cancelar pedido"   — só enquanto a loja ainda não começou o preparo
+function CardPedido({ p, showToast, onPedidoCancelado }: {
+  p: Historico;
+  showToast: ShowToast;
+  onPedidoCancelado: (id: number) => void;
+}) {
+  const navigate = useNavigate();
+  const [confirmando, setConfirmando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [recomprando, setRecomprando] = useState(false);
+
+  // Dá para cancelar enquanto a loja não começou o preparo e o cliente ainda
+  // não pagou (pedido pago por Pix/cartão é resolvido com a loja)
+  const pago = p.status === 'pendente' && ['pix', 'cartao'].includes(p.forma_pagamento ?? 'presencial');
+  const podeCancelar = ['pendente', 'aguardando_pagamento'].includes(p.status) && !pago;
+
+  async function confirmarCancelamento() {
+    setCancelando(true);
+    try {
+      const res = await api.cancelarPedido(p.id);
+      showToast('sucesso', res.mensagem || 'Pedido cancelado.');
+      onPedidoCancelado(p.id);
+    } catch (e: unknown) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível cancelar o pedido.');
+    } finally {
+      setCancelando(false);
+      setConfirmando(false);
+    }
+  }
+
+  async function recomprar() {
+    if (!p.slug) {
+      showToast('erro', 'Não foi possível encontrar a loja deste pedido.');
+      return;
+    }
+    setRecomprando(true);
+    try {
+      const res = await api.itensRecompra(p.id);
+      const itens: {
+        id_produto: number; id_categoria: number; nome: string; descricao?: string;
+        preco?: string; imagem?: string; estoque?: number; quantidade: number;
+      }[] = res.itens ?? [];
+
+      if (itens.length === 0) {
+        showToast('erro', 'Os itens deste pedido não estão mais disponíveis.');
+        return;
+      }
+
+      // Grava os itens no carrinho desta loja (mesmo formato do useCarrinho)
+      // e abre a tela do carrinho. O que já estava lá é mantido.
+      const chave = `carrinho_${p.id_mercado}`;
+      let atuais: ItemCarrinhoLocal[] = [];
+      try { atuais = JSON.parse(localStorage.getItem(chave) ?? '[]'); } catch { atuais = []; }
+
+      const novos = [...atuais];
+      for (const item of itens) {
+        const idx = novos.findIndex(i => i.produto.id_produto === item.id_produto);
+        if (idx >= 0) {
+          novos[idx] = { ...novos[idx], quantidade: item.quantidade };
+        } else {
+          novos.push({
+            produto: {
+              id_produto: item.id_produto,
+              id_categoria: item.id_categoria,
+              nome: item.nome,
+              descricao: item.descricao,
+              preco: item.preco,
+              imagem: item.imagem,
+              estoque: item.estoque,
+            },
+            quantidade: item.quantidade,
+          });
+        }
+      }
+      localStorage.setItem(chave, JSON.stringify(novos));
+
+      showToast('sucesso', 'Itens adicionados ao carrinho. Confira antes de finalizar.');
+      navigate(`/vitrine/${p.slug}/carrinho`);
+    } catch (e: unknown) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível montar o carrinho.');
+    } finally {
+      setRecomprando(false);
+    }
+  }
+
+  return (
+    <div className="pu-hcard" style={{ animationDelay: '0.3s' }}>
+      <div className="pu-hcard-img"><IconShoppingBag size={26} /></div>
+      <div className="pu-hcard-body">
+        <p className="pu-hcard-nome">{p.mercado}</p>
+        <p className="pu-hcard-preco">R$ {p.valor_total}</p>
+        <p className="pu-hcard-itens" title="Itens comprados">{p.produtos}</p>
+        <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
+        <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
+        <PilhaStatus status={p.status} />
+        <button
+          className="pu-hcard-acompanhar"
+          type="button"
+          onClick={() => navigate(`/pedidos/${p.id}`)}
+        >
+          Acompanhar pedido
+        </button>
+        <div className="pu-hcard-acoes">
+          <button
+            className="pu-hcard-recomprar"
+            type="button"
+            onClick={recomprar}
+            disabled={recomprando}
+          >
+            {recomprando ? 'Montando carrinho…' : 'Comprar de novo'}
+          </button>
+          {podeCancelar && !confirmando && (
+            <button
+              className="pu-hcard-cancelar"
+              type="button"
+              onClick={() => setConfirmando(true)}
+            >
+              Cancelar pedido
+            </button>
+          )}
+        </div>
+        {confirmando && (
+          <div className="pu-hcard-confirma" role="alertdialog" aria-label="Confirmar cancelamento">
+            <span>Cancelar este pedido?</span>
+            <div className="pu-hcard-confirma-botoes">
+              <button
+                className="pu-hcard-confirma-sim"
+                type="button"
+                onClick={confirmarCancelamento}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando…' : 'Sim, cancelar'}
+              </button>
+              <button
+                className="pu-hcard-confirma-nao"
+                type="button"
+                onClick={() => setConfirmando(false)}
+                disabled={cancelando}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        )}
+        {p.observacao && (
+          <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, onPedidoCancelado }: {
   favoritos: Favorito[];
   historico: Historico[];
   avaliacoes: Avaliacao[];
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
+  onPedidoCancelado: (id: number) => void;
 }) {
-  const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
+  // Avisos (sucesso/erro) das ações do histórico: recomprar e cancelar pedido
+  const { toasts, showToast, dismissToast } = useToast();
 
   return (
     <>
@@ -159,27 +337,13 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
           </div>
         ) : (
           <div className="pu-hist-grid">
-            {historico.map((p, i) => (
-              <div key={p.id} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
-                <div className="pu-hcard-img"><IconShoppingBag size={26} /></div>
-                <div className="pu-hcard-body">
-                  <p className="pu-hcard-nome">{p.mercado}</p>
-                  <p className="pu-hcard-preco">R$ {p.valor_total}</p>
-                  <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
-                  <PilhaStatus status={p.status} />
-                  <button
-                    className="pu-hcard-acompanhar"
-                    type="button"
-                    onClick={() => navigate(`/pedidos/${p.id}`)}
-                  >
-                    Acompanhar pedido
-                  </button>
-                  {p.observacao && (
-                    <p className="pu-hcard-obs" title="Sua observação neste pedido"><IconInfo size={12} /> {p.observacao}</p>
-                  )}
-                </div>
-              </div>
+            {historico.map(p => (
+              <CardPedido
+                key={p.id}
+                p={p}
+                showToast={showToast}
+                onPedidoCancelado={onPedidoCancelado}
+              />
             ))}
           </div>
         )}
@@ -210,6 +374,8 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos }: 
           </div>
         )}
       </section>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }
@@ -400,6 +566,150 @@ function TelaSeguranca() {
   );
 }
 
+// ─── Tela de depoimentos ──────────────────────────────────────────────────────
+// O cliente conta o que achou da plataforma: uma nota de 1 a 5 estrelas e um
+// texto. Cada cliente deixa um depoimento — se escrever de novo, o anterior é
+// atualizado. Abaixo do formulário, ficam os depoimentos recentes de quem já
+// usa o Mercadins (inclusive o dele, marcado com "Seu depoimento").
+function TelaDepoimentos() {
+  const { toasts, showToast, dismissToast } = useToast();
+  const [lista, setLista] = useState<Depoimento[]>([]);
+  const [media, setMedia] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [nota, setNota] = useState(5);
+  const [texto, setTexto] = useState('');
+  const [jaPublicou, setJaPublicou] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+
+  const carregar = useCallback(() => {
+    api.listarDepoimentos()
+      .then(res => {
+        const depoimentos: Depoimento[] = res.depoimentos ?? [];
+        setLista(depoimentos);
+        setMedia(Number(res.media) || 0);
+        setTotal(Number(res.total) || 0);
+
+        // Já escreveu antes? Carrega no formulário para poder editar
+        const meu = depoimentos.find(d => d.minha);
+        if (meu) {
+          setJaPublicou(true);
+          setNota(meu.nota);
+          setTexto(meu.texto);
+        }
+      })
+      .catch(() => { /* sem conexão: a tela apenas fica sem a lista */ })
+      .finally(() => setCarregando(false));
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    const textoLimpo = removeEmojis(texto).trim();
+    if (textoLimpo.length < 10) {
+      showToast('erro', 'Escreva pelo menos algumas palavras sobre a sua experiência.');
+      return;
+    }
+    setEnviando(true);
+    try {
+      const res = await api.criarDepoimento({ nota, texto: textoLimpo });
+      showToast('sucesso', res.mensagem || 'Depoimento registrado com sucesso.');
+      carregar();
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível registrar o depoimento.');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <>
+      <section>
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMessage size={15} /></span>O que você achou do Mercadins?</h2>
+        <p className="pu-dep-intro">
+          Conte como foi a sua experiência com a plataforma. O seu depoimento ajuda outras
+          pessoas e melhora o Mercadins.
+        </p>
+
+        <form className="pu-dep-form" onSubmit={enviar}>
+          <div className="pu-dep-nota">
+            <span className="pu-modal-label">Sua nota</span>
+            <div className="pu-dep-estrelas" role="group" aria-label="Nota de 1 a 5 estrelas">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`pu-dep-estrela${n <= nota ? ' ativa' : ''}`}
+                  onClick={() => setNota(n)}
+                  aria-label={`Dar ${n} estrela${n > 1 ? 's' : ''}`}
+                  aria-pressed={n <= nota}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pu-modal-group">
+            <label className="pu-modal-label" htmlFor="pu-depoimento-texto">Seu depoimento</label>
+            <textarea
+              id="pu-depoimento-texto"
+              className="pu-dep-texto"
+              rows={4}
+              maxLength={600}
+              value={texto}
+              onChange={e => setTexto(removeEmojis(e.target.value))}
+              placeholder="Ex.: O Mercadins facilitou minhas compras, achei tudo rápido e os produtos chegaram certinhos."
+            />
+            <span className="pu-input-hint">{texto.length}/600 caracteres</span>
+          </div>
+
+          <button className="pu-modal-btn-save pu-form-btn" type="submit" disabled={enviando}>
+            {enviando ? 'Enviando...' : jaPublicou ? 'Atualizar depoimento' : 'Publicar depoimento'}
+          </button>
+        </form>
+      </section>
+
+      <div className="pu-divider" />
+
+      <section>
+        <div className="pu-sec-row">
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Depoimentos de quem já usa</h2>
+          {total > 0 && <span className="pu-dep-resumo">{media.toFixed(1)} ★ · {total} depoimento{total > 1 ? 's' : ''}</span>}
+        </div>
+
+        {carregando ? (
+          <p className="pu-empty-inline">Carregando depoimentos…</p>
+        ) : lista.length === 0 ? (
+          <div className="pu-empty">
+            <div className="pu-empty-icon"><IconMessage size={22} /></div>
+            <p>Nenhum depoimento ainda</p>
+            <span>Seja o primeiro a contar como foi a sua experiência no Mercadins.</span>
+          </div>
+        ) : (
+          <div className="pu-dep-grid">
+            {lista.map((d, i) => (
+              <article key={d.id} className="pu-dep-card" style={{ animationDelay: `${0.3 + i * 0.07}s` }}>
+                <header className="pu-dep-card-topo">
+                  <span className="pu-dep-avatar" aria-hidden="true">{getIniciais(d.cliente || '?')}</span>
+                  <span className="pu-dep-nome">{d.cliente}</span>
+                  {d.minha && <span className="pu-dep-eu">Seu depoimento</span>}
+                </header>
+                <Stars n={d.nota} />
+                <p className="pu-dep-texto-lista">{d.texto}</p>
+                <time className="pu-dep-data">{new Date(d.data_cadastro).toLocaleDateString('pt-BR')}</time>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </>
+  );
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PerfilUsuario() {
@@ -430,9 +740,24 @@ export default function PerfilUsuario() {
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
+  // Depois de cancelar, o cartão muda de status na mesma hora (sem recarregar)
+  function marcarPedidoCancelado(id: number) {
+    setHistorico(atual =>
+      atual.map(h => (h.id === id ? { ...h, status: 'cancelado' } : h))
+    );
+  }
+
   const TELAS = [
-    <TelaPerfil favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
-    <TelaSeguranca />,
+    <TelaPerfil
+      key="perfil"
+      favoritos={favoritos}
+      historico={historico}
+      avaliacoes={avaliacoes}
+      onAtualizarFavoritos={setFavoritos}
+      onPedidoCancelado={marcarPedidoCancelado}
+    />,
+    <TelaSeguranca key="seguranca" />,
+    <TelaDepoimentos key="depoimentos" />,
   ];
 
   useEffect(() => {

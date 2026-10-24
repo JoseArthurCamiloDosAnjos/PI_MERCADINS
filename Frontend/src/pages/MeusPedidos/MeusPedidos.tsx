@@ -139,6 +139,8 @@ function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
   const [pagamento, setPagamento] = useState<PagamentoPix | null>(null);
   const [carregado, setCarregado] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
   const { showToast } = useToast();
 
   const carregar = useCallback(async () => {
@@ -194,6 +196,21 @@ function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
     }
   }
 
+  // Item 4 — o cliente cancela o próprio pedido (só quando ainda dá tempo)
+  async function cancelarPedido() {
+    setCancelando(true);
+    try {
+      const res = await api.cancelarPedido(id);
+      showToast('sucesso', res.mensagem || 'Pedido cancelado.');
+      await carregar();
+    } catch (e: unknown) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível cancelar o pedido.');
+    } finally {
+      setCancelando(false);
+      setConfirmando(false);
+    }
+  }
+
   if (!carregado) {
     return (
       <>
@@ -214,6 +231,13 @@ function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
 
   const total = pedido.valorTotal - pedido.desconto + pedido.taxaEntrega;
   const aguardandoPix = pedido.status === 'aguardando_pagamento' && !!pagamento;
+  // Cancelar só quando: quem olha é o cliente (não a loja), a loja ainda não
+  // começou o preparo e o pedido ainda não foi pago
+  const pagoJa = pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.formaPagamento);
+  const podeCancelar =
+    !pedido.gerencia &&
+    ['pendente', 'aguardando_pagamento'].includes(pedido.status) &&
+    !pagoJa;
 
   // Linha do tempo: pedidos cancelados/que aguardam pagamento mostram o caminho normal
   const passos = PASSOS_NORMAL;
@@ -301,12 +325,62 @@ function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
           </div>
         )}
 
+        {/* Pedido cancelado: explica o que aconteceu com a compra */}
+        {pedido.status === 'cancelado' && (
+          <div className="mp-cancelado">
+            <strong>Esta compra foi cancelada.</strong>
+            <p>
+              Os produtos voltaram para o estoque da loja e este pedido não será
+              preparado. Se você tiver alguma dúvida, fale com a loja.
+            </p>
+          </div>
+        )}
+
+        {/* Cancelar pedido (cliente, enquanto ainda dá tempo) */}
+        {podeCancelar && !confirmando && (
+          <div className="mp-cancelar">
+            <button
+              className="mp-cancelar__botao"
+              type="button"
+              onClick={() => setConfirmando(true)}
+            >
+              Cancelar pedido
+            </button>
+            <p className="mp-cancelar__dica">
+              Dá para cancelar enquanto a loja ainda não começou o preparo.
+            </p>
+          </div>
+        )}
+
+        {confirmando && (
+          <div className="mp-cancelar-confirmacao" role="alertdialog" aria-label="Confirmar cancelamento">
+            <span>Cancelar este pedido?</span>
+            <div className="mp-cancelar-confirmacao__botoes">
+              <button
+                className="mp-cancelar-confirmacao__sim"
+                type="button"
+                onClick={cancelarPedido}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando…' : 'Sim, cancelar'}
+              </button>
+              <button
+                className="mp-cancelar-confirmacao__nao"
+                type="button"
+                onClick={() => setConfirmando(false)}
+                disabled={cancelando}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mp-info">
           <div className="mp-info__linha">
             <span>Itens</span>
             <span>{pedido.itens}</span>
-          </div>
-          <div className="mp-info__linha">
+          </div>          <div className="mp-info__linha">
             <span>Produtos</span>
             <span>{formatBRL(pedido.valorTotal)}</span>
           </div>

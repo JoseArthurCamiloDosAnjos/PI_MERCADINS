@@ -161,6 +161,7 @@ const corpoPedido = (pedido) => `
       ${pedido.tipoEntrega === 'retirada'
         ? '<p style="margin: 0 0 6px;"><strong>Retirada no balcão</strong></p>'
         : '<p style="margin: 0 0 6px;"><strong>Entrega</strong></p>'}
+      ${pedido.enderecoEntrega ? `<p style="margin: 0 0 6px;">Endereço: ${pedido.enderecoEntrega}</p>` : ''}
       ${pedido.agendamento ? `<p style="margin: 0 0 6px;">Quando: ${pedido.agendamento}</p>` : ''}
       <p style="margin: 0 0 4px;">Produtos: ${formatarBRL(pedido.valorTotal)}</p>
       ${Number(pedido.desconto) > 0 ? `<p style="margin: 0 0 4px; color: #1a8e4a;">Cupom ${pedido.cupom}: − ${formatarBRL(pedido.desconto)}</p>` : ''}
@@ -280,6 +281,7 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
 
             <div style="border: 1px solid #dde3ef; border-radius: 12px; padding: 14px 20px; margin: 0 0 20px; font-size: 13px; color: #4a5568;">
               <p style="margin: 0 0 6px;"><strong>${pedido.tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}</strong></p>
+              ${pedido.enderecoEntrega ? `<p style="margin: 0 0 6px;">Endereço para entregar: <strong>${pedido.enderecoEntrega}</strong></p>` : ''}
               ${pedido.agendamento ? `<p style="margin: 0 0 6px;">Quando: ${pedido.agendamento}</p>` : ''}
               ${pedido.observacao ? `<p style="margin: 0 0 6px;">Observação: ${pedido.observacao}</p>` : ''}
               <p style="margin: 0 0 4px;">Produtos: ${formatarBRL(pedido.valorTotal)}</p>

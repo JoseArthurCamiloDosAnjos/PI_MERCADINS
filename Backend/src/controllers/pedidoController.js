@@ -14,6 +14,7 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
   const [dados] = await sql`
     SELECT h.id, h.produtos, h.valor_total, h.taxa_entrega, h.desconto, h.cupom_codigo,
            h.tipo_entrega, h.agendamento, h.status, h.observacao, h.forma_pagamento,
+           h.endereco_entrega,
            u.email, u.nome AS cliente, m.nome AS mercado, m.email AS email_vendedor
     FROM historico_compras h
     JOIN usuarios u ON u.id_usuario = h.id_usuario
@@ -32,6 +33,7 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
     taxa: Number(dados.taxa_entrega) || 0,
     total: (Number(dados.valor_total) || 0) - (Number(dados.desconto) || 0) + (Number(dados.taxa_entrega) || 0),
     tipoEntrega: dados.tipo_entrega === 'retirada' ? 'retirada' : 'entrega',
+    enderecoEntrega: dados.endereco_entrega || '',
     agendamento: dados.agendamento || '',
     observacao: dados.observacao || '',
     formaPagamento: dados.forma_pagamento || 'presencial',
@@ -93,7 +95,7 @@ async function devolverEstoque(sql, itens) {
 const criarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const mercadoId  = Number(req.params.id);
-  const { itens, observacao, tipo_entrega, cupom, agendamento, forma_pagamento } = req.body;
+  const { itens, observacao, tipo_entrega, cupom, agendamento, forma_pagamento, endereco_entrega } = req.body;
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return res.status(400).json({ erro: 'Informe os itens do pedido.' });
@@ -130,6 +132,12 @@ const criarPedido = async (req, res) => {
   // (ex.: "Hoje à tarde", "Amanhã de manhã") — máx. 60 caracteres
   const agendamentoLimpo = typeof agendamento === 'string'
     ? agendamento.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 60)
+    : '';
+
+  // Endereço de entrega (item 1): só existe quando a compra será entregue
+  // (na retirada no balcão não faz sentido) — máx. 300 caracteres
+  const enderecoLimpo = tipoEntrega === 'entrega' && typeof endereco_entrega === 'string'
+    ? endereco_entrega.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
     : '';
 
   try {
@@ -256,15 +264,16 @@ const criarPedido = async (req, res) => {
       INSERT INTO historico_compras (
         id_usuario, id_mercado, produtos, valor_total, status, observacao,
         tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, produto_ids,
-        forma_pagamento, itens_json
+        forma_pagamento, itens_json, endereco_entrega
       )
       VALUES (
         ${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, ${statusInicial}, ${observacaoLimpa},
         ${tipoEntrega}, ${taxaEntrega.toFixed(2)}, ${agendamentoLimpo}, ${cupomRegistro ? cupomRegistro.codigo : ''}, ${desconto.toFixed(2)}, ${produtoIds},
-        ${formaPagamento}, ${JSON.stringify(itensJson)}
+        ${formaPagamento}, ${JSON.stringify(itensJson)}, ${enderecoLimpo}
       )
       RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao,
-                tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, forma_pagamento
+                tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, forma_pagamento,
+                endereco_entrega
     `;
 
     // A3 — Baixa automática de estoque (com trava no banco).
@@ -409,7 +418,7 @@ const listarPedidosMercado = async (req, res) => {
     const pedidos = await sql`
       SELECT h.id, h.produtos, h.valor_total, h.data_compra, h.status, h.observacao,
              h.tipo_entrega, h.taxa_entrega, h.agendamento, h.cupom_codigo, h.desconto,
-             h.forma_pagamento,
+             h.forma_pagamento, h.endereco_entrega,
              u.nome AS cliente
       FROM historico_compras h
       JOIN usuarios u ON u.id_usuario = h.id_usuario
@@ -430,6 +439,7 @@ const listarPedidosMercado = async (req, res) => {
         tipoEntrega: p.tipo_entrega === 'retirada' ? 'retirada' : 'entrega',
         taxaEntrega: Number(p.taxa_entrega) || 0,
         agendamento: p.agendamento || '',
+        enderecoEntrega: p.endereco_entrega || '',
         cupom: p.cupom_codigo || '',
         desconto: Number(p.desconto) || 0,
         formaPagamento: p.forma_pagamento || 'presencial',
@@ -1085,6 +1095,7 @@ const detalharPedido = async (req, res) => {
         cupom: pedido.cupom_codigo || '',
         total,
         tipoEntrega: pedido.tipo_entrega === 'retirada' ? 'retirada' : 'entrega',
+        enderecoEntrega: pedido.endereco_entrega || '',
         agendamento: pedido.agendamento || '',
         observacao: pedido.observacao || '',
         status: pedido.status || 'pendente',

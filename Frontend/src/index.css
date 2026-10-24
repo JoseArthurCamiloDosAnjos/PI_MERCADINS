@@ -35,6 +35,18 @@ body {
   overflow-x: hidden;
 }
 
+/* Símbolo do Mercadins (logo) em qualquer tela: sempre clicável, com cursor
+   de mão. Ao clicar, o site recarrega e volta para a página inicial
+   (regra única em src/utils/inicio.ts). */
+.logo-img,
+.mobile-logo-img,
+.mp-logo-img,
+.sf-logo,
+.sp-logo img,
+.inst-logo img {
+  cursor: pointer;
+}
+
 /* Scrollbar personalizada — tema escuro */
 * {
   scrollbar-width: thin;

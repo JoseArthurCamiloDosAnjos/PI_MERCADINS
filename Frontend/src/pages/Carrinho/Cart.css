@@ -668,6 +668,97 @@
   border: 0;
 }
 
+/* Endereço de entrega — aparece só quando a compra será entregue,
+   logo acima do campo "Quando quer receber?" */
+.cart-endereco {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.cart-endereco__legenda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cart-endereco__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.cart-endereco__campo--rua         { grid-column: span 3; }
+.cart-endereco__campo--numero      { grid-column: span 1; }
+.cart-endereco__campo--bairro      { grid-column: span 2; }
+.cart-endereco__campo--cep         { grid-column: span 2; }
+.cart-endereco__campo--cidade      { grid-column: span 2; }
+.cart-endereco__campo--complemento { grid-column: span 2; }
+
+.cart-endereco__campo label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__campo input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.15s ease;
+}
+
+.cart-endereco__campo input::placeholder {
+  color: var(--text-muted);
+}
+
+.cart-endereco__campo input:focus {
+  border-color: var(--accent);
+}
+
+.cart-endereco__campo.is-erro input {
+  border-color: var(--danger);
+}
+
+.cart-endereco__erro {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .cart-endereco__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cart-endereco__campo,
+  .cart-endereco__campo--rua,
+  .cart-endereco__campo--numero,
+  .cart-endereco__campo--bairro,
+  .cart-endereco__campo--cep,
+  .cart-endereco__campo--cidade,
+  .cart-endereco__campo--complemento { grid-column: span 1; }
+  .cart-endereco__campo--rua { grid-column: span 2; }
+}
+
 /* Agendamento: quando o cliente quer receber ou retirar */
 .cart-agendamento {
   display: flex;

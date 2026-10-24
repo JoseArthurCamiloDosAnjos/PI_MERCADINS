@@ -7,6 +7,7 @@ import ToastContainer from '../../components/Toast';
 import './RegistrarMercado.css';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.jpeg';
+import { irParaInicio } from '../../utils/inicio';
 import {
   IconShoppingCart,
   IconStore,
@@ -322,7 +323,8 @@ export default function RegistrarMercado() {
           <div className="circle circle-3" />
           <div className="logo-wrap">
             <img className="logo-img" src={logoImg} alt="Mercadins"
-              onClick={() => navigate('/')}
+              title="Voltar ao início"
+              onClick={irParaInicio}
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             <span className="logo-tagline">Seu mercado inteligente</span>
           </div>
@@ -433,8 +435,7 @@ export default function RegistrarMercado() {
         <div className="logo-wrap">
           <img className="logo-img" src={logoImg} alt="Mercadins"
             title="Voltar ao início"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/')}
+            onClick={irParaInicio}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

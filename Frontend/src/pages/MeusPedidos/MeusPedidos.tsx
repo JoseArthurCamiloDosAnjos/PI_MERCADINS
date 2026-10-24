@@ -49,6 +49,8 @@ interface PedidoLista {
 interface PedidoDetalhe extends PedidoLista {
   cliente: string;
   observacao: string;
+  // Endereço de entrega (item 1) — preenchido só quando a compra foi entregue
+  enderecoEntrega?: string;
   gerencia: boolean;
 }
 
@@ -394,6 +396,12 @@ function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
             <span>{pedido.tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}</span>
             <span>{pedido.taxaEntrega > 0 ? formatBRL(pedido.taxaEntrega) : 'Grátis'}</span>
           </div>
+          {pedido.enderecoEntrega && (
+            <div className="mp-info__linha">
+              <span>Endereço de entrega</span>
+              <span>{pedido.enderecoEntrega}</span>
+            </div>
+          )}
           {pedido.agendamento && (
             <div className="mp-info__linha">
               <span>Quando</span>

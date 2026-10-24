@@ -10,6 +10,7 @@ import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
+import { type EnderecoEntrega, carregarEndereco, salvarEndereco, formatarEndereco } from './utils/endereco'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -141,6 +142,9 @@ function CartWrapper() {
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
+  // Endereço de entrega (item 1): fica salvo no navegador para o cliente não
+  // digitar toda vez que voltar a comprar
+  const [endereco, setEndereco] = useState<EnderecoEntrega>(() => carregarEndereco())
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
   // Subtotal atual para revalidar o cupom restaurado (A5)
@@ -210,6 +214,21 @@ function CartWrapper() {
     })
   }, [mercadoId, tipoEntrega, cupom, agendamento])
 
+  // Item 1 — o endereço de entrega também é guardado no navegador
+  useEffect(() => {
+    salvarEndereco(endereco)
+  }, [endereco])
+
+  // Entrega ou retirada efetiva (mesma regra usada dentro da tela do carrinho:
+  // loja que só faz uma das opções já nasce com ela escolhida)
+  const soEntrega = ofereceEntrega && !ofereceRetirada
+  const soRetirada = !ofereceEntrega && ofereceRetirada
+  const tipoEfetivo: 'entrega' | 'retirada' = soRetirada
+    ? 'retirada'
+    : soEntrega
+      ? 'entrega'
+      : tipoEntrega
+
   const itensConvertidos = carrinho.itens.map(item => ({
     id: String(item.produto.id_produto),
     name: item.produto.nome,
@@ -251,6 +270,8 @@ function CartWrapper() {
         itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
         observacao: observacao.trim() || undefined,
         tipo_entrega: tipoEntrega,
+        // Só existe endereço quando a compra será entregue
+        endereco_entrega: tipoEfetivo === 'entrega' ? formatarEndereco(endereco) : undefined,
         cupom: cupom?.codigo || undefined,
         agendamento: agendamento || undefined,
         forma_pagamento: formaPagamento,
@@ -318,6 +339,8 @@ function CartWrapper() {
         onRemoverCupom={() => setCupom(null)}
         agendamento={agendamento}
         onAgendamentoChange={setAgendamento}
+        endereco={endereco}
+        onEnderecoChange={setEndereco}
         formaPagamento={formaPagamento}
         onFormaPagamentoChange={setFormaPagamento}
       />

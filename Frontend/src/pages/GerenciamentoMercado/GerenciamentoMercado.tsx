@@ -60,6 +60,8 @@ interface Pedido {
   observacao?: string;
   // Entrega, retirada, cupom e agendamento (B2/B3/B10)
   tipoEntrega: 'entrega' | 'retirada';
+  // Endereço para entregar (item 1) — só quando a compra é entregue
+  enderecoEntrega?: string;
   taxaEntrega: number;
   agendamento?: string;
   cupom?: string;
@@ -699,6 +701,11 @@ function SecPedidos({
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
                     <IconInfo size={12} /> {p.observacao}
+                  </span>
+                )}
+                {p.enderecoEntrega && (
+                  <span className="gm-pedido-obs" title="Endereço de entrega do cliente">
+                    <IconMapPin size={12} /> {p.enderecoEntrega}
                   </span>
                 )}
                 {(p.tipoEntrega === 'retirada' || p.taxaEntrega > 0 || p.cupom || p.agendamento || p.formaPagamento !== 'presencial') && (
@@ -1688,6 +1695,7 @@ export default function GerenciamentoMercado({
             dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
             observacao?: string;
             tipoEntrega?: 'entrega' | 'retirada'; taxaEntrega?: number;
+            enderecoEntrega?: string;
             agendamento?: string; cupom?: string; desconto?: number;
             formaPagamento?: 'presencial' | 'pix' | 'cartao';
           }): Pedido => {
@@ -1705,6 +1713,7 @@ export default function GerenciamentoMercado({
               label: info.label,
               observacao: (p.observacao ?? '').trim(),
               tipoEntrega: p.tipoEntrega === 'retirada' ? 'retirada' : 'entrega',
+              enderecoEntrega: (p.enderecoEntrega ?? '').trim(),
               taxaEntrega: Number(p.taxaEntrega) || 0,
               agendamento: (p.agendamento ?? '').trim(),
               cupom: (p.cupom ?? '').trim(),

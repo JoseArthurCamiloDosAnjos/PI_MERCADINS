@@ -6,6 +6,7 @@ import { BASE_URL } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from '../../components/PasswordStrength';
 import logoImg from '../../assets/logo.jpeg';
+import { irParaInicio } from '../../utils/inicio';
 import './RedefinirSenha.css';
 
 function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void }) {
@@ -74,6 +75,7 @@ export default function RedefinirSenha() {
         <div className="circle circle-3" />
         <div className="logo-wrap">
           <img className="logo-img" src={logoImg} alt="Logo do Mercadins"
+            title="Voltar ao início" onClick={irParaInicio}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>

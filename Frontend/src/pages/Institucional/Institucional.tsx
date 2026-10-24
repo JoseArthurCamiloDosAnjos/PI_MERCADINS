@@ -1,5 +1,5 @@
 import { useLayoutEffect, type ReactNode } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo2.png";
 import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import "./Institucional.css";
@@ -35,9 +35,10 @@ export default function PaginaInstitucional({ titulo, subtitulo, children }: Pro
     <div className="inst-page">
       <header className="inst-header">
         <div className="inst-container inst-header-inner">
-          <Link to="/" className="inst-logo" title="Voltar ao início">
+          {/* Símbolo do Mercadins: recarrega a página e volta para o início */}
+          <a href="/" className="inst-logo" title="Voltar ao início">
             <img src={logo} alt="Mercadins" />
-          </Link>
+          </a>
           <button className="inst-voltar" onClick={voltar}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />

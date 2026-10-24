@@ -234,6 +234,82 @@
   gap: 12px;
 }
 
+/* Convite "Deseja adicionar mais algum item?" — bloco logo abaixo do último
+   item do histórico, no mesmo padrão visual do restante da tela */
+.pu-hist-mais {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 16px 18px;
+  background: var(--azul-card);
+  border: 1px dashed var(--azul-item);
+  border-radius: var(--radius-lg);
+}
+
+.pu-hist-mais-texto {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.pu-hist-mais-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--azul-medio);
+  border: 1px solid var(--azul-claro);
+  color: var(--amarelo);
+  flex-shrink: 0;
+}
+
+.pu-hist-mais-texto strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--branco);
+}
+
+.pu-hist-mais-texto p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cinza-texto);
+}
+
+.pu-hist-mais-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--amarelo);
+  border: 1.5px solid var(--amarelo);
+  color: #0a1f4e;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.pu-hist-mais-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 560px) {
+  .pu-hist-mais { padding: 14px; }
+  .pu-hist-mais-btn { width: 100%; justify-content: center; }
+}
+
 .pu-hcard {
   background: var(--azul-card);
   border-radius: var(--radius-lg);

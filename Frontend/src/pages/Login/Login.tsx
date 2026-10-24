@@ -9,6 +9,7 @@ import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword } from '../../h
 import ToastContainer from '../../components/Toast';
 import logoImg from "../../assets/logo.jpeg";
 import logo2Img from "../../assets/logo2.png";
+import { irParaInicio } from "../../utils/inicio";
 
 export default function Login() {
   const { login } = useAuth();
@@ -88,6 +89,8 @@ export default function Login() {
             className="logo-img"
             src={logoImg}
             alt="Logo do Mercadins"
+            title="Voltar ao início"
+            onClick={irParaInicio}
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -96,7 +99,8 @@ export default function Login() {
       <div className="right">
         <div className="form-card">
           <div className="mobile-logo">
-            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
+            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins"
+              title="Voltar ao início" onClick={irParaInicio} />
           </div>
           <div className="form-header">
             <h1>

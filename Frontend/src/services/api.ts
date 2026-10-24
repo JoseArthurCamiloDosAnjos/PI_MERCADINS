@@ -164,6 +164,8 @@ export const api = {
       itens: { id_produto: number; quantidade: number }[];
       observacao?: string;
       tipo_entrega?: 'entrega' | 'retirada';
+      // Endereço de entrega (item 1) — só quando a compra será entregue
+      endereco_entrega?: string;
       cupom?: string;
       agendamento?: string;
       forma_pagamento?: 'presencial' | 'pix' | 'cartao';

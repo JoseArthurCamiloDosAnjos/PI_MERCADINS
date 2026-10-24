@@ -857,6 +857,9 @@ button {
   height: 38px;
   border-radius: 10px;
   background: var(--navy);
+  /* Ícone sempre claro sobre o quadrado escuro: sem esta regra ele herdava a
+     cor do texto (quase preta) e praticamente sumia dentro do azul */
+  color: #ffffff;
   font-size: 18px;
   box-shadow: 0 2px 7px rgba(13, 40, 88, 0.28);
 }

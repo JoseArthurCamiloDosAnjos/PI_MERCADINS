@@ -12,6 +12,7 @@ import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
 import logoImg from "../../assets/logo.jpeg";
 import logo2Img from "../../assets/logo2.png";
+import { irParaInicio } from "../../utils/inicio";
 
 interface FieldState {
   status: "" | "error" | "success";
@@ -327,6 +328,8 @@ export default function Register() {
             className="logo-img"
             src={logoImg}
             alt="Logo do Mercadins"
+            title="Voltar ao início"
+            onClick={irParaInicio}
           />
           <span className="logo-tagline">Seu mercado inteligente</span>
         </div>
@@ -336,7 +339,8 @@ export default function Register() {
       <div className="right">
         <div className="form-card">
           <div className="mobile-logo">
-            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins" />
+            <img className="mobile-logo-img" src={logo2Img} alt="Mercadins"
+              title="Voltar ao início" onClick={irParaInicio} />
           </div>
           <div className="form-header">
             <h1>Vamos<br />começar!</h1>

@@ -4,6 +4,7 @@ import { PLANOS, type Plano } from '../MercadinsPromo/planos';
 import ConsultorModal from '../../components/ConsultorModal';
 import './SelecionarPlano.css';
 import logo from '../../assets/logo2.png';
+import { irParaInicio } from '../../utils/inicio';
 
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
@@ -42,7 +43,7 @@ export default function SelecionarPlano() {
         </button>
         <div
           className="sp-logo"
-          onClick={() => navigate('/')}
+          onClick={irParaInicio}
           title="Voltar ao início"
         >
           <img src={logo} alt="Mercadins" />

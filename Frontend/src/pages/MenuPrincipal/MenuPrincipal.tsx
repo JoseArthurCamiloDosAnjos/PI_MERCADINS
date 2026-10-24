@@ -23,6 +23,7 @@ import {
 } from "../../components/Icons";
 import logo from "../../assets/logo2.png";
 import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
+import { irParaInicio } from "../../utils/inicio";
 import { tipoPrincipal } from "../../utils/tipoLoja";
 import { localizacao } from "../../utils/localizacao";
 import HorarioSemana from "../../components/HorarioSemana";
@@ -147,15 +148,6 @@ function irParaSecao(id: string) {
 // Volta pro topo da página na hora, sem animação
 function irParaTopo() {
   window.scrollTo(0, 0);
-}
-
-// Logo: em casa recarrega a página; de qualquer outra tela, volta pra home
-function irParaInicio() {
-  if (window.location.pathname === "/") {
-    window.location.reload();
-  } else {
-    window.location.assign("/");
-  }
 }
 
 export default function Mercadins() {

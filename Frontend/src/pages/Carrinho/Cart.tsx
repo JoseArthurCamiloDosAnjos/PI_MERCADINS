@@ -2,6 +2,14 @@ import { useMemo, useState } from "react";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import { IconShoppingCart } from "../../components/Icons";
 import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
+import {
+  type EnderecoEntrega,
+  type CampoEndereco,
+  ENDERECO_VAZIO,
+  NOMES_CAMPOS_ENDERECO,
+  camposEnderecoFaltando,
+  mascaraCep,
+} from "../../utils/endereco";
 import "./Cart.css";
 
 // ---------------------------------------------------------------
@@ -57,6 +65,10 @@ interface CartScreenProps {
   // ── Agendamento: quando o cliente quer receber/retirar ────────────────────
   agendamento?: string;
   onAgendamentoChange?: (valor: string) => void;
+
+  // ── Endereço de entrega: aparece quando a compra será entregue ────────────
+  endereco?: EnderecoEntrega;
+  onEnderecoChange?: (endereco: EnderecoEntrega) => void;
 
   // ── Pagamento (B3): pagar na entrega, Pix ou cartão ──────────────────────
   formaPagamento?: "presencial" | "pix" | "cartao";
@@ -167,6 +179,54 @@ const IconCalendar = () => (
   </svg>
 );
 
+const IconMapPin = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+// Um campo do endereço de entrega (rua, número, bairro, CEP...)
+function CampoEndereco({
+  id,
+  label,
+  campo,
+  valor,
+  placeholder,
+  maxLength = 80,
+  inputMode,
+  autoComplete,
+  comErro,
+  onMudar,
+}: {
+  id: string;
+  label: string;
+  campo: CampoEndereco | "complemento";
+  valor: string;
+  placeholder?: string;
+  maxLength?: number;
+  inputMode?: "text" | "numeric";
+  autoComplete?: string;
+  comErro?: boolean;
+  onMudar: (valor: string) => void;
+}) {
+  return (
+    <div className={`cart-endereco__campo cart-endereco__campo--${campo}${comErro ? " is-erro" : ""}`}>
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        type="text"
+        value={valor}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        onChange={(e) => onMudar(e.target.value)}
+      />
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------
@@ -195,6 +255,8 @@ export default function CartScreen({
   onRemoverCupom,
   agendamento = "",
   onAgendamentoChange,
+  endereco = ENDERECO_VAZIO,
+  onEnderecoChange,
   formaPagamento = "presencial",
   onFormaPagamentoChange,
 }: CartScreenProps) {
@@ -202,6 +264,9 @@ export default function CartScreen({
   // sincronizada com o navegador (localStorage) e com o banco.
   const items = initialItems;
   const [coupon, setCoupon] = useState("");
+  // Aviso de endereço incompleto — só aparece quando o cliente tenta finalizar
+  // uma entrega sem precher os campos obrigatórios
+  const [erroEndereco, setErroEndereco] = useState<string | null>(null);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = useMemo(
@@ -254,8 +319,36 @@ export default function CartScreen({
 
   const handleCheckout = () => {
     if (faltaMinimo) return;
+    // Entrega: a loja precisa saber onde entregar — endereço é obrigatório
+    if (tipoEfetivo === "entrega" && items.length > 0) {
+      const faltando = camposEnderecoFaltando(endereco);
+      if (faltando.length > 0) {
+        const nomes = faltando.map((campo) => NOMES_CAMPOS_ENDERECO[campo]);
+        setErroEndereco(
+          faltando.length === 1
+            ? `Para a entrega, preencha o campo ${nomes[0]}.`
+            : `Para a entrega, preencha: ${nomes.join(", ")}.`
+        );
+        return;
+      }
+    }
+    setErroEndereco(null);
     onCheckout?.(items, total);
   };
+
+  // Mudança em um campo do endereço: limpa o aviso anterior e avisa o pai
+  const mudarEndereco = (campo: keyof EnderecoEntrega, valor: string) => {
+    setErroEndereco(null);
+    const novo: EnderecoEntrega = { ...endereco };
+    // O CEP é digitado sem hífen e gravado já formatado (12345-678)
+    novo[campo] = campo === "cep" ? mascaraCep(valor) : valor;
+    onEnderecoChange?.(novo);
+  };
+
+  // Campos do endereço que ficam destacados enquanto o aviso estiver na tela
+  const camposComErro = new Set<CampoEndereco>(
+    erroEndereco ? camposEnderecoFaltando(endereco) : []
+  );
 
   const aplicarCupom = () => {
     const codigo = coupon.trim();
@@ -497,6 +590,84 @@ export default function CartScreen({
                 Remover
               </button>
             </div>
+          )}
+
+          {/* Endereço de entrega — aparece só quando a compra será entregue,
+              logo acima de "Quando quer receber?" */}
+          {items.length > 0 && tipoEfetivo === "entrega" && (
+            <fieldset className="cart-endereco">
+              <legend className="cart-endereco__legenda">
+                <IconMapPin />
+                Onde você quer receber?
+              </legend>
+
+              <div className="cart-endereco__grid">
+                <CampoEndereco
+                  id="cart-endereco-rua"
+                  label="Rua"
+                  campo="rua"
+                  valor={endereco.rua}
+                  placeholder="Ex.: Rua das Flores"
+                  autoComplete="address-line1"
+                  comErro={camposComErro.has("rua")}
+                  onMudar={(valor) => mudarEndereco("rua", valor)}
+                />
+                <CampoEndereco
+                  id="cart-endereco-numero"
+                  label="Número"
+                  campo="numero"
+                  valor={endereco.numero}
+                  placeholder="Ex.: 123"
+                  maxLength={10}
+                  inputMode="numeric"
+                  comErro={camposComErro.has("numero")}
+                  onMudar={(valor) => mudarEndereco("numero", valor)}
+                />
+                <CampoEndereco
+                  id="cart-endereco-bairro"
+                  label="Bairro"
+                  campo="bairro"
+                  valor={endereco.bairro}
+                  placeholder="Ex.: Centro"
+                  comErro={camposComErro.has("bairro")}
+                  onMudar={(valor) => mudarEndereco("bairro", valor)}
+                />
+                <CampoEndereco
+                  id="cart-endereco-cep"
+                  label="CEP"
+                  campo="cep"
+                  valor={endereco.cep}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  comErro={camposComErro.has("cep")}
+                  onMudar={(valor) => mudarEndereco("cep", valor)}
+                />
+                <CampoEndereco
+                  id="cart-endereco-cidade"
+                  label="Cidade"
+                  campo="cidade"
+                  valor={endereco.cidade}
+                  placeholder="Ex.: Taquaritinga"
+                  autoComplete="address-level2"
+                  comErro={camposComErro.has("cidade")}
+                  onMudar={(valor) => mudarEndereco("cidade", valor)}
+                />
+                <CampoEndereco
+                  id="cart-endereco-complemento"
+                  label="Complemento (opcional)"
+                  campo="complemento"
+                  valor={endereco.complemento}
+                  placeholder="Apto, bloco, referência…"
+                  onMudar={(valor) => mudarEndereco("complemento", valor)}
+                />
+              </div>
+
+              {erroEndereco && (
+                <p className="cart-endereco__erro" role="alert">{erroEndereco}</p>
+              )}
+            </fieldset>
           )}
 
           {/* Quando quer receber (entrega ou retirada) */}

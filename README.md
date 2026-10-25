@@ -119,6 +119,8 @@ PI_MERCADINS/
 │       └── utils/                  # SEO por página, tipos de loja, paletas
 ├── docs/
 │   ├── API.md                      # documentação de todos os endpoints
+│   ├── pagamentos.md               # sistema de pagamento (planos, Asaas, vigência)
+│   ├── backup.md                   # backup e restauração do banco
 │   └── ambientes.md                # desenvolvimento x produção
 └── .github/workflows/              # verificações automáticas e backup do banco
 ```
@@ -127,7 +129,8 @@ PI_MERCADINS/
 
 ## Documentação
 
-- **[docs/API.md](docs/API.md)** — todos os endpoints da API (autenticação, mercados, produtos, pedidos, cupons, administração);
+- **[docs/API.md](docs/API.md)** — todos os endpoints da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, administração);
+- **[docs/pagamentos.md](docs/pagamentos.md)** — sistema de pagamento: planos, confirmação via webhook, vigência, suspensão e cancelamento;
 - **[docs/ambientes.md](docs/ambientes.md)** — como os ambientes de desenvolvimento e produção são separados.
 
 ---

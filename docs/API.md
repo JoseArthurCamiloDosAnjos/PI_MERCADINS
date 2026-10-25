@@ -121,6 +121,35 @@ Criação de cupom:
 
 ---
 
+## Assinaturas (planos das lojas) — `/api/assinaturas`
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| POST | `/checkout` | token | Cria *customer* + assinatura no Asaas e devolve `{ idAssinatura, urlCheckout }` (o mercado só nasce depois, quando o pagamento confirma) |
+| GET | `/minha` | token | **Todas** as assinaturas do usuário: plano, validade, dias restantes, **mercado vinculado**, faturas e link de pagamento |
+| POST | `/:id/cancelar` | token | Cancela no Asaas e localmente (a loja segue no ar até o fim da vigência) |
+| POST | `/api/webhooks/asaas` | token do webhook | Recebe os eventos de pagamento do Asaas (sem JWT; valida o cabeçalho `webhook-security-token`) |
+
+Corpo do checkout:
+
+```json
+{
+  "codigo_plano": "profissional",
+  "ciclo": "mensal",
+  "mercado": { "nome": "Mercado da Esquina", "descricao": "...", "horario": "...", "cats": "..." }
+}
+```
+
+- `codigo_plano`: `basico` (Essencial) ou `profissional` (Plus);
+- `ciclo`: `mensal` ou `anual`;
+- `mercado`: o mesmo payload do cadastro de loja (validado no servidor e
+  guardado em `assinaturas.dados_mercado`).
+
+Fluxo completo, estados, carência de 3 dias e como testar:
+**[docs/pagamentos.md](pagamentos.md)**.
+
+---
+
 ## Pedidos
 
 | Método | Rota | Acesso | O que faz |

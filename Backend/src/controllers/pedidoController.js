@@ -981,6 +981,7 @@ const meusPedidos = async (req, res) => {
       FROM historico_compras h
       JOIN mercados m ON m.id_mercado = h.id_mercado
       WHERE h.id_usuario = ${id_usuario}
+        AND h.removido_cliente = false
       ORDER BY h.data_compra DESC
       LIMIT 50
     `;
@@ -1111,6 +1112,45 @@ const detalharPedido = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// Cliente remove um pedido da própria lista "Meus pedidos".
+// É uma exclusão APARÊNCIA: o pedido sai da tela do cliente, mas continua
+// gravado no banco e aparece normalmente no painel da loja.
+// ─────────────────────────────────────────────
+const removerDoHistorico = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  const pedidoId   = Number(req.params.id);
+
+  if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
+    return res.status(400).json({ erro: 'Pedido inválido.' });
+  }
+
+  try {
+    const sql = await conectar();
+
+    const [pedido] = await sql`
+      SELECT id, id_usuario FROM historico_compras WHERE id = ${pedidoId}
+    `;
+
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    }
+
+    if (pedido.id_usuario !== id_usuario) {
+      return res.status(403).json({ erro: 'Este pedido não pertence a você.' });
+    }
+
+    await sql`
+      UPDATE historico_compras SET removido_cliente = true WHERE id = ${pedidoId}
+    `;
+
+    res.status(200).json({ mensagem: 'Pedido removido do seu histórico.' });
+  } catch (err) {
+    console.error('ERRO removerDoHistorico:', err);
+    res.status(500).json({ erro: 'Não foi possível remover o pedido do histórico.' });
+  }
+};
+
 module.exports = {
   criarPedido,
   listarPedidosMercado,
@@ -1121,4 +1161,5 @@ module.exports = {
   processarPagamentoPedido,
   meusPedidos,
   detalharPedido,
+  removerDoHistorico,
 };

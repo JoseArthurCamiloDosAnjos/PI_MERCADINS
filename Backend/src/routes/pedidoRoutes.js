@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const autenticar = require('../middleware/authMiddleware');
-const { atualizarStatusPedido, meusPedidos, detalharPedido, cancelarPedido, itensParaRecompra } = require('../controllers/pedidoController');
+const { atualizarStatusPedido, meusPedidos, detalharPedido, cancelarPedido, itensParaRecompra, removerDoHistorico } = require('../controllers/pedidoController');
 
 // GET /api/pedidos/meus — pedidos que o cliente fez (acompanhamento B4)
 router.get('/meus',   autenticar, meusPedidos);
@@ -14,5 +14,7 @@ router.post('/:id/cancelar', autenticar, cancelarPedido);
 // GET /api/pedidos/:id/itens-recompra — produtos do pedido com preço/estoque
 // atuais, para o cliente montar o carrinho de novo (recomprar)
 router.get('/:id/itens-recompra', autenticar, itensParaRecompra);
+// DELETE /api/pedidos/:id/historico — cliente remove o pedido da própria lista
+router.delete('/:id/historico', autenticar, removerDoHistorico);
 
 module.exports = router;

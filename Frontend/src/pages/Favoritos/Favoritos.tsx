@@ -90,15 +90,15 @@ export default function Favoritos() {
       <div className="favoritos-topbar">
         <button className="favoritos-voltar" onClick={() => navigate('/')} type="button">
           <IconArrowLeft size={16} />
-          Voltar
+          Início
         </button>
         <div className="favoritos-titulo">
           <h1>Meus favoritos</h1>
-          {!carregando && (
-            <span>
-              {favoritos.length} {favoritos.length === 1 ? 'loja salva' : 'lojas salvas'}
-            </span>
-          )}
+          <p>
+            {carregando
+              ? 'Suas lojas salvas'
+              : `${favoritos.length} ${favoritos.length === 1 ? 'loja salva' : 'lojas salvas'}`}
+          </p>
         </div>
       </div>
 

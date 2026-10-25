@@ -187,6 +187,9 @@ export const api = {
   // Produtos do pedido com preço/estoque atuais, para recomprar
   itensRecompra: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/itens-recompra`),
+  // Cliente remove um pedido da própria lista "Meus pedidos"
+  removerPedidoHistorico: (pedidoId: string | number) =>
+    request(`/pedidos/${pedidoId}/historico`, { method: 'DELETE' }),
 
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast';
 import './MeusPedidos.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,6 +30,12 @@ const NOMES_STATUS: Record<string, string> = {
 };
 
 const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
+
+type ToastTipo = 'sucesso' | 'erro' | 'aviso' | 'info';
+
+// Tira acento e deixa minúsculo para a busca funcionar com ou sem acento
+const normalizar = (texto: string) =>
+  texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 interface PedidoLista {
   id: number;
@@ -69,9 +76,42 @@ const IconArrowLeft = () => (
   </svg>
 );
 
+// Lupa da busca de pedidos (canto superior direito)
+const IconLupa = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
+// Lixeira do pedido (remover do histórico)
+const IconLixeira = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);
+
+// Fecha / limpa a busca
+const IconFechar = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+
 // ── Tela 1: lista dos pedidos ────────────────────────────────────────────────
-function ListaPedidos({ onAbrir }: { onAbrir: (id: number) => void }) {
+function ListaPedidos({
+  busca,
+  onAbrir,
+  showToast,
+}: {
+  busca: string;
+  onAbrir: (id: number) => void;
+  showToast: (tipo: ToastTipo, mensagem: string) => void;
+}) {
   const [pedidos, setPedidos] = useState<PedidoLista[] | null>(null);
+  const [confirmando, setConfirmando] = useState<number | null>(null);
+  const [removendo, setRemovendo] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -80,6 +120,44 @@ function ListaPedidos({ onAbrir }: { onAbrir: (id: number) => void }) {
       .catch(() => { if (vivo) setPedidos([]); });
     return () => { vivo = false; };
   }, []);
+
+  // Busca no canto superior direito: procura por loja, produto, nº do pedido,
+  // data, status ou forma de entrega/pagamento (ignora acento e maiúscula)
+  const filtrados = useMemo(() => {
+    if (!pedidos) return null;
+    const termo = normalizar(busca.trim());
+    if (!termo) return pedidos;
+    return pedidos.filter(p => {
+      const campos = [
+        p.mercado,
+        p.itens,
+        `pedido nº ${p.id}`,
+        String(p.id),
+        new Date(p.dataCompra).toLocaleDateString('pt-BR'),
+        NOMES_STATUS[p.status] ?? p.status,
+        p.tipoEntrega === 'retirada' ? 'retirada no balcão' : 'entrega',
+        p.formaPagamento === 'pix' ? 'pix' : p.formaPagamento === 'cartao' ? 'cartão' : '',
+        p.cupom,
+      ];
+      return campos.some(c => normalizar(String(c)).includes(termo));
+    });
+  }, [pedidos, busca]);
+
+  // Lixeira: apaga o registro da listagem do cliente (o pedido continua
+  // gravado e a loja continua vendo no painel dela)
+  async function removerPedido(p: PedidoLista) {
+    setRemovendo(true);
+    try {
+      await api.removerPedidoHistorico(p.id);
+      setPedidos(lista => (lista ?? []).filter(x => x.id !== p.id));
+      showToast('sucesso', `Pedido nº ${p.id} foi removido do seu histórico.`);
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível remover o pedido.');
+    } finally {
+      setRemovendo(false);
+      setConfirmando(null);
+    }
+  }
 
   if (pedidos === null) {
     return (
@@ -91,59 +169,119 @@ function ListaPedidos({ onAbrir }: { onAbrir: (id: number) => void }) {
     );
   }
 
-  if (pedidos.length === 0) {
+  if (filtrados && filtrados.length === 0) {
     return (
       <div className="mp-vazio">
-        <h3>Nenhum pedido ainda</h3>
-        <p>Quando você fizer um pedido, ele aparece aqui com o status atualizado.</p>
+        <h3>{busca.trim() ? 'Nenhum pedido encontrado' : 'Nenhum pedido ainda'}</h3>
+        <p>
+          {busca.trim()
+            ? `Nada corresponde a “${busca.trim()}”. Tente o nome da loja, do produto ou o nº do pedido.`
+            : 'Quando você fizer um pedido, ele aparece aqui com o status atualizado.'}
+        </p>
       </div>
     );
   }
 
   return (
     <>
-      {pedidos.map(p => (
-        <div
-          key={p.id}
-          className="mp-card"
-          onClick={() => onAbrir(p.id)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onAbrir(p.id); }}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="mp-card__linha1">
-            <div>
-              <p className="mp-card__mercado">{p.mercado}</p>
-              <p className="mp-card__numero">Pedido nº {p.id}</p>
+      {filtrados?.map(p => {
+        const emAndamento = !['entregue', 'cancelado'].includes(p.status);
+        return (
+          <div
+            key={p.id}
+            className="mp-card"
+            onClick={() => onAbrir(p.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onAbrir(p.id); }}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="mp-card__linha1">
+              <div>
+                <p className="mp-card__mercado">{p.mercado}</p>
+                <p className="mp-card__numero">Pedido nº {p.id}</p>
+              </div>
+              <span className={`mp-status mp-status--${p.status}`}>
+                {NOMES_STATUS[p.status] ?? p.status}
+              </span>
+              <span className="mp-card__total">{formatBRL(p.valorTotal)}</span>
+              <button
+                className="mp-card__lixo"
+                type="button"
+                title="Remover este pedido do histórico"
+                aria-label={`Remover o pedido nº ${p.id} do histórico`}
+                onClick={(e) => { e.stopPropagation(); setConfirmando(p.id); }}
+              >
+                <IconLixeira />
+              </button>
             </div>
-            <span className={`mp-status mp-status--${p.status}`}>
-              {NOMES_STATUS[p.status] ?? p.status}
-            </span>
-            <span className="mp-card__total">{formatBRL(p.valorTotal)}</span>
+            <p className="mp-card__itens">{p.itens}</p>
+            <div className="mp-card__rodape">
+              <span>{new Date(p.dataCompra).toLocaleDateString('pt-BR')}</span>
+              <span>·</span>
+              <span>{p.tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}</span>
+              {p.formaPagamento === 'pix' && <><span>·</span><span>Pix</span></>}
+              {p.formaPagamento === 'cartao' && <><span>·</span><span>Cartão</span></>}
+            </div>
+
+            {confirmando === p.id && (
+              <div
+                className="mp-remover"
+                role="alertdialog"
+                aria-label="Confirmar remoção do pedido"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <div className="mp-remover__texto">
+                  <strong>Remover este pedido do seu histórico?</strong>
+                  <span>
+                    {emAndamento
+                      ? 'Este pedido ainda está em andamento: ao remover, você não poderá mais acompanhá-lo por aqui. A loja continua com o registro da compra.'
+                      : 'Ele deixa de aparecer nesta lista. A loja continua com o registro da compra.'}
+                  </span>
+                </div>
+                <div className="mp-remover__botoes">
+                  <button
+                    className="mp-remover__sim"
+                    type="button"
+                    disabled={removendo}
+                    onClick={() => removerPedido(p)}
+                  >
+                    {removendo ? 'Removendo…' : 'Sim, remover'}
+                  </button>
+                  <button
+                    className="mp-remover__nao"
+                    type="button"
+                    disabled={removendo}
+                    onClick={() => setConfirmando(null)}
+                  >
+                    Manter pedido
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <p className="mp-card__itens">{p.itens}</p>
-          <div className="mp-card__rodape">
-            <span>{new Date(p.dataCompra).toLocaleDateString('pt-BR')}</span>
-            <span>·</span>
-            <span>{p.tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}</span>
-            {p.formaPagamento === 'pix' && <><span>·</span><span>Pix</span></>}
-            {p.formaPagamento === 'cartao' && <><span>·</span><span>Cartão</span></>}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </>
   );
 }
 
 // ── Tela 2: detalhe com acompanhamento ao vivo ──────────────────────────────
-function DetalhePedido({ id, onVoltar }: { id: number; onVoltar: () => void }) {
+function DetalhePedido({
+  id,
+  onVoltar,
+  showToast,
+}: {
+  id: number;
+  onVoltar: () => void;
+  showToast: (tipo: ToastTipo, mensagem: string) => void;
+}) {
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null);
   const [pagamento, setPagamento] = useState<PagamentoPix | null>(null);
   const [carregado, setCarregado] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
-  const { showToast } = useToast();
 
   const carregar = useCallback(async () => {
     try {
@@ -429,6 +567,8 @@ export default function MeusPedidos() {
   const navigate = useNavigate();
   const { pedidoId } = useParams<{ pedidoId: string }>();
   const id = Number(pedidoId);
+  const [busca, setBusca] = useState('');
+  const { toasts, showToast, dismissToast } = useToast();
 
   return (
     <div className="meuspedidos-page">
@@ -440,15 +580,50 @@ export default function MeusPedidos() {
           <h1>{id ? 'Acompanhar pedido' : 'Meus pedidos'}</h1>
           <p>{id ? 'Acompanhe o status em tempo real' : 'Todos os pedidos que você fez'}</p>
         </div>
+
+        {/* Busca de pedidos — só aparece na listagem */}
+        {!id && (
+          <div className="mp-busca">
+            <span className="mp-busca__icone" aria-hidden="true"><IconLupa /></span>
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar pedidos (loja, produto, nº…)"
+              aria-label="Buscar pedidos"
+            />
+            {busca && (
+              <button
+                className="mp-busca__limpar"
+                type="button"
+                onClick={() => setBusca('')}
+                aria-label="Limpar a busca"
+                title="Limpar a busca"
+              >
+                <IconFechar />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="meuspedidos-conteudo">
         {id ? (
-          <DetalhePedido id={id} onVoltar={() => navigate('/pedidos')} />
+          <DetalhePedido
+            id={id}
+            onVoltar={() => navigate('/pedidos')}
+            showToast={showToast}
+          />
         ) : (
-          <ListaPedidos onAbrir={(idPedido) => navigate(`/pedidos/${idPedido}`)} />
+          <ListaPedidos
+            busca={busca}
+            onAbrir={(idPedido) => navigate(`/pedidos/${idPedido}`)}
+            showToast={showToast}
+          />
         )}
       </div>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

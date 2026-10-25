@@ -66,6 +66,64 @@
   padding: 1.6rem 1.8rem 60px;
 }
 
+/* Busca de pedidos — canto superior direito da barra */
+.mp-busca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 7px 14px;
+  transition: border-color 0.2s;
+}
+
+.mp-busca:focus-within { border-color: var(--azul-claro); }
+
+.mp-busca__icone {
+  display: inline-flex;
+  color: var(--cinza-texto);
+  flex-shrink: 0;
+}
+
+.mp-busca input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--branco);
+  font-size: 13px;
+  font-family: var(--font);
+  width: 230px;
+  max-width: 34vw;
+  padding: 0;
+}
+
+.mp-busca input::placeholder { color: var(--cinza-texto); }
+.mp-busca input::-webkit-search-cancel-button { display: none; }
+
+.mp-busca__limpar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--azul-item);
+  background: transparent;
+  color: var(--cinza-texto);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mp-busca__limpar:hover {
+  background: var(--azul-item);
+  color: var(--branco);
+}
+
 /* ---------------- Lista de pedidos ---------------- */
 .mp-card {
   background: var(--azul-card);
@@ -127,6 +185,99 @@
   font-size: 12.5px;
   color: var(--cinza-texto);
 }
+
+/* Lixeira do pedido — remover o registro do histórico do cliente */
+.mp-card__lixo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  color: var(--cinza-texto);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.mp-card__lixo:hover {
+  background: rgba(226, 87, 76, 0.12);
+  border-color: #e2574c;
+  color: #e2574c;
+}
+
+/* Confirmação da lixeira, aberta dentro do próprio cartão */
+.mp-remover {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1.5px dashed #e2574c;
+  background: rgba(226, 87, 76, 0.08);
+  border-radius: 12px;
+}
+
+.mp-remover__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.mp-remover__texto strong {
+  font-size: 14px;
+  color: #e2574c;
+}
+
+.mp-remover__texto span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--cinza-texto);
+}
+
+.mp-remover__botoes {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mp-remover__sim {
+  background: #e2574c;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.mp-remover__sim:disabled { opacity: 0.6; cursor: wait; }
+
+.mp-remover__nao {
+  background: transparent;
+  border: 1.5px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cinza-texto);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mp-remover__nao:hover:not(:disabled) {
+  background: var(--azul-item);
+  color: var(--branco);
+}
+
+.mp-remover__nao:disabled { opacity: 0.6; cursor: wait; }
 
 /* Selo de status (mesmo conceito do painel do vendedor): chips com cor
    própria, legíveis tanto no cartão claro quanto no escuro */
@@ -517,8 +668,12 @@
 @media (max-width: 560px) {
   .meuspedidos-topbar { padding: 14px 16px; flex-wrap: wrap; }
   .meuspedidos-titulo h1 { font-size: 15.5px; }
+  .mp-busca { margin-left: 0; flex: 1 1 100%; order: 3; }
+  .mp-busca input { width: 100%; max-width: none; }
   .meuspedidos-conteudo { padding: 1.2rem 1rem 48px; }
   .mp-painel { padding: 18px 16px; }
   .mp-pix__codigo { flex-direction: column; }
   .mp-timeline__passo { font-size: 10.5px; }
+  .mp-remover__botoes { width: 100%; }
+  .mp-remover__sim, .mp-remover__nao { flex: 1; }
 }

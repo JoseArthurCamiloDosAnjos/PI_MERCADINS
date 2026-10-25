@@ -1,70 +1,93 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   Página "Meus favoritos" — visual claro do site cliente
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Página "Meus favoritos"
+
+   Mesmo padrão visual de "Meus pedidos" e "Acompanhar pedido": fundo na cor
+   da sidebar, barra superior escura, cartões "azul-card", títulos "branco",
+   textos de apoio "cinza-texto" e botões em pílula. As cores vêm das
+   variáveis do tema, então a tela acompanha o modo escuro/claro do site.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 .favoritos-page {
   min-height: 100vh;
-  background: #f2f4f8;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #0d1b2a;
+  background: var(--azul-bg);
+  font-family: var(--font);
+  color: var(--branco);
 }
 
-/* Barra superior */
+/* Barra superior — mesmo bloco do .meuspedidos-topbar / .gm-topbar */
 .favoritos-topbar {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 18px 28px;
-  background: #ffffff;
-  border-bottom: 1px solid #dde3ef;
+  padding: 1rem 1.8rem;
+  background: var(--azul-sidebar);
+  border-bottom: 1px solid var(--azul-borda);
 }
 
+/* Botão secundário em pílula (padrão .gm-btn-back) */
 .favoritos-voltar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: 1px solid #dde3ef;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #0d2a5e;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cinza-texto);
   cursor: pointer;
-  transition: background 0.15s ease;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
-.favoritos-voltar:hover { background: #f0f2f7; }
 
-.favoritos-titulo { display: flex; align-items: baseline; gap: 12px; }
-.favoritos-titulo h1 { margin: 0; font-size: 21px; color: #0d2a5e; }
-.favoritos-titulo span { font-size: 13px; color: #5a6b8c; }
+.favoritos-voltar:hover {
+  background: var(--azul-item);
+  border-color: var(--azul-claro);
+  color: var(--branco);
+}
+
+.favoritos-titulo h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--branco);
+}
+
+.favoritos-titulo p {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--cinza-texto);
+}
 
 /* Conteúdo */
 .favoritos-conteudo {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 26px 28px 60px;
+  padding: 1.6rem 1.8rem 60px;
 }
 
 /* Grade de cards */
 .favoritos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .favorito-card {
-  background: #ffffff;
-  border: 1px solid #e3e9f4;
-  border-radius: 14px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+
 .favorito-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(13, 42, 94, 0.1);
+  border-color: var(--azul-claro);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
 /* Foto da loja (botão que abre a vitrine) */
@@ -74,12 +97,14 @@
   justify-content: center;
   width: 100%;
   height: 130px;
-  background: linear-gradient(145deg, #0d2858, #1843a0);
+  background: linear-gradient(145deg, var(--azul-medio), var(--azul-item));
   border: 0;
+  border-bottom: 1px solid var(--azul-borda);
   cursor: pointer;
   padding: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.6);
 }
+
 .favorito-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .favorito-corpo {
@@ -92,9 +117,9 @@
 
 .favorito-nome {
   margin: 0;
-  font-size: 15.5px;
-  font-weight: 700;
-  color: #0d2a5e;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--branco);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -106,9 +131,10 @@
   gap: 5px;
   margin: 0;
   font-size: 12.5px;
-  color: #5a6b8c;
+  color: var(--cinza-texto);
 }
-.favorito-local svg { color: #1843a0; flex-shrink: 0; }
+
+.favorito-local svg { color: var(--azul-claro); flex-shrink: 0; }
 
 .favorito-nota {
   display: flex;
@@ -116,22 +142,23 @@
   gap: 5px;
   margin: 0;
   font-size: 12.5px;
-  color: #5a6b8c;
+  color: var(--cinza-texto);
 }
-.favorito-nota svg { color: #f5c518; }
-.favorito-nota strong { color: #0d2a5e; }
+
+.favorito-nota svg { color: var(--amarelo); }
+.favorito-nota strong { color: var(--branco); }
 
 .favorito-chip {
   align-self: flex-start;
-  background: rgba(217, 119, 6, 0.12);
-  color: #b45309;
-  border-radius: 999px;
+  background: rgba(245, 200, 74, 0.14);
+  color: var(--amarelo);
+  border-radius: var(--radius-full);
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
 }
 
-/* Ações do card */
+/* Ações do card (botões em pílula, padrão da tela de pedidos) */
 .favorito-acoes {
   display: flex;
   gap: 8px;
@@ -141,90 +168,112 @@
 
 .favorito-ver {
   flex: 1;
-  background: #0d2a5e;
+  background: var(--azul-claro);
   color: #ffffff;
-  border: 0;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
   padding: 9px 12px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.favorito-ver:hover:not(:disabled) { background: #1843a0; }
+
+.favorito-ver:hover:not(:disabled) { background: color-mix(in srgb, var(--azul-claro) 85%, #ffffff); }
 .favorito-ver:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .favorito-remover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: 1px solid #e3e9f4;
-  border-radius: 8px;
+  background: transparent;
+  border: 1.5px solid var(--azul-item);
+  border-radius: var(--radius-full);
   padding: 9px 12px;
   font-size: 12.5px;
-  font-weight: 600;
-  color: #e05252;
+  font-weight: 700;
+  color: #e2574c;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
-.favorito-remover:hover:not(:disabled) { background: rgba(224, 82, 82, 0.08); }
+
+.favorito-remover:hover:not(:disabled) {
+  background: rgba(226, 87, 76, 0.12);
+  border-color: #e2574c;
+}
+
 .favorito-remover:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Estado vazio */
+/* Estado vazio — cartão tracejado, mesmo padrão do .mp-vazio */
 .favoritos-vazio {
-  max-width: 480px;
-  margin: 60px auto;
+  max-width: 560px;
+  margin: 0 auto;
   text-align: center;
+  background: var(--azul-card);
+  border: 1px dashed var(--azul-item);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
 }
 
 .favoritos-vazio-icone {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid #e3e9f4;
-  color: #e05252;
-  margin-bottom: 18px;
+  background: var(--azul-item);
+  border: 1px solid var(--azul-borda);
+  color: var(--amarelo);
+  margin-bottom: 16px;
 }
 
-.favoritos-vazio h2 { margin: 0 0 8px; font-size: 19px; color: #0d2a5e; }
-.favoritos-vazio p { margin: 0 0 22px; font-size: 14px; color: #5a6b8c; line-height: 1.6; }
+.favoritos-vazio h2 { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--branco); }
+.favoritos-vazio p { margin: 0 0 22px; font-size: 13.5px; color: var(--cinza-texto); line-height: 1.6; }
 
 .favoritos-cta {
-  background: #f5c518;
-  color: #0d2a5e;
+  background: var(--amarelo);
+  color: #0a1f4e;
   border: 0;
-  border-radius: 10px;
-  padding: 12px 26px;
+  border-radius: var(--radius-full);
+  padding: 11px 26px;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
-.favoritos-cta:hover { background: #f7d567; }
+
+.favoritos-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
 /* Esqueleto de carregamento */
 .favorito-card--skeleton { pointer-events: none; }
-.favorito-foto--skeleton { background: #e3e9f4; animation: favoritosPulso 1.3s ease-in-out infinite; }
+
+.favorito-foto--skeleton,
+.favorito-linha-skel {
+  background: var(--azul-item);
+  animation: favoritosPulso 1.3s ease-in-out infinite;
+}
+
 .favorito-linha-skel {
   height: 13px;
   border-radius: 6px;
-  background: #e3e9f4;
-  animation: favoritosPulso 1.3s ease-in-out infinite;
 }
 
 @keyframes favoritosPulso {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  50%      { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .favorito-foto--skeleton,
+  .favorito-linha-skel { animation: none; }
+  .favorito-card:hover { transform: none; }
 }
 
 /* Responsivo */
-@media (max-width: 640px) {
+@media (max-width: 560px) {
   .favoritos-topbar { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
-  .favoritos-conteudo { padding: 18px 16px 50px; }
+  .favoritos-titulo h1 { font-size: 15.5px; }
+  .favoritos-conteudo { padding: 1.2rem 1rem 48px; }
   .favoritos-grid { grid-template-columns: 1fr; }
 }

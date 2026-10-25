@@ -751,6 +751,12 @@ button {
 }
 
 .store-cover-img {
+  /* Ocupa exatamente a tarja colorida: sem isso a imagem quadrada (400x400)
+     fica maior que a tarja e a escrita central da arte aparece cortada lá em
+    baixo. Com position absolute a altura é resolvida contra a tarja e o
+    object-fit centraliza a escrita no meio do bloco. */
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;

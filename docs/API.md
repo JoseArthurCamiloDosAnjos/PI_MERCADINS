@@ -150,6 +150,14 @@ Fluxo completo, estados, carência de 3 dias e como testar:
 
 ---
 
+## Diagnóstico — `/api/saude`
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| GET | `/pagamentos` | público | Mostra se o ambiente tem as variáveis do Asaas (só `true`/`false` + URL base — nenhum segredo) |
+
+---
+
 ## Pedidos
 
 | Método | Rota | Acesso | O que faz |

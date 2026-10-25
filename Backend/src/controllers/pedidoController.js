@@ -366,10 +366,19 @@ const criarPedido = async (req, res) => {
         if (cupomRegistro) {
           await sql`UPDATE cupons SET usos = GREATEST(usos - 1, 0) WHERE id = ${cupomRegistro.id}`;
         }
-        console.error(`Pedido ${pedido.id} desfeito: pagamento não iniciado (${erroPagamento.message}).`);
-        return res.status(502).json({
-          erro: 'Não foi possível iniciar o pagamento online. Tente novamente ou escolha pagar na entrega.',
-        });
+        const motivo = String(erroPagamento.message || '');
+        console.error(`Pedido ${pedido.id} desfeito: pagamento não iniciado (${motivo}).`);
+        // Traduz os erros mais comuns do Asaas; o "detalhe" volta na resposta
+        // para a pessoa conseguir se ajudar (o frontend mostra junto do aviso)
+        let aviso = 'Não foi possível iniciar o pagamento online. Tente novamente ou escolha pagar na entrega.';
+        if (/CPF|CNPJ/i.test(motivo)) {
+          aviso = 'Falta o CPF/CNPJ na sua conta para pagar online. Cadastre-o no perfil ou escolha pagar na entrega.';
+        } else if (/menor que|R\$\s*5/i.test(motivo)) {
+          aviso = 'O Pix tem valor mínimo de R$ 5,00. Adicione itens ao carrinho ou escolha pagar na entrega.';
+        } else if (/acesso|access_token|api key|chave|401|403/i.test(motivo)) {
+          aviso = 'Pagamento online indisponível no momento. Escolha pagar na entrega.';
+        }
+        return res.status(502).json({ erro: aviso, detalhe: motivo });
       }
     }
 

@@ -100,6 +100,24 @@ app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoR
 app.use('/api/assinaturas',        assinaturaRoutes)
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
+// ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────
+// Devolve só a PRESENÇA das variáveis do Asaas — resolve em 10 segundos a
+// dúvida "o ambiente (Render x local) está configurado?". Nenhum valor é exposto.
+app.get('/api/saude/pagamentos', (_req, res) => {
+  res.json({
+    ambiente: isProduction ? 'producao' : 'desenvolvimento',
+    banco: process.env.DB_PROVIDER || 'auto',
+    asaas: {
+      url_usada: (isProduction ? process.env.Assas_API_URL_Producao : process.env.Assas_API_URL_Sandbox) || null,
+      url_producao: !!process.env.Assas_API_URL_Producao,
+      url_sandbox: !!process.env.Assas_API_URL_Sandbox,
+      chave_api: !!process.env.Assas_API_KEY,
+      webhook_token: !!process.env.ASAAS_WEBHOOK_TOKEN,
+    },
+    frontend_url: process.env.FRONTEND_URL || null,
+  })
+})
+
 // ── Sitemap dinâmico (SEO - C6): páginas institucionais + vitrines ativas ─────
 app.use('/',                   require('./routes/sitemapRoutes'))
 

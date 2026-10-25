@@ -256,6 +256,41 @@ Sintomas e causas:
 | Pagou e a loja não apareceu | conferir `GET /api/assinaturas/minha` e o log do webhook; a consulta imediata deve resolver sozinha |
 | `Dados do mercado inválidos` na ativação | payload de `dados_mercado` fora do formato normalizado (a validação é idempotente, veja `marketController.validarDadosMercado`) |
 | `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` no `.env` |
+| Pix do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
+
+### Diagnóstico rápido
+
+```
+GET /api/saude/pagamentos
+```
+
+Rota pública que devolve **só a presença** das variáveis (nenhum valor é
+exposto):
+
+```json
+{ "ambiente": "producao",
+  "asaas": { "url_usada": "https://api.asaas.com/", "chave_api": true,
+             "url_producao": true, "webhook_token": true },
+  "frontend_url": "https://mercadins.com.br" }
+```
+
+`chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
+
+### Checklist de produção (Render)
+
+- [ ] `Assas_API_KEY` = chave de **produção** (a de sandbox não serve na URL de produção);
+- [ ] `Assas_API_URL_Producao=https://api.asaas.com/`;
+- [ ] `NODE_ENV=production`;
+- [ ] `FRONTEND_URL=https://mercadins.com.br`;
+- [ ] `ASAAS_WEBHOOK_TOKEN` preenchido **e** a integração de webhook criada no
+      Asaas apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`
+      (sem ela, o pedido só é confirmado quando o cliente abre a página do pedido);
+- [ ] Depois de mexer em variável, deixar o Render reiniciar o serviço.
+
+Quando o pagamento online falha, a API responde `502` com
+`{ "erro": "<mensagem traduzida>", "detalhe": "<motivo exato do Asaas>" }` — o
+`detalhe` aparece no aviso da tela e nos logs do Render
+(`Pedido <n> desfeito: pagamento não iniciado (...)`).
 
 ---
 

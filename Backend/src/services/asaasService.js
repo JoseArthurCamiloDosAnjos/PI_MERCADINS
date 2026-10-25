@@ -6,6 +6,14 @@ const BASE_URL = isProduction
   ? process.env.Assas_API_URL_Producao
   : process.env.Assas_API_URL_Sandbox
 
+// Falta de variável é o erro mais comum em produção (Render) — avisa já na
+// subida, nos logs, para não virar "502 genérico" depois
+if (!BASE_URL) {
+  console.error(
+    `asaasService: URL da API não configurada (esperando ${isProduction ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'} no ambiente ${isProduction ? 'produção' : 'desenvolvimento'})`
+  )
+}
+
 // Catálogo de planos — o preço é SEMPRE definido aqui, nunca pelo cliente.
 // Anual = mensal com 20% de desconto (mesmo cálculo exibido no frontend: floor(mensal * 0.8) * 12).
 // Nomes comerciais iguais aos do frontend (Frontend/src/pages/MercadinsPromo/planos.ts);
@@ -146,14 +154,22 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
       externalReference,
     },
   })
-  // QR vem embutido em pirBank (encodedImage em base64 + payload copia e cola)
-  const pix = pagamento?.pirBank?.[0] || pagamento?.pixTransaction?.[0] || null
+  // QR não vem junto na criação: o Asaas só entrega em /pixQrCode
+  let qr = null
+  try {
+    qr = await chamarApi(`/v3/payments/${pagamento.id}/pixQrCode`)
+  } catch (erroQr) {
+    console.error('asaasService: não foi possível buscar o QR do Pix:', erroQr.message)
+  }
+  // Compatibilidade: se algum dia voltar a vir embutido, usa o que vier
+  const embutido = pagamento?.pixTransaction?.[0] || pagamento?.pirBank?.[0] || null
+  const fonte = qr?.encodedImage ? qr : embutido
   return {
     id: pagamento.id,
     status: pagamento.status,
     vencimento: pagamento.dueDate || null,
-    qrCodeBase64: pix?.encodedImage || '',
-    copiaEcola: pix?.payload || '',
+    qrCodeBase64: fonte?.encodedImage || '',
+    copiaEcola: fonte?.payload || '',
     urlPagamento: pagamento.invoiceUrl || '',
   }
 }

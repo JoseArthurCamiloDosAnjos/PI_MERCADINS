@@ -13,7 +13,16 @@ async function request(path: string, options: RequestInit = {}) {
     },
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.erro || 'Erro na requisição')
+  if (!res.ok) {
+    // "detalhe" traz o motivo real (ex.: erro devolvido pelo Asaas) — exibido
+    // junto do aviso para a pessoa conseguir se ajudar
+    const erro = data.erro || data.detalhe || 'Erro na requisição'
+    throw new Error(
+      data.erro && data.detalhe && data.detalhe !== data.erro
+        ? `${erro} (${data.detalhe})`
+        : erro
+    )
+  }
   return data
 }
 

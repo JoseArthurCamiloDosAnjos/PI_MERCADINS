@@ -94,6 +94,61 @@ const enviarEmailRecuperacao = async (email, codigo) => {
   });
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Administração — avisa no e-mail PESSOAL da pessoa que a conta dela foi
+//  habilitada como administradora, com o login (email_admin) e a senha
+//  (a mesma da conta normal — nunca enviamos a senha em texto).
+// ─────────────────────────────────────────────────────────────────────────────
+const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
+  await resend.emails.send({
+    from: EmailDominio,
+    to: email,
+    subject: "Você foi habilitado como administrador — Mercadins",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: 'Nunito', Arial, sans-serif; background: #f0f2f7; margin: 0; padding: 40px 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+
+          <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Você é administrador</h1>
+            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
+          </div>
+
+          <div style="padding: 36px 32px; text-align: center;">
+            <p style="color: #0d2a5e; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Olá, ${nome}!</p>
+            <p style="color: #8892a4; font-size: 14px; line-height: 1.6; margin: 0 0 28px;">
+              Sua conta foi habilitada como administradora do Mercadins.
+              Use os dados abaixo para entrar na área administrativa.
+            </p>
+
+            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 16px; text-align: left;">
+              <p style="color: #8892a4; font-size: 12px; font-weight: 700; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px;">Login administrativo</p>
+              <p style="color: #0d2a5e; font-size: 16px; font-weight: 800; margin: 0; word-break: break-all;">${emailAdmin}</p>
+            </div>
+
+            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 28px; text-align: left;">
+              <p style="color: #8892a4; font-size: 12px; font-weight: 700; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px;">Senha</p>
+              <p style="color: #0d2a5e; font-size: 15px; font-weight: 600; margin: 0;">A mesma senha que o de usuário normal</p>
+            </div>
+
+            <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
+              <p style="color: #8892a4; font-size: 12px; margin: 0; line-height: 1.6;">
+                Faça login com o <strong>login administrativo</strong> acima e a senha da sua conta normal
+                para acessar a área de administrador do Mercadins.<br/>
+                Se você não esperava esta liberação, ignore este e-mail e fale com o suporte.<br/>
+                Este é um e-mail automático do Mercadins.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};
+
 const enviarEmailTrocaEmail = async (email, codigo) => {
   await resend.emails.send({
     from: EmailDominio,
@@ -308,6 +363,7 @@ module.exports = {
   enviarEmailVerificacao,
   enviarEmailRecuperacao,
   enviarEmailTrocaEmail,
+  enviarEmailPromocaoAdmin,
   enviarEmailPedidoConfirmado,
   enviarEmailStatusPedido,
   enviarEmailPedidoVendedor,

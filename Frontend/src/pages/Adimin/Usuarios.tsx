@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import { LIMITS, bloquearEspaco, sanitizeEmail } from '../../hooks/useBlockEmojis'
@@ -128,6 +129,7 @@ function mascararTelefone(valor: string): string {
 
 export default function Usuarios() {
   const { toasts, showToast, dismissToast } = useToast()
+  const { usuario: usuarioLogado } = useAuth()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [metricas, setMetricas] = useState<Metricas>({ total: 0, administradores: 0, vendedores: 0, clientes: 0 })
   const [busca, setBusca] = useState('')
@@ -141,6 +143,7 @@ export default function Usuarios() {
   const [editando, setEditando] = useState<DetalhesUsuario | null>(null)
   const [formEdit, setFormEdit] = useState({ nome: '', email: '', telefone: '', data_nascimento: '', is_admin: false })
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<number | null>(null)
+  const [confirmandoAdmin, setConfirmandoAdmin] = useState<{ id: number; nome: string; email: string; is_admin: boolean } | null>(null)
   const [mercadoDetalhes, setMercadoDetalhes] = useState<{ mercado: Record<string, unknown>; papel: string } | null>(null)
   const [mercadosVisiveis, setMercadosVisiveis] = useState(3)
 
@@ -223,6 +226,47 @@ export default function Usuarios() {
       }
     } catch (err: unknown) {
       showToast('erro', err instanceof Error ? err.message : 'Erro ao alterar status')
+    }
+  }
+
+  async function alternarAdmin(id: number, proximoIsAdmin: boolean, emailPessoal: string) {
+    if (usuarioLogado?.id_usuario === id && !proximoIsAdmin) {
+      setConfirmandoAdmin(null)
+      showToast('erro', 'Você não pode remover seu próprio acesso de administrador')
+      return
+    }
+    try {
+      const data = await api.adminEditarUsuario(id, { is_admin: proximoIsAdmin })
+      const emailAdmin: string = data?.usuario?.email_admin ?? ''
+      const emailEnviado: boolean = data?.email_enviado === true
+      setConfirmandoAdmin(null)
+      showToast(
+        'sucesso',
+        proximoIsAdmin
+          ? `Usuário habilitado como administrador (${emailAdmin}) — ${
+              emailEnviado
+                ? `credenciais enviadas para ${emailPessoal}`
+                : 'não foi possível enviar o e-mail, tente novamente'
+            }`
+          : 'Privilégios de administrador removidos'
+      )
+      setDetalhes(prev =>
+        prev && prev.usuario.id_usuario === id
+          ? {
+              ...prev,
+              usuario: {
+                ...prev.usuario,
+                is_admin: proximoIsAdmin,
+                email_admin: proximoIsAdmin ? emailAdmin : prev.usuario.email_admin,
+              },
+            }
+          : prev
+      )
+      setUsuarios(prev => prev.map(u => (u.id_usuario === id ? { ...u, is_admin: proximoIsAdmin } : u)))
+      carregar()
+    } catch (err: unknown) {
+      setConfirmandoAdmin(null)
+      showToast('erro', err instanceof Error ? err.message : 'Erro ao alterar administrador')
     }
   }
 
@@ -389,9 +433,17 @@ export default function Usuarios() {
                       <td>{formatarData(u.data_cadastro)}</td>
                       <td>{u.ultimo_acesso ? formatarData(u.ultimo_acesso) : '-'}</td>
                       <td>
-                        <button className="adm-btn-detalhes" onClick={() => abrirDetalhes(u.id_usuario)}>
-                          Mais informacoes
-                        </button>
+                        <div className="adm-acoes-cell">
+                          <button
+                            className={u.is_admin ? 'adm-btn-remover-admin' : 'adm-btn-promover'}
+                            onClick={() => setConfirmandoAdmin({ id: u.id_usuario, nome: u.nome, email: u.email, is_admin: !u.is_admin })}
+                          >
+                            {u.is_admin ? 'Remover admin' : 'Tornar admin'}
+                          </button>
+                          <button className="adm-btn-detalhes" onClick={() => abrirDetalhes(u.id_usuario)}>
+                            Mais informacoes
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -514,6 +566,19 @@ export default function Usuarios() {
             <div className="adm-modal-actions">
               <button className="adm-btn-editar" onClick={() => abrirEditar(detalhes)}>
                 Editar usuario
+              </button>
+              <button
+                className={detalhes.usuario.is_admin ? 'adm-btn-remover-admin' : 'adm-btn-promover'}
+                onClick={() =>
+                  setConfirmandoAdmin({
+                    id: detalhes.usuario.id_usuario,
+                    nome: detalhes.usuario.nome,
+                    email: detalhes.usuario.email,
+                    is_admin: !detalhes.usuario.is_admin,
+                  })
+                }
+              >
+                {detalhes.usuario.is_admin ? 'Remover admin' : 'Tornar admin'}
               </button>
               <button
                 className={detalhes.usuario.status === 'bloqueado' ? 'adm-btn-desbloquear' : 'adm-btn-bloquear'}
@@ -746,6 +811,31 @@ export default function Usuarios() {
             <div className="adm-modal-actions">
               <button className="adm-btn-cancelar" onClick={() => setConfirmandoExclusao(null)}>Cancelar</button>
               <button className="adm-btn-excluir" onClick={() => handleExcluir(confirmandoExclusao)}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal Confirmar Administrador ──────────────────────── */}
+      {confirmandoAdmin && (
+        <div className="adm-modal-overlay">
+          <div className="adm-modal adm-modal-confirmar">
+            <h2 className={confirmandoAdmin.is_admin ? 'adm-titulo-promover' : undefined}>
+              {confirmandoAdmin.is_admin ? 'Tornar administrador' : 'Remover administrador'}
+            </h2>
+            <p>
+              {confirmandoAdmin.is_admin
+                ? `Habilitar ${confirmandoAdmin.nome} como administrador? Enviaremos para ${confirmandoAdmin.email} o login administrativo e a senha (a mesma da conta normal).`
+                : `Tem certeza que deseja remover os privilégios de administrador de ${confirmandoAdmin.nome}?`}
+            </p>
+            <div className="adm-modal-actions">
+              <button className="adm-btn-cancelar" onClick={() => setConfirmandoAdmin(null)}>Cancelar</button>
+              <button
+                className={confirmandoAdmin.is_admin ? 'adm-btn-promover' : 'adm-btn-remover-admin'}
+                onClick={() => alternarAdmin(confirmandoAdmin.id, confirmandoAdmin.is_admin, confirmandoAdmin.email)}
+              >
+                {confirmandoAdmin.is_admin ? 'Habilitar' : 'Remover'}
+              </button>
             </div>
           </div>
         </div>

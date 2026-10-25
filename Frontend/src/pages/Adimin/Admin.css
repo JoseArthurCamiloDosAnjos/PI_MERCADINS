@@ -1120,6 +1120,54 @@
   color: var(--azul-escuro);
 }
 
+/* ── Promover/remover administrador ──────────────────────────────────────── */
+
+.adm-acoes-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.adm-btn-promover,
+.adm-btn-remover-admin {
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.adm-btn-promover {
+  background: #8b5cf6;
+  border: 1px solid #8b5cf6;
+  color: #fff;
+}
+
+.adm-btn-promover:hover {
+  opacity: 0.85;
+}
+
+.adm-btn-remover-admin {
+  background: transparent;
+  border: 1px solid #8b5cf6;
+  color: #8b5cf6;
+}
+
+.adm-btn-remover-admin:hover {
+  background: #8b5cf622;
+}
+
+.adm-modal-actions .adm-btn-promover,
+.adm-modal-actions .adm-btn-remover-admin {
+  padding: 8px 16px;
+  flex: 1;
+  min-width: 120px;
+}
+
 /* ── Modal editar ────────────────────────────────────────────────────────── */
 
 .adm-modal-editar h2 {
@@ -1195,6 +1243,10 @@
   font-size: 0.85rem;
   color: var(--cinza-texto);
   margin-bottom: 8px;
+}
+
+.adm-modal-confirmar h2.adm-titulo-promover {
+  color: #8b5cf6;
 }
 
 /* ── Input desabilitado ──────────────────────────────────────────────────── */
@@ -1342,6 +1394,11 @@
   .adm-btn-excluir,
   .adm-btn-cancelar,
   .adm-btn-salvar {
+    min-width: 100%;
+  }
+
+  .adm-modal-actions .adm-btn-promover,
+  .adm-modal-actions .adm-btn-remover-admin {
     min-width: 100%;
   }
 }

@@ -1,4 +1,5 @@
 const { conectar } = require('../db/neon')
+const { enviarEmailPromocaoAdmin } = require('../utils/mailer')
 
 // ─── Helper — gerar email admin personalizado ──────────────────────────────
 
@@ -520,7 +521,21 @@ async function editarUsuario(req, res) {
       FROM usuarios WHERE id_usuario = ${Number(id)}
     `
 
-    res.json({ usuario: atualizado })
+    // Promoção: avisa no e-mail PESSOAL da pessoa o login administrativo e a
+    // senha (a mesma da conta normal). Se o provedor falhar, a promoção já
+    // está salva — só informamos que o e-mail não saiu.
+    let emailEnviado = false
+    if (is_admin === true && !existe.is_admin) {
+      try {
+        await enviarEmailPromocaoAdmin(atualizado.email, atualizado.nome, atualizado.email_admin)
+        emailEnviado = true
+        console.log(`E-mail de promoção a admin enviado para ${atualizado.email}`)
+      } catch (err) {
+        console.error('Falha ao enviar e-mail de promoção a admin:', err.message)
+      }
+    }
+
+    res.json({ usuario: atualizado, email_enviado: emailEnviado })
   } catch (err) {
     console.error('Erro ao editar usuário:', err.message)
     res.status(500).json({ erro: 'Erro ao editar usuário' })

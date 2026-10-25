@@ -10,6 +10,7 @@ import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
+import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import './PerfilUsuario.css';
 import {
   IconLock,
@@ -45,7 +46,7 @@ interface ItemCarrinhoLocal {
   quantidade: number;
 }
 
-const TITULOS = ['Meu perfil', 'Segurança', 'Depoimentos'];
+const TITULOS = ['Meu perfil', 'Segurança', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -758,6 +759,7 @@ export default function PerfilUsuario() {
     />,
     <TelaSeguranca key="seguranca" />,
     <TelaDepoimentos key="depoimentos" />,
+    <TelaAssinaturas key="assinaturas" />,
   ];
 
   useEffect(() => {

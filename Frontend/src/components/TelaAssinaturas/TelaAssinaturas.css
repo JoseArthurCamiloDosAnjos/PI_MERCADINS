@@ -1,0 +1,470 @@
+/* ── TelaAssinaturas: aba "Assinaturas" da sidebar de perfil ────────────────── */
+
+.sa-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 720px;
+}
+
+.sa-skeleton {
+  height: 190px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--azul-card) 25%, var(--azul-item) 50%, var(--azul-card) 75%);
+  background-size: 200% 100%;
+  animation: sa-shimmer 1.4s infinite linear;
+}
+
+.sa-skeleton-baixo { height: 120px; }
+
+@keyframes sa-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ── Cartão ──────────────────────────────────────────────────────────────── */
+
+.sa-card {
+  background: var(--azul-card);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sa-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sa-plano {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sa-plano-icone {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--azul-item);
+  color: var(--azul-claro);
+}
+
+.sa-plano-nome {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--branco);
+}
+
+.sa-plano-ciclo {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--cinza-texto);
+}
+
+/* ── Badge de status ─────────────────────────────────────────────────────── */
+
+.sa-badge {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sa-badge-ativa {
+  background: var(--verde-bg);
+  color: var(--verde-texto);
+}
+
+.sa-badge-pendente {
+  background: var(--pendente-bg);
+  color: var(--pendente-texto);
+}
+
+.sa-badge-vencida {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+.sa-badge-cancelada {
+  background: rgba(136, 146, 164, 0.14);
+  color: var(--cinza-texto);
+}
+
+/* ── Prazo de validade ───────────────────────────────────────────────────── */
+
+.sa-validade {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--azul-item);
+}
+
+.sa-validade-icone {
+  color: var(--amarelo);
+  display: grid;
+  place-items: center;
+  padding-top: 0.15rem;
+}
+
+.sa-validade-corpo { min-width: 0; }
+
+.sa-validade-rotulo {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cinza-texto);
+}
+
+.sa-validade-data {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--branco);
+}
+
+.sa-dias {
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--verde-texto);
+}
+
+.sa-dias-vencido { color: #f87171; }
+
+.sa-validade-obs {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--cinza-texto);
+}
+
+/* ── Avisos ──────────────────────────────────────────────────────────────── */
+
+.sa-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.sa-aviso-erro {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.sa-aviso-pendente {
+  background: var(--pendente-bg);
+  color: var(--pendente-texto);
+}
+
+.sa-aviso-ok {
+  background: var(--verde-bg);
+  color: var(--verde-texto);
+}
+
+/* ── Botões ──────────────────────────────────────────────────────────────── */
+
+.sa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.sa-btn-primario {
+  background: var(--azul-claro);
+  color: #fff;
+  align-self: flex-start;
+}
+
+.sa-btn-secundario {
+  background: var(--azul-item);
+  color: var(--branco);
+}
+
+.sa-btn:hover { filter: brightness(1.08); }
+
+.sa-btn-pagamento { align-self: stretch; }
+
+/* ── Estados vazios / erro ───────────────────────────────────────────────── */
+
+.sa-vazio,
+.sa-erro {
+  background: var(--azul-card);
+  border: 1px dashed var(--azul-borda);
+  border-radius: var(--radius-lg);
+  padding: 2.2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sa-vazio-icone {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--azul-item);
+  color: var(--azul-claro);
+}
+
+.sa-vazio h2,
+.sa-erro p {
+  margin: 0;
+  color: var(--branco);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.sa-vazio p {
+  margin: 0;
+  color: var(--cinza-texto);
+  font-size: 0.9rem;
+  max-width: 42ch;
+}
+
+.sa-erro svg { color: #f87171; }
+
+/* ── Lista de faturas ────────────────────────────────────────────────────── */
+
+.sa-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-item {
+  display: grid;
+  grid-template-columns: auto 110px 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.2rem;
+  border-top: 1px solid var(--azul-borda);
+  font-size: 0.87rem;
+}
+
+.sa-item:first-child { border-top: none; }
+
+.sa-item-ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.sa-item-ponto.ok   { background: var(--verde-texto); }
+.sa-item-ponto.pend { background: var(--pendente-texto); }
+
+.sa-item-valor {
+  color: var(--branco);
+  font-weight: 600;
+}
+
+.sa-item-status { color: var(--cinza-texto); }
+
+.sa-item-data {
+  color: var(--cinza-texto);
+  text-align: right;
+}
+
+/* ── Cabeçalho da lista (várias assinaturas) ─────────────────────────────── */
+
+.sa-intro {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--cinza-texto);
+}
+
+/* ── Mercado vinculado ───────────────────────────────────────────────────── */
+
+.sa-mercado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  background: var(--azul-item);
+}
+
+.sa-mercado-icone {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--azul-card);
+  color: var(--azul-claro);
+}
+
+.sa-mercado-corpo { min-width: 0; flex: 1 1 auto; }
+
+.sa-mercado-rotulo {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cinza-texto);
+}
+
+.sa-mercado-nome {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--branco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-chip {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sa-chip--ativo {
+  background: var(--verde-bg);
+  color: var(--verde-texto);
+}
+
+.sa-chip--suspenso {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+.sa-chip--bloqueado {
+  background: rgba(136, 146, 164, 0.14);
+  color: var(--cinza-texto);
+}
+
+/* ── Ações do cartão (pagar / cancelar) ──────────────────────────────────── */
+
+.sa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.sa-acoes .sa-btn-primario { align-self: auto; }
+
+.sa-btn-perigo {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.sa-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Modal de confirmação de cancelamento ────────────────────────────────── */
+
+.sa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(4, 8, 16, 0.72);
+}
+
+.sa-modal {
+  width: min(440px, 100%);
+  background: var(--azul-card);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: center;
+}
+
+.sa-modal-icone {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+.sa-modal-titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--branco);
+}
+
+.sa-modal-texto {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--cinza-texto);
+}
+
+.sa-modal-texto b { color: var(--branco); }
+
+.sa-modal-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+/* ── Telas pequenas ──────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .sa-card-topo { flex-direction: column; align-items: flex-start; }
+
+  .sa-mercado { flex-wrap: wrap; }
+
+  .sa-mercado-nome { white-space: normal; }
+
+  .sa-acoes .sa-btn { flex: 1 1 auto; }
+
+  .sa-item {
+    grid-template-columns: auto 1fr auto;
+    row-gap: 0.2rem;
+  }
+
+  .sa-item-status { grid-column: 2 / 4; }
+}

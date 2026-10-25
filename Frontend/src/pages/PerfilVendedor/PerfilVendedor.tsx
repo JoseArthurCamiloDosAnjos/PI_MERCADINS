@@ -9,6 +9,7 @@ import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
+import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
@@ -25,6 +26,7 @@ import {
   IconArrowRight,
   IconMail,
   IconInbox,
+  IconCreditCard,
 } from '../../components/Icons';
 
 interface Mercado {
@@ -51,9 +53,10 @@ function rotaCriarMercado(ehAdmin?: boolean) {
 const NAV_ITEMS = [
   { icon: <IconUser size={18} />, label: 'Painel do vendedor' },
   { icon: <IconLock size={18} />, label: 'Segurança' },
+  { icon: <IconCreditCard size={18} />, label: 'Assinaturas' },
 ];
 
-const TITULOS = ['Painel do vendedor', 'Segurança'];
+const TITULOS = ['Painel do vendedor', 'Segurança', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -482,6 +485,7 @@ export default function PerfilVendedor() {
   const TELAS = [
     <TelaPerfil mercados={mercados} carregando={carregando} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
+    <TelaAssinaturas key="assinaturas" />,
   ];
 
   return (

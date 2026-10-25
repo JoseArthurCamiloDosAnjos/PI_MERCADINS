@@ -362,6 +362,16 @@ export default function RegistrarMercado() {
                         await refreshMercados();
                         const idM = r.assinatura.id_mercado ?? r.mercado?.id_mercado;
                         setTimeout(() => navigate(idM ? `/vendedor/mercado/${idM}` : '/vendedor'), 1200);
+                      } else if (r?.assinatura?.status === 'pendente') {
+                        // O backend consulta o Asaas na hora (fallback do
+                        // webhook): dá o estado real da cobrança
+                        const cobranca = r.pagamento_asaas?.status;
+                        showToast(
+                          'info',
+                          cobranca === 'PENDING'
+                            ? 'Pagamento identificado no Asaas, aguardando a confirmação do banco. Tente novamente em instantes.'
+                            : 'Pagamento ainda não confirmado. Tente novamente em instantes.'
+                        );
                       } else {
                         showToast('info', 'Pagamento ainda não confirmado. Tente novamente em instantes.');
                       }

@@ -76,6 +76,19 @@ const LABELS_CATEGORIAS = {
 
 function normalizarCategorias(categorias) {
   if (categorias === undefined || categorias === null) return { valor: null, lista: [] };
+
+  // Revalidação de um payload JÁ normalizado pelo próprio validador
+  // (o checkout grava {valor, lista} em dados_mercado e o webhook valida de novo)
+  if (!Array.isArray(categorias) && typeof categorias === "object") {
+    if (Array.isArray(categorias.lista)) return normalizarCategorias(categorias.lista);
+    if (typeof categorias.valor === "string") {
+      const bruto = categorias.valor.replace(/^\{|\}$/g, "").trim();
+      categorias = bruto ? bruto.split(",") : [];
+    } else {
+      return { erro: "Categorias devem ser uma lista" };
+    }
+  }
+
   if (!Array.isArray(categorias))
     return { erro: "Categorias devem ser uma lista" };
 
@@ -107,8 +120,20 @@ function normalizarHorario(horario) {
   if (horario === null || horario === "") return { valor: null };
 
   let obj = horario;
-  if (typeof horario === "string") {
-    try { obj = JSON.parse(horario); } catch { return { erro: "Horário inválido" }; }
+
+  // Revalidação de um payload JÁ normalizado pelo próprio validador:
+  // dados_mercado guarda o envelope {valor: '{"1":["08:00","18:00"]}'}
+  // e o webhook chama validarDadosMercado de novo em cima dele
+  if (typeof obj === "object" && !Array.isArray(obj)) {
+    if ("manter" in obj) return { manter: true };
+    if ("valor" in obj && Object.keys(obj).length === 1) {
+      if (obj.valor === null) return { valor: null };
+      obj = obj.valor;
+    }
+  }
+
+  if (typeof obj === "string") {
+    try { obj = JSON.parse(obj); } catch { return { erro: "Horário inválido" }; }
   }
   if (typeof obj !== "object" || Array.isArray(obj))
     return { erro: "Horário deve ser um objeto de dias da semana" };
@@ -181,7 +206,17 @@ function validarDadosMercado(dados = {}) {
     cor_texto_sec, plano, categorias, horario,
     taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = dados;
 
-  const entrega = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
+  // Revalidação de payload já normalizado: a entrega vem embutida em
+  // dados.entrega {taxa, minimo, entrega, retirada} em vez dos campos soltos
+  const entregaFonte = dados.entrega && typeof dados.entrega === 'object'
+    ? {
+        taxa_entrega:    dados.entrega.taxa,
+        pedido_minimo:   dados.entrega.minimo,
+        oferece_entrega: dados.entrega.entrega,
+        oferece_retirada: dados.entrega.retirada,
+      }
+    : { taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada };
+  const entrega = normalizarEntrega(entregaFonte);
   if (entrega.erro)
     return { erro: entrega.erro };
 

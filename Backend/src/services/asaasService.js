@@ -105,6 +105,15 @@ async function buscarUrlPagamento(subscriptionId) {
   return pagamento?.invoiceUrl || null
 }
 
+// GET /v3/payments?subscription=... — cobranças da assinatura
+// (order=DESC: a mais recente primeiro)
+async function buscarPagamentosAssinatura(subscriptionId, limite = 10) {
+  const dados = await chamarApi(
+    `/v3/payments?subscription=${subscriptionId}&limit=${limite}&order=DESC`
+  )
+  return Array.isArray(dados?.data) ? dados.data : []
+}
+
 // DELETE /v3/subscriptions/{id}
 async function cancelarAssinatura(subscriptionId) {
   return chamarApi(`/v3/subscriptions/${subscriptionId}`, { method: 'DELETE' })
@@ -213,6 +222,7 @@ module.exports = {
   criarCustomer,
   criarAssinatura,
   buscarUrlPagamento,
+  buscarPagamentosAssinatura,
   cancelarAssinatura,
   criarPagamentoPedidoPix,
   criarPagamentoPedidoCartao,

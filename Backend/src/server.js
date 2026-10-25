@@ -15,6 +15,8 @@ const buscaRoutes            = require('./routes/buscaRoutes.js')
 const adminRoutes            = require('./routes/adminRoutes.js')
 const assinaturaRoutes       = require('./routes/assinaturaRoutes.js')
 const { webhookAsaas }       = require('./controllers/assinaturaController.js')
+const { conectar }           = require('./db/neon.js')
+const { encerrarVencidas }   = require('./services/vigenciaService.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -122,4 +124,26 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
+  checarVigencia()
 })
+
+// ── Vigência das assinaturas ──────────────────────────────────────────────────
+// A cada hora (e já na subida do servidor) encerra assinaturas vencidas +
+// carência e suspende os mercados vinculados até o pagamento ser regularizado.
+// Idempotente: rodar mais de uma vez não causa efeito colateral.
+async function checarVigencia() {
+  try {
+    const sql = await conectar()
+    const encerradas = await encerrarVencidas(sql)
+    if (encerradas.length > 0) {
+      const suspensos = encerradas.reduce((t, a) => t + (a.mercados_suspensos || 0), 0)
+      console.log(
+        `Vigência: ${encerradas.length} assinatura(s) vencida(s), ${suspensos} mercado(s) suspenso(s)`
+      )
+    }
+  } catch (err) {
+    console.error('Erro na verificação de vigência das assinaturas:', err.message)
+  }
+}
+
+setInterval(checarVigencia, 60 * 60 * 1000)

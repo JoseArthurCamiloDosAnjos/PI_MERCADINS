@@ -200,6 +200,17 @@ export const api = {
   removerPedidoHistorico: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/historico`, { method: 'DELETE' }),
 
+  // ── Endereços de entrega salvos na conta do cliente ───────────────────────
+  listarEnderecos: () =>
+    request('/enderecos'),
+  criarEndereco: (dados: {
+    cep: string; rua: string; numero: string; bairro: string; cidade: string;
+    complemento?: string;
+  }) =>
+    request('/enderecos', { method: 'POST', body: JSON.stringify(dados) }),
+  removerEndereco: (enderecoId: string | number) =>
+    request(`/enderecos/${enderecoId}`, { method: 'DELETE' }),
+
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/cupons`),

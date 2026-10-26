@@ -1,19 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import { IconShoppingCart } from "../../components/Icons";
+import { useAuth } from "../../context/AuthContext";
+import { useEnderecos } from "../../hooks/useEnderecos";
+import EnderecoPopup from "../../components/EnderecoPopup/EnderecoPopup";
 import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
 import {
   type EnderecoEntrega,
   type EnderecoSalvo,
-  type CampoEndereco,
   ENDERECO_VAZIO,
   NOMES_CAMPOS_ENDERECO,
   camposEnderecoFaltando,
-  mascaraCep,
   formatarEndereco,
-  gerarIdEndereco,
-  carregarEnderecos,
-  guardarEnderecos,
 } from "../../utils/endereco";
 import "./Cart.css";
 
@@ -78,140 +77,6 @@ interface CartScreenProps {
   // ── Pagamento (B3): pagar na entrega, Pix ou cartão ──────────────────────
   formaPagamento?: "presencial" | "pix" | "cartao";
   onFormaPagamentoChange?: (forma: "presencial" | "pix" | "cartao") => void;
-}
-
-// Popup para cadastrar/editar um endereço de entrega
-function EnderecoPopup({
-  aberto,
-  enderecoInicial,
-  onFechar,
-  onSalvar,
-}: {
-  aberto: boolean;
-  enderecoInicial: EnderecoEntrega;
-  onFechar: () => void;
-  onSalvar: (endereco: EnderecoEntrega) => void;
-}) {
-  const [endereco, setEndereco] = useState<EnderecoEntrega>(enderecoInicial);
-  // Só destaca os campos em vermelho depois que a pessoa tenta salvar
-  const [tentouSalvar, setTentouSalvar] = useState(false);
-
-  const faltando = camposEnderecoFaltando(endereco);
-  const camposComErro = new Set<CampoEndereco>(tentouSalvar ? faltando : []);
-
-  const mudarCampo = (campo: keyof EnderecoEntrega, valor: string) => {
-    const novo: EnderecoEntrega = { ...endereco };
-    novo[campo] = campo === "cep" ? mascaraCep(valor) : valor;
-    setEndereco(novo);
-  };
-
-  const tentarSalvar = () => {
-    if (faltando.length > 0) {
-      setTentouSalvar(true);
-      return;
-    }
-    onSalvar(endereco);
-  };
-
-  if (!aberto) return null;
-
-  const nomesFaltando = faltando.map((campo) => NOMES_CAMPOS_ENDERECO[campo]);
-
-  return (
-    <>
-      <div className="cart-endereco-popup__backdrop" onClick={onFechar} />
-      <div className="cart-endereco-popup" onClick={(e) => e.stopPropagation()}>
-        <div className="cart-endereco-popup__header">
-          <h3 className="cart-endereco-popup__titulo">Adicionar endereço de entrega</h3>
-          <button className="cart-endereco-popup__fechar" onClick={onFechar} aria-label="Fechar">✕</button>
-        </div>
-
-        <div className="cart-endereco-popup__body">
-          <div className="cart-endereco__grid">
-            <CampoEndereco
-              id="popup-endereco-rua"
-              label="Rua"
-              campo="rua"
-              valor={endereco.rua}
-              placeholder="Ex.: Rua das Flores"
-              autoComplete="address-line1"
-              comErro={camposComErro.has("rua")}
-              onMudar={(valor) => mudarCampo("rua", valor)}
-            />
-            <CampoEndereco
-              id="popup-endereco-numero"
-              label="Número"
-              campo="numero"
-              valor={endereco.numero}
-              placeholder="Ex.: 123"
-              maxLength={10}
-              inputMode="numeric"
-              comErro={camposComErro.has("numero")}
-              onMudar={(valor) => mudarCampo("numero", valor)}
-            />
-            <CampoEndereco
-              id="popup-endereco-bairro"
-              label="Bairro"
-              campo="bairro"
-              valor={endereco.bairro}
-              placeholder="Ex.: Centro"
-              comErro={camposComErro.has("bairro")}
-              onMudar={(valor) => mudarCampo("bairro", valor)}
-            />
-            <CampoEndereco
-              id="popup-endereco-cep"
-              label="CEP"
-              campo="cep"
-              valor={endereco.cep}
-              placeholder="00000-000"
-              maxLength={9}
-              inputMode="numeric"
-              autoComplete="postal-code"
-              comErro={camposComErro.has("cep")}
-              onMudar={(valor) => mudarCampo("cep", valor)}
-            />
-            <CampoEndereco
-              id="popup-endereco-cidade"
-              label="Cidade"
-              campo="cidade"
-              valor={endereco.cidade}
-              placeholder="Ex.: Taquaritinga"
-              autoComplete="address-level2"
-              comErro={camposComErro.has("cidade")}
-              onMudar={(valor) => mudarCampo("cidade", valor)}
-            />
-            <CampoEndereco
-              id="popup-endereco-complemento"
-              label="Complemento (opcional)"
-              campo="complemento"
-              valor={endereco.complemento}
-              placeholder="Apto, bloco, referência…"
-              onMudar={(valor) => mudarCampo("complemento", valor)}
-            />
-          </div>
-
-          {tentouSalvar && faltando.length > 0 && (
-            <p className="cart-endereco-popup__erro" role="alert">
-              Preencha: {nomesFaltando.join(", ")}.
-            </p>
-          )}
-        </div>
-
-        <div className="cart-endereco-popup__footer">
-          <button type="button" className="cart-endereco-popup__btn-cancelar" onClick={onFechar}>
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="cart-endereco-popup__btn-salvar"
-            onClick={tentarSalvar}
-          >
-            Salvar endereço
-          </button>
-        </div>
-      </div>
-    </>
-  );
 }
 
 const formatBRL = (value: number) =>
@@ -325,47 +190,6 @@ const IconMapPin = () => (
   </svg>
 );
 
-// Um campo do endereço de entrega (rua, número, bairro, CEP...)
-function CampoEndereco({
-  id,
-  label,
-  campo,
-  valor,
-  placeholder,
-  maxLength = 80,
-  inputMode,
-  autoComplete,
-  comErro,
-  onMudar,
-}: {
-  id: string;
-  label: string;
-  campo: CampoEndereco | "complemento";
-  valor: string;
-  placeholder?: string;
-  maxLength?: number;
-  inputMode?: "text" | "numeric";
-  autoComplete?: string;
-  comErro?: boolean;
-  onMudar: (valor: string) => void;
-}) {
-  return (
-    <div className={`cart-endereco__campo cart-endereco__campo--${campo}${comErro ? " is-erro" : ""}`}>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="text"
-        value={valor}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        inputMode={inputMode}
-        autoComplete={autoComplete}
-        onChange={(e) => onMudar(e.target.value)}
-      />
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------
@@ -410,33 +234,58 @@ export default function CartScreen({
   const [enderecoPopupAberto, setEnderecoPopupAberto] = useState(false);
   // Muda a cada abertura: assim o popup nasce zerado toda vez
   const [popupChave, setPopupChave] = useState(0);
-  // Endereço sendo digitado no popup (sempre começa vazio: é um endereço novo)
-  const [enderecoEditando, setEnderecoEditando] = useState<EnderecoEntrega>({ ...ENDERECO_VAZIO });
+  // Erro do servidor ao salvar, mostrado dentro do popup
+  const [erroPopup, setErroPopup] = useState<string | null>(null);
+  const [salvandoEndereco, setSalvandoEndereco] = useState(false);
 
-  // Carteira de endereços do cliente — fica salva no navegador, então ele não
-  // digita o mesmo endereço toda vez e pode guardar mais de um
-  const [enderecos, setEnderecos] = useState<EnderecoSalvo[]>(() => {
-    const salvos = carregarEnderecos();
-    // Migração: quem já tinha um endereço completo salvo pela chave antiga
-    // passa a ter esse endereço como o primeiro da lista
-    if (salvos.length === 0 && camposEnderecoFaltando(endereco).length === 0) {
-      const primeiro: EnderecoSalvo = { ...endereco, id: gerarIdEndereco() };
-      guardarEnderecos([primeiro]);
-      return [primeiro];
-    }
-    return salvos;
+  // ── Endereços de entrega ──────────────────────────────────────────────────
+  // O hook guarda os endereços: na conta quando o cliente está logado e no
+  // navegador quando não está (e leva para a conta assim que ele entrar).
+  const { usuario } = useAuth();
+  const logado = !!usuario;
+  const navigate = useNavigate();
+  const {
+    enderecos,
+    carregando: carregandoEnderecos,
+    adicionar: adicionarEndereco,
+    remover: removerEnderecoDaConta,
+  } = useEnderecos();
+
+  // Marcação manual do rádio; sem clique, a seleção acompanha o endereço do pedido
+  const [escolhaManual, setEscolhaManual] = useState<string | null>(null);
+
+  // Remove o "id" interno para enviar só os campos do endereço
+  const semId = (e: EnderecoSalvo): EnderecoEntrega => ({
+    cep: e.cep,
+    rua: e.rua,
+    numero: e.numero,
+    bairro: e.bairro,
+    complemento: e.complemento,
+    cidade: e.cidade,
   });
 
   // Qual endereço vai junto com a entrega (o que está marcado no rádio)
-  const [enderecoSelecionadoId, setEnderecoSelecionadoId] = useState<string | null>(() => {
+  const enderecoSelecionadoId = useMemo(() => {
+    if (escolhaManual && enderecos.some((e) => e.id === escolhaManual)) {
+      return escolhaManual;
+    }
     const igual = enderecos.find(
       (e) => e.rua === endereco.rua && e.numero === endereco.numero && e.cep === endereco.cep
     );
     return (igual ?? enderecos[0])?.id ?? null;
-  });
+  }, [enderecos, escolhaManual, endereco]);
 
-  // O cliente já tem pelo menos um endereço cadastrado?
-  const temEndereco = enderecos.length > 0;
+  // Mantém o endereço mostrado na tela e o endereço do pedido sendo o mesmo
+  // (sem clique: por exemplo, quando a conta já traz o endereço carregado)
+  useEffect(() => {
+    const escolhido = enderecos.find((e) => e.id === enderecoSelecionadoId);
+    if (!escolhido) return;
+    const mesmo =
+      escolhido.rua === endereco.rua &&
+      escolhido.numero === endereco.numero &&
+      escolhido.cep === endereco.cep;
+    if (!mesmo) onEnderecoChange?.(semId(escolhido));
+  }, [enderecoSelecionadoId, enderecos, endereco, onEnderecoChange]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = useMemo(
@@ -510,55 +359,56 @@ export default function CartScreen({
     onCheckout?.(items, total);
   };
 
-  // Remove o "id" interno para enviar só os campos do endereço
-  const semId = (e: EnderecoSalvo): EnderecoEntrega => ({
-    cep: e.cep,
-    rua: e.rua,
-    numero: e.numero,
-    bairro: e.bairro,
-    complemento: e.complemento,
-    cidade: e.cidade,
-  });
-
   // Marca um endereço da lista como o endereço da entrega
   const escolherEndereco = (id: string) => {
     const escolhido = enderecos.find((e) => e.id === id);
     if (!escolhido) return;
     setErroEndereco(null);
-    setEnderecoSelecionadoId(id);
+    setEscolhaManual(id);
     onEnderecoChange?.(semId(escolhido));
   };
 
-  // Apaga um endereço da carteira do cliente
-  const removerEnderecoSalvo = (id: string) => {
-    const lista = enderecos.filter((e) => e.id !== id);
-    setEnderecos(lista);
-    guardarEnderecos(lista);
-    // Era o endereço escolhido? Passa para o primeiro que sobrar (ou limpa)
-    if (enderecoSelecionadoId === id) {
-      const proximo = lista[0] ?? null;
-      setEnderecoSelecionadoId(proximo?.id ?? null);
-      onEnderecoChange?.(proximo ? semId(proximo) : { ...ENDERECO_VAZIO });
+  // Apaga um endereço (da conta ou do navegador) e conserta a seleção
+  const removerEnderecoSalvo = async (id: string) => {
+    try {
+      await removerEnderecoDaConta(id);
+      // Era o endereço escolhido? Passa para o primeiro que sobrar (ou limpa)
+      if (enderecoSelecionadoId === id) {
+        const proximo = enderecos.find((e) => e.id !== id) ?? null;
+        setEscolhaManual(proximo?.id ?? null);
+        onEnderecoChange?.(proximo ? semId(proximo) : { ...ENDERECO_VAZIO });
+      }
+    } catch (e) {
+      setErroEndereco(
+        e instanceof Error ? e.message : "Não foi possível remover o endereço."
+      );
     }
   };
 
-  // Abre o popup para cadastrar um endereço novo (botão e opção "adicionar mais")
+  // Abre o popup para cadastrar um endereço novo
   const abrirPopupEndereco = () => {
-    setEnderecoEditando({ ...ENDERECO_VAZIO });
+    setErroPopup(null);
     setPopupChave((c) => c + 1);
     setEnderecoPopupAberto(true);
   };
 
   // Salva o endereço feito no popup: entra na lista e já fica selecionado
-  const salvarEnderecoPopup = (novoEndereco: EnderecoEntrega) => {
-    const salvo: EnderecoSalvo = { ...novoEndereco, id: gerarIdEndereco() };
-    const lista = [...enderecos, salvo];
-    setEnderecos(lista);
-    guardarEnderecos(lista);
-    setEnderecoSelecionadoId(salvo.id);
-    setErroEndereco(null);
-    onEnderecoChange?.(novoEndereco);
-    setEnderecoPopupAberto(false);
+  const salvarEnderecoPopup = async (novoEndereco: EnderecoEntrega) => {
+    try {
+      setSalvandoEndereco(true);
+      setErroPopup(null);
+      const salvo = await adicionarEndereco(novoEndereco);
+      setEscolhaManual(salvo.id);
+      setErroEndereco(null);
+      onEnderecoChange?.(novoEndereco);
+      setEnderecoPopupAberto(false);
+    } catch (e) {
+      setErroPopup(
+        e instanceof Error ? e.message : "Não foi possível salvar o endereço."
+      );
+    } finally {
+      setSalvandoEndereco(false);
+    }
   };
 
   const aplicarCupom = () => {
@@ -822,8 +672,9 @@ export default function CartScreen({
           )}
 
           {/* Endereço de entrega — aparece só quando a compra será entregue.
-               Usa radiobuttons (igual ao pagamento), com os endereços já
-               salvos do cliente e a opção de adicionar mais. */}
+               Mostra o endereço salvo do cliente em rádio (igual ao pagamento)
+               e o botão para adicionar outro. Sem endereço cadastrado, fica só
+               o botão. Cliente logado usa os endereços da conta dele. */}
           {items.length > 0 && tipoEfetivo === "entrega" && (
             <fieldset className="cart-endereco">
               <legend className="cart-endereco__legenda">
@@ -831,91 +682,74 @@ export default function CartScreen({
                 Onde você quer receber?
               </legend>
 
-              {temEndereco ? (
-                enderecos.map((e, i) => (
-                  <div
-                    key={e.id}
-                    className={`cart-endereco__opcao ${
-                      enderecoSelecionadoId === e.id ? "is-ativa" : ""
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="endereco-entrega"
-                      id={`endereco-${e.id}`}
-                      value={e.id}
-                      checked={enderecoSelecionadoId === e.id}
-                      onChange={() => escolherEndereco(e.id)}
-                    />
-                    <label
-                      className="cart-endereco__opcao-conteudo"
-                      htmlFor={`endereco-${e.id}`}
-                    >
-                      <span className="cart-endereco__opcao-icone" aria-hidden="true">
-                        <IconMapPin />
-                      </span>
-                      <span className="cart-endereco__opcao-texto">
-                        <strong className="cart-endereco__opcao-titulo">
-                          {i === 0 ? "Meu endereço" : `Endereço ${i + 1}`}
-                        </strong>
-                        <span className="cart-endereco__opcao-descricao">
-                          {formatarEndereco(e)}
-                        </span>
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      className="cart-endereco__remover"
-                      onClick={() => removerEnderecoSalvo(e.id)}
-                      title="Remover este endereço"
-                      aria-label="Remover este endereço"
-                    >
-                      <IconTrash />
-                    </button>
-                  </div>
-                ))
+              {carregandoEnderecos ? (
+                <p className="cart-endereco__nota">Carregando seus endereços...</p>
               ) : (
-                /* Sem endereço nenhum: botão que abre o popup de preenchimento */
-                <button
-                  type="button"
-                  className="cart-endereco__btn-adicionar"
-                  onClick={abrirPopupEndereco}
-                >
-                  <IconPlus />
-                  Preencher os dados necessários
-                </button>
-              )}
+                <>
+                  {/* Sem login o endereço fica guardado só neste navegador */}
+                  {!logado && (
+                    <p className="cart-endereco__nota">
+                      Você não está logado: o endereço fica salvo só neste
+                      navegador até você entrar na conta.{" "}
+                      <button type="button" onClick={() => navigate("/auth")}>
+                        Entrar
+                      </button>
+                    </p>
+                  )}
 
-              {/* Já tem endereço? Aparece a opção de cadastrar mais um */}
-              {temEndereco && (
-                <div
-                  className={`cart-endereco__opcao ${
-                    enderecoSelecionadoId === "novo" ? "is-ativa" : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="endereco-entrega"
-                    id="endereco-novo"
-                    value="novo"
-                    checked={enderecoSelecionadoId === "novo"}
-                    onChange={() => {
-                      setEnderecoSelecionadoId("novo");
-                      abrirPopupEndereco();
-                    }}
-                  />
-                  <label className="cart-endereco__opcao-conteudo" htmlFor="endereco-novo">
-                    <span className="cart-endereco__opcao-icone" aria-hidden="true">
-                      <IconPlus />
-                    </span>
-                    <span className="cart-endereco__opcao-texto">
-                      <strong className="cart-endereco__opcao-titulo">Adicionar mais</strong>
-                      <span className="cart-endereco__opcao-descricao">
-                        Cadastrar outro endereço de entrega
-                      </span>
-                    </span>
-                  </label>
-                </div>
+                  {enderecos.map((e, i) => (
+                    <div
+                      key={e.id}
+                      className={`cart-endereco__opcao ${
+                        enderecoSelecionadoId === e.id ? "is-ativa" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="endereco-entrega"
+                        id={`endereco-${e.id}`}
+                        value={e.id}
+                        checked={enderecoSelecionadoId === e.id}
+                        onChange={() => escolherEndereco(e.id)}
+                      />
+                      <label
+                        className="cart-endereco__opcao-conteudo"
+                        htmlFor={`endereco-${e.id}`}
+                      >
+                        <span className="cart-endereco__opcao-icone" aria-hidden="true">
+                          <IconMapPin />
+                        </span>
+                        <span className="cart-endereco__opcao-texto">
+                          <strong className="cart-endereco__opcao-titulo">
+                            {i === 0 ? "Meu endereço" : `Endereço ${i + 1}`}
+                          </strong>
+                          <span className="cart-endereco__opcao-descricao">
+                            {formatarEndereco(e)}
+                          </span>
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        className="cart-endereco__remover"
+                        onClick={() => removerEnderecoSalvo(e.id)}
+                        title="Remover este endereço"
+                        aria-label="Remover este endereço"
+                      >
+                        <IconTrash />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Botão para cadastrar mais um endereço (ou o primeiro) */}
+                  <button
+                    type="button"
+                    className="cart-endereco__btn-adicionar"
+                    onClick={abrirPopupEndereco}
+                  >
+                    <IconPlus />
+                    Adicionar um endereço
+                  </button>
+                </>
               )}
 
               {erroEndereco && (
@@ -1043,18 +877,13 @@ export default function CartScreen({
         </div>
       </div>
 
-      {/* Popup de cadastro/edição de endereço de entrega */}
+      {/* Popup de cadastro de endereço de entrega */}
       <EnderecoPopup
         key={popupChave}
         aberto={enderecoPopupAberto}
-        enderecoInicial={enderecoEditando}
-        onFechar={() => {
-          setEnderecoPopupAberto(false);
-          // Cancelou o cadastro? O rádio volta para o endereço salvo (se houver)
-          setEnderecoSelecionadoId((atual) =>
-            atual === "novo" ? (enderecos[0]?.id ?? null) : atual
-          );
-        }}
+        salvando={salvandoEndereco}
+        erro={erroPopup}
+        onFechar={() => setEnderecoPopupAberto(false)}
         onSalvar={salvarEnderecoPopup}
       />
     </div>

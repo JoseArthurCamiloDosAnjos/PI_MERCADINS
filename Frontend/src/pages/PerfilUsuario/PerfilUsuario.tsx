@@ -11,6 +11,9 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
+import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
+import { useEnderecos } from '../../hooks/useEnderecos';
+import { formatarEndereco, type EnderecoEntrega } from '../../utils/endereco';
 import './PerfilUsuario.css';
 import {
   IconLock,
@@ -21,6 +24,8 @@ import {
   IconInbox,
   IconInfo,
   IconMessage,
+  IconMapPin,
+  IconPlus,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -276,6 +281,127 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
   );
 }
 
+// Ícone de lixeira dos endereços salvos
+function IconLixeira({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+// ─── Endereços de entrega (carteira do cliente) ──────────────────────────────
+// O cliente cadastra os endereços aqui no perfil e escolhe qual deles recebe
+// a entrega na tela do carrinho. Os dados moram na conta dele (banco).
+function SecaoEnderecos({ showToast }: { showToast: ShowToast }) {
+  const { enderecos, carregando, adicionar, remover } = useEnderecos();
+  const [popupAberto, setPopupAberto] = useState(false);
+  // Muda a cada abertura: o pop-up nasce zerado toda vez
+  const [popupChave, setPopupChave] = useState(0);
+  const [salvando, setSalvando] = useState(false);
+  const [erroPopup, setErroPopup] = useState<string | null>(null);
+
+  const abrirPopup = () => {
+    setErroPopup(null);
+    setPopupChave(c => c + 1);
+    setPopupAberto(true);
+  };
+
+  async function salvarEndereco(novo: EnderecoEntrega) {
+    try {
+      setSalvando(true);
+      setErroPopup(null);
+      await adicionar(novo);
+      setPopupAberto(false);
+      showToast('sucesso', 'Endereço salvo com sucesso.');
+    } catch (e) {
+      setErroPopup(e instanceof Error ? e.message : 'Não foi possível salvar o endereço.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function apagarEndereco(id: string) {
+    try {
+      await remover(id);
+      showToast('sucesso', 'Endereço removido.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível remover o endereço.');
+    }
+  }
+
+  return (
+    <section>
+      <div className="pu-sec-row">
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços de entrega</h2>
+        {enderecos.length > 0 && (
+          <button className="pu-btn-link" onClick={abrirPopup}>Adicionar endereço</button>
+        )}
+      </div>
+
+      {carregando ? (
+        <p className="pu-empty-inline">Carregando seus endereços...</p>
+      ) : enderecos.length === 0 ? (
+        <div className="pu-empty">
+          <div className="pu-empty-icon"><IconMapPin size={22} /></div>
+          <p>Nenhum endereço cadastrado</p>
+          <span>Adicione um endereço para receber seus pedidos em casa.</span>
+          <button className="pu-btn-endereco" onClick={abrirPopup}>
+            <IconPlus size={15} /> Adicionar endereço
+          </button>
+        </div>
+      ) : (
+        <div className="pu-endereco-lista">
+          {enderecos.map((e, i) => (
+            <div className="pu-endereco-item" key={e.id}>
+              <span className="pu-endereco-icone"><IconMapPin size={16} /></span>
+              <span className="pu-endereco-texto">
+                <strong>{i === 0 ? 'Endereço principal' : `Endereço ${i + 1}`}</strong>
+                <span>{formatarEndereco(e)}</span>
+              </span>
+              <button
+                className="pu-endereco-remover"
+                onClick={() => apagarEndereco(e.id)}
+                title="Remover este endereço"
+                aria-label="Remover este endereço"
+              >
+                <IconLixeira />
+              </button>
+            </div>
+          ))}
+          <button className="pu-btn-endereco" onClick={abrirPopup}>
+            <IconPlus size={15} /> Adicionar endereço
+          </button>
+        </div>
+      )}
+
+      <EnderecoPopup
+        key={popupChave}
+        aberto={popupAberto}
+        titulo="Adicionar endereço de entrega"
+        salvando={salvando}
+        erro={erroPopup}
+        onFechar={() => setPopupAberto(false)}
+        onSalvar={salvarEndereco}
+      />
+    </section>
+  );
+}
+
 function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, onPedidoCancelado }: {
   favoritos: Favorito[];
   historico: Historico[];
@@ -375,6 +501,10 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
           </div>
         )}
       </section>
+
+      <div className="pu-divider" />
+
+      <SecaoEnderecos showToast={showToast} />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

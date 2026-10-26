@@ -1,0 +1,225 @@
+/* ============================================================
+   EnderecoPopup — janela de cadastro de endereço de entrega
+
+   As cores ficam declaradas aqui dentro (e não só na tela do carrinho)
+   porque o mesmo pop-up é usado também na tela de perfil do cliente.
+   ============================================================ */
+
+.endereco-popup__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.endereco-popup {
+  /* paleta própria: funciona dentro do carrinho e dentro do perfil */
+  --bg-card: #142744;
+  --bg-panel: #101f38;
+  --border-subtle: #22375c;
+  --text-primary: #f2f5fa;
+  --text-secondary: #91a3c0;
+  --text-muted: #5f7396;
+  --accent: #f5b90c;
+  --accent-hover: #ffc720;
+  --accent-ink: #241902;
+  --danger: #ef4b5f;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --font-display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: enderecoPopupEntrar 0.25s ease;
+}
+
+@keyframes enderecoPopupEntrar {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.endereco-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.endereco-popup__titulo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.endereco-popup__fechar {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.endereco-popup__fechar:hover {
+  color: var(--text-primary);
+  background: var(--bg-panel);
+}
+
+.endereco-popup__body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.endereco-popup__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+
+.endereco-popup__btn-cancelar {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.endereco-popup__btn-cancelar:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.endereco-popup__btn-salvar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.endereco-popup__btn-salvar:hover {
+  background: var(--accent-hover);
+}
+
+.endereco-popup__btn-salvar:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Aviso de campo faltando ou erro do servidor, dentro do pop-up */
+.endereco-popup__erro {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e2574c;
+}
+
+/* ── Campos do formulário ─────────────────────────────────────────────────── */
+
+.endereco-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.endereco-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  grid-column: span 1;
+  min-width: 0;
+}
+
+/* A rua ocupa a linha inteira — é o campo mais longo */
+.endereco-campo--rua {
+  grid-column: span 2;
+}
+
+.endereco-campo label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.endereco-campo input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.15s ease;
+}
+
+.endereco-campo input::placeholder {
+  color: var(--text-muted);
+}
+
+.endereco-campo input:focus {
+  border-color: var(--accent);
+}
+
+.endereco-campo.is-erro input {
+  border-color: var(--danger);
+}
+
+@media (max-width: 480px) {
+  .endereco-popup {
+    width: 92%;
+    max-height: 90vh;
+  }
+
+  .endereco-popup__footer {
+    flex-direction: column;
+  }
+
+  .endereco-popup__btn-cancelar,
+  .endereco-popup__btn-salvar {
+    width: 100%;
+    justify-content: center;
+  }
+}

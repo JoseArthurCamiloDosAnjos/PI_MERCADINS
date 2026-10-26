@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import ProfileMenu from "../../components/ProfileMenu";
 import SiteFooter from "../../components/SiteFooter/SiteFooter";
+import MenuMobile from "./MenuMobile";
 import {
   IconMapPin,
   IconStore,
@@ -419,6 +420,7 @@ export default function Mercadins() {
             >
               <img src={logo} alt="Mercadins" className="mp-logo-img" />
             </a>
+            <MenuMobile/>
 
             <ul className="nav-links">
               <li>

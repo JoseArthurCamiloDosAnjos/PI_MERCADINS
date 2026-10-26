@@ -450,6 +450,12 @@
 .cart-summary {
   position: sticky;
   top: 92px;
+  /* Fica fixo na tela: só a lista de itens rola. Se o resumo for maior que
+     a janela, ele ganha uma rolagem própria para o botão continuar acessível */
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -457,6 +463,15 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.cart-summary::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cart-summary::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 8px;
 }
 
 .cart-summary h2 {
@@ -1055,5 +1070,309 @@
     width: 26px;
     height: 26px;
     font-size: 14px;
+  }
+}
+
+/* ============================================================
+   Endereço de entrega — radiobuttons (igual ao pagamento)
+   ============================================================ */
+
+.cart-endereco__opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--bg-panel);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.cart-endereco__opcao.is-ativa {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-titulo {
+  color: var(--text-primary);
+}
+
+.cart-endereco__opcao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-icone {
+  color: var(--accent);
+}
+
+.cart-endereco__opcao-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cart-endereco__opcao-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-titulo {
+  color: var(--text-primary);
+}
+
+.cart-endereco__opcao-descricao {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-descricao {
+  color: var(--text-secondary);
+}
+
+/* Botão "Cadastrar endereço de entrega" quando ainda não há endereço */
+.cart-endereco__btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1.5px dashed var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.15s ease;
+}
+
+.cart-endereco__btn-adicionar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Parte clicável de cada endereço (o rádio fica à esquerda e a lixeira à
+   direita, fora do label para não marcar o rádio sem querer) */
+.cart-endereco__opcao-conteudo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* Lixeira do endereço — apaga só aquele endereço salvo */
+.cart-endereco__remover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.cart-endereco__remover:hover {
+  color: #e2574c;
+  border-color: #e2574c;
+  background: rgba(226, 87, 76, 0.1);
+}
+
+/* ============================================================
+   Popup de cadastro de endereço
+   ============================================================ */
+
+.cart-endereco-popup__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.cart-endereco-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cartPopupEntrar 0.25s ease;
+}
+
+@keyframes cartPopupEntrar {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.cart-endereco-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cart-endereco-popup__titulo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.cart-endereco-popup__fechar {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.cart-endereco-popup__fechar:hover {
+  color: var(--text-primary);
+  background: var(--bg-panel);
+}
+
+.cart-endereco-popup__body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.cart-endereco-popup__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+
+.cart-endereco-popup__btn-cancelar {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cart-endereco-popup__btn-cancelar:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.cart-endereco-popup__btn-salvar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cart-endereco-popup__btn-salvar:hover {
+  background: var(--accent-hover);
+}
+
+/* Aviso de campos faltando dentro do popup */
+.cart-endereco-popup__erro {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e2574c;
+}
+
+/* Mantém a grid de campos do endereço adequada dentro do popup */
+.cart-endereco-popup__body .cart-endereco__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+
+.cart-endereco-popup__body .cart-endereco__campo,
+.cart-endereco-popup__body .cart-endereco__campo--rua,
+.cart-endereco-popup__body .cart-endereco__campo--numero,
+.cart-endereco-popup__body .cart-endereco__campo--bairro,
+.cart-endereco-popup__body .cart-endereco__campo--cep,
+.cart-endereco-popup__body .cart-endereco__campo--cidade,
+.cart-endereco-popup__body .cart-endereco__campo--complemento {
+  grid-column: span 1;
+}
+
+.cart-endereco-popup__body .cart-endereco__campo--rua {
+  grid-column: span 2;
+}
+
+@media (max-width: 480px) {
+  .cart-endereco-popup {
+    width: 92%;
+    max-height: 90vh;
+  }
+  .cart-endereco-popup__footer {
+    flex-direction: column;
+  }
+  .cart-endereco-popup__btn-cancelar,
+  .cart-endereco-popup__btn-salvar {
+    width: 100%;
+    justify-content: center;
   }
 }

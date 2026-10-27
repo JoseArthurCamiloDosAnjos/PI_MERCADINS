@@ -753,8 +753,9 @@ function TelaSeguranca() {
 // ─── Tela de depoimentos ──────────────────────────────────────────────────────
 // O cliente conta o que achou da plataforma: uma nota de 1 a 5 estrelas e um
 // texto. Cada cliente deixa um depoimento — se escrever de novo, o anterior é
-// atualizado. Abaixo do formulário, ficam os depoimentos recentes de quem já
-// usa o Mercadins (inclusive o dele, marcado com "Seu depoimento").
+// atualizado. Logo abaixo do formulário ficam, em cards, os depoimentos que
+// ele mesmo publicou (no formato de "Avaliações feitas") e, em seguida, os
+// depoimentos recentes de quem já usa o Mercadins (o dele com "Seu depoimento").
 function TelaDepoimentos() {
   const { toasts, showToast, dismissToast } = useToast();
   const [lista, setLista] = useState<Depoimento[]>([]);
@@ -765,6 +766,9 @@ function TelaDepoimentos() {
   const [jaPublicou, setJaPublicou] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
+
+  // Depoimentos publicados por esta pessoa (a lista completa tem os de todos)
+  const meus = lista.filter(d => d.minha);
 
   const carregar = useCallback(() => {
     api.listarDepoimentos()
@@ -853,6 +857,38 @@ function TelaDepoimentos() {
             {enviando ? 'Enviando...' : jaPublicou ? 'Atualizar depoimento' : 'Publicar depoimento'}
           </button>
         </form>
+      </section>
+
+      <div className="pu-divider" />
+
+      {/* Só os depoimentos publicados por esta pessoa — no mesmo formato da
+          seção "Avaliações feitas" do perfil */}
+      <section>
+        <div className="pu-sec-row">
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Meus depoimentos</h2>
+          {meus.length > 0 && (
+            <span className="pu-dep-resumo">
+              {meus.length} publicado{meus.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {meus.length === 0 ? (
+          <div className="pu-empty">
+            <div className="pu-empty-icon"><IconStar size={22} /></div>
+            <p>Você ainda não publicou depoimento</p>
+            <span>Conte como foi a sua experiência e ajude outras pessoas a conhecer o Mercadins.</span>
+          </div>
+        ) : (
+          <div className="pu-rev-grid">
+            {meus.map((d, i) => (
+              <div key={d.id} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+                <p className="pu-rev-store">{new Date(d.data_cadastro).toLocaleDateString('pt-BR')}</p>
+                <Stars n={d.nota} />
+                <p className="pu-rev-text">{d.texto}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="pu-divider" />

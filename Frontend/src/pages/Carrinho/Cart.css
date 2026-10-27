@@ -1200,4 +1200,100 @@
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   vertical-align: middle;
 }
+
+/* ============================================================
+   Pergunta "este endereço é o seu principal?"
+   Enviado para o <body>, então a paleta é declarada aqui.
+   ============================================================ */
+.cart-principal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.cart-principal {
+  --bg-card: #142744;
+  --border-subtle: #22375c;
+  --text-primary: #f2f5fa;
+  --text-secondary: #91a3c0;
+  --accent: #f5b90c;
+  --accent-hover: #ffc720;
+  --accent-ink: #241902;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --font-display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  padding: 22px;
+  font-family: var(--font-display);
+}
+
+.cart-principal__titulo {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cart-principal__texto {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.cart-principal__texto strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cart-principal__acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cart-principal__btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cart-principal__btn--nao {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.cart-principal__btn--nao:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.cart-principal__btn--sim {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+}
+
+.cart-principal__btn--sim:hover {
+  background: var(--accent-hover);
+}
 

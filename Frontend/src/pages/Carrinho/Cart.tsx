@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import { IconShoppingCart } from "../../components/Icons";
 import { useAuth } from "../../context/AuthContext";
@@ -256,7 +257,20 @@ export default function CartScreen({
     adicionar: adicionarEndereco,
     editar: editarEnderecoSalvo,
     remover: removerEnderecoDaConta,
+    definirPrincipal,
   } = useEnderecos();
+
+  // ── Quem ainda não tem conta ───────────────────────────────────────────────
+  // Escolher a entrega (ou abrir o cadastro de endereço) exige login: a pessoa
+  // vai para a tela de login e volta direto para este carrinho, com os
+  // endereços dela prontos para usar.
+  const irParaLogin = () => {
+    sessionStorage.setItem("posLoginDestino", window.location.pathname);
+    navigate("/auth");
+  };
+
+  // Fica em aberto quando o endereço salvo ainda não tem principal
+  const [principalSugerido, setPrincipalSugerido] = useState<EnderecoSalvo | null>(null);
 
   // Marcação manual do rádio; sem clique, a seleção acompanha o endereço do pedido
   const [escolhaManual, setEscolhaManual] = useState<string | null>(null);
@@ -416,6 +430,8 @@ export default function CartScreen({
     try {
       setSalvandoEndereco(true);
       setErroPopup(null);
+      // A conta ainda não tinha principal? Então vale perguntar depois de salvar
+      const tinhaPrincipal = enderecos.some((e) => e.principal);
       if (enderecoEditando) {
         await editarEnderecoSalvo(enderecoEditando.id, dados);
         // O endereço editado continua sendo o escolhido para a entrega
@@ -423,6 +439,7 @@ export default function CartScreen({
       } else {
         const salvo = await adicionarEndereco(dados);
         setEscolhaManual(salvo.id);
+        if (!tinhaPrincipal) setPrincipalSugerido(salvo);
       }
       setErroEndereco(null);
       onEnderecoChange?.(dados);
@@ -434,6 +451,18 @@ export default function CartScreen({
       );
     } finally {
       setSalvandoEndereco(false);
+    }
+  };
+
+  // Confirma que o endereço recém-cadastro é o principal da conta
+  const confirmarEnderecoPrincipal = async () => {
+    if (!principalSugerido) return;
+    try {
+      await definirPrincipal(principalSugerido.id);
+    } catch {
+      /* sem conexão: o endereço continua salvo, só sem o selo de principal */
+    } finally {
+      setPrincipalSugerido(null);
     }
   };
 
@@ -591,6 +620,11 @@ export default function CartScreen({
                   value="entrega"
                   checked={tipoEfetivo === "entrega"}
                   onChange={() => onTipoEntregaChange?.("entrega")}
+                  /* Sem conta não dá para informar onde entregar: leva para o
+                     login e a pessoa volta direto para este carrinho */
+                  onClick={() => {
+                    if (!logado) irParaLogin();
+                  }}
                 />
                 <IconTruck />
                 <span className="cart-delivery__texto">
@@ -712,17 +746,6 @@ export default function CartScreen({
                 <p className="cart-endereco__nota">Carregando seus endereços...</p>
               ) : (
                 <>
-                  {/* Sem login o endereço fica guardado só neste navegador */}
-                  {!logado && (
-                    <p className="cart-endereco__nota">
-                      Você não está logado: o endereço fica salvo só neste
-                      navegador até você entrar na conta.{" "}
-                      <button type="button" onClick={() => navigate("/auth")}>
-                        Entrar
-                      </button>
-                    </p>
-                  )}
-
                   {enderecos.map((e, i) => (
                     <div
                       key={e.id}
@@ -760,7 +783,9 @@ export default function CartScreen({
                       <button
                         type="button"
                         className="cart-endereco__editar"
-                        onClick={() => abrirEdicaoEndereco(e)}
+                        onClick={() =>
+                          logado ? abrirEdicaoEndereco(e) : irParaLogin()
+                        }
                         title="Editar este endereço"
                         aria-label="Editar este endereço"
                       >
@@ -787,7 +812,7 @@ export default function CartScreen({
                   <button
                     type="button"
                     className="cart-endereco__btn-adicionar"
-                    onClick={abrirPopupEndereco}
+                    onClick={() => (logado ? abrirPopupEndereco() : irParaLogin())}
                   >
                     <IconPlus />
                     {enderecos.length === 0
@@ -940,6 +965,48 @@ export default function CartScreen({
         }}
         onSalvar={salvarEnderecoPopup}
       />
+
+      {/* Pergunta se o endereço recém-cadastro deve virar o principal.
+           Só aparece quando a conta ainda não tinha nenhum. Só fecha com a
+           escolha: ou "Sim, definir principal" ou "Agora não". */}
+      {principalSugerido &&
+        createPortal(
+          <>
+            <div className="cart-principal__backdrop" />
+            <div
+              className="cart-principal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Definir endereço principal"
+            >
+              <h3 className="cart-principal__titulo">
+                Definir como endereço principal?
+              </h3>
+              <p className="cart-principal__texto">
+                Quer que <strong>{formatarEndereco(principalSugerido)}</strong>{" "}
+                seja o seu endereço principal? Ele fica salvo na sua conta, em
+                "Endereços", e já vem marcado quando você fecha um pedido.
+              </p>
+              <div className="cart-principal__acoes">
+                <button
+                  type="button"
+                  className="cart-principal__btn cart-principal__btn--nao"
+                  onClick={() => setPrincipalSugerido(null)}
+                >
+                  Agora não
+                </button>
+                <button
+                  type="button"
+                  className="cart-principal__btn cart-principal__btn--sim"
+                  onClick={confirmarEnderecoPrincipal}
+                >
+                  Sim, definir principal
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

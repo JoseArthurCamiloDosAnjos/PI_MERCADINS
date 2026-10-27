@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
@@ -144,9 +144,13 @@ export default function RegistrarMercado() {
       .slice(0, 9);
   }
 
-  async function buscarCEP() {
+  // auto = true: chamado sozinho pelo CEP completo (não avisa erro de digitação)
+  const buscarCEP = useCallback(async (auto = false) => {
     const cep = form.cep.replace(/\D/g, '');
-    if (cep.length !== 8) return showToast('erro', 'CEP deve ter 8 dígitos.');
+    if (cep.length !== 8) {
+      if (!auto) showToast('erro', 'CEP deve ter 8 dígitos.');
+      return;
+    }
     setBuscandoCep(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -165,7 +169,17 @@ export default function RegistrarMercado() {
     } finally {
       setBuscandoCep(false);
     }
-  }
+  }, [form.cep, showToast]);
+
+  // Com os 8 dígitos do CEP completos ele consulta sozinho — o botão "Buscar"
+  // continua servindo para repetir a busca. Cada CEP é consultado uma vez só.
+  const cepJaBuscado = useRef<string | null>(form.cep.replace(/\D/g, '') || null);
+  useEffect(() => {
+    const digitos = form.cep.replace(/\D/g, '');
+    if (digitos.length !== 8 || digitos === cepJaBuscado.current) return;
+    cepJaBuscado.current = digitos;
+    void buscarCEP(true);
+  }, [form.cep, buscarCEP]);
 
   // Admin sem plano: cria direto (paga de volta pelo webhook, mas não precisa)
   async function criarDireto() {
@@ -593,7 +607,7 @@ export default function RegistrarMercado() {
                   </svg>
                 </FieldIcon>
               </div>
-              <button type="button" className="rm-cep-btn" onClick={buscarCEP} disabled={buscandoCep}>
+              <button type="button" className="rm-cep-btn" onClick={() => buscarCEP()} disabled={buscandoCep}>
                 {buscandoCep ? '...' : 'Buscar'}
               </button>
             </div>

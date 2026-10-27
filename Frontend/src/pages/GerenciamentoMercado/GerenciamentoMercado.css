@@ -605,6 +605,13 @@
   grid-column: 1 / -1;
 }
 
+/* Aviso do preenchimento automático do endereço pelo CEP */
+.gm-info-dica-cep {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amarelo);
+}
+
 .gm-info-subtitulo {
   display: flex;
   align-items: center;

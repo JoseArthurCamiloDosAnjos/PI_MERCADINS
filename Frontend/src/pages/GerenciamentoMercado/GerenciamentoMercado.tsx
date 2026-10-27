@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { parseHorario, estaAberto, type HorarioMercado } from '../../utils/horario';
+import { buscarCep } from '../../utils/cep';
 import ToastContainer from '../../components/Toast';
 import {
   IconBarChart,
@@ -1416,6 +1417,50 @@ function InfoConteudo({ mercado, onSalvo }: {
   });
   const [horario, setHorario] = useState<Record<string, [string, string] | null>>({});
 
+  // Aviso do preenchimento automático do endereço pelo CEP
+  const [dicaCep, setDicaCep] = useState<string | null>(null);
+  // CEP que já foi consultado — evita buscar a mesma coisa duas vezes
+  const cepJaBuscado = useRef<string | null>(
+    mercado.cep ? mercado.cep.replace(/\D/g, '') : null
+  );
+
+  // CEP completo → rua, bairro, cidade e estado vêm sozinhos (ViaCEP).
+  // Só na edição: fora dela os campos ficam apenas para leitura.
+  useEffect(() => {
+    if (!editando) return;
+
+    const digitos = form.cep.replace(/\D/g, '');
+    if (digitos.length !== 8) {
+      cepJaBuscado.current = null;
+      // o aviso só muda depois desta tecla, nunca dentro do efeito na hora
+      Promise.resolve().then(() => setDicaCep(null));
+      return;
+    }
+    if (digitos === cepJaBuscado.current) return;
+    cepJaBuscado.current = digitos;
+
+    let vivo = true;
+    buscarCep(form.cep).then((dados) => {
+      if (!vivo) return;
+      if (!dados) {
+        setDicaCep('CEP não encontrado. Confira os campos manualmente.');
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        rua: dados.rua || f.rua,
+        bairro: dados.bairro || f.bairro,
+        cidade: dados.cidade || f.cidade,
+        estado: dados.estado || f.estado,
+      }));
+      setDicaCep('Endereço preenchido pelo CEP.');
+    });
+
+    return () => {
+      vivo = false;
+    };
+  }, [form.cep, editando]);
+
   const formatarTelefone = (tel: string) => {
     if (!tel) return '—';
     const nums = tel.replace(/\D/g, '');
@@ -1456,6 +1501,7 @@ function InfoConteudo({ mercado, onSalvo }: {
     });
     setHorario(parseHorario(mercado.horario) ?? {});
     setErro('');
+    setDicaCep(null);
     setEditando(true);
   }
 
@@ -1557,6 +1603,7 @@ function InfoConteudo({ mercado, onSalvo }: {
               CEP (só números)
               <input className="gm-modal-input" value={form.cep.replace(/\D/g, '').slice(0, 8)}
                 onChange={e => set('cep', e.target.value.replace(/\D/g, '').slice(0, 8))} />
+              {dicaCep && <small className="gm-info-dica-cep">{dicaCep}</small>}
             </label>
             <label className="gm-info-campo gm-info-campo--full">
               Rua

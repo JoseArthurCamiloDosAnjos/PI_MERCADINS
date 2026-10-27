@@ -10,7 +10,7 @@ import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
-import { type EnderecoEntrega, carregarEndereco, salvarEndereco, formatarEndereco } from './utils/endereco'
+import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -136,6 +136,7 @@ function salvarEscolhas(mercadoId: number, escolhas: { tipoEntrega?: 'entrega' |
 function CartWrapper() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const [mercadoId, setMercadoId] = useState<number | null>(null)
   const [mercadoNome, setMercadoNome] = useState<string>('')
   const [mercadoLocal, setMercadoLocal] = useState<string>('')
@@ -155,9 +156,17 @@ function CartWrapper() {
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
-  // Endereço de entrega (item 1): fica salvo no navegador para o cliente não
-  // digitar toda vez que voltar a comprar
-  const [endereco, setEndereco] = useState<EnderecoEntrega>(() => carregarEndereco())
+  // Endereço de entrega: só existe depois do login — a conta é a fonte oficial.
+  // Deslogado, nada é carregado e nada fica guardado neste aparelho.
+  const [endereco, setEndereco] = useState<EnderecoEntrega>(() =>
+    usuario ? carregarEndereco() : { ...ENDERECO_VAZIO }
+  )
+
+  // Saiu da conta (ou nunca entrou)? apaga o endereço que ficou salvo aqui.
+  useEffect(() => {
+    if (!usuario) limparEnderecoSalvo()
+  }, [usuario])
+
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
   // Subtotal atual para revalidar o cupom restaurado (A5)
@@ -227,10 +236,11 @@ function CartWrapper() {
     })
   }, [mercadoId, tipoEntrega, cupom, agendamento])
 
-  // Item 1 — o endereço de entrega também é guardado no navegador
+  // Item 1 — o endereço escolhido é guardado no navegador, mas só enquanto a
+  // sessão está aberta (deslogado não grava endereço neste aparelho)
   useEffect(() => {
-    salvarEndereco(endereco)
-  }, [endereco])
+    if (usuario) salvarEndereco(endereco)
+  }, [endereco, usuario])
 
   // Entrega ou retirada efetiva (mesma regra usada dentro da tela do carrinho:
   // loja que só faz uma das opções já nasce com ela escolhida)

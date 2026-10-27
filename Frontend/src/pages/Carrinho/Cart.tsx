@@ -366,6 +366,12 @@ export default function CartScreen({
 
   const handleCheckout = () => {
     if (faltaMinimo) return;
+    // Entrega sem conta: não existe endereço para mostrar nesta tela, então
+    // leva para o login e devolve a pessoa para este mesmo carrinho
+    if (tipoEfetivo === "entrega" && items.length > 0 && !logado) {
+      irParaLogin();
+      return;
+    }
     // Entrega: a loja precisa saber onde entregar — endereço é obrigatório
     if (tipoEfetivo === "entrega" && items.length > 0) {
       const faltando = camposEnderecoFaltando(endereco);
@@ -732,9 +738,10 @@ export default function CartScreen({
           )}
 
           {/* Endereço de entrega — aparece só quando a compra será entregue.
-               Mostra o endereço salvo do cliente em rádio (igual ao pagamento)
-               e o botão para adicionar outro. Sem endereço cadastrado, fica só
-               o botão. Cliente logado usa os endereços da conta dele. */}
+               Cliente logado: lista os endereços da conta em rádio (igual ao
+               pagamento), com botão para adicionar outro. Deslogado: não
+               existe endereço para mostrar, fica só o botão que leva para o
+               login (onde ele pode cadastrar o dele). */}
           {items.length > 0 && tipoEfetivo === "entrega" && (
             <fieldset className="cart-endereco">
               <legend className="cart-endereco__legenda">
@@ -746,7 +753,9 @@ export default function CartScreen({
                 <p className="cart-endereco__nota">Carregando seus endereços...</p>
               ) : (
                 <>
-                  {enderecos.map((e, i) => (
+                  {/* Deslogado não mostra endereço nenhum: a conta é que guarda,
+                      então fica só o botão que leva para a tela de login */}
+                  {logado && enderecos.map((e, i) => (
                     <div
                       key={e.id}
                       className={`cart-endereco__opcao ${
@@ -783,9 +792,7 @@ export default function CartScreen({
                       <button
                         type="button"
                         className="cart-endereco__editar"
-                        onClick={() =>
-                          logado ? abrirEdicaoEndereco(e) : irParaLogin()
-                        }
+                        onClick={() => abrirEdicaoEndereco(e)}
                         title="Editar este endereço"
                         aria-label="Editar este endereço"
                       >
@@ -804,7 +811,7 @@ export default function CartScreen({
                   ))}
 
                   {/* Botão para cadastrar mais um endereço (ou o primeiro) */}
-                  {enderecos.length === 0 && (
+                  {(!logado || enderecos.length === 0) && (
                     <p className="cart-endereco__nota">
                       Cadastre seu endereço para a gente entregar em casa.
                     </p>
@@ -815,9 +822,9 @@ export default function CartScreen({
                     onClick={() => (logado ? abrirPopupEndereco() : irParaLogin())}
                   >
                     <IconPlus />
-                    {enderecos.length === 0
-                      ? "Cadastrar endereço de entrega"
-                      : "Adicionar um endereço"}
+                    {logado && enderecos.length > 0
+                      ? "Adicionar um endereço"
+                      : "Cadastrar endereço de entrega"}
                   </button>
                 </>
               )}

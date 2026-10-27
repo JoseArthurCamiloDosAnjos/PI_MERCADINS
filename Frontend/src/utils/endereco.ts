@@ -60,6 +60,15 @@ export function salvarEndereco(endereco: EnderecoEntrega): void {
   }
 }
 
+/** Apaga o endereço guardado — quem está deslogado não deixa dado no aparelho */
+export function limparEnderecoSalvo(): void {
+  try {
+    localStorage.removeItem(CHAVE);
+  } catch {
+    /* navegador sem espaço: não há o que apagar */
+  }
+}
+
 /** Máscara de CEP: 12345678 → 12345-678 */
 export function mascaraCep(valor: string): string {
   const digitos = valor.replace(/\D/g, '').slice(0, 8);

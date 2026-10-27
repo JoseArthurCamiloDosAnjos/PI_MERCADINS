@@ -190,6 +190,12 @@ const IconMapPin = () => (
   </svg>
 );
 
+const IconPencil = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+  </svg>
+);
+
 // ---------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------
@@ -248,11 +254,14 @@ export default function CartScreen({
     enderecos,
     carregando: carregandoEnderecos,
     adicionar: adicionarEndereco,
+    editar: editarEnderecoSalvo,
     remover: removerEnderecoDaConta,
   } = useEnderecos();
 
   // Marcação manual do rádio; sem clique, a seleção acompanha o endereço do pedido
   const [escolhaManual, setEscolhaManual] = useState<string | null>(null);
+  // Endereço que está sendo editado no pop-up (null = cadastrando um novo)
+  const [enderecoEditando, setEnderecoEditando] = useState<EnderecoSalvo | null>(null);
 
   // Remove o "id" interno para enviar só os campos do endereço
   const semId = (e: EnderecoSalvo): EnderecoEntrega => ({
@@ -272,7 +281,8 @@ export default function CartScreen({
     const igual = enderecos.find(
       (e) => e.rua === endereco.rua && e.numero === endereco.numero && e.cep === endereco.cep
     );
-    return (igual ?? enderecos[0])?.id ?? null;
+    // Sem escolha gravada, quem vem marcado é o endereço principal da conta
+    return (igual ?? enderecos.find((e) => e.principal) ?? enderecos[0])?.id ?? null;
   }, [enderecos, escolhaManual, endereco]);
 
   // Mantém o endereço mostrado na tela e o endereço do pedido sendo o mesmo
@@ -388,20 +398,36 @@ export default function CartScreen({
   // Abre o popup para cadastrar um endereço novo
   const abrirPopupEndereco = () => {
     setErroPopup(null);
+    setEnderecoEditando(null);
+    setPopupChave((c) => c + 1);
+    setEnderecoPopupAberto(true);
+  };
+
+  // Abre o popup já com os dados do endereço escolhido (edição)
+  const abrirEdicaoEndereco = (endereco: EnderecoSalvo) => {
+    setErroPopup(null);
+    setEnderecoEditando(endereco);
     setPopupChave((c) => c + 1);
     setEnderecoPopupAberto(true);
   };
 
   // Salva o endereço feito no popup: entra na lista e já fica selecionado
-  const salvarEnderecoPopup = async (novoEndereco: EnderecoEntrega) => {
+  const salvarEnderecoPopup = async (dados: EnderecoEntrega) => {
     try {
       setSalvandoEndereco(true);
       setErroPopup(null);
-      const salvo = await adicionarEndereco(novoEndereco);
-      setEscolhaManual(salvo.id);
+      if (enderecoEditando) {
+        await editarEnderecoSalvo(enderecoEditando.id, dados);
+        // O endereço editado continua sendo o escolhido para a entrega
+        setEscolhaManual(enderecoEditando.id);
+      } else {
+        const salvo = await adicionarEndereco(dados);
+        setEscolhaManual(salvo.id);
+      }
       setErroEndereco(null);
-      onEnderecoChange?.(novoEndereco);
+      onEnderecoChange?.(dados);
       setEnderecoPopupAberto(false);
+      setEnderecoEditando(null);
     } catch (e) {
       setErroPopup(
         e instanceof Error ? e.message : "Não foi possível salvar o endereço."
@@ -721,13 +747,25 @@ export default function CartScreen({
                         </span>
                         <span className="cart-endereco__opcao-texto">
                           <strong className="cart-endereco__opcao-titulo">
-                            {i === 0 ? "Meu endereço" : `Endereço ${i + 1}`}
+                            {e.principal ? "Endereço principal" : `Endereço ${i + 1}`}
+                            {e.principal && (
+                              <span className="cart-endereco__selo">Principal</span>
+                            )}
                           </strong>
                           <span className="cart-endereco__opcao-descricao">
                             {formatarEndereco(e)}
                           </span>
                         </span>
                       </label>
+                      <button
+                        type="button"
+                        className="cart-endereco__editar"
+                        onClick={() => abrirEdicaoEndereco(e)}
+                        title="Editar este endereço"
+                        aria-label="Editar este endereço"
+                      >
+                        <IconPencil />
+                      </button>
                       <button
                         type="button"
                         className="cart-endereco__remover"
@@ -741,13 +779,20 @@ export default function CartScreen({
                   ))}
 
                   {/* Botão para cadastrar mais um endereço (ou o primeiro) */}
+                  {enderecos.length === 0 && (
+                    <p className="cart-endereco__nota">
+                      Cadastre seu endereço para a gente entregar em casa.
+                    </p>
+                  )}
                   <button
                     type="button"
                     className="cart-endereco__btn-adicionar"
                     onClick={abrirPopupEndereco}
                   >
                     <IconPlus />
-                    Adicionar um endereço
+                    {enderecos.length === 0
+                      ? "Cadastrar endereço de entrega"
+                      : "Adicionar um endereço"}
                   </button>
                 </>
               )}
@@ -877,13 +922,22 @@ export default function CartScreen({
         </div>
       </div>
 
-      {/* Popup de cadastro de endereço de entrega */}
+      {/* Pop-up de cadastro/edição de endereço de entrega */}
       <EnderecoPopup
         key={popupChave}
         aberto={enderecoPopupAberto}
+        enderecoInicial={enderecoEditando ?? undefined}
+        titulo={
+          enderecoEditando
+            ? "Editar endereço de entrega"
+            : "Adicionar endereço de entrega"
+        }
         salvando={salvandoEndereco}
         erro={erroPopup}
-        onFechar={() => setEnderecoPopupAberto(false)}
+        onFechar={() => {
+          setEnderecoPopupAberto(false);
+          setEnderecoEditando(null);
+        }}
         onSalvar={salvarEnderecoPopup}
       />
     </div>

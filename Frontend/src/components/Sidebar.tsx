@@ -11,6 +11,7 @@ import {
   IconPencil,
   IconMessage,
   IconCreditCard,
+  IconMapPin,
 } from "./Icons";
 import { getReturnUrl } from "../utils/returnUrl";
 
@@ -33,11 +34,13 @@ interface SidebarProps {
 }
 
 // Só abas com funcionalidade real: dados do perfil, segurança da conta,
-// depoimento sobre a plataforma e a assinatura (plano + prazo de validade).
+// endereços de entrega (cadastro, edição e principal), depoimento sobre a
+// plataforma e a assinatura (plano + prazo de validade).
 // (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
   { icon: <IconUser size={18} />, label: "Meu perfil" },
   { icon: <IconLock size={18} />, label: "Segurança" },
+  { icon: <IconMapPin size={18} />, label: "Endereços" },
   { icon: <IconMessage size={18} />, label: "Depoimentos" },
   { icon: <IconCreditCard size={18} />, label: "Assinaturas" },
 ];

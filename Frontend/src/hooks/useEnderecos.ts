@@ -8,7 +8,7 @@
 //  • Servidor fora do ar: a tela continua com o que há no navegador.
 //
 //  Usado na tela do carrinho (escolher onde receber) e no perfil
-//    (cadastrar e apagar endereços).
+//    (cadastrar, editar, apagar e escolher o endereço principal).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useState } from 'react';
@@ -35,6 +35,7 @@ function daConta(linha: unknown): EnderecoSalvo {
     bairro: e.bairro ?? '',
     cidade: e.cidade ?? '',
     complemento: e.complemento ?? '',
+    principal: e.principal === true,
   };
 }
 
@@ -168,11 +169,54 @@ export function useEnderecos() {
         return salvo;
       }
 
-      const salvo: EnderecoSalvo = { ...novo, id: gerarIdEndereco() };
+      // O primeiro endereço do navegador também nasce como principal
+      const salvo: EnderecoSalvo = {
+        ...novo,
+        id: gerarIdEndereco(),
+        principal: enderecos.length === 0,
+      };
       const lista = [...enderecos, salvo];
       guardarEnderecos(lista);
       setEnderecos(lista);
       return salvo;
+    },
+    [logado, enderecos]
+  );
+
+  /** Edita os dados de um endereço já cadastrado */
+  const editar = useCallback(
+    async (id: string, dados: EnderecoEntrega): Promise<EnderecoSalvo> => {
+      if (logado) {
+        const resposta = await api.atualizarEndereco(id, dados);
+        const atualizado = daConta(resposta?.endereco);
+        setEnderecos((atual) => atual.map((e) => (e.id === id ? atualizado : e)));
+        return atualizado;
+      }
+
+      const antigo = enderecos.find((e) => e.id === id);
+      const atualizado: EnderecoSalvo = { ...dados, id, principal: antigo?.principal };
+      const lista = enderecos.map((e) => (e.id === id ? atualizado : e));
+      guardarEnderecos(lista);
+      setEnderecos(lista);
+      return atualizado;
+    },
+    [logado, enderecos]
+  );
+
+  /** Define qual endereço é o principal da conta (o que vem marcado no carrinho) */
+  const definirPrincipal = useCallback(
+    async (id: string): Promise<void> => {
+      if (logado) {
+        const resposta = await api.definirEnderecoPrincipal(id);
+        if (Array.isArray(resposta?.enderecos)) {
+          setEnderecos(resposta.enderecos.map(daConta));
+          return;
+        }
+      }
+
+      const lista = enderecos.map((e) => ({ ...e, principal: e.id === id }));
+      guardarEnderecos(lista);
+      setEnderecos(lista);
     },
     [logado, enderecos]
   );
@@ -190,5 +234,5 @@ export function useEnderecos() {
     [logado, enderecos]
   );
 
-  return { enderecos, carregando, logado, adicionar, remover };
+  return { enderecos, carregando, logado, adicionar, editar, remover, definirPrincipal };
 }

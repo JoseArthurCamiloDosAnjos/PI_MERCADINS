@@ -932,6 +932,51 @@
   margin-bottom: 12px;
 }
 
+/* Texto secundário (dono, descrição, campos vazios) */
+.adm-muted {
+  font-size: 0.76rem;
+  color: var(--cinza-texto);
+}
+
+/* Célula com o nome em cima e uma linha fina embaixo (dono da loja) */
+.adm-celula-dupla {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Listas simples do modal de mercado: cupons e equipe */
+.adm-lista-simples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adm-lista-simples li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-sm);
+}
+
+.adm-lista-simples li strong {
+  font-size: 0.82rem;
+  color: var(--amarelo);
+  letter-spacing: 0.03em;
+}
+
+.adm-lista-simples li span {
+  font-size: 0.76rem;
+  color: var(--cinza-texto);
+}
+
 .adm-modal-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

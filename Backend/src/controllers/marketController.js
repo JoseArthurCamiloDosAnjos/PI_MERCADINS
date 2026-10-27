@@ -439,9 +439,10 @@ const listarMercados = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
 
-    // Busca por nome/cidade/estado (usada no modal de favoritos)
+    // Busca por nome/slug/cidade/estado (usada na home e no modal de favoritos).
+    // O sem_acento deixa "Jose" achar "José" — muita gente digita sem acento.
     const termo = (req.query.busca ?? '').trim();
-    const filtro = termo ? `%${termo}%` : null;
+    const filtro = termo || null;
 
     const [mercados, [{ total }], [{ totalPedidos }]] = await Promise.all([
       sql`
@@ -453,9 +454,10 @@ const listarMercados = async (req, res) => {
         WHERE m.status = 'ativo'
           AND (
             ${filtro}::text IS NULL
-            OR m.nome    ILIKE ${filtro}::text
-            OR m.cidade  ILIKE ${filtro}::text
-            OR m.estado  ILIKE ${filtro}::text
+            OR sem_acento(m.nome)   ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.slug)   ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.cidade) ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.estado) ILIKE '%' || sem_acento(${filtro}::text) || '%'
           )
         GROUP BY m.id_mercado
         ORDER BY
@@ -471,9 +473,10 @@ const listarMercados = async (req, res) => {
         WHERE m.status = 'ativo'
           AND (
             ${filtro}::text IS NULL
-            OR m.nome    ILIKE ${filtro}::text
-            OR m.cidade  ILIKE ${filtro}::text
-            OR m.estado  ILIKE ${filtro}::text
+            OR sem_acento(m.nome)   ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.slug)   ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.cidade) ILIKE '%' || sem_acento(${filtro}::text) || '%'
+            OR sem_acento(m.estado) ILIKE '%' || sem_acento(${filtro}::text) || '%'
           )
       `,
       sql`SELECT COUNT(*)::int AS "totalPedidos" FROM historico_compras`

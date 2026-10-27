@@ -1318,6 +1318,91 @@
   background: rgba(239, 75, 95, 0.1);
 }
 
+/* Frase curta explicando o que é o endereço principal */
+.pu-endereco-dica {
+  font-size: 12.5px;
+  color: var(--cinza-texto);
+  margin: -2px 0 14px;
+  line-height: 1.5;
+}
+
+.pu-endereco-dica strong {
+  color: var(--amarelo);
+  font-weight: 700;
+}
+
+/* Cartão do endereço principal — destaque discreto, sem gritar */
+.pu-endereco-item--principal {
+  border-color: color-mix(in srgb, var(--amarelo) 45%, transparent);
+  background: color-mix(in srgb, var(--amarelo) 7%, var(--azul-card));
+}
+
+.pu-endereco-item--principal .pu-endereco-icone {
+  background: var(--amarelo);
+  color: var(--azul-medio);
+}
+
+/* Selo "Principal" ao lado do título do endereço */
+.pu-endereco-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--azul-medio);
+  background: var(--amarelo);
+  vertical-align: middle;
+}
+
+/* Ações do endereço: definir principal, editar e apagar */
+.pu-endereco-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pu-endereco-principal {
+  padding: 6px 11px;
+  background: none;
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  color: var(--cinza-texto);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.pu-endereco-principal:hover {
+  color: var(--amarelo);
+  border-color: color-mix(in srgb, var(--amarelo) 55%, transparent);
+  background: color-mix(in srgb, var(--amarelo) 10%, transparent);
+}
+
+.pu-endereco-acao {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--cinza-texto);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.pu-endereco-acao:hover {
+  color: var(--amarelo);
+  border-color: color-mix(in srgb, var(--amarelo) 45%, transparent);
+  background: color-mix(in srgb, var(--amarelo) 10%, transparent);
+}
+
 /* Botão "Adicionar endereço" — mesmo formato do link da seção */
 .pu-btn-endereco {
   display: inline-flex;

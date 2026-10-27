@@ -50,7 +50,7 @@ export default function AdicionarMercadoFavorito({
   // Os setState ficam sempre dentro de callbacks de promessa (contexto
   // assíncrono), nunca no corpo síncrono do efeito.
   const carregarMercados = useCallback((termo: string) => {
-    api.listarMercados(termo)
+    api.listarMercados(termo, 100)
       .then(dados => setMercados(dados.mercados ?? []))
       .catch((e: unknown) => showToast('erro', e instanceof Error ? e.message : 'Erro ao buscar mercados.'))
       .finally(() => setCarregando(false));

@@ -1038,6 +1038,36 @@
 }
 .gm-cupom-apagar:hover { background: rgba(248,113,113,0.12); }
 
+/* ── Escopo do cupom: categorias de produtos em que ele vale ────────────── */
+.gm-cupom-escopo {
+  font-size: 0.72rem; color: var(--cinza-texto);
+  max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gm-cupom-escopo--restrito {
+  color: var(--amarelo); font-weight: 600;
+  padding: 2px 9px; border-radius: var(--radius-full);
+  background: rgba(245,200,74,0.12); border: 1px solid rgba(245,200,74,0.3);
+}
+
+.gm-cupom-categorias { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 8px; }
+.gm-cupom-categorias-titulo {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--cinza-texto);
+}
+.gm-cupom-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.gm-cupom-chip {
+  padding: 6px 13px; border-radius: var(--radius-full);
+  background: var(--azul-card); border: 1px solid var(--azul-borda);
+  color: var(--branco-suave); font-size: 0.76rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.gm-cupom-chip:hover { border-color: rgba(245,200,74,0.5); }
+.gm-cupom-chip--ativo {
+  background: rgba(245,200,74,0.15); border-color: var(--amarelo); color: var(--amarelo);
+}
+.gm-cupom-categorias-dica { font-size: 0.74rem; color: var(--cinza-texto); line-height: 1.5; }
+
+
 /* ── Entrega e retirada na aba Informações (B2) ─────────────────────────── */
 .gm-info-entrega {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -228,7 +228,9 @@ export default function Mercadins() {
   useEffect(() => {
     let ativo = true;
     api
-      .listarMercados()
+      // limit=100: a API padrão traz só 20 mercados e "escondia" os que
+      // vinham depois disso (a lista daqui é a da home, sem paginação)
+      .listarMercados(undefined, 100)
       .then((data) => {
         if (!ativo) return;
         setStores(data.mercados ?? []);

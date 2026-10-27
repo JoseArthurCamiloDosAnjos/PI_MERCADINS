@@ -102,6 +102,8 @@ export function formatarEndereco(endereco: EnderecoEntrega): string {
 
 export interface EnderecoSalvo extends EnderecoEntrega {
   id: string;
+  /** Endereço principal da conta — o que já vem marcado no carrinho */
+  principal?: boolean;
 }
 
 const CHAVE_LISTA = 'mercadins_enderecos';

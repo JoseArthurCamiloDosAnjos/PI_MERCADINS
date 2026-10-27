@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   IconBarChart,
   IconUser,
+  IconStore,
   IconReceipt,
   IconGear,
   IconMenu,
@@ -18,6 +19,7 @@ interface AdminSidebarProps {
 const NAV_ITEMS = [
   { icon: <IconBarChart size={18} />, label: 'Dashboard' },
   { icon: <IconUser size={18} />, label: 'Usuários' },
+  { icon: <IconStore size={18} />, label: 'Mercados' },
   { icon: <IconReceipt size={18} />, label: 'Relatórios' },
   { icon: <IconGear size={18} />, label: 'Configurações' },
 ]

@@ -1125,11 +1125,14 @@ interface Cupom {
   usos: number;
   validade: string | null;
   ativo: boolean;
+  // Categorias de produtos em que o cupom vale (vazio = vale para tudo)
+  categorias: { id: number; nome: string }[];
 }
 
 function SecCupons({ mercadoId }: { mercadoId: number }) {
   const { toasts, showToast, dismissToast } = useToast();
   const [cupons, setCupons] = useState<Cupom[]>([]);
+  const [categorias, setCategorias] = useState<{ id: number; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -1137,7 +1140,22 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
   const [form, setForm] = useState({
     codigo: '', tipo: 'percentual' as 'percentual' | 'valor',
     valor: '', min_pedido: '', max_usos: '', validade: '',
+    // Categorias escolhidas: vazia = o cupom vale para todos os produtos
+    categorias: [] as number[],
   });
+
+  // Categorias do mercado — é delas que o vendedor escolhe o escopo do cupom
+  useEffect(() => {
+    let vivo = true;
+    api.listarCategorias(mercadoId)
+      .then((lista: unknown) => {
+        if (vivo && Array.isArray(lista)) setCategorias(lista as { id: number; nome: string }[]);
+      })
+      .catch(() => {
+        // sem categoria não dá para restringir: o formulário fica só com "todos"
+      });
+    return () => { vivo = false; };
+  }, [mercadoId]);
 
   // Carrega os cupons do mercado (padrão do painel: async dentro do efeito)
   useEffect(() => {
@@ -1182,9 +1200,10 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
         min_pedido: form.min_pedido ? Number(form.min_pedido) : undefined,
         max_usos: form.max_usos ? Number(form.max_usos) : null,
         validade: form.validade || null,
+        categorias: form.categorias,
       });
       showToast('sucesso', `Cupom ${codigo} criado com sucesso.`);
-      setForm({ codigo: '', tipo: 'percentual', valor: '', min_pedido: '', max_usos: '', validade: '' });
+      setForm({ codigo: '', tipo: 'percentual', valor: '', min_pedido: '', max_usos: '', validade: '', categorias: [] });
       setMostrarForm(false);
       recarregar();
     } catch (err: unknown) {
@@ -1192,6 +1211,16 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
     } finally {
       setSalvando(false);
     }
+  }
+
+  /** Marca/desmarca uma categoria no escopo do cupom */
+  function alternarCategoria(id: number) {
+    setForm(f => ({
+      ...f,
+      categorias: f.categorias.includes(id)
+        ? f.categorias.filter(c => c !== id)
+        : [...f.categorias, id],
+    }));
   }
 
   async function alternarAtivo(c: Cupom) {
@@ -1217,8 +1246,18 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
 
   function formatarValidade(v: string | null) {
     if (!v) return 'sem prazo';
-    return `até ${new Date(v + 'T12:00:00').toLocaleDateString('pt-BR')}`;
+    // A API pode devolver "2026-12-31" ou um timestamp completo; concatenar
+    // horário em cima de um timestamp gerava "até Invalid Date"
+    const data = new Date(v.length > 10 ? v : `${v}T12:00:00`);
+    if (Number.isNaN(data.getTime())) return 'sem prazo';
+    return `até ${data.toLocaleDateString('pt-BR')}`;
   }
+
+  // Nomes das categorias marcadas no formulário (para o aviso embaixo dos chips)
+  const nomesEscolhidos = form.categorias
+    .map(id => categorias.find(c => c.id === id)?.nome ?? '')
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <div className="gm-section-wrap">
@@ -1267,6 +1306,38 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
                 onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} />
             </label>
           </div>
+
+          {/* Escopo do cupom: em quais categorias de produtos ele dá desconto */}
+          <div className="gm-cupom-categorias">
+            <span className="gm-cupom-categorias-titulo">Produtos do cupom</span>
+            <div className="gm-cupom-chips">
+              <button
+                type="button"
+                className={`gm-cupom-chip${form.categorias.length === 0 ? ' gm-cupom-chip--ativo' : ''}`}
+                onClick={() => setForm(f => ({ ...f, categorias: [] }))}
+              >
+                Todos os produtos
+              </button>
+              {categorias.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`gm-cupom-chip${form.categorias.includes(c.id) ? ' gm-cupom-chip--ativo' : ''}`}
+                  onClick={() => alternarCategoria(c.id)}
+                >
+                  {c.nome}
+                </button>
+              ))}
+            </div>
+            <p className="gm-cupom-categorias-dica">
+              {categorias.length === 0
+                ? 'Cadastre categorias de produtos para aplicar o cupom só em um tipo de produto.'
+                : form.categorias.length === 0
+                  ? 'Nenhuma categoria marcada: o cupom vale para o pedido inteiro.'
+                  : `Desconto só nos produtos de: ${nomesEscolhidos}.`}
+            </p>
+          </div>
+
           {erro && <p className="gm-info-erro">{erro}</p>}
           <div className="gm-info-acoes">
             <button className="gm-btn-link" onClick={() => setMostrarForm(false)} disabled={salvando}>
@@ -1290,6 +1361,14 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
               <span className="gm-cupom-codigo"><IconTag size={13} /> {c.codigo}</span>
               <span className="gm-cupom-desconto">
                 {c.tipo === 'percentual' ? `${c.valor}% de desconto` : `${formatarBRL(c.valor)} de desconto`}
+              </span>
+              <span
+                className={`gm-cupom-escopo${c.categorias.length === 0 ? '' : ' gm-cupom-escopo--restrito'}`}
+                title={c.categorias.length === 0 ? 'Vale para todos os produtos' : c.categorias.map(x => x.nome).join(', ')}
+              >
+                {c.categorias.length === 0
+                  ? 'todos os produtos'
+                  : c.categorias.map(x => x.nome).join(', ')}
               </span>
               <span className="gm-cupom-info">
                 {c.minPedido > 0 ? `mínimo ${formatarBRL(c.minPedido)}` : 'sem pedido mínimo'}

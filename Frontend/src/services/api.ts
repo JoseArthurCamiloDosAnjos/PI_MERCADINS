@@ -56,8 +56,15 @@ export const api = {
     request(`/mercados/${mercadoId}`),
   buscarMercadoPorSlug: (slug: string) =>
     request(`/mercados/slug/${slug}`),
-  listarMercados: (busca?: string) =>
-    request(`/mercados${busca ? `?busca=${encodeURIComponent(busca)}` : ''}`),
+  // Lista pública de mercados (home, favoritos, busca). `limit` sobe o teto
+  // de 20 da API padrão — a home mostra a lista inteira sem "paginação" escondida.
+  listarMercados: (busca?: string, limit?: number) => {
+    const params = new URLSearchParams();
+    if (busca) params.set('busca', busca);
+    if (limit) params.set('limit', String(limit));
+    const query = params.toString();
+    return request(`/mercados${query ? `?${query}` : ''}`);
+  },
   atualizarMercado: (mercadoId: string | number, dados: { nome?: string; descricao?: string; banner_url?: string; foto_perfil_url?: string; [key: string]: unknown }) => {
     return request(`/mercados/${mercadoId}`, {
       method: 'PUT',
@@ -210,6 +217,24 @@ export const api = {
     request('/enderecos', { method: 'POST', body: JSON.stringify(dados) }),
   removerEndereco: (enderecoId: string | number) =>
     request(`/enderecos/${enderecoId}`, { method: 'DELETE' }),
+  // Edita um endereço já cadastrado (e pode marcar como principal)
+  atualizarEndereco: (
+    enderecoId: string | number,
+    dados: {
+      cep: string; rua: string; numero: string; bairro: string; cidade: string;
+      complemento?: string; principal?: boolean;
+    }
+  ) =>
+    request(`/enderecos/${enderecoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    }),
+  // Define o endereço principal da conta (o que vem marcado no carrinho)
+  definirEnderecoPrincipal: (enderecoId: string | number) =>
+    request(`/enderecos/${enderecoId}/principal`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    }),
 
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>
@@ -219,6 +244,8 @@ export const api = {
     dados: {
       codigo: string; tipo: 'percentual' | 'valor'; valor: number;
       min_pedido?: number; max_usos?: number | null; validade?: string | null;
+      // Categorias de produtos em que o cupom vale (vazio = vale para tudo)
+      categorias?: number[];
     }
   ) =>
     request(`/mercados/${mercadoId}/cupons`, {
@@ -236,10 +263,17 @@ export const api = {
     }),
   deletarCupom: (mercadoId: string | number, cupomId: string | number) =>
     request(`/mercados/${mercadoId}/cupons/${cupomId}`, { method: 'DELETE' }),
-  validarCupom: (mercadoId: string | number, codigo: string, subtotal: number) =>
+  // Confere o cupom no carrinho. Os itens (categoria, preço e quantidade) vão
+  // junto: são a base de cálculo quando o cupom vale só para algumas categorias.
+  validarCupom: (
+    mercadoId: string | number,
+    codigo: string,
+    subtotal: number,
+    itens?: { id_categoria: number; preco: number; quantidade: number }[]
+  ) =>
     request(`/mercados/${mercadoId}/cupons/validar`, {
       method: 'POST',
-      body: JSON.stringify({ codigo, subtotal }),
+      body: JSON.stringify({ codigo, subtotal, itens }),
     }),
 
   // ── Pedidos do mercado (visão do vendedor) ─────────────────────────────────
@@ -351,4 +385,8 @@ export const api = {
   adminAlertas:     ()         => request('/admin/alertas'),
   adminBloquearMercado: (id: number) =>
     request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
+  // Aba "Mercados": todas as lojas da plataforma (inclusive as bloqueadas)
+  adminMercados: (params?: string) =>
+    request(`/admin/mercados${params ? `?${params}` : ''}`),
+  adminMercadoDetalhe: (id: number) => request(`/admin/mercados/${id}`),
 }

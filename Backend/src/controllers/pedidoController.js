@@ -148,7 +148,7 @@ const criarPedido = async (req, res) => {
     // Só aceita produtos que pertencem a este mercado
     // (produtos não têm id_mercado direto: a ligação é pela categoria)
     const produtos = await sql`
-      SELECT p.id_produto, p.nome, p.preco, p.estoque
+      SELECT p.id_produto, p.nome, p.preco, p.estoque, p.id_categoria
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
       WHERE c.id_mercado = ${mercadoId}
@@ -181,6 +181,8 @@ const criarPedido = async (req, res) => {
     // O valor total é calculado SEMPRE pelo preço do banco, nunca pelo cliente
     let valorTotal = 0;
     const resumo = [];
+    // Subtotal por categoria: usado para o escopo do cupom de desconto
+    const totaisPorCategoria = new Map();
     for (const item of itens) {
       const produto    = mapaProdutos.get(Number(item.id_produto));
       const quantidade = Number(item.quantidade);
@@ -194,7 +196,10 @@ const criarPedido = async (req, res) => {
           : `Estoque insuficiente para "${produto.nome}": disponível ${disponivel}, solicitado ${quantidade}.`;
         return res.status(400).json({ erro: motivo });
       }
-      valorTotal += Number(produto.preco ?? 0) * quantidade;
+      const totalItem = Number(produto.preco ?? 0) * quantidade;
+      valorTotal += totalItem;
+      const categoria = Number(produto.id_categoria);
+      totaisPorCategoria.set(categoria, (totaisPorCategoria.get(categoria) ?? 0) + totalItem);
       resumo.push(`${quantidade}x ${produto.nome}`);
     }
 
@@ -239,10 +244,38 @@ const criarPedido = async (req, res) => {
           erro: `Este cupom exige pedido mínimo de R$ ${minPedido.toFixed(2).replace('.', ',')}.`,
         });
       }
+
+      // Escopo (B10): o cupom pode valer só para algumas categorias — nesse
+      // caso o desconto sai de cima do subtotal dessas categorias.
+      const categoriasCupom = await sql`
+        SELECT cc.id_categoria, c.nome
+        FROM cupom_categorias cc
+        JOIN categorias c ON c.id_categoria = cc.id_categoria
+        WHERE cc.id_cupom = ${registro.id}
+        ORDER BY c.nome ASC
+      `;
+
+      let baseDesconto = valorTotal;
+      if (categoriasCupom.length > 0) {
+        const ids = new Set(categoriasCupom.map(c => Number(c.id_categoria)));
+        baseDesconto = Math.round(
+          [...totaisPorCategoria.entries()]
+            .filter(([categoria]) => ids.has(categoria))
+            .reduce((soma, [, total]) => soma + total, 0) * 100
+        ) / 100;
+
+        if (baseDesconto <= 0) {
+          const nomes = categoriasCupom.map(c => c.nome).join(', ');
+          return res.status(400).json({
+            erro: `Este cupom vale apenas para produtos de: ${nomes}.`,
+          });
+        }
+      }
+
       desconto = registro.tipo === 'percentual'
-        ? valorTotal * (Number(registro.valor) / 100)
+        ? baseDesconto * (Number(registro.valor) / 100)
         : Number(registro.valor);
-      desconto = Math.min(Math.round(desconto * 100) / 100, valorTotal);
+      desconto = Math.min(Math.round(desconto * 100) / 100, baseDesconto);
       cupomRegistro = registro;
     }
 

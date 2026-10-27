@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import {
   IconCreditCard,
   IconClock,
   IconAlert,
+  IconCheck,
   IconStore,
   IconArrowRight,
 } from '../Icons';
@@ -146,6 +148,8 @@ export default function TelaAssinaturas() {
   const [recado, setRecado] = useState<{ texto: string; ok: boolean } | null>(null);
   const [confirmando, setConfirmando] = useState<number | null>(null);
   const [cancelando, setCancelando] = useState(false);
+  // Resultado do cancelamento: fica DENTRO do pop-up até a pessoa fechar
+  const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
 
   // O loading já começa true no useState; nada de setState síncrono aqui
   // dentro do efeito (regra react-hooks/set-state-in-effect)
@@ -169,48 +173,40 @@ export default function TelaAssinaturas() {
     carregar();
   }, [carregar]);
 
-  // Cancela a assinatura selecionada e recarrega a tela em seguida
+  // Cancela a assinatura selecionada. O pop-up NÃO fecha sozinho: o resultado
+  // (sucesso ou erro) fica dentro dele até a pessoa fechar com o botão.
   function confirmarCancelamento() {
     if (confirmando == null) return;
     setCancelando(true);
     api.cancelarAssinatura(confirmando)
       .then(() => {
-        setRecado({
-          texto: 'Assinatura cancelada. Nada mais será cobrado e a loja permanece no ar até o fim do período já pago.',
-          ok: true,
-        });
-        setConfirmando(null);
-        setCarregando(true);
+        const texto = 'Assinatura cancelada. Nada mais será cobrado e a loja permanece no ar até o fim do período já pago.';
+        setResultado({ ok: true, texto });
+        setRecado({ texto, ok: true });
+        // Recarrega a lista em segundo plano: ligar o "carregando" trocaria a
+        // tela inteira por esqueleto e o pop-up sumiria junto.
         carregar();
       })
       .catch((e: Error) => {
-        setRecado({ texto: e.message || 'Não foi possível cancelar a assinatura.', ok: false });
+        setResultado({ ok: false, texto: e.message || 'Não foi possível cancelar a assinatura.' });
       })
       .finally(() => setCancelando(false));
   }
 
-  if (carregando) {
-    return (
-      <div className="sa-wrap">
-        <div className="sa-skeleton" />
-        <div className="sa-skeleton sa-skeleton-baixo" />
-      </div>
-    );
+  /** Fecha o pop-up e limpa o resultado da última tentativa */
+  function fecharConfirmacao() {
+    setConfirmando(null);
+    setResultado(null);
   }
 
-  if (erro) {
-    return (
-      <div className="sa-wrap">
-        <div className="sa-erro">
-          <IconAlert size={22} />
-          <p>Não foi possível carregar suas assinaturas.</p>
-          <button className="sa-btn sa-btn-secundario" onClick={recarregar}>
-            Tentar novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Com o pop-up aberto a página de trás não rola: o cancelamento fica sempre
+  // na frente, sem precisar scrollar para achar o botão.
+  useEffect(() => {
+    if (confirmando == null) return;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = anterior; };
+  }, [confirmando]);
 
   const principalResumo = dados ? paraResposta(dados) : null;
   const lista: AssinaturaResumo[] = dados?.assinaturas?.length
@@ -219,30 +215,139 @@ export default function TelaAssinaturas() {
       ? [principalResumo]
       : [];
 
-  if (lista.length === 0) {
-    return (
-      <div className="sa-wrap">
-        <div className="sa-vazio">
-          <div className="sa-vazio-icone"><IconCreditCard size={24} /></div>
-          <h2>Você ainda não tem uma assinatura</h2>
-          <p>
-            Escolha um plano para cadastrar seu mercado e começar a vender.
-          </p>
-          <button
-            className="sa-btn sa-btn-primario"
-            onClick={() => navigate('/planos')}
-          >
-            Ver planos <IconArrowRight size={15} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const multiplo = lista.length > 1;
   const carencia = dados?.carencia_dias ?? 3;
   const pagamentos = dados?.pagamentos ?? [];
-  const alvoCancelamento = lista.find((a) => a.id === confirmando) ?? null;
+  const alvoCancelamento = confirmando != null
+    ? lista.find((a) => a.id === confirmando) ?? null
+    : null;
+
+  const sucesso = resultado?.ok === true;
+  const erroCancelamento = resultado && !resultado.ok ? resultado.texto : null;
+
+  // O pop-up é montado direto no <body>: assim ele fica centralizado na tela
+  // mesmo quando a página está meio carregada, em erro ou sem assinaturas — e
+  // ele não some quando a lista muda em segundo plano.
+  const modalCancelamento = confirmando == null
+    ? null
+    : createPortal(
+        <div
+          className="sa-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cancelar assinatura"
+        >
+          <div className="sa-modal">
+            <span className={`sa-modal-icone${sucesso ? ' sa-modal-icone--ok' : ''}`}>
+              {sucesso ? <IconCheck size={40} /> : <IconAlert size={40} />}
+            </span>
+            <h3 className="sa-modal-titulo">
+              {sucesso
+                ? 'Assinatura cancelada'
+                : `Cancelar plano ${alvoCancelamento?.plano.nome ?? 'este plano'}?`}
+            </h3>
+            <p className="sa-modal-texto">
+              {sucesso
+                ? resultado?.texto
+                : <>
+                    As próximas cobranças são canceladas e nada mais será cobrado.
+                    {alvoCancelamento?.mercado
+                      ? ` O mercado ${alvoCancelamento.mercado.nome}`
+                      : ' A loja'}{' '}
+                    continua no ar até <b>{dataLocal(alvoCancelamento?.validade_ate)}</b>;
+                    depois disso ele sai das buscas e é suspenso. Esta ação não pode
+                    ser desfeita.
+                  </>}
+            </p>
+
+            {erroCancelamento && (
+              <p className="sa-modal-erro" role="alert">{erroCancelamento}</p>
+            )}
+
+            <div className="sa-modal-acoes">
+              {sucesso ? (
+                <button className="sa-btn sa-btn-primario" onClick={fecharConfirmacao}>
+                  Entendi
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="sa-btn sa-btn-secundario"
+                    onClick={fecharConfirmacao}
+                    disabled={cancelando}
+                  >
+                    Manter plano
+                  </button>
+                  <button
+                    className="sa-btn sa-btn-perigo"
+                    onClick={confirmarCancelamento}
+                    disabled={cancelando}
+                  >
+                    {cancelando
+                      ? 'Cancelando…'
+                      : erroCancelamento
+                        ? 'Tentar cancelar de novo'
+                        : 'Sim, cancelar'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      );
+
+  if (carregando) {
+    return (
+      <>
+        <div className="sa-wrap">
+          <div className="sa-skeleton" />
+          <div className="sa-skeleton sa-skeleton-baixo" />
+        </div>
+        {modalCancelamento}
+      </>
+    );
+  }
+
+  if (erro) {
+    return (
+      <>
+        <div className="sa-wrap">
+          <div className="sa-erro">
+            <IconAlert size={22} />
+            <p>Não foi possível carregar suas assinaturas.</p>
+            <button className="sa-btn sa-btn-secundario" onClick={recarregar}>
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+        {modalCancelamento}
+      </>
+    );
+  }
+
+  if (lista.length === 0) {
+    return (
+      <>
+        <div className="sa-wrap">
+          <div className="sa-vazio">
+            <div className="sa-vazio-icone"><IconCreditCard size={24} /></div>
+            <h2>Você ainda não tem uma assinatura</h2>
+            <p>
+              Escolha um plano para cadastrar seu mercado e começar a vender.
+            </p>
+            <button
+              className="sa-btn sa-btn-primario"
+              onClick={() => navigate('/planos')}
+            >
+              Ver planos <IconArrowRight size={15} />
+            </button>
+          </div>
+        </div>
+        {modalCancelamento}
+      </>
+    );
+  }
 
   return (
     <div className="sa-wrap">
@@ -431,46 +536,8 @@ export default function TelaAssinaturas() {
         )}
       </section>
 
-      {/* ── Confirmação de cancelamento ───────────────────────────────────── */}
-      {alvoCancelamento && (
-        <div
-          className="sa-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cancelar assinatura"
-          onClick={() => !cancelando && setConfirmando(null)}
-        >
-          <div className="sa-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="sa-modal-icone"><IconAlert size={40} /></span>
-            <h3 className="sa-modal-titulo">Cancelar plano {alvoCancelamento.plano.nome}?</h3>
-            <p className="sa-modal-texto">
-              As próximas cobranças são canceladas e nada mais será cobrado.
-              {alvoCancelamento.mercado
-                ? ` O mercado ${alvoCancelamento.mercado.nome}`
-                : ' A loja'}{' '}
-              continua no ar até <b>{dataLocal(alvoCancelamento.validade_ate)}</b>;
-              depois disso ele sai das buscas e é suspenso. Esta ação não pode
-              ser desfeita.
-            </p>
-            <div className="sa-modal-acoes">
-              <button
-                className="sa-btn sa-btn-secundario"
-                onClick={() => setConfirmando(null)}
-                disabled={cancelando}
-              >
-                Manter plano
-              </button>
-              <button
-                className="sa-btn sa-btn-perigo"
-                onClick={confirmarCancelamento}
-                disabled={cancelando}
-              >
-                {cancelando ? 'Cancelando…' : 'Sim, cancelar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Confirmação de cancelamento (montada no <body>) ──────────────── */}
+      {modalCancelamento}
     </div>
   );
 }

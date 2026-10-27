@@ -13,7 +13,7 @@ import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito'
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
 import { useEnderecos } from '../../hooks/useEnderecos';
-import { formatarEndereco, type EnderecoEntrega } from '../../utils/endereco';
+import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../../utils/endereco';
 import './PerfilUsuario.css';
 import {
   IconLock,
@@ -26,6 +26,7 @@ import {
   IconMessage,
   IconMapPin,
   IconPlus,
+  IconPencil,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -51,7 +52,7 @@ interface ItemCarrinhoLocal {
   quantidade: number;
 }
 
-const TITULOS = ['Meu perfil', 'Segurança', 'Depoimentos', 'Assinaturas'];
+const TITULOS = ['Meu perfil', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -304,30 +305,49 @@ function IconLixeira({ size = 15 }: { size?: number }) {
   );
 }
 
-// ─── Endereços de entrega (carteira do cliente) ──────────────────────────────
-// O cliente cadastra os endereços aqui no perfil e escolhe qual deles recebe
-// a entrega na tela do carrinho. Os dados moram na conta dele (banco).
-function SecaoEnderecos({ showToast }: { showToast: ShowToast }) {
-  const { enderecos, carregando, adicionar, remover } = useEnderecos();
+// ─── Endereços de entrega (aba própria do perfil) ─────────────────────────────
+// O cliente cadastra, edita, apaga e escolhe o endereço principal aqui. O
+// principal é o que já vem marcado na hora de fechar o pedido no carrinho.
+function TelaEnderecos() {
+  const { enderecos, carregando, adicionar, editar, remover, definirPrincipal } = useEnderecos();
+  const { toasts, showToast, dismissToast } = useToast();
   const [popupAberto, setPopupAberto] = useState(false);
+  // Guarda o endereço em edição (null = cadastrando um novo)
+  const [editando, setEditando] = useState<EnderecoSalvo | null>(null);
   // Muda a cada abertura: o pop-up nasce zerado toda vez
   const [popupChave, setPopupChave] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [erroPopup, setErroPopup] = useState<string | null>(null);
 
-  const abrirPopup = () => {
+  function abrirNovo() {
+    setEditando(null);
     setErroPopup(null);
     setPopupChave(c => c + 1);
     setPopupAberto(true);
-  };
+  }
 
-  async function salvarEndereco(novo: EnderecoEntrega) {
+  function abrirEdicao(endereco: EnderecoSalvo) {
+    setEditando(endereco);
+    setErroPopup(null);
+    setPopupChave(c => c + 1);
+    setPopupAberto(true);
+  }
+
+  function fecharPopup() {
+    setPopupAberto(false);
+    setEditando(null);
+  }
+
+  async function salvarEndereco(dados: EnderecoEntrega) {
+    const eraEdicao = editando;
     try {
       setSalvando(true);
       setErroPopup(null);
-      await adicionar(novo);
+      if (eraEdicao) await editar(eraEdicao.id, dados);
+      else await adicionar(dados);
       setPopupAberto(false);
-      showToast('sucesso', 'Endereço salvo com sucesso.');
+      setEditando(null);
+      showToast('sucesso', eraEdicao ? 'Endereço atualizado com sucesso.' : 'Endereço salvo com sucesso.');
     } catch (e) {
       setErroPopup(e instanceof Error ? e.message : 'Não foi possível salvar o endereço.');
     } finally {
@@ -344,14 +364,26 @@ function SecaoEnderecos({ showToast }: { showToast: ShowToast }) {
     }
   }
 
+  async function marcarPrincipal(id: string) {
+    try {
+      await definirPrincipal(id);
+      showToast('sucesso', 'Endereço principal alterado.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível definir o endereço principal.');
+    }
+  }
+
   return (
     <section>
       <div className="pu-sec-row">
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços de entrega</h2>
-        {enderecos.length > 0 && (
-          <button className="pu-btn-link" onClick={abrirPopup}>Adicionar endereço</button>
-        )}
+        <button className="pu-btn-link" onClick={abrirNovo}>Adicionar endereço</button>
       </div>
+
+      <p className="pu-endereco-dica">
+        O endereço marcado como <strong>principal</strong> já vem selecionado
+        automaticamente na hora de fechar o pedido.
+      </p>
 
       {carregando ? (
         <p className="pu-empty-inline">Carregando seus endereços...</p>
@@ -360,30 +392,52 @@ function SecaoEnderecos({ showToast }: { showToast: ShowToast }) {
           <div className="pu-empty-icon"><IconMapPin size={22} /></div>
           <p>Nenhum endereço cadastrado</p>
           <span>Adicione um endereço para receber seus pedidos em casa.</span>
-          <button className="pu-btn-endereco" onClick={abrirPopup}>
+          <button className="pu-btn-endereco" onClick={abrirNovo}>
             <IconPlus size={15} /> Adicionar endereço
           </button>
         </div>
       ) : (
         <div className="pu-endereco-lista">
-          {enderecos.map((e, i) => (
-            <div className="pu-endereco-item" key={e.id}>
+          {enderecos.map(e => (
+            <div className={`pu-endereco-item${e.principal ? ' pu-endereco-item--principal' : ''}`} key={e.id}>
               <span className="pu-endereco-icone"><IconMapPin size={16} /></span>
               <span className="pu-endereco-texto">
-                <strong>{i === 0 ? 'Endereço principal' : `Endereço ${i + 1}`}</strong>
+                <strong>
+                  {e.principal ? 'Endereço principal' : 'Endereço de entrega'}
+                  {e.principal && <span className="pu-endereco-badge">Principal</span>}
+                </strong>
                 <span>{formatarEndereco(e)}</span>
               </span>
-              <button
-                className="pu-endereco-remover"
-                onClick={() => apagarEndereco(e.id)}
-                title="Remover este endereço"
-                aria-label="Remover este endereço"
-              >
-                <IconLixeira />
-              </button>
+              <span className="pu-endereco-acoes">
+                {!e.principal && (
+                  <button
+                    className="pu-endereco-principal"
+                    onClick={() => marcarPrincipal(e.id)}
+                    title="Usar este endereço como principal"
+                  >
+                    Definir como principal
+                  </button>
+                )}
+                <button
+                  className="pu-endereco-acao"
+                  onClick={() => abrirEdicao(e)}
+                  title="Editar este endereço"
+                  aria-label="Editar este endereço"
+                >
+                  <IconPencil size={14} />
+                </button>
+                <button
+                  className="pu-endereco-remover"
+                  onClick={() => apagarEndereco(e.id)}
+                  title="Remover este endereço"
+                  aria-label="Remover este endereço"
+                >
+                  <IconLixeira />
+                </button>
+              </span>
             </div>
           ))}
-          <button className="pu-btn-endereco" onClick={abrirPopup}>
+          <button className="pu-btn-endereco" onClick={abrirNovo}>
             <IconPlus size={15} /> Adicionar endereço
           </button>
         </div>
@@ -392,12 +446,15 @@ function SecaoEnderecos({ showToast }: { showToast: ShowToast }) {
       <EnderecoPopup
         key={popupChave}
         aberto={popupAberto}
-        titulo="Adicionar endereço de entrega"
+        enderecoInicial={editando ?? undefined}
+        titulo={editando ? 'Editar endereço de entrega' : 'Adicionar endereço de entrega'}
         salvando={salvando}
         erro={erroPopup}
-        onFechar={() => setPopupAberto(false)}
+        onFechar={fecharPopup}
         onSalvar={salvarEndereco}
       />
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </section>
   );
 }
@@ -501,10 +558,6 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
           </div>
         )}
       </section>
-
-      <div className="pu-divider" />
-
-      <SecaoEnderecos showToast={showToast} />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
@@ -888,6 +941,7 @@ export default function PerfilUsuario() {
       onPedidoCancelado={marcarPedidoCancelado}
     />,
     <TelaSeguranca key="seguranca" />,
+    <TelaEnderecos key="enderecos" />,
     <TelaDepoimentos key="depoimentos" />,
     <TelaAssinaturas key="assinaturas" />,
   ];

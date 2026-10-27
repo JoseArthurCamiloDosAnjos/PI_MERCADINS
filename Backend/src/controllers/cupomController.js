@@ -7,7 +7,75 @@ const { conectar } = require('../db/neon');
 //  expirado, limite de usos, pedido mínimo) e calcula o desconto — o valor
 //  nunca sai do navegador.
 //  tipo: 'percentual' (10 = 10%) ou 'valor' (10 = R$ 10,00)
+//
+//  Escopo (B10): o vendedor pode escolher em quais CATEGORIAS de produtos o
+//  cupom vale. Sem escolher nenhuma, o cupom continua valendo para o pedido
+//  inteiro (comportamento antigo). O desconto de cupom com escopo é calculado
+//  só em cima do valor dos produtos das categorias escolhidas.
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lê a lista de categorias vinda da tela.
+ * Devolve `null` quando o campo não veio (não mexe nas categorias) ou uma
+ * lista de ids inteiros (pode ficar vazia = cupom vale para tudo).
+ */
+function lerCategorias(categorias) {
+  if (categorias === undefined || categorias === null) return null;
+  if (!Array.isArray(categorias)) return { erro: 'Categorias do cupom inválidas.' };
+
+  const ids = [];
+  for (const bruto of categorias) {
+    const id = Number(bruto);
+    if (!Number.isInteger(id) || id <= 0) {
+      return { erro: 'Categoria do cupom inválida.' };
+    }
+    if (!ids.includes(id)) ids.push(id);
+    if (ids.length > 20) {
+      return { erro: 'Um cupom pode cobrir no máximo 20 categorias.' };
+    }
+  }
+  return { ids };
+}
+
+/** Monta o desconto de um cupom sobre a base informada */
+function calcularDesconto(cupom, base) {
+  const bruto = cupom.tipo === 'percentual'
+    ? base * (Number(cupom.valor) / 100)
+    : Number(cupom.valor);
+  return Math.round(Math.min(bruto, base) * 100) / 100;
+}
+
+/** Devolve [{ id, nomes }] das categorias informadas (para responder à tela) */
+async function buscarNomes(sql, categorias) {
+  if (!categorias || categorias.length === 0) return [];
+  const linhas = await sql`
+    SELECT id_categoria, nome FROM categorias
+    WHERE id_categoria = ANY(${categorias})
+    ORDER BY nome ASC
+  `;
+  return linhas.map((l) => ({ id: Number(l.id_categoria), nome: l.nome }));
+}
+
+/** Lista as categorias (ids + nomes) ligadas a cada cupom */
+async function categoriasPorCupom(sql, cupons) {
+  if (cupons.length === 0) return new Map();
+
+  const linhas = await sql`
+    SELECT cc.id_cupom, c.id_categoria, c.nome
+    FROM cupom_categorias cc
+    JOIN categorias c ON c.id_categoria = cc.id_categoria
+    WHERE cc.id_cupom = ANY(${cupons.map((c) => c.id)})
+    ORDER BY c.nome ASC
+  `;
+
+  const mapa = new Map();
+  for (const linha of linhas) {
+    const id = Number(linha.id_cupom);
+    if (!mapa.has(id)) mapa.set(id, []);
+    mapa.get(id).push({ id: Number(linha.id_categoria), nome: linha.nome });
+  }
+  return mapa;
+}
 
 // Confere se o usuário logado gerencia o mercado (dono ou admin)
 async function podeGerenciar(sql, idUsuario, mercadoId) {
@@ -66,7 +134,7 @@ function validarCupom(body) {
   return { codigo: codigoLimpo, tipo, valor: valorNum, minimo, usosMax, validadeData };
 }
 
-function formatarCupom(c) {
+function formatarCupom(c, categorias = []) {
   return {
     id: c.id,
     codigo: c.codigo,
@@ -78,6 +146,8 @@ function formatarCupom(c) {
     validade: c.validade || null,
     ativo: c.ativo !== false,
     criadoEm: c.criado_em,
+    // Categorias em que o cupom vale (lista vazia = vale para tudo)
+    categorias: Array.isArray(categorias) ? categorias : [],
   };
 }
 
@@ -101,7 +171,10 @@ const listarCupons = async (req, res) => {
       ORDER BY ativo DESC, criado_em DESC
       LIMIT 200
     `;
-    res.status(200).json({ cupons: cupons.map(formatarCupom) });
+    const categorias = await categoriasPorCupom(sql, cupons);
+    res.status(200).json({
+      cupons: cupons.map((c) => formatarCupom(c, categorias.get(Number(c.id)) ?? [])),
+    });
   } catch (err) {
     console.error('ERRO listarCupons:', err);
     res.status(500).json({ erro: 'Não foi possível carregar os cupons.' });
@@ -120,10 +193,25 @@ const criarCupom = async (req, res) => {
   const dados = validarCupom(req.body);
   if (dados.erro) return res.status(400).json({ erro: dados.erro });
 
+  // Escopo: em quais categorias de produtos este cupom vale (opcional)
+  const escopo = lerCategorias(req.body.categorias);
+  if (escopo && escopo.erro) return res.status(400).json({ erro: escopo.erro });
+
   try {
     const sql = await conectar();
     if (!(await podeGerenciar(sql, idUsuario, mercadoId))) {
       return res.status(403).json({ erro: 'Você não tem acesso aos cupons deste mercado.' });
+    }
+
+    // As categorias escolhidas precisam ser do mercado em questão
+    if (escopo && escopo.ids.length > 0) {
+      const doMercado = await sql`
+        SELECT id_categoria FROM categorias
+        WHERE id_mercado = ${mercadoId} AND id_categoria = ANY(${escopo.ids})
+      `;
+      if (doMercado.length !== escopo.ids.length) {
+        return res.status(400).json({ erro: 'Uma das categorias informadas não pertence a este mercado.' });
+      }
     }
 
     const existente = await sql`
@@ -140,7 +228,18 @@ const criarCupom = async (req, res) => {
       RETURNING *
     `;
 
-    res.status(201).json({ mensagem: 'Cupom criado com sucesso.', cupom: formatarCupom(novo) });
+    const categorias = escopo?.ids ?? [];
+    for (const idCategoria of categorias) {
+      await sql`
+        INSERT INTO cupom_categorias (id_cupom, id_categoria)
+        VALUES (${novo.id}, ${idCategoria})
+      `;
+    }
+
+    res.status(201).json({
+      mensagem: 'Cupom criado com sucesso.',
+      cupom: formatarCupom(novo, await buscarNomes(sql, categorias)),
+    });
   } catch (err) {
     console.error('ERRO criarCupom:', err);
     res.status(500).json({ erro: 'Não foi possível criar o cupom.' });
@@ -181,6 +280,20 @@ const atualizarCupom = async (req, res) => {
     });
     if (dados.erro) return res.status(400).json({ erro: dados.erro });
 
+    // Escopo: quando vem lista de categorias, substitui a que estava lá
+    const escopo = lerCategorias(req.body.categorias);
+    if (escopo && escopo.erro) return res.status(400).json({ erro: escopo.erro });
+
+    if (escopo && escopo.ids.length > 0) {
+      const doMercado = await sql`
+        SELECT id_categoria FROM categorias
+        WHERE id_mercado = ${mercadoId} AND id_categoria = ANY(${escopo.ids})
+      `;
+      if (doMercado.length !== escopo.ids.length) {
+        return res.status(400).json({ erro: 'Uma das categorias informadas não pertence a este mercado.' });
+      }
+    }
+
     const ativo = typeof req.body.ativo === 'boolean' ? req.body.ativo : atual.ativo;
 
     const [atualizado] = await sql`
@@ -195,7 +308,22 @@ const atualizarCupom = async (req, res) => {
       RETURNING *
     `;
 
-    res.status(200).json({ mensagem: 'Cupom atualizado com sucesso.', cupom: formatarCupom(atualizado) });
+    let categorias = (await categoriasPorCupom(sql, [atual])).get(Number(cupomId)) ?? [];
+    if (escopo) {
+      await sql`DELETE FROM cupom_categorias WHERE id_cupom = ${cupomId}`;
+      for (const idCategoria of escopo.ids) {
+        await sql`
+          INSERT INTO cupom_categorias (id_cupom, id_categoria)
+          VALUES (${cupomId}, ${idCategoria})
+        `;
+      }
+      categorias = await buscarNomes(sql, escopo.ids);
+    }
+
+    res.status(200).json({
+      mensagem: 'Cupom atualizado com sucesso.',
+      cupom: formatarCupom(atualizado, categorias),
+    });
   } catch (err) {
     console.error('ERRO atualizarCupom:', err);
     res.status(500).json({ erro: 'Não foi possível atualizar o cupom.' });
@@ -233,10 +361,10 @@ const deletarCupom = async (req, res) => {
 };
 
 // POST /api/mercados/:id/cupons/validar — confere o cupom no carrinho (cliente)
-// Devolve quanto o cupom abateria no subtotal informado.
+// Devolve quanto o cupom abateria (levando em conta as categorias do escopo).
 const validarCupomNoCarrinho = async (req, res) => {
   const mercadoId = Number(req.params.id);
-  const { codigo, subtotal } = req.body;
+  const { codigo, subtotal, itens } = req.body;
 
   if (!Number.isInteger(mercadoId) || mercadoId <= 0) {
     return res.status(400).json({ erro: 'Mercado inválido.' });
@@ -247,7 +375,30 @@ const validarCupomNoCarrinho = async (req, res) => {
     return res.status(400).json({ erro: 'Informe o código do cupom.' });
   }
 
-  const subtotalNum = Number(subtotal) || 0;
+  // Itens do carrinho: a tela manda produto, quantidade e categoria. É a
+  // partir deles que o desconto de um cupom com escopo é calculado.
+  const itensValidos = Array.isArray(itens)
+    ? itens
+        .map((i) => ({
+          id_categoria: Number(i?.id_categoria),
+          preco: Number(i?.preco),
+          quantidade: Number(i?.quantidade),
+        }))
+        .filter(
+          (i) =>
+            Number.isInteger(i.id_categoria) &&
+            i.id_categoria > 0 &&
+            Number.isFinite(i.preco) &&
+            i.preco >= 0 &&
+            Number.isFinite(i.quantidade) &&
+            i.quantidade > 0
+        )
+    : null;
+
+  const subtotalNum =
+    itensValidos && itensValidos.length > 0
+      ? Math.round(itensValidos.reduce((soma, i) => soma + i.preco * i.quantidade, 0) * 100) / 100
+      : Number(subtotal) || 0;
 
   try {
     const sql = await conectar();
@@ -281,10 +432,29 @@ const validarCupomNoCarrinho = async (req, res) => {
       });
     }
 
-    let desconto = cupom.tipo === 'percentual'
-      ? subtotalNum * (Number(cupom.valor) / 100)
-      : Number(cupom.valor);
-    desconto = Math.round(Math.min(desconto, subtotalNum) * 100) / 100;
+    // Escopo: sem categoria escolhida, o cupom vale para o pedido inteiro
+    const categorias = (await categoriasPorCupom(sql, [cupom])).get(Number(cupom.id)) ?? [];
+
+    let base = subtotalNum;
+    if (categorias.length > 0) {
+      const ids = new Set(categorias.map((c) => c.id));
+      base = itensValidos
+        ? Math.round(
+            itensValidos
+              .filter((i) => ids.has(i.id_categoria))
+              .reduce((soma, i) => soma + i.preco * i.quantidade, 0) * 100
+          ) / 100
+        : 0;
+
+      if (base <= 0) {
+        const nomes = categorias.map((c) => c.nome).join(', ');
+        return res.status(400).json({
+          erro: `Este cupom vale apenas para produtos de: ${nomes}.`,
+        });
+      }
+    }
+
+    const desconto = calcularDesconto(cupom, base);
 
     res.status(200).json({
       valido: true,
@@ -293,6 +463,9 @@ const validarCupomNoCarrinho = async (req, res) => {
       valor: Number(cupom.valor),
       desconto,
       minPedido,
+      // Valor do pedido que entrou no cálculo (só as categorias do cupom)
+      baseElegivel: base,
+      categorias,
     });
   } catch (err) {
     console.error('ERRO validarCupomNoCarrinho:', err);

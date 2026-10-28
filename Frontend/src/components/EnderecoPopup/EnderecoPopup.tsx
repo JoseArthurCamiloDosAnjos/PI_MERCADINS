@@ -104,6 +104,9 @@ export default function EnderecoPopup({
   const ultimoCepBuscado = useRef<string | null>(
     digitosCep(enderecoInicial?.cep ?? "") || null
   );
+  // Guarda se rua/bairro/cidade vieram do ViaCEP (aí o apagar o CEP apaga eles
+  // junto). Digitado à mão, continua na tela.
+  const veioDoCep = useRef(false);
 
   // Com os 8 dígitos do CEP completos, a ViaCEP devolve rua, bairro e cidade
   // na hora. Número e complemento continuam com o que a pessoa digitar.
@@ -136,6 +139,7 @@ export default function EnderecoPopup({
         bairro: dados.bairro || atual.bairro,
         cidade: dados.cidade || atual.cidade,
       }));
+      veioDoCep.current = true;
       setAvisoCep("Endereço preenchido pelo CEP.");
     });
 
@@ -149,7 +153,21 @@ export default function EnderecoPopup({
 
   const mudarCampo = (campo: keyof EnderecoEntrega, valor: string) => {
     const novo: EnderecoEntrega = { ...endereco };
-    novo[campo] = campo === "cep" ? mascaraCep(valor) : valor;
+    if (campo === "cep") {
+      novo.cep = mascaraCep(valor);
+      // Apagou o CEP? O que ele trouxe junto também sai (prático e evita
+      // endereço com CEP em branco e rua antiga)
+      if (valor === "" && veioDoCep.current) {
+        veioDoCep.current = false;
+        novo.rua = "";
+        novo.bairro = "";
+        novo.cidade = "";
+        setAvisoCep(null);
+      }
+      setEndereco(novo);
+      return;
+    }
+    novo[campo] = valor;
     setEndereco(novo);
   };
 

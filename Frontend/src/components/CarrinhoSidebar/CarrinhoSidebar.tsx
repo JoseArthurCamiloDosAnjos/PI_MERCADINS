@@ -1,5 +1,6 @@
 import { IconShoppingCart, IconX, IconArrowRight } from '../Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
+import QuantidadeStepper from '../QuantidadeStepper/QuantidadeStepper';
 import './CarrinhoSidebar.css';
 
 interface CarrinhoSidebarProps {
@@ -98,25 +99,19 @@ export default function CarrinhoSidebar({
                     <p className="cs-item-preco">Unid.: <b>{formatBRL(preco)}</b></p>
 
                     <div className="cs-item-pe">
-                      <div className="cs-stepper">
-                        <button
-                          type="button"
-                          onClick={() => carrinho.alterarQuantidade(item.produto.id_produto, -1)}
-                          disabled={item.quantidade <= 1}
-                          aria-label="Diminuir quantidade"
-                        >
-                          <IconMinus />
-                        </button>
-                        <span>{item.quantidade}</span>
-                        <button
-                          type="button"
-                          onClick={() => carrinho.alterarQuantidade(item.produto.id_produto, 1)}
-                          disabled={item.produto.estoque != null && item.quantidade >= item.produto.estoque}
-                          aria-label="Aumentar quantidade"
-                        >
-                          <IconPlusMini />
-                        </button>
-                      </div>
+                      <QuantidadeStepper
+                        className="cs-stepper"
+                        valor={item.quantidade}
+                        maximo={item.produto.estoque}
+                        onMudar={(nova) =>
+                          carrinho.alterarQuantidade(
+                            item.produto.id_produto,
+                            nova - item.quantidade
+                          )
+                        }
+                        iconeMenos={<IconMinus />}
+                        iconeMais={<IconPlusMini />}
+                      />
                       {item.produto.estoque != null && item.quantidade >= item.produto.estoque && (
                         <span className="cs-max">Máx. {item.produto.estoque}</span>
                       )}

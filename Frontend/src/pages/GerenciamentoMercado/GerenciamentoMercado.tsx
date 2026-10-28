@@ -1423,6 +1423,8 @@ function InfoConteudo({ mercado, onSalvo }: {
   const cepJaBuscado = useRef<string | null>(
     mercado.cep ? mercado.cep.replace(/\D/g, '') : null
   );
+  // Guarda se o endereço veio do ViaCEP (aí apagar o CEP apaga ele junto)
+  const enderecoPeloCep = useRef(false);
 
   // CEP completo → rua, bairro, cidade e estado vêm sozinhos (ViaCEP).
   // Só na edição: fora dela os campos ficam apenas para leitura.
@@ -1453,6 +1455,7 @@ function InfoConteudo({ mercado, onSalvo }: {
         cidade: dados.cidade || f.cidade,
         estado: dados.estado || f.estado,
       }));
+      enderecoPeloCep.current = true;
       setDicaCep('Endereço preenchido pelo CEP.');
     });
 
@@ -1602,7 +1605,16 @@ function InfoConteudo({ mercado, onSalvo }: {
             <label className="gm-info-campo">
               CEP (só números)
               <input className="gm-modal-input" value={form.cep.replace(/\D/g, '').slice(0, 8)}
-                onChange={e => set('cep', e.target.value.replace(/\D/g, '').slice(0, 8))} />
+                onChange={e => {
+                  const cep = e.target.value.replace(/\D/g, '').slice(0, 8);
+                  set('cep', cep);
+                  // Apagou o CEP: o endereço que ele preencheu sai junto
+                  if (cep === '' && enderecoPeloCep.current) {
+                    enderecoPeloCep.current = false;
+                    setForm(f => ({ ...f, rua: '', bairro: '', cidade: '', estado: '' }));
+                    setDicaCep(null);
+                  }
+                }} />
               {dicaCep && <small className="gm-info-dica-cep">{dicaCep}</small>}
             </label>
             <label className="gm-info-campo gm-info-campo--full">

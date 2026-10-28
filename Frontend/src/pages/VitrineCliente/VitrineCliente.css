@@ -240,6 +240,21 @@
   gap: 1.2rem;
 }
 
+/* Coluna da direita: horário de funcionamento da semana inteira */
+.vtc-header-identity > .vtc-horario-semana {
+  flex: 0 0 auto;
+  width: 250px;
+  margin: 0 0 0 auto;
+  box-sizing: border-box;
+  /* Cores adaptadas ao fundo escuro do header */
+  --hs-borda: rgba(245, 200, 74, 0.35);
+  --hs-fundo: rgba(255, 255, 255, 0.05);
+  --hs-titulo: var(--vt-amarelo);
+  --hs-texto: #c9d8ef;
+  --hs-aberto: #7fe0a8;
+  --hs-fechado: #f3a3a3;
+}
+
 .vtc-logo { flex-shrink: 0; }
 .vtc-logo-img,
 .vtc-logo-placeholder {
@@ -258,7 +273,7 @@
   justify-content: center;
 }
 
-.vtc-header-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-bottom: 4px; }
+.vtc-header-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; padding-bottom: 4px; }
 .vtc-header-nome-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 /* Limitador de nome: no máximo 2 linhas, o resto vira reticências */
 .vtc-nome-mercado {
@@ -902,6 +917,14 @@
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 780px) {
   .vtc-header { padding: 1.1rem 1.4rem 1.2rem; }
+  /* Horário desce para baixo das informações em tela estreita */
+  .vtc-header-identity { flex-wrap: wrap; }
+  .vtc-header-identity > .vtc-horario-semana {
+    flex: 1 1 100%;
+    width: auto;
+    max-width: 340px;
+    margin: 0.4rem 0 0;
+  }
   .vtc-filtros { top: 61px; padding: 0.8rem 1.4rem; }
   .vtc-categoria, .vtc-main { scroll-margin-top: 178px; }
   .vtc-main   { padding: 1.4rem 1.4rem 6rem; gap: 2rem; }

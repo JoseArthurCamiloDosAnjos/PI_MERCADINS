@@ -290,7 +290,8 @@
   cursor: not-allowed;
 }
 
-.qty-stepper span {
+.qty-stepper span,
+.qty-stepper input {
   min-width: 26px;
   text-align: center;
   font-size: 13px;

@@ -188,7 +188,8 @@
 
 /* Aviso de limite de estoque na gaveta do carrinho */
 .cs-max { font-size: 11px; font-weight: 700; color: var(--cinza-texto, #9aa7b8); white-space: nowrap; }
-.cs-stepper span { font-size: 13px; font-weight: 800; min-width: 14px; text-align: center; }
+.cs-stepper span,
+.cs-stepper input { font-size: 13px; font-weight: 800; min-width: 14px; text-align: center; }
 
 .cs-item-total { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo, #f5c518); }
 

@@ -12,6 +12,7 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconCheck,
+  IconHeart,
   IconHeartFilled,
   IconClock,
   IconX,
@@ -268,6 +269,27 @@ export default function Mercadins() {
     favoritosData && favoritosData.usuarioId === usuario?.id_usuario
       ? favoritosData.ids
       : EMPTY_FAVORITOS;
+
+  // Favoritar direto no card da home, sem entrar no mercado. A troca aparece
+  // na hora e volta se a rede falhar.
+  const alternarFavorito = async (store: Store) => {
+    if (!usuario) {
+      navigate("/auth");
+      return;
+    }
+    const id = store.id_mercado;
+    const jaFavoritado = favoritos.has(id);
+    const proximo = new Set(favoritos);
+    if (jaFavoritado) proximo.delete(id);
+    else proximo.add(id);
+
+    setFavoritosData({ usuarioId: usuario.id_usuario, ids: proximo });
+    try {
+      await api.favoritarMercado(id, !jaFavoritado);
+    } catch {
+      setFavoritosData({ usuarioId: usuario.id_usuario, ids: favoritos });
+    }
+  };
 
   const lojasFiltradas = useMemo(() => {
     const termo = normalizar(busca);
@@ -734,43 +756,69 @@ export default function Mercadins() {
             <section className="stores">
               {lojasFiltradas.map((store) => (
                 <article className="store-card" key={store.id_mercado}>
-                  <button
-                    type="button"
-                    className="store-cover-btn"
-                    onClick={() => irParaMercado(store.slug)}
-                    aria-label={`Abrir ${store.nome}`}
-                  >
-                    <div
-                      className="store-cover"
-                      style={
-                        store.cor_base ? { backgroundColor: store.cor_base } : undefined
+                  <div className="store-cover-wrap">
+                    <button
+                      type="button"
+                      className="store-cover-btn"
+                      onClick={() => irParaMercado(store.slug)}
+                      aria-label={`Abrir ${store.nome}`}
+                    >
+                      <div
+                        className="store-cover"
+                        style={
+                          store.cor_base ? { backgroundColor: store.cor_base } : undefined
+                        }
+                      >
+                        {store.foto_perfil ? (
+                          <img
+                            src={store.foto_perfil}
+                            alt={store.nome}
+                            className="store-cover-img"
+                          />
+                        ) : (
+                          <span className="store-cover-icon" aria-hidden="true">
+                            <IconStore size={36} />
+                          </span>
+                        )}
+                        <span
+                          className={`store-status ${
+                            lojaAberta(store) ? "aberto" : "fechado"
+                          }`}
+                        >
+                          {lojaAberta(store) ? "Aberto" : "Fechado"}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Favoritar/desfavoritar sem precisar entrar no mercado */}
+                    <button
+                      type="button"
+                      className={`store-favorito-badge store-favorito-badge--btn${
+                        favoritos.has(store.id_mercado) ? " ativo" : ""
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void alternarFavorito(store);
+                      }}
+                      title={
+                        favoritos.has(store.id_mercado)
+                          ? "Remover dos favoritos"
+                          : "Favoritar mercado"
+                      }
+                      aria-pressed={favoritos.has(store.id_mercado)}
+                      aria-label={
+                        favoritos.has(store.id_mercado)
+                          ? `Remover ${store.nome} dos favoritos`
+                          : `Favoritar ${store.nome}`
                       }
                     >
-                      {store.foto_perfil ? (
-                        <img
-                          src={store.foto_perfil}
-                          alt={store.nome}
-                          className="store-cover-img"
-                        />
+                      {favoritos.has(store.id_mercado) ? (
+                        <IconHeartFilled size={13} />
                       ) : (
-                        <span className="store-cover-icon" aria-hidden="true">
-                          <IconStore size={36} />
-                        </span>
+                        <IconHeart size={13} />
                       )}
-                      <span
-                        className={`store-status ${
-                          lojaAberta(store) ? "aberto" : "fechado"
-                        }`}
-                      >
-                        {lojaAberta(store) ? "Aberto" : "Fechado"}
-                      </span>
-                      {favoritos.has(store.id_mercado) && (
-                        <span className="store-favorito-badge" title="Seu favorito">
-                          <IconHeartFilled size={13} />
-                        </span>
-                      )}
-                    </div>
-                  </button>
+                    </button>
+                  </div>
 
                   <div className="store-content">
                     {/* Bloco visual da categoria do estabelecimento */}

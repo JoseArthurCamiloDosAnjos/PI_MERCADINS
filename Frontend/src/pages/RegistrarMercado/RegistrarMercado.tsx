@@ -144,6 +144,9 @@ export default function RegistrarMercado() {
       .slice(0, 9);
   }
 
+  // Guarda se o endereço veio do ViaCEP (aí apagar o CEP apaga ele junto)
+  const enderecoPeloCep = useRef(false);
+
   // auto = true: chamado sozinho pelo CEP completo (não avisa erro de digitação)
   const buscarCEP = useCallback(async (auto = false) => {
     const cep = form.cep.replace(/\D/g, '');
@@ -163,6 +166,7 @@ export default function RegistrarMercado() {
         bairro: data.bairro,
         rua: data.logradouro,
       }));
+      enderecoPeloCep.current = true;
       showToast('sucesso', 'Endereço preenchido automaticamente!');
     } catch {
       showToast('erro', 'Erro ao buscar CEP.');
@@ -600,7 +604,15 @@ export default function RegistrarMercado() {
             <div className="rm-cep-row">
               <div className="field">
                 <input placeholder="CEP" value={form.cep}
-                  onChange={e => set('cep', formatarCEP(e.target.value))} />
+                  onChange={e => {
+                    const cep = formatarCEP(e.target.value);
+                    set('cep', cep);
+                    // Apagou o CEP: o endereço que ele preencheu sai junto
+                    if (cep === '' && enderecoPeloCep.current) {
+                      enderecoPeloCep.current = false;
+                      setForm(f => ({ ...f, estado: '', cidade: '', bairro: '', rua: '' }));
+                    }
+                  }} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>

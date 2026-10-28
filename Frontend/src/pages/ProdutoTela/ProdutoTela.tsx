@@ -12,6 +12,7 @@ import { aplicarSeo } from '../../utils/seo';
 import JsonLd from '../../components/JsonLd';
 import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
+import QuantidadeStepper from '../../components/QuantidadeStepper/QuantidadeStepper';
 import {
   IconStore,
   IconArrowLeft,
@@ -462,24 +463,18 @@ export default function ProdutoTela({
 
           <div className="pd-quantidade-row">
             <span className="pd-quantidade-label">Quantidade</span>
-            <div className="pd-stepper">
-              <button
-                className="pd-stepper-btn"
-                aria-label="Diminuir quantidade"
-                onClick={() => setQuantidade(Math.max(1, quantidadeEfetiva - 1))}
-              >
-                <IconMinus size={13} />
-              </button>
-              <span className="pd-stepper-valor">{quantidadeEfetiva}</span>
-              <button
-                className="pd-stepper-btn"
-                aria-label="Aumentar quantidade"
-                onClick={() => setQuantidade(Math.min(quantidadeEfetiva + 1, Math.max(1, estoqueDisponivel)))}
-                disabled={semEstoque || noMaximoEstoque}
-              >
-                <IconPlusMini size={13} />
-              </button>
-            </div>
+            <QuantidadeStepper
+              className="pd-stepper"
+              classeBotao="pd-stepper-btn"
+              classeCampo="pd-stepper-valor"
+              valor={quantidadeEfetiva}
+              maximo={estoqueDisponivel}
+              onMudar={setQuantidade}
+              desabilitado={semEstoque}
+              desabilitarMenos={false}
+              iconeMenos={<IconMinus size={13} />}
+              iconeMais={<IconPlusMini size={13} />}
+            />
             {noMaximoEstoque && (
               <span className="pd-estoque-max">Máximo: {estoqueDisponivel} unidade{estoqueDisponivel !== 1 ? 's' : ''}</span>
             )}

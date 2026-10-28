@@ -6,6 +6,7 @@ import { IconShoppingCart } from "../../components/Icons";
 import { useAuth } from "../../context/AuthContext";
 import { useEnderecos } from "../../hooks/useEnderecos";
 import EnderecoPopup from "../../components/EnderecoPopup/EnderecoPopup";
+import QuantidadeStepper from "../../components/QuantidadeStepper/QuantidadeStepper";
 import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
 import {
   type EnderecoEntrega,
@@ -345,13 +346,12 @@ export default function CartScreen({
   const lojaAberta = estaAberto(horarioMercado);
   const proximaAbre = proximaAbertura(horarioMercado);
 
-  const updateQuantity = (id: string, delta: number) => {
-    // Mantém o mínimo de 1 unidade (mesmo comportamento de antes)
+  // Quantidade digitada ou mexida pelos botões: vira diferença para o hook
+  // (que já respeita o estoque e o mínimo de 1)
+  const definirQuantidade = (id: string, nova: number) => {
     const item = items.find((i) => i.id === id);
-    if (delta < 0 && (item?.quantity ?? 1) <= 1) return;
-    // Trava no estoque: não deixa passar do disponível
-    if (delta > 0 && item?.estoque != null && item.quantity >= item.estoque) return;
-    onUpdateQuantity?.(id, delta);
+    if (!item || nova === item.quantity) return;
+    onUpdateQuantity?.(id, nova - item.quantity);
   };
 
   const removeItem = (id: string) => {
@@ -533,25 +533,14 @@ export default function CartScreen({
                     <span className="cart-item__unit-price">
                       Unid.: <b>{formatBRL(item.unitPrice)}</b>
                     </span>
-                    <div className="qty-stepper">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.id, -1)}
-                        disabled={item.quantity <= 1}
-                        aria-label="Diminuir quantidade"
-                      >
-                        <IconMinus />
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.id, 1)}
-                        disabled={item.estoque != null && item.quantity >= item.estoque}
-                        aria-label="Aumentar quantidade"
-                      >
-                        <IconPlus />
-                      </button>
-                    </div>
+                    <QuantidadeStepper
+                      className="qty-stepper"
+                      valor={item.quantity}
+                      maximo={item.estoque}
+                      onMudar={(nova) => definirQuantidade(item.id, nova)}
+                      iconeMenos={<IconMinus />}
+                      iconeMais={<IconPlus />}
+                    />
                     {item.estoque != null && item.quantity >= item.estoque && (
                       <span className="qty-max">Máx. {item.estoque}</span>
                     )}

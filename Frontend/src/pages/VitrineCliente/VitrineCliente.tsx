@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import ProfileMenu from '../../components/ProfileMenu';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
+import HorarioSemana from '../../components/HorarioSemana';
 import { NOMES_TIPOS } from '../../utils/tipoLoja';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import { aplicarSeo } from '../../utils/seo';
@@ -363,8 +364,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           ? cat.produtos.filter(p => p.nome.toLowerCase().includes(termo))
           : cat.produtos,
       }))
-      .filter(cat => cat.produtos.length > 0 || !termo);
-  }, [dados, busca]);
+      .filter(cat => cat.produtos.length > 0 || !termo)
+      // Categoria marcada: aparece só ela (clique de novo nela e volta tudo)
+      .filter(cat => categoriaAtiva === null || cat.id === categoriaAtiva);
+  }, [dados, busca, categoriaAtiva]);
 
   // Lista plana de produtos quando o cliente escolhe uma ordenação
   const modoOrdenado = ordenacao !== 'categorias';
@@ -380,8 +383,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     if (ordenacao === 'menor') itens.sort((a, b) => preco(a) - preco(b));
     else if (ordenacao === 'maior') itens.sort((a, b) => preco(b) - preco(a));
     else itens.sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
-    return itens;
-  }, [dados, busca, ordenacao]);
+    // Mesma regra do modo por categoria: só a categoria marcada, se houver
+    return categoriaAtiva === null
+      ? itens
+      : itens.filter(x => x.catId === categoriaAtiva);
+  }, [dados, busca, ordenacao, categoriaAtiva]);
 
   // Fecha o menu de categorias ao pressionar Esc (mesmo comportamento dos
   // demais painéis e modais do site).
@@ -395,6 +401,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   }, [catsAberto]);
 
   function irParaCategoria(id: number) {
+    // Segundo clique na mesma categoria: desmarca e volta a mostrar tudo
+    if (categoriaAtiva === id) {
+      setCategoriaAtiva(null);
+      return;
+    }
     setCategoriaAtiva(id);
     refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -687,6 +698,9 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               );
             })()}
           </div>
+
+          {/* Lado direito: horário de funcionamento da semana inteira */}
+          <HorarioSemana horario={dados.horario} className="vtc-horario-semana" />
         </div>
 
       </header>

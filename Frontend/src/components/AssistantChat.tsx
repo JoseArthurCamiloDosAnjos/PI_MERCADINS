@@ -38,13 +38,27 @@ export default function AssistantChat() {
         body: JSON.stringify({ message: mensagem }),
       })
 
-      const dados = await resposta.json()
+      const conteudo = await resposta.text()
 
-      if (!resposta.ok) {
-        throw new Error(
-          dados.error || 'Não foi possível obter uma resposta.'
-        )
-      }
+let dados: { error?: string; reply?: string } = {}
+
+try {
+  dados = JSON.parse(conteudo)
+} catch {
+  // A resposta não veio em JSON.
+}
+
+if (!resposta.ok) {
+  throw new Error(
+    `HTTP ${resposta.status}: ${
+      dados.error || conteudo || 'Resposta sem detalhes do servidor.'
+    }`
+  )
+}
+
+if (!dados.reply) {
+  throw new Error('O servidor respondeu, mas não retornou o campo reply.')
+}
 
       setMensagens((anteriores) => [
         ...anteriores,

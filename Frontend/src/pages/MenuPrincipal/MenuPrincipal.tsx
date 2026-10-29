@@ -165,6 +165,8 @@ export default function Mercadins() {
   const [produtosBusca, setProdutosBusca] = useState<ProdutoBusca[]>([]);
   const [buscandoProdutos, setBuscandoProdutos] = useState(false);
   const [dropdownProdutos, setDropdownProdutos] = useState(false);
+  // Menu compacto do topo (celular): abre e fecha o painel com os links
+  const [menuAberto, setMenuAberto] = useState(false);
   const buscaFormRef = useRef<HTMLFormElement | null>(null);
   const [favoritosData, setFavoritosData] = useState<{
     usuarioId: number;
@@ -444,7 +446,10 @@ export default function Mercadins() {
               <img src={logo} alt="Mercadins" className="mp-logo-img" />
             </a>
 
-            <ul className="nav-links">
+            <ul
+              className={`nav-links${menuAberto ? " nav-links--aberto" : ""}`}
+              onClick={() => setMenuAberto(false)}
+            >
               <li>
                 <a
                   href="#topo"
@@ -478,6 +483,11 @@ export default function Mercadins() {
                   Categorias
                 </a>
               </li>
+              {!usuario && (
+                <li className="nav-links__entrar">
+                  <Link to="/auth">Entrar</Link>
+                </li>
+              )}
             </ul>
 
             <form className="search" onSubmit={handleBuscar} ref={buscaFormRef}>
@@ -573,6 +583,20 @@ export default function Mercadins() {
                 </Link>
               </>
             )}
+
+            {/* Menu compacto — abaixo de 800px os links do topo somem,
+                então este botão (hambúrguer) abre o painel de navegação */}
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={menuAberto}
+              onClick={() => setMenuAberto((v) => !v)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
           </nav>
         </div>
       </header>

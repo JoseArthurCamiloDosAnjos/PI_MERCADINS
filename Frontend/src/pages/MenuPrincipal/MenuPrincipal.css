@@ -106,6 +106,17 @@ button {
   list-style: none;
 }
 
+/* Hambúrguer do topo: só aparece no celular (regras no bloco de 800px) */
+.nav-toggle {
+  display: none;
+}
+
+/* Item "Entrar" do painel compacto — escondido no desktop,
+   onde o botão .login já existe */
+.nav-links__entrar {
+  display: none;
+}
+
 .nav-links a,
 .login {
   position: relative;
@@ -1134,10 +1145,74 @@ button {
 }
 
 @media (max-width: 800px) {
-  .nav-links,
   .search,
   .login {
     display: none;
+  }
+
+  .navbar {
+    gap: 12px;
+    position: relative;
+  }
+
+  /* Botão de menu (hambúrguer) */
+  .nav-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(245, 192, 0, 0.5);
+    border-radius: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .nav-toggle span {
+    display: block;
+    height: 2.5px;
+    border-radius: 2px;
+    background: #f5c000;
+  }
+  .nav-toggle:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  /* Links escondidos por padrão; abrem no painel do hambúrguer */
+  .nav-links {
+    display: none;
+  }
+
+  .nav-links.nav-links--aberto {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 4px 16px 12px;
+    background: linear-gradient(135deg, #0b2552, #123b82);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 18px 34px rgba(4, 16, 44, 0.45);
+    z-index: 210;
+  }
+  .nav-links--aberto li {
+    width: 100%;
+  }
+  .nav-links--aberto a {
+    display: block;
+    padding: 13px 2px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .nav-links--aberto a::after {
+    display: none;
+  }
+  .nav-links--aberto .nav-links__entrar {
+    display: block;
   }
 
   .nav-profile {

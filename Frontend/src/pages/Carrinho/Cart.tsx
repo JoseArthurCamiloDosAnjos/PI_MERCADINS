@@ -541,7 +541,7 @@ export default function CartScreen({
                       iconeMenos={<IconMinus />}
                       iconeMais={<IconPlus />}
                     />
-                    {item.estoque != null && item.quantity >= item.estoque && (
+                    {item.estoque != null && item.estoque > 0 && item.quantity >= item.estoque && (
                       <span className="qty-max">Máx. {item.estoque}</span>
                     )}
                   </div>

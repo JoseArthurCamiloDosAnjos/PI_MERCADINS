@@ -97,9 +97,22 @@ export function useCarrinho(mercadoId: number) {
           // senão as quantidades duplicavam a cada atualização da página.
           if (prev.length > 0) {
             // Mantém o que o cliente já tinha (ex.: adicionou antes do login)
-            // e reenvia pro servidor pra ficar salvo na conta
+            // e reenvia pro servidor pra ficar salvo na conta.
+            // A QUANTIDADE vem do local, mas o ESTOQUE vem do servidor: o valor
+            // guardado no navegador envelhece e travava o botão de aumentar.
+            const estoqueDoServidor = new Map(
+              itensBanco.map(i => [i.produto.id_produto, i.produto.estoque])
+            );
+            const atualizados = prev.map(item => {
+              const atual = estoqueDoServidor.get(item.produto.id_produto);
+              if (atual === undefined || atual === item.produto.estoque) return item;
+              return { ...item, produto: { ...item.produto, estoque: atual } };
+            });
+            if (atualizados.some((item, i) => item !== prev[i])) {
+              saveCarrinhoLocal(mercadoId, atualizados);
+            }
             debounceSalvar(mercadoId, prev);
-            return prev;
+            return atualizados;
           }
           // Local vazio = navegador novo ou limpo: restaura do servidor
           if (itensBanco.length > 0) {

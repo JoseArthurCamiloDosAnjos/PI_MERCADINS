@@ -112,7 +112,7 @@ export default function CarrinhoSidebar({
                         iconeMenos={<IconMinus />}
                         iconeMais={<IconPlusMini />}
                       />
-                      {item.produto.estoque != null && item.quantidade >= item.produto.estoque && (
+                      {item.produto.estoque != null && item.produto.estoque > 0 && item.quantidade >= item.produto.estoque && (
                         <span className="cs-max">Máx. {item.produto.estoque}</span>
                       )}
                       <span className="cs-item-total">{formatBRL(preco * item.quantidade)}</span>

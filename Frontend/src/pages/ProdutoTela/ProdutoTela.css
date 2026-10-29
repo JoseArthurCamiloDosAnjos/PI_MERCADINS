@@ -578,9 +578,11 @@
 
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .pd-main { grid-template-columns: 1fr; }
-  .pd-galeria { position: static; }
-  .pd-caixa-info { grid-template-columns: 1fr; }
+  /* minmax(0, 1fr): a coluna precisa poder encolher (min-width: 0) senão o
+     conteúdo empurra a página e o que está na direita some (tela de 360px). */
+  .pd-main { grid-template-columns: minmax(0, 1fr); }
+  .pd-galeria { position: static; min-width: 0; }
+  .pd-caixa-info { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 600px) {
@@ -588,8 +590,11 @@
   .pd-busca-wrap { display: none; }
   .pd-breadcrumb { padding: 0.8rem 1.2rem 0; }
   .pd-main { padding: 1.2rem 1.2rem 2rem; gap: 1.6rem; }
-  .pd-galeria { flex-direction: column-reverse; }
-  .pd-miniaturas { flex-direction: row; overflow-x: auto; }
+  .pd-galeria { flex-direction: column-reverse; min-width: 0; }
+  /* Largura vem da coluna; a altura sai do aspect-ratio (evita o ciclo em que
+     a imagem puxa a coluna para 347px dentro de uma tela de 352px). */
+  .pd-imagem-principal { width: 100%; height: auto; flex: none; min-width: 0; }
+  .pd-miniaturas { flex-direction: row; overflow-x: auto; max-width: 100%; }
   .pd-nome { font-size: 19px; }
   .pd-preco-atual { font-size: 22px; }
   .pd-acoes { flex-direction: column; }

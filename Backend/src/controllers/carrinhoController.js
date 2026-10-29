@@ -38,23 +38,30 @@ const salvarCarrinho = async (req, res) => {
   try {
     const sql = await conectar();
 
-    await sql.transaction(async (tx) => {
-      // Remove todos os itens atuais deste usuário/mercado
-      await tx`
-        DELETE FROM carrinho
-        WHERE id_usuario = ${id_usuario}
-          AND id_mercado = ${Number(mercadoId)}
-      `;
+    // O driver HTTP do Neon recebe a transação como UMA LISTA de consultas
+    // (array ou função que devolve array). Uma função async que só espera as
+    // consultas devolve undefined e derruba a requisição com 500.
+    await sql.transaction((tx) => {
+      const consultas = [
+        // Remove todos os itens atuais deste usuário/mercado
+        tx`
+          DELETE FROM carrinho
+          WHERE id_usuario = ${id_usuario}
+            AND id_mercado = ${Number(mercadoId)}
+        `,
+      ];
 
       // Insere os novos itens (se houver)
       for (const item of itens) {
         if (item.quantidade > 0) {
-          await tx`
+          consultas.push(tx`
             INSERT INTO carrinho (id_usuario, id_mercado, id_produto, quantidade)
             VALUES (${id_usuario}, ${Number(mercadoId)}, ${item.id_produto}, ${item.quantidade})
-          `;
+          `);
         }
       }
+
+      return consultas;
     });
 
     res.status(200).json({ mensagem: 'Carrinho salvo com sucesso' });

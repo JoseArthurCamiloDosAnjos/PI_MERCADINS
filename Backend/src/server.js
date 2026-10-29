@@ -144,6 +144,80 @@ app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
 })
+      
+app.post('/api/assistant/chat', async (req, res) => {
+  try {
+    const { message } = req.body || {}
+
+    if (typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({
+        error: 'Digite uma mensagem válida.',
+      })
+    }
+
+    const webhookUrl = process.env.N8N_WEBHOOK_URL
+
+    if (!webhookUrl) {
+      return res.status(500).json({
+        error: 'N8N_WEBHOOK_URL não configurada no servidor.',
+      })
+    }
+
+    const resposta = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: message.trim(),
+      }),
+    })
+
+    const corpo = await resposta.text()
+
+    if (!resposta.ok) {
+      console.error('Erro do n8n:', resposta.status, corpo)
+
+      return res.status(502).json({
+        error: 'O agente do n8n não conseguiu responder.',
+      })
+    }
+
+    let dados
+
+    try {
+      dados = JSON.parse(corpo)
+    } catch {
+      console.error('Resposta inválida recebida do n8n:', corpo)
+
+      return res.status(502).json({
+        error: 'O n8n retornou uma resposta inválida.',
+      })
+    }
+
+    const reply =
+      dados.reply ??
+      dados.output ??
+      dados.text ??
+      dados.result?.content
+
+    if (typeof reply !== 'string' || !reply.trim()) {
+      console.error('Formato inesperado do n8n:', dados)
+
+      return res.status(502).json({
+        error: 'O agente não retornou uma mensagem válida.',
+      })
+    }
+
+    return res.json({ reply })
+  } catch (err) {
+    console.error('Erro ao conectar ao n8n:', err.message)
+
+    return res.status(500).json({
+      error: 'Erro ao conectar ao assistente.',
+    })
+  }
+})
 
 // ── Vigência das assinaturas ──────────────────────────────────────────────────
 // A cada hora (e já na subida do servidor) encerra assinaturas vencidas +

@@ -95,6 +95,12 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 }) {
   const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
+  // Painel limpo: mostra só os 6 primeiros mercados. O botão ao lado do
+  // título abre a lista completa quando existem mais do que isso (e some
+  // quando já não há nada a expandir, para não ficar um botão sem função).
+  const LIMITE_MERCADOS = 6;
+  const [mostrandoTodos, setMostrandoTodos] = useState(false);
+  const mercadosVisiveis = mostrandoTodos ? mercados : mercados.slice(0, LIMITE_MERCADOS);
 
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados ativos' },
@@ -121,7 +127,11 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
       <section>
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados gerenciados</h2>
-          <button className="pu-btn-link">Gerenciar todos</button>
+          {mercados.length > LIMITE_MERCADOS && (
+            <button className="pu-btn-link" onClick={() => setMostrandoTodos(antes => !antes)}>
+              {mostrandoTodos ? 'Mostrar menos' : `Ver todos (${mercados.length})`}
+            </button>
+          )}
         </div>
         <div className="pv-mkt-row">
           {carregando ? (
@@ -132,7 +142,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
               <p>Nenhum mercado cadastrado ainda</p>
               <span>Crie seu primeiro mercado e comece a vender.</span>
             </div>
-          ) : mercados.map((m, i) => {
+          ) : mercadosVisiveis.map((m, i) => {
             const MktIcon = MKT_ICONS[i % MKT_ICONS.length];
             return (
               <div key={m.id_mercado} className="pv-mkt-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}

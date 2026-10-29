@@ -13,6 +13,10 @@
 
 .adm-main {
   flex: 1;
+  /* min-width: 0 permite que a coluna encolha; sem isso a tabela empurra o
+     layout para 1200+px e o corpo (overflow-x: hidden) simplesmente corta
+     o que passa da largura da janela, sem barra de rolagem para alcançar. */
+  min-width: 0;
   margin-left: 240px;
   padding: 24px 32px;
   min-height: 100vh;

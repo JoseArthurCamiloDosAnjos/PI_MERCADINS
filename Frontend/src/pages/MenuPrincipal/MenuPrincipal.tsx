@@ -488,6 +488,11 @@ export default function Mercadins() {
                   <Link to="/auth">Entrar</Link>
                 </li>
               )}
+              {!usuario && (
+                <li className="nav-links__cadastrar">
+                  <Link to="/auth/register">Criar conta</Link>
+                </li>
+              )}
             </ul>
 
             <form className="search" onSubmit={handleBuscar} ref={buscaFormRef}>
@@ -584,7 +589,7 @@ export default function Mercadins() {
               </>
             )}
 
-            {/* Menu compacto — abaixo de 800px os links do topo somem,
+            {/* Menu compacto — abaixo de 600px os links do topo somem,
                 então este botão (hambúrguer) abre o painel de navegação */}
             <button
               type="button"

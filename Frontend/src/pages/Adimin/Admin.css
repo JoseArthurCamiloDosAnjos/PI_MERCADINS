@@ -261,7 +261,26 @@
   border-color: #ef4444;
   color: #ef4444;
 }
-
+.adm-Menu-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  color: var(--cinza-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.adm-Menu-btn:hover{
+  border-color: yellow;
+  color: yellow;
+}
 /* ── Stats grid ───────────────────────────────────────────────────────────── */
 
 .adm-stats-grid {

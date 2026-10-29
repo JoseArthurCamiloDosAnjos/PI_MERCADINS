@@ -66,6 +66,17 @@ export default function MercadinsPromo() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Quem chega pelo menu "Crie seu mercado" cai na página já com os planos
+  // na tela (o restante continua acessível rolando para cima).
+  useEffect(() => {
+    if (window.location.hash !== "#planos") return;
+    const atraso = window.setTimeout(() => {
+      const alvo = document.getElementById("planos");
+      if (alvo) alvo.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(atraso);
+  }, []);
+
   useEffect(() => {
     const sections = document.querySelectorAll(
       ".mp-about, .mp-benefits, .mp-plans, .mp-testimonials, .mp-cta-final"

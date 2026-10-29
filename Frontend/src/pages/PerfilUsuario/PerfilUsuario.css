@@ -22,6 +22,12 @@
   background: var(--azul-sidebar);
   border-bottom: 1px solid var(--azul-borda);
   gap: 12px;
+  /* Igual à barra da página inicial: fica presa no topo e o hambúrguer
+     mora dentro dela — nada flutua sobre o conteúdo enquanto a pessoa rola */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
 .pu-topbar-actions {
@@ -988,7 +994,10 @@
 /* ── RESPONSIVO ────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .pu-topbar {
-    padding: 0.9rem 1.2rem 0.9rem 62px;
+    /* 56px de altura: o hambúrguer fixo (40px em top: 8px) fica centralizado
+       dentro da barra, com 62px de recuo à esquerda para não cobrir o título */
+    min-height: 56px;
+    padding: 8px 1.2rem 8px 62px;
   }
   .pu-content {
     padding: 1.2rem 1.2rem;
@@ -999,7 +1008,7 @@
 @media (max-width: 560px) {
   .pu-topbar {
     flex-wrap: wrap;
-    padding: 0.9rem 1rem 0.9rem 60px;
+    padding: 8px 1rem 8px 60px;
   }
   .pu-topbar-title {
     font-size: 14.5px;

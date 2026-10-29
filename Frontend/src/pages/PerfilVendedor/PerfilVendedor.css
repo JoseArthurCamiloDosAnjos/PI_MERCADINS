@@ -5,12 +5,18 @@
   font-family: var(--font);
   width: 100%;
 }
-.pv-main  { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.pv-main  { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: clip; }
 
 .pv-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 1.8rem; background: var(--azul-sidebar); border-bottom: 1px solid var(--azul-borda);
   gap: 12px;
+  /* Igual à barra da página inicial: fica presa no topo e o hambúrguer
+     mora dentro dela — nada flutua sobre o conteúdo enquanto a pessoa rola */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 .pv-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); }
 .pv-topbar-actions { display: flex; align-items: center; gap: 10px; }
@@ -129,14 +135,14 @@
 
 /* ── RESPONSIVO ──────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .pv-topbar { padding: 0.9rem 1.2rem 0.9rem 62px; }
+  .pv-topbar { min-height: 56px; padding: 8px 1.2rem 8px 62px; }
   .pv-content { padding: 1.2rem 1.2rem; gap: 1.3rem; }
   .pv-stats-row { flex-direction: column; }
   .pv-stat { min-width: 0; }
 }
 
 @media (max-width: 560px) {
-  .pv-topbar { flex-wrap: wrap; padding: 0.9rem 1rem 0.9rem 60px; }
+  .pv-topbar { flex-wrap: wrap; padding: 8px 1rem 8px 60px; }
   .pv-topbar-title { font-size: 14.5px; }
   .pv-content { padding: 1rem; }
   .pv-mkt-row { justify-content: space-between; }

@@ -452,10 +452,11 @@
   position: sticky;
   top: 92px;
   /* Fica fixo na tela: só a lista de itens rola. Se o resumo for maior que
-     a janela, ele ganha uma rolagem própria para o botão continuar acessível */
+     a janela, ele ganha uma rolagem própria para o botão continuar acessível.
+     sem `overscroll-behavior: contain`, para que a rolagem sempre devolva
+     o controle para a página — ninguém fica preso dentro do painel */
   max-height: calc(100vh - 108px);
   overflow-y: auto;
-  overscroll-behavior: contain;
   scrollbar-width: thin;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -935,6 +936,12 @@
 
   .cart-summary {
     position: static;
+    /* Uma coluna no celular: o resumo deixa de ter rolagem interna e passa a
+       seguir a página — dá para rolar até o fim e voltar ao topo livremente,
+       alcançando todos os itens sem depender da barra lateral */
+    max-height: none;
+    overflow-y: visible;
+    overscroll-behavior: auto;
   }
 
   .cart-item {

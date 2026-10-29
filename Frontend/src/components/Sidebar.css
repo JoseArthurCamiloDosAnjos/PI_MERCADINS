@@ -235,12 +235,15 @@
 }
 
 /* ── HAMBÚRGUER (mobile) ─────────────────────────────────────────── */
+/* Fixo, porém assentado dentro da barra do topo (que é sticky): ele
+   acompanha a barra em vez de pairar sobre o texto da página */
 .sb-hamburger {
   display: none;
   position: fixed;
-  top: 14px;
+  top: 8px;
   left: 14px;
-  z-index: 100;
+  /* acima da barra (z-index 40), abaixo do overlay do menu (65) */
+  z-index: 50;
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -250,7 +253,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 
 .sb-close {

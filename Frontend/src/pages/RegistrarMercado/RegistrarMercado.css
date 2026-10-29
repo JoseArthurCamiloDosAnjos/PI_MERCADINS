@@ -18,11 +18,20 @@
 .rm-cep-row {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  /* Campo e botão na mesma linha e com a mesma altura em qualquer tela —
+     `stretch` impede que um fique menor ou deslocado em relação ao outro */
+  align-items: stretch;
+  /* mesmo intervalo usado entre os campos da grade ao lado */
+  margin-bottom: 14px;
 }
 
 .rm-cep-row .field {
   flex: 1;
+  /* permite o campo encolher em telas estreitas sem vazar o botão */
+  min-width: 0;
+  /* sem essa margem a linha do flex ficaria mais alta que o input e o
+     botão, esticado, sairia 6px abaixo dele */
+  margin-bottom: 0;
 }
 
 /* Padding, raio e margem casados com `.register-page .field input`
@@ -337,12 +346,5 @@
 @media (max-width: 600px) {
   .rm-grid {
     grid-template-columns: 1fr;
-  }
-  .rm-cep-row {
-    flex-direction: column;
-  }
-  .rm-cep-btn {
-    width: 100%;
-    margin-top: 8px;
   }
 }

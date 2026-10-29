@@ -45,10 +45,8 @@ interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number
 // ícones que giram nos cards de mercado (na falta de uma imagem real da loja)
 const MKT_ICONS = [IconShoppingCart, IconStore, IconShoppingBag, IconPackage];
 
-// Admin cria o mercado direto; usuário comum escolhe o plano antes
-function rotaCriarMercado(ehAdmin?: boolean) {
-  return ehAdmin ? '/registrar-mercado' : '/planos';
-}
+// Escolher o plano é sempre o primeiro passo antes de criar um mercado
+const ROTA_CRIAR_MERCADO = '/planos';
 
 const NAV_ITEMS = [
   { icon: <IconUser size={18} />, label: 'Painel do vendedor' },
@@ -96,7 +94,6 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
 
   const stats = [
@@ -150,7 +147,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
             );
           })}
           <div className="pv-mkt-card pv-mkt-add" style={{ animationDelay: '0.57s' }}
-            onClick={() => navigate(rotaCriarMercado(usuario?.is_admin))}>
+            onClick={() => navigate(ROTA_CRIAR_MERCADO)}>
             <span className="pv-mkt-plus">+</span>
             <p className="pv-mkt-nome pv-mkt-add-label">Novo mercado</p>
           </div>
@@ -505,7 +502,7 @@ export default function PerfilVendedor() {
       <main className="pv-main">
         <div className="pv-topbar">
           <span className="pv-topbar-title">{TITULOS[nav]}</span>
-          <button className="pv-btn-new" onClick={() => navigate(rotaCriarMercado(usuario?.is_admin))}>+ Novo Mercado</button>
+          <button className="pv-btn-new" onClick={() => navigate(ROTA_CRIAR_MERCADO)}>+ Novo Mercado</button>
         </div>
         <div className="pv-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>

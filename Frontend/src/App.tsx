@@ -449,7 +449,7 @@ function Rotas() {
         <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
-        <Route path="/planos"            element={usuario?.is_admin ? <Navigate to="/registrar-mercado" /> : <SelecionarPlano />} />
+        <Route path="/planos"            element={<SelecionarPlano />} />
         <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { PLANOS, type Plano } from '../MercadinsPromo/planos';
 import ConsultorModal from '../../components/ConsultorModal';
 import './SelecionarPlano.css';
@@ -15,6 +16,7 @@ const CheckIcon = () => (
 
 export default function SelecionarPlano() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [consultorAberto, setConsultorAberto] = useState(false);
 
@@ -24,11 +26,16 @@ export default function SelecionarPlano() {
   };
 
   function escolherPlano(plano: Plano) {
-    localStorage.setItem('planoSelecionado', JSON.stringify({
-      id: plano.id,
-      nome: plano.name,
-      cobranca: billingAnnual ? 'anual' : 'mensal',
-    }));
+    if (usuario?.is_admin) {
+      // Admin não assina: não grava o plano para não ir para o pagamento
+      localStorage.removeItem('planoSelecionado');
+    } else {
+      localStorage.setItem('planoSelecionado', JSON.stringify({
+        id: plano.id,
+        nome: plano.name,
+        cobranca: billingAnnual ? 'anual' : 'mensal',
+      }));
+    }
     navigate('/registrar-mercado');
   }
 

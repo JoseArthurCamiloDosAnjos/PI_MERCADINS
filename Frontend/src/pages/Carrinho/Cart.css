@@ -93,6 +93,12 @@
   color: var(--text-muted);
 }
 
+/* Só no celular: o mercado e o endereço aparecem numa faixa própria acima da
+   lista de produtos (escondida no desktop, onde cabem na barra superior) */
+.cart-store-mobile {
+  display: none;
+}
+
 .cart-topbar__store strong {
   color: var(--text-secondary);
 }
@@ -974,6 +980,52 @@
   .cart-topbar__title h1 {
     font-size: 17px;
   }
+  /* Sem espaço para o texto na barra: fica só a seta, em botão redondo com o
+     amarelo da marca para destacar a saída para a loja */
+  .cart-back__texto {
+    display: none;
+  }
+  .cart-back {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--accent);
+  }
+  .cart-back:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  /* O mercado e o endereço saem da barra e viram uma faixa acima dos itens */
+  .cart-topbar__store {
+    display: none;
+  }
+  .cart-store-mobile {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 11px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+  }
+  .cart-store-mobile strong {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .cart-store-mobile span {
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .cart-store-mobile span::before {
+    content: '· ';
+  }
   .cart-item {
     grid-template-columns: 56px 1fr;
     gap: 12px;
@@ -1009,8 +1061,9 @@
     gap: 10px;
   }
   .cart-back {
-    padding: 6px 8px;
-    font-size: 12px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
   }
   .cart-topbar__title h1 {
     font-size: 15px;

@@ -61,7 +61,9 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 8px 0 12px;
+  /* 20px em cima: o rótulo da primeira seção não coloca no subtítulo do
+     cabeçalho — antes os dois ficavam quase colados, como se cortados */
+  margin: 20px 0 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -346,5 +348,31 @@
 @media (max-width: 600px) {
   .rm-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── CADASTRO DE MERCADO MAIS COMPACTO NO CELULAR ───────────────────────────
+   O topo ocupava 274px (logo de 148px com 66px de respiro) e empurrava o
+   formulário para fora da primeira tela. A classe `.rmc-page` marca só as
+   telas de cadastro de mercado, deixando a página de cadastro de conta com
+   o visual de sempre. */
+@media (max-width: 768px) {
+  .register-page.rmc-page .left {
+    padding: 52px 20px 24px;
+  }
+
+  .register-page.rmc-page .left .logo-img {
+    width: 122px;
+    height: 122px;
+  }
+
+  .register-page.rmc-page .form-header h1 {
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-page.rmc-page .right {
+    padding-top: 24px;
   }
 }

@@ -483,7 +483,7 @@ export default function Mercadins() {
                   Categorias
                 </a>
               </li>
-              <li>
+              <li className="nav-links__criar">
                 {/* Vai para a página promocional já parando em cima dos planos */}
                 <Link to="/promocional#planos">Crie seu mercado</Link>
               </li>

@@ -529,8 +529,31 @@
   margin-bottom: 16px;
 }
 
+/* Aviso de rolagem lateral das tabelas — aparece só quando a tela é estreita
+   demais para caber tudo, para a pessoa saber que pode arrastar para o lado */
+.adm-dica-rolagem {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cinza-texto);
+}
+
+@media (max-width: 1000px) {
+  .adm-dica-rolagem {
+    display: flex;
+  }
+}
+
 .adm-table {
   width: 100%;
+  /* Muitas colunas (8 no mercados, 7 nos usuários): em telas estreitas a
+     tabela não espreme — ela ganha largura mínima e o bloco rola para o lado,
+     mantendo cada coluna legível e o conteúdo inteiro à mostra */
+  min-width: 960px;
   border-collapse: collapse;
   font-family: var(--font);
 }
@@ -544,6 +567,9 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--azul-borda);
+  /* O rótulo nunca quebra no meio: coluna cortada chama mais atenção que
+     rolagem */
+  white-space: nowrap;
 }
 
 .adm-table td {
@@ -563,6 +589,16 @@
 
 .adm-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Selos e botões de ação ficam numa linha só, sem quebrar no meio */
+.adm-badge-status,
+.adm-badge-tipo,
+.adm-status-dot,
+.adm-btn-detalhes,
+.adm-btn-editar,
+.adm-btn-bloquear {
+  white-space: nowrap;
 }
 
 .adm-user-cell {
@@ -794,6 +830,8 @@
 
 .adm-filtros-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-top: 12px;
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ChangeEvent } from 'react';
 import './ProdutoTela.css';
 import ToastContainer from '../../components/Toast';
 import { useToast } from '../../hooks/useToast';
@@ -16,7 +16,9 @@ import QuantidadeStepper from '../../components/QuantidadeStepper/QuantidadeStep
 import {
   IconStore,
   IconArrowLeft,
+  IconCamera,
 } from '../../components/Icons';
+import { supabase } from '../../services/supabase';
 
 // ─── Ícones locais (mesmo padrão usado na VitrineCliente) ─────────────────────
 
@@ -188,6 +190,8 @@ export default function ProdutoTela({
   const [textoAval, setTextoAval]   = useState('');
   const [fotoAval, setFotoAval]     = useState('');
   const [enviandoAval, setEnviandoAval] = useState(false);
+  // Enviando a foto escolhida para o armazenamento de imagens
+  const [fotoEnviando, setFotoEnviando] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -223,6 +227,48 @@ export default function ProdutoTela({
   // Média exibida: ao vivo depois que carrega (atualiza após enviar)
   const mediaExibida = avaliacoes ? avaliacoes.media : (produto.avaliacao ?? 0);
   const totalExibida = avaliacoes ? avaliacoes.total : (produto.numAvaliacoes ?? 0);
+
+  // ── Foto da avaliação ───────────────────────────────────────────────────────
+  // Em vez de colar um link, a pessoa tira a foto ou escolhe da galeria (o
+  // accept="image/*" abre as duas opções no celular) e o arquivo vai direto
+  // para o mesmo armazenamento de imagens usado nas fotos de perfil e de
+  // produto. O campo continua opcional.
+  async function enviarFotoParaStorage(arquivo: File): Promise<string | null> {
+    const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
+    const caminho = `avaliacoes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+    const { error } = await supabase.storage
+      .from('imagens')
+      .upload(caminho, arquivo, { cacheControl: '3600', upsert: false });
+    if (error) {
+      console.error('Erro ao enviar a foto da avaliação:', error);
+      return null;
+    }
+    const { data } = supabase.storage.from('imagens').getPublicUrl(caminho);
+    return data.publicUrl;
+  }
+
+  async function handleEscolherFoto(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    // Zera o input: assim dá para escolher o mesmo arquivo outra vez
+    e.target.value = '';
+    if (!arquivo) return;
+    if (!arquivo.type.startsWith('image/')) {
+      showToast('erro', 'Escolha um arquivo de imagem.');
+      return;
+    }
+    if (arquivo.size > 5 * 1024 * 1024) {
+      showToast('erro', 'A imagem precisa ter no máximo 5 MB.');
+      return;
+    }
+    setFotoEnviando(true);
+    try {
+      const url = await enviarFotoParaStorage(arquivo);
+      if (url) setFotoAval(url);
+      else showToast('erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } finally {
+      setFotoEnviando(false);
+    }
+  }
 
   async function handleEnviarAvaliacao() {
     if (notaForm < 1) {
@@ -568,22 +614,37 @@ export default function ProdutoTela({
                 value={textoAval}
                 onChange={e => setTextoAval(e.target.value)}
               />
-              <label className="pd-aval-foto-lbl" htmlFor="pd-aval-foto">
-                Link de uma foto do produto que você comprou (opcional)
+              <span className="pd-aval-foto-lbl">
+                Foto do produto que você comprou (opcional)
+              </span>
+              <label className="pd-aval-foto-btn" htmlFor="pd-aval-foto">
+                <IconCamera size={16} />
+                {fotoEnviando ? 'Enviando foto...' : 'Tirar foto ou escolher da galeria'}
               </label>
               <input
                 id="pd-aval-foto"
                 className="pd-aval-foto-input"
-                type="url"
-                maxLength={500}
-                placeholder="https://..."
-                value={fotoAval}
-                onChange={e => setFotoAval(e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={handleEscolherFoto}
+                disabled={fotoEnviando}
               />
+              {fotoAval && (
+                <div className="pd-aval-foto-preview">
+                  <img src={fotoAval} alt="Foto escolhida para a avaliação" />
+                  <button
+                    type="button"
+                    className="pd-aval-foto-remover"
+                    onClick={() => setFotoAval('')}
+                  >
+                    Remover foto
+                  </button>
+                </div>
+              )}
               <button
                 className="pd-aval-btn"
                 onClick={handleEnviarAvaliacao}
-                disabled={enviandoAval || notaForm < 1}
+                disabled={enviandoAval || fotoEnviando || notaForm < 1}
               >
                 {enviandoAval ? 'Enviando...' : jaAvaliou ? 'Atualizar avaliação' : 'Enviar avaliação'}
               </button>

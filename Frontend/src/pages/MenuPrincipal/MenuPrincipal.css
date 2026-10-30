@@ -118,6 +118,14 @@ button {
   display: none;
 }
 
+/* "Crie seu mercado" em amarelo: é a principal chamada da plataforma.
+   O seletor leva o `.nav-links` na frente para ganhar especificidade da
+   regra geral de cor logo abaixo (mesma especificidade, mas vem depois) */
+.nav-links .nav-links__criar a {
+  color: var(--yellow);
+  font-weight: 700;
+}
+
 .nav-links a,
 .login {
   position: relative;
@@ -1259,6 +1267,44 @@ button {
   }
   .nav-links--aberto a::after {
     display: none;
+  }
+
+  /* Destaque das três ações principais no painel: criar mercado em amarelo
+     (mesmo tom do hambúrguer e do avatar) e as duas de conta como botões,
+     copiando o estilo dos botões da barra superior */
+  .nav-links--aberto .nav-links__criar a {
+    box-sizing: border-box;
+    color: var(--yellow);
+    font-weight: 800;
+    padding-left: 11px;
+    background: rgba(255, 212, 38, 0.1);
+    border-left: 3px solid var(--yellow);
+  }
+  .nav-links--aberto .nav-links__entrar a {
+    display: block;
+    margin-top: 12px;
+    padding: 11px 16px;
+    text-align: center;
+    border: 1.5px solid rgba(255, 212, 38, 0.65);
+    border-radius: 22px;
+    background: rgba(255, 212, 38, 0.08);
+    color: var(--yellow);
+    font-weight: 700;
+  }
+  .nav-links--aberto .nav-links__cadastrar a {
+    display: block;
+    margin-top: 8px;
+    padding: 11px 16px;
+    text-align: center;
+    border: none;
+    border-radius: 22px;
+    background: var(--yellow);
+    color: #17233d;
+    font-weight: 700;
+  }
+  .nav-links--aberto .nav-links__entrar a:active,
+  .nav-links--aberto .nav-links__cadastrar a:active {
+    transform: translateY(1px);
   }
   .nav-links--aberto .nav-links__entrar {
     display: block;

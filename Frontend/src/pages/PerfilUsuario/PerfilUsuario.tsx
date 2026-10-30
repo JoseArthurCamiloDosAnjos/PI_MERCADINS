@@ -308,7 +308,8 @@ function IconLixeira({ size = 15 }: { size?: number }) {
 // ─── Endereços de entrega (aba própria do perfil) ─────────────────────────────
 // O cliente cadastra, edita, apaga e escolhe o endereço principal aqui. O
 // principal é o que já vem marcado na hora de fechar o pedido no carrinho.
-function TelaEnderecos() {
+// Exportada porque o painel do vendedor (que também é usuário) usa a mesma aba.
+export function TelaEnderecos() {
   const { enderecos, carregando, adicionar, editar, remover, definirPrincipal } = useEnderecos();
   const { toasts, showToast, dismissToast } = useToast();
   const [popupAberto, setPopupAberto] = useState(false);
@@ -756,7 +757,8 @@ function TelaSeguranca() {
 // atualizado. Logo abaixo do formulário ficam, em cards, os depoimentos que
 // ele mesmo publicou (no formato de "Avaliações feitas") e, em seguida, os
 // depoimentos recentes de quem já usa o Mercadins (o dele com "Seu depoimento").
-function TelaDepoimentos() {
+// Exportada porque o painel do vendedor abre a mesma aba.
+export function TelaDepoimentos() {
   const { toasts, showToast, dismissToast } = useToast();
   const [lista, setLista] = useState<Depoimento[]>([]);
   const [media, setMedia] = useState(0);

@@ -483,9 +483,12 @@ export default function CartScreen({
       {/* Barra superior */}
       <div className="cart-topbar">
         <div className="cart-topbar__left">
-          <button className="cart-back" onClick={onBack} type="button">
+          <button className="cart-back" onClick={onBack} type="button" aria-label="Voltar à loja">
             <IconArrowLeft />
-            Voltar à loja
+            {/* No celular o texto some (não sobra espaço na barra) e fica só a
+                seta, em botão redondo e destacado — o rótulo continua
+                disponível para leitores de tela pelo aria-label acima */}
+            <span className="cart-back__texto">Voltar à loja</span>
           </button>
           <div className="cart-topbar__title">
             <h1>Carrinho</h1>
@@ -509,6 +512,14 @@ export default function CartScreen({
       </div>
 
       <div className="cart-body">
+        {/* No celular o nome do mercado e o endereço vêm numa faixa própria,
+            acima da lista de produtos — a barra superior fica estreita demais
+            para mostrar tudo na mesma linha */}
+        <div className="cart-store-mobile">
+          <strong>{storeName}</strong>
+          <span>{storeLocation}</span>
+        </div>
+
         {/* Lista de itens */}
         {items.length > 0 ? (
           <div className="cart-items">

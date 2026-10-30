@@ -332,7 +332,7 @@ export default function RegistrarMercado() {
   // ── Tela de status (aguardando pagamento) ────────────────────────────────
   if (aguardandoPagamento) {
     return (
-      <div className="register-page">
+      <div className="register-page rmc-page">
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         <div className="left">
           <div className="left-bg" />
@@ -447,7 +447,7 @@ export default function RegistrarMercado() {
 
   // ── Formulário de cadastro ───────────────────────────────────────────────
   return (
-    <div className="register-page">
+    <div className="register-page rmc-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">

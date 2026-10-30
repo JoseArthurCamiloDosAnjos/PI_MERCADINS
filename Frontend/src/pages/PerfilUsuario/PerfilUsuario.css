@@ -882,7 +882,11 @@
 
 .pu-tela-visivel {
   opacity: 1;
-  transform: translateY(0);
+  /* transform: none é obrigatório aqui: qualquer transform (mesmo translateY(0))
+     transforma este bloco no "dono" da posição fixed dos filhos — e os modais
+     (Adicionar mercado favorito, endereços, etc.) sairiam do lugar e ficariam
+     ATRÁS da barra superior presa no topo, cortando o conteúdo no celular. */
+  transform: none;
 }
 
 .pu-tela-oculta {

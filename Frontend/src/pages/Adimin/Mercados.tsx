@@ -248,7 +248,9 @@ export default function Mercados() {
       ) : erro ? (
         <p className="adm-erro">{erro}</p>
       ) : (
-        <div className="adm-table-wrapper">
+        <>
+          <p className="adm-dica-rolagem">Arraste a tabela para o lado para ver todas as colunas</p>
+          <div className="adm-table-wrapper">
           <table className="adm-table">
             <thead>
               <tr>
@@ -306,7 +308,8 @@ export default function Mercados() {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {/* ─── Modal de detalhes do mercado ──────────────────────────────── */}

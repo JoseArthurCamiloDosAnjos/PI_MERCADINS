@@ -8,6 +8,8 @@ gerencia loja, produtos, estoque e pedidos pelo painel.
 - **Site no ar:** https://mercadins.com.br
 - **API no ar:** https://pi-mercadins.onrender.com
 
+**Integrantes do grupo:** José Arthur Camilo dos Anjos, Juan Marcondes e Raul Diaz Vitoria.
+
 ---
 
 ## Como funciona

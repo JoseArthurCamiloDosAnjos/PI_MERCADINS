@@ -1683,3 +1683,154 @@ button {
   background: #16336e;
   transform: translateY(-1px);
 }
+
+  .menu-sanduiche {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .nav-links,
+  .search,
+  .login {
+    display: none;
+  }
+
+  .nav-profile {
+    margin-left: 0;
+  }
+
+  .signup {
+    margin-left: 0;
+  }
+
+  .menu-mobile.aberto {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    background: #0d2858;
+  }
+
+  .menu-mobile a {
+    display: block;
+    padding: 14px 12px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    text-decoration: none;
+  }
+
+  .menu-mobile a:hover,
+  .menu-mobile a:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffd426;
+    outline: none;
+  }
+
+/* Computador: exibe os links normais */
+@media (min-width: 801px) {
+  .navbar > .nav-links {
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar > .menu-mobile-container {
+    display: none;
+  }
+}
+
+/* Celular: esconde os links normais e usa o menu sanduíche */
+@media (max-width: 800px) {
+  .navbar > .nav-links {
+    display: none;
+  }
+
+  .navbar > .menu-mobile-container {
+    display: flex;
+  }
+}
+
+/* ===== CABEÇALHO NO COMPUTADOR ===== */
+@media (min-width: 801px) {
+  .navbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .navbar > .logo {
+    flex-shrink: 0;
+  }
+
+  .navbar > .nav-links {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .navbar > .menu-mobile-container {
+    display: none;
+  }
+
+  .navbar > .search {
+    display: flex;
+    flex: 1 1 200px;
+    min-width: 120px;
+    margin-left: auto;
+  }
+
+  .navbar > .login,
+  .navbar > .signup {
+    display: inline-block;
+    flex-shrink: 0;
+    margin-left: 0;
+    white-space: nowrap;
+  }
+
+  .navbar > .nav-profile {
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+}
+
+/* ===== CABEÇALHO NO CELULAR ===== */
+@media (max-width: 800px) {
+  .navbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .navbar > .logo {
+    flex-shrink: 0;
+  }
+
+  .navbar > .menu-mobile-container {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .navbar > .nav-links,
+  .navbar > .search,
+  .navbar > .login {
+    display: none;
+  }
+
+  .navbar > .signup {
+    display: inline-block;
+    margin-left: 0;
+  }
+
+  .navbar > .nav-profile {
+    margin-left: 0;
+  }
+}
+

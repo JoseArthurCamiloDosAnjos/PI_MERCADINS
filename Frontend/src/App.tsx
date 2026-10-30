@@ -10,6 +10,7 @@ import { useCarrinho } from './hooks/useCarrinho'
 import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
+import AssistantChat from './components/AssistantChat'
 import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
 
 const Login = lazy(() => import('./pages/Login/Login'))
@@ -471,6 +472,7 @@ export default function App() {
             <Rotas />
           </ErrorBoundary>
           <CookieBanner />
+          <AssistantChat />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

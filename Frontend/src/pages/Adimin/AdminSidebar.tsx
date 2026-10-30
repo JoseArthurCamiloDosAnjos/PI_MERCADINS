@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   IconBarChart,
   IconUser,
+  IconStore,
   IconReceipt,
   IconGear,
   IconMenu,
@@ -18,6 +19,7 @@ interface AdminSidebarProps {
 const NAV_ITEMS = [
   { icon: <IconBarChart size={18} />, label: 'Dashboard' },
   { icon: <IconUser size={18} />, label: 'Usuários' },
+  { icon: <IconStore size={18} />, label: 'Mercados' },
   { icon: <IconReceipt size={18} />, label: 'Relatórios' },
   { icon: <IconGear size={18} />, label: 'Configurações' },
 ]
@@ -41,6 +43,10 @@ export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {
 
   function handleLogout() {
     logout()
+    navigate('/')
+  }
+  
+  function handleBack(){
     navigate('/')
   }
 
@@ -82,8 +88,11 @@ export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {
             </button>
           ))}
         </nav>
-
+        
         <div className="adm-footer">
+          <button className ="adm-Menu-btn" onClick={handleBack}>
+            Voltar para o menu
+          </button>
           <button className="adm-logout-btn" onClick={handleLogout}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

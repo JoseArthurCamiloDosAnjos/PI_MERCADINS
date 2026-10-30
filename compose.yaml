@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mercadins-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mercadins
+      POSTGRES_PASSWORD: mercadins
+      POSTGRES_DB: mercadins
+    volumes:
+      - mercadins-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mercadins -d mercadins"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: mercadins-backend:latest
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: mercadins-backend
+    restart: unless-stopped
+    # format: raw — o token Asaas começa com "$"; sem isso o compose
+    # interpretaria como variável e zeraria a chave
+    env_file:
+      - path: ./Backend/.env
+        format: raw
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      DB_PROVIDER: local
+      DATABASE_URL_LOCAL: postgres://mercadins:mercadins@postgres:5432/mercadins
+      FRONTEND_URL: http://localhost:8080
+      ALLOWED_ORIGINS: http://localhost:8080,http://localhost:3001
+    command: ["sh", "-c", "node src/db/migrate.js && node src/server.js"]
+    ports:
+      - "3001:3001"
+    # start_period cobre o tempo das migrações antes do servidor subir
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: mercadins-frontend:latest
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+    container_name: mercadins-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mercadins-pgdata:

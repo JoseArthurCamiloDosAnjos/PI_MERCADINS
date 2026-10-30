@@ -13,6 +13,10 @@
 
 .adm-main {
   flex: 1;
+  /* min-width: 0 permite que a coluna encolha; sem isso a tabela empurra o
+     layout para 1200+px e o corpo (overflow-x: hidden) simplesmente corta
+     o que passa da largura da janela, sem barra de rolagem para alcançar. */
+  min-width: 0;
   margin-left: 240px;
   padding: 24px 32px;
   min-height: 100vh;
@@ -261,7 +265,26 @@
   border-color: #ef4444;
   color: #ef4444;
 }
-
+.adm-Menu-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  color: var(--cinza-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.adm-Menu-btn:hover{
+  border-color: yellow;
+  color: yellow;
+}
 /* ── Stats grid ───────────────────────────────────────────────────────────── */
 
 .adm-stats-grid {
@@ -506,8 +529,31 @@
   margin-bottom: 16px;
 }
 
+/* Aviso de rolagem lateral das tabelas — aparece só quando a tela é estreita
+   demais para caber tudo, para a pessoa saber que pode arrastar para o lado */
+.adm-dica-rolagem {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cinza-texto);
+}
+
+@media (max-width: 1000px) {
+  .adm-dica-rolagem {
+    display: flex;
+  }
+}
+
 .adm-table {
   width: 100%;
+  /* Muitas colunas (8 no mercados, 7 nos usuários): em telas estreitas a
+     tabela não espreme — ela ganha largura mínima e o bloco rola para o lado,
+     mantendo cada coluna legível e o conteúdo inteiro à mostra */
+  min-width: 960px;
   border-collapse: collapse;
   font-family: var(--font);
 }
@@ -521,6 +567,9 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--azul-borda);
+  /* O rótulo nunca quebra no meio: coluna cortada chama mais atenção que
+     rolagem */
+  white-space: nowrap;
 }
 
 .adm-table td {
@@ -540,6 +589,16 @@
 
 .adm-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Selos e botões de ação ficam numa linha só, sem quebrar no meio */
+.adm-badge-status,
+.adm-badge-tipo,
+.adm-status-dot,
+.adm-btn-detalhes,
+.adm-btn-editar,
+.adm-btn-bloquear {
+  white-space: nowrap;
 }
 
 .adm-user-cell {
@@ -771,6 +830,8 @@
 
 .adm-filtros-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-top: 12px;
 }
@@ -930,6 +991,51 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
+}
+
+/* Texto secundário (dono, descrição, campos vazios) */
+.adm-muted {
+  font-size: 0.76rem;
+  color: var(--cinza-texto);
+}
+
+/* Célula com o nome em cima e uma linha fina embaixo (dono da loja) */
+.adm-celula-dupla {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Listas simples do modal de mercado: cupons e equipe */
+.adm-lista-simples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adm-lista-simples li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-sm);
+}
+
+.adm-lista-simples li strong {
+  font-size: 0.82rem;
+  color: var(--amarelo);
+  letter-spacing: 0.03em;
+}
+
+.adm-lista-simples li span {
+  font-size: 0.76rem;
+  color: var(--cinza-texto);
 }
 
 .adm-modal-info-grid {

@@ -6,11 +6,12 @@
 //   • no perfil, em "Endereços de entrega".
 //
 //  Os campos são os mesmos do pedido: Rua, Número, Bairro, CEP, Cidade e
-//  Complemento (opcional). O CEP recebe a máscara sozinho e nada é salvo com
-//  campo obrigatório em falta.
+//  Complemento (opcional). O CEP recebe a máscara sozinho e, assim que os 8
+//  dígitos ficam completos, puxa rua, bairro e cidade sozinho (ViaCEP) —
+//  sobra só número e complemento. Nada é salvo com campo obrigatório em falta.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   type EnderecoEntrega,
@@ -19,6 +20,7 @@ import {
   camposEnderecoFaltando,
   mascaraCep,
 } from "../../utils/endereco";
+import { buscarCep, digitosCep } from "../../utils/cep";
 import "./EnderecoPopup.css";
 
 // Um campo do endereço (rua, número, bairro, CEP, cidade, complemento)
@@ -96,13 +98,76 @@ export default function EnderecoPopup({
   );
   // Só destaca os campos em vermelho depois que a pessoa tenta salvar
   const [tentouSalvar, setTentouSalvar] = useState(false);
+  // Aviso do preenchimento automático (buscando, preenchido ou CEP sem achado)
+  const [avisoCep, setAvisoCep] = useState<string | null>(null);
+  // CEP que já foi consultado — evita buscar a mesma coisa duas vezes
+  const ultimoCepBuscado = useRef<string | null>(
+    digitosCep(enderecoInicial?.cep ?? "") || null
+  );
+  // Guarda se rua/bairro/cidade vieram do ViaCEP (aí o apagar o CEP apaga eles
+  // junto). Digitado à mão, continua na tela.
+  const veioDoCep = useRef(false);
+
+  // Com os 8 dígitos do CEP completos, a ViaCEP devolve rua, bairro e cidade
+  // na hora. Número e complemento continuam com o que a pessoa digitar.
+  useEffect(() => {
+    const digitos = digitosCep(endereco.cep);
+
+    if (digitos.length !== 8) {
+      ultimoCepBuscado.current = null;
+      // o aviso só muda depois desta tecla, nunca dentro do efeito na hora
+      Promise.resolve().then(() => setAvisoCep(null));
+      return;
+    }
+    if (digitos === ultimoCepBuscado.current) return;
+    ultimoCepBuscado.current = digitos;
+
+    let vivo = true;
+    Promise.resolve().then(() => {
+      if (vivo) setAvisoCep("Buscando endereço pelo CEP...");
+    });
+
+    buscarCep(endereco.cep).then((dados) => {
+      if (!vivo) return;
+      if (!dados) {
+        setAvisoCep("CEP não encontrado. Preencha os campos manualmente.");
+        return;
+      }
+      setEndereco((atual) => ({
+        ...atual,
+        rua: dados.rua || atual.rua,
+        bairro: dados.bairro || atual.bairro,
+        cidade: dados.cidade || atual.cidade,
+      }));
+      veioDoCep.current = true;
+      setAvisoCep("Endereço preenchido pelo CEP.");
+    });
+
+    return () => {
+      vivo = false;
+    };
+  }, [endereco.cep]);
 
   const faltando = camposEnderecoFaltando(endereco);
   const camposComErro = new Set<CampoEndereco>(tentouSalvar ? faltando : []);
 
   const mudarCampo = (campo: keyof EnderecoEntrega, valor: string) => {
     const novo: EnderecoEntrega = { ...endereco };
-    novo[campo] = campo === "cep" ? mascaraCep(valor) : valor;
+    if (campo === "cep") {
+      novo.cep = mascaraCep(valor);
+      // Apagou o CEP? O que ele trouxe junto também sai (prático e evita
+      // endereço com CEP em branco e rua antiga)
+      if (valor === "" && veioDoCep.current) {
+        veioDoCep.current = false;
+        novo.rua = "";
+        novo.bairro = "";
+        novo.cidade = "";
+        setAvisoCep(null);
+      }
+      setEndereco(novo);
+      return;
+    }
+    novo[campo] = valor;
     setEndereco(novo);
   };
 
@@ -206,6 +271,12 @@ export default function EnderecoPopup({
               onMudar={(valor) => mudarCampo("complemento", valor)}
             />
           </div>
+
+          {avisoCep && (
+            <p className="endereco-popup__dica" role="status">
+              {avisoCep}
+            </p>
+          )}
 
           {tentouSalvar && faltando.length > 0 && (
             <p className="endereco-popup__erro" role="alert">

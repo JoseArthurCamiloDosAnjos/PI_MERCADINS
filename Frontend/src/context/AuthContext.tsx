@@ -93,6 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("is_admin_login");
+    // Limpa o destino pendente do login: sem isso, o próximo login seria
+    // levado para a tela que a pessoa havia pedido antes de sair.
+    sessionStorage.removeItem("posLoginDestino");
     setUsuario(null);
     setTemMercado(false);
   }

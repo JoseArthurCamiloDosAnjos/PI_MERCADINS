@@ -106,6 +106,26 @@ button {
   list-style: none;
 }
 
+/* Hambúrguer do topo: só aparece no celular (regras no bloco de 600px) */
+.nav-toggle {
+  display: none;
+}
+
+/* Itens "Entrar" e "Criar conta" do painel compacto — escondidos no desktop,
+   onde os botões .login e .signup já existem */
+.nav-links__entrar,
+.nav-links__cadastrar {
+  display: none;
+}
+
+/* "Crie seu mercado" em amarelo: é a principal chamada da plataforma.
+   O seletor leva o `.nav-links` na frente para ganhar especificidade da
+   regra geral de cor logo abaixo (mesma especificidade, mas vem depois) */
+.nav-links .nav-links__criar a {
+  color: var(--yellow);
+  font-weight: 700;
+}
+
 .nav-links a,
 .login {
   position: relative;
@@ -808,6 +828,12 @@ button {
   color: white;
 }
 
+/* Capa do card: mantém o botão de abrir a loja e o de favoritar na mesma área */
+.store-cover-wrap {
+  position: relative;
+  display: block;
+}
+
 .store-favorito-badge {
   position: absolute;
   top: 12px;
@@ -821,6 +847,26 @@ button {
   color: #e11d48;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(4px);
+}
+
+/* Agora é botão: favorita direto do card da home */
+.store-favorito-badge--btn {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.store-favorito-badge--btn:hover {
+  transform: scale(1.1);
+}
+
+.store-favorito-badge--btn:not(.ativo) {
+  color: #94a3b8;
+}
+
+.store-favorito-badge--btn:not(.ativo):hover {
+  color: #e11d48;
 }
 
 .blue {
@@ -1105,23 +1151,20 @@ button {
   .store-preview {
     display: none;
   }
-}
 
-@media (max-width: 800px) {
-  .nav-links,
-  .search,
-  .login {
+  /* A busca sai da barra (ela já existe no hero) e a área da conta
+     anda para a direita no lugar dela — os links continuam visíveis */
+  .search {
     display: none;
   }
 
+  .login,
   .nav-profile {
     margin-left: auto;
   }
+}
 
-  .signup {
-    margin-left: auto;
-  }
-
+@media (max-width: 800px) {
   .stats {
     flex-wrap: wrap;
     gap: 12px;
@@ -1130,6 +1173,144 @@ button {
   .stat {
     flex: 1;
     min-width: 130px;
+  }
+}
+
+/* Até 760px a barra encolhe (logo, links e botões um pouco menores):
+   nada some enquanto ainda cabe espaço na tela */
+@media (max-width: 760px) {
+  .navbar {
+    gap: 12px;
+    position: relative;
+  }
+
+  .site-header .mp-logo-img {
+    height: 52px;
+  }
+
+  .nav-links {
+    gap: 16px;
+  }
+
+  .login,
+  .signup {
+    padding: 9px 14px;
+    font-size: 13.5px;
+  }
+}
+
+/* Abaixo de 600px a barra fica apertada de verdade: links e conta entram
+   no painel do hambúrguer */
+@media (max-width: 600px) {
+  .search,
+  .login,
+  .signup,
+  .nav-links {
+    display: none;
+  }
+
+  /* Botão de menu (hambúrguer) */
+  .nav-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(245, 192, 0, 0.5);
+    border-radius: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .nav-toggle span {
+    display: block;
+    height: 2.5px;
+    border-radius: 2px;
+    background: #f5c000;
+  }
+  .nav-toggle:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  /* Com o avatar logado já empurrando a barra para a direita,
+     o botão não precisa de espaço extra */
+  .nav-profile + .nav-toggle {
+    margin-left: 0;
+  }
+
+  /* Links escondidos por padrão; abrem no painel do hambúrguer */
+  .nav-links.nav-links--aberto {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 4px 16px 12px;
+    background: linear-gradient(135deg, #0b2552, #123b82);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 18px 34px rgba(4, 16, 44, 0.45);
+    z-index: 210;
+  }
+  .nav-links--aberto li {
+    width: 100%;
+  }
+  .nav-links--aberto a {
+    display: block;
+    padding: 13px 2px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .nav-links--aberto a::after {
+    display: none;
+  }
+
+  /* Destaque das três ações principais no painel: criar mercado em amarelo
+     (mesmo tom do hambúrguer e do avatar) e as duas de conta como botões,
+     copiando o estilo dos botões da barra superior */
+  .nav-links--aberto .nav-links__criar a {
+    box-sizing: border-box;
+    color: var(--yellow);
+    font-weight: 800;
+    padding-left: 11px;
+    background: rgba(255, 212, 38, 0.1);
+    border-left: 3px solid var(--yellow);
+  }
+  .nav-links--aberto .nav-links__entrar a {
+    display: block;
+    margin-top: 12px;
+    padding: 11px 16px;
+    text-align: center;
+    border: 1.5px solid rgba(255, 212, 38, 0.65);
+    border-radius: 22px;
+    background: rgba(255, 212, 38, 0.08);
+    color: var(--yellow);
+    font-weight: 700;
+  }
+  .nav-links--aberto .nav-links__cadastrar a {
+    display: block;
+    margin-top: 8px;
+    padding: 11px 16px;
+    text-align: center;
+    border: none;
+    border-radius: 22px;
+    background: var(--yellow);
+    color: #17233d;
+    font-weight: 700;
+  }
+  .nav-links--aberto .nav-links__entrar a:active,
+  .nav-links--aberto .nav-links__cadastrar a:active {
+    transform: translateY(1px);
+  }
+  .nav-links--aberto .nav-links__entrar {
+    display: block;
+  }
+  .nav-links--aberto .nav-links__cadastrar {
+    display: block;
   }
 }
 

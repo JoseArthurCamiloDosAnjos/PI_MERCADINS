@@ -1,0 +1,23 @@
+/* Campo digitável da quantidade: continua com a tipografia do número de antes
+   (cada tela cuida do tamanho/cores via a classe dela) e só perde as bordas
+   nativas do input. */
+.qs-campo {
+  width: 38px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  text-align: center;
+  color: inherit;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.qs-campo::-webkit-outer-spin-button,
+.qs-campo::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

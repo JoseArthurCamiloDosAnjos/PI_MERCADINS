@@ -11,6 +11,9 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
+import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
+import { useEnderecos } from '../../hooks/useEnderecos';
+import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../../utils/endereco';
 import './PerfilUsuario.css';
 import {
   IconLock,
@@ -21,6 +24,9 @@ import {
   IconInbox,
   IconInfo,
   IconMessage,
+  IconMapPin,
+  IconPlus,
+  IconPencil,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
@@ -46,7 +52,7 @@ interface ItemCarrinhoLocal {
   quantidade: number;
 }
 
-const TITULOS = ['Meu perfil', 'Segurança', 'Depoimentos', 'Assinaturas'];
+const TITULOS = ['Meu perfil', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -273,6 +279,184 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
         )}
       </div>
     </div>
+  );
+}
+
+// Ícone de lixeira dos endereços salvos
+function IconLixeira({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+// ─── Endereços de entrega (aba própria do perfil) ─────────────────────────────
+// O cliente cadastra, edita, apaga e escolhe o endereço principal aqui. O
+// principal é o que já vem marcado na hora de fechar o pedido no carrinho.
+// Exportada porque o painel do vendedor (que também é usuário) usa a mesma aba.
+export function TelaEnderecos() {
+  const { enderecos, carregando, adicionar, editar, remover, definirPrincipal } = useEnderecos();
+  const { toasts, showToast, dismissToast } = useToast();
+  const [popupAberto, setPopupAberto] = useState(false);
+  // Guarda o endereço em edição (null = cadastrando um novo)
+  const [editando, setEditando] = useState<EnderecoSalvo | null>(null);
+  // Muda a cada abertura: o pop-up nasce zerado toda vez
+  const [popupChave, setPopupChave] = useState(0);
+  const [salvando, setSalvando] = useState(false);
+  const [erroPopup, setErroPopup] = useState<string | null>(null);
+
+  function abrirNovo() {
+    setEditando(null);
+    setErroPopup(null);
+    setPopupChave(c => c + 1);
+    setPopupAberto(true);
+  }
+
+  function abrirEdicao(endereco: EnderecoSalvo) {
+    setEditando(endereco);
+    setErroPopup(null);
+    setPopupChave(c => c + 1);
+    setPopupAberto(true);
+  }
+
+  function fecharPopup() {
+    setPopupAberto(false);
+    setEditando(null);
+  }
+
+  async function salvarEndereco(dados: EnderecoEntrega) {
+    const eraEdicao = editando;
+    try {
+      setSalvando(true);
+      setErroPopup(null);
+      if (eraEdicao) await editar(eraEdicao.id, dados);
+      else await adicionar(dados);
+      setPopupAberto(false);
+      setEditando(null);
+      showToast('sucesso', eraEdicao ? 'Endereço atualizado com sucesso.' : 'Endereço salvo com sucesso.');
+    } catch (e) {
+      setErroPopup(e instanceof Error ? e.message : 'Não foi possível salvar o endereço.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function apagarEndereco(id: string) {
+    try {
+      await remover(id);
+      showToast('sucesso', 'Endereço removido.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível remover o endereço.');
+    }
+  }
+
+  async function marcarPrincipal(id: string) {
+    try {
+      await definirPrincipal(id);
+      showToast('sucesso', 'Endereço principal alterado.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível definir o endereço principal.');
+    }
+  }
+
+  return (
+    <section>
+      <div className="pu-sec-row">
+        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços de entrega</h2>
+        <button className="pu-btn-link" onClick={abrirNovo}>Adicionar endereço</button>
+      </div>
+
+      <p className="pu-endereco-dica">
+        O endereço marcado como <strong>principal</strong> já vem selecionado
+        automaticamente na hora de fechar o pedido.
+      </p>
+
+      {carregando ? (
+        <p className="pu-empty-inline">Carregando seus endereços...</p>
+      ) : enderecos.length === 0 ? (
+        <div className="pu-empty">
+          <div className="pu-empty-icon"><IconMapPin size={22} /></div>
+          <p>Nenhum endereço cadastrado</p>
+          <span>Adicione um endereço para receber seus pedidos em casa.</span>
+          <button className="pu-btn-endereco" onClick={abrirNovo}>
+            <IconPlus size={15} /> Adicionar endereço
+          </button>
+        </div>
+      ) : (
+        <div className="pu-endereco-lista">
+          {enderecos.map(e => (
+            <div className={`pu-endereco-item${e.principal ? ' pu-endereco-item--principal' : ''}`} key={e.id}>
+              <span className="pu-endereco-icone"><IconMapPin size={16} /></span>
+              <span className="pu-endereco-texto">
+                <strong>
+                  {e.principal ? 'Endereço principal' : 'Endereço de entrega'}
+                  {e.principal && <span className="pu-endereco-badge">Principal</span>}
+                </strong>
+                <span>{formatarEndereco(e)}</span>
+              </span>
+              <span className="pu-endereco-acoes">
+                {!e.principal && (
+                  <button
+                    className="pu-endereco-principal"
+                    onClick={() => marcarPrincipal(e.id)}
+                    title="Usar este endereço como principal"
+                  >
+                    Definir como principal
+                  </button>
+                )}
+                <button
+                  className="pu-endereco-acao"
+                  onClick={() => abrirEdicao(e)}
+                  title="Editar este endereço"
+                  aria-label="Editar este endereço"
+                >
+                  <IconPencil size={14} />
+                </button>
+                <button
+                  className="pu-endereco-remover"
+                  onClick={() => apagarEndereco(e.id)}
+                  title="Remover este endereço"
+                  aria-label="Remover este endereço"
+                >
+                  <IconLixeira />
+                </button>
+              </span>
+            </div>
+          ))}
+          <button className="pu-btn-endereco" onClick={abrirNovo}>
+            <IconPlus size={15} /> Adicionar endereço
+          </button>
+        </div>
+      )}
+
+      <EnderecoPopup
+        key={popupChave}
+        aberto={popupAberto}
+        enderecoInicial={editando ?? undefined}
+        titulo={editando ? 'Editar endereço de entrega' : 'Adicionar endereço de entrega'}
+        salvando={salvando}
+        erro={erroPopup}
+        onFechar={fecharPopup}
+        onSalvar={salvarEndereco}
+      />
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </section>
   );
 }
 
@@ -570,9 +754,11 @@ function TelaSeguranca() {
 // ─── Tela de depoimentos ──────────────────────────────────────────────────────
 // O cliente conta o que achou da plataforma: uma nota de 1 a 5 estrelas e um
 // texto. Cada cliente deixa um depoimento — se escrever de novo, o anterior é
-// atualizado. Abaixo do formulário, ficam os depoimentos recentes de quem já
-// usa o Mercadins (inclusive o dele, marcado com "Seu depoimento").
-function TelaDepoimentos() {
+// atualizado. Logo abaixo do formulário ficam, em cards, os depoimentos que
+// ele mesmo publicou (no formato de "Avaliações feitas") e, em seguida, os
+// depoimentos recentes de quem já usa o Mercadins (o dele com "Seu depoimento").
+// Exportada porque o painel do vendedor abre a mesma aba.
+export function TelaDepoimentos() {
   const { toasts, showToast, dismissToast } = useToast();
   const [lista, setLista] = useState<Depoimento[]>([]);
   const [media, setMedia] = useState(0);
@@ -582,6 +768,9 @@ function TelaDepoimentos() {
   const [jaPublicou, setJaPublicou] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
+
+  // Depoimentos publicados por esta pessoa (a lista completa tem os de todos)
+  const meus = lista.filter(d => d.minha);
 
   const carregar = useCallback(() => {
     api.listarDepoimentos()
@@ -674,6 +863,38 @@ function TelaDepoimentos() {
 
       <div className="pu-divider" />
 
+      {/* Só os depoimentos publicados por esta pessoa — no mesmo formato da
+          seção "Avaliações feitas" do perfil */}
+      <section>
+        <div className="pu-sec-row">
+          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Meus depoimentos</h2>
+          {meus.length > 0 && (
+            <span className="pu-dep-resumo">
+              {meus.length} publicado{meus.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {meus.length === 0 ? (
+          <div className="pu-empty">
+            <div className="pu-empty-icon"><IconStar size={22} /></div>
+            <p>Você ainda não publicou depoimento</p>
+            <span>Conte como foi a sua experiência e ajude outras pessoas a conhecer o Mercadins.</span>
+          </div>
+        ) : (
+          <div className="pu-rev-grid">
+            {meus.map((d, i) => (
+              <div key={d.id} className="pu-rev-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+                <p className="pu-rev-store">{new Date(d.data_cadastro).toLocaleDateString('pt-BR')}</p>
+                <Stars n={d.nota} />
+                <p className="pu-rev-text">{d.texto}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="pu-divider" />
+
       <section>
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Depoimentos de quem já usa</h2>
@@ -758,6 +979,7 @@ export default function PerfilUsuario() {
       onPedidoCancelado={marcarPedidoCancelado}
     />,
     <TelaSeguranca key="seguranca" />,
+    <TelaEnderecos key="enderecos" />,
     <TelaDepoimentos key="depoimentos" />,
     <TelaAssinaturas key="assinaturas" />,
   ];

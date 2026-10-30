@@ -11,6 +11,9 @@ import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
+// As abas de Endereços e Depoimentos são as mesmas do perfil do usuário: o
+// vendedor também é uma conta comum, então reaproveitamos as telas inteiras.
+import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
 import {
@@ -45,18 +48,18 @@ interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number
 // ícones que giram nos cards de mercado (na falta de uma imagem real da loja)
 const MKT_ICONS = [IconShoppingCart, IconStore, IconShoppingBag, IconPackage];
 
-// Admin cria o mercado direto; usuário comum escolhe o plano antes
-function rotaCriarMercado(ehAdmin?: boolean) {
-  return ehAdmin ? '/registrar-mercado' : '/planos';
-}
+// Escolher o plano é sempre o primeiro passo antes de criar um mercado
+const ROTA_CRIAR_MERCADO = '/planos';
 
 const NAV_ITEMS = [
   { icon: <IconUser size={18} />, label: 'Painel do vendedor' },
   { icon: <IconLock size={18} />, label: 'Segurança' },
+  { icon: <IconMapPin size={18} />, label: 'Endereços' },
+  { icon: <IconStar size={18} />, label: 'Depoimentos' },
   { icon: <IconCreditCard size={18} />, label: 'Assinaturas' },
 ];
 
-const TITULOS = ['Painel do vendedor', 'Segurança', 'Assinaturas'];
+const TITULOS = ['Painel do vendedor', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -96,8 +99,13 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
 }) {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
+  // Painel limpo: mostra só os 6 primeiros mercados. O botão ao lado do
+  // título abre a lista completa quando existem mais do que isso (e some
+  // quando já não há nada a expandir, para não ficar um botão sem função).
+  const LIMITE_MERCADOS = 6;
+  const [mostrandoTodos, setMostrandoTodos] = useState(false);
+  const mercadosVisiveis = mostrandoTodos ? mercados : mercados.slice(0, LIMITE_MERCADOS);
 
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados ativos' },
@@ -124,7 +132,11 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
       <section>
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStore size={15} /></span>Mercados gerenciados</h2>
-          <button className="pu-btn-link">Gerenciar todos</button>
+          {mercados.length > LIMITE_MERCADOS && (
+            <button className="pu-btn-link" onClick={() => setMostrandoTodos(antes => !antes)}>
+              {mostrandoTodos ? 'Mostrar menos' : `Ver todos (${mercados.length})`}
+            </button>
+          )}
         </div>
         <div className="pv-mkt-row">
           {carregando ? (
@@ -135,7 +147,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
               <p>Nenhum mercado cadastrado ainda</p>
               <span>Crie seu primeiro mercado e comece a vender.</span>
             </div>
-          ) : mercados.map((m, i) => {
+          ) : mercadosVisiveis.map((m, i) => {
             const MktIcon = MKT_ICONS[i % MKT_ICONS.length];
             return (
               <div key={m.id_mercado} className="pv-mkt-card" style={{ animationDelay: `${0.3 + i * 0.09}s` }}
@@ -150,7 +162,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
             );
           })}
           <div className="pv-mkt-card pv-mkt-add" style={{ animationDelay: '0.57s' }}
-            onClick={() => navigate(rotaCriarMercado(usuario?.is_admin))}>
+            onClick={() => navigate(ROTA_CRIAR_MERCADO)}>
             <span className="pv-mkt-plus">+</span>
             <p className="pv-mkt-nome pv-mkt-add-label">Novo mercado</p>
           </div>
@@ -485,6 +497,8 @@ export default function PerfilVendedor() {
   const TELAS = [
     <TelaPerfil mercados={mercados} carregando={carregando} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
     <TelaSeguranca />,
+    <TelaEnderecos key="enderecos" />,
+    <TelaDepoimentos key="depoimentos" />,
     <TelaAssinaturas key="assinaturas" />,
   ];
 
@@ -505,7 +519,7 @@ export default function PerfilVendedor() {
       <main className="pv-main">
         <div className="pv-topbar">
           <span className="pv-topbar-title">{TITULOS[nav]}</span>
-          <button className="pv-btn-new" onClick={() => navigate(rotaCriarMercado(usuario?.is_admin))}>+ Novo Mercado</button>
+          <button className="pv-btn-new" onClick={() => navigate(ROTA_CRIAR_MERCADO)}>+ Novo Mercado</button>
         </div>
         <div className="pv-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>

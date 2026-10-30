@@ -11,7 +11,7 @@ import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
 import AssistantChat from './components/AssistantChat'
-import { type EnderecoEntrega, carregarEndereco, salvarEndereco, formatarEndereco } from './utils/endereco'
+import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -100,6 +100,19 @@ function ProdutoTelaWrapper() {
 
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a tela de carrinho ───────
 
+// Itens do carrinho no formato que o backend usa para calcular o cupom:
+// categoria, preço e quantidade de cada item. É a base de cálculo quando o
+// cupom vale só para algumas categorias de produtos (escopo do cupom).
+function itensParaCupom(
+  itens: { produto: { id_categoria?: unknown; preco?: unknown }; quantidade?: unknown }[]
+) {
+  return itens.map(item => ({
+    id_categoria: Number(item.produto.id_categoria),
+    preco: Number(item.produto.preco ?? 0),
+    quantidade: Number(item.quantidade),
+  }))
+}
+
 // A5 — Escolhas do carrinho (entrega, cupom, agendamento) ficam guardadas no
 // navegador por mercado: se o cliente fechar a página ou recarregar, tudo volta
 // como estava. O cupom é revalidado no servidor ao voltar (o desconto nunca
@@ -124,6 +137,7 @@ function salvarEscolhas(mercadoId: number, escolhas: { tipoEntrega?: 'entrega' |
 function CartWrapper() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const [mercadoId, setMercadoId] = useState<number | null>(null)
   const [mercadoNome, setMercadoNome] = useState<string>('')
   const [mercadoLocal, setMercadoLocal] = useState<string>('')
@@ -143,9 +157,17 @@ function CartWrapper() {
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
-  // Endereço de entrega (item 1): fica salvo no navegador para o cliente não
-  // digitar toda vez que voltar a comprar
-  const [endereco, setEndereco] = useState<EnderecoEntrega>(() => carregarEndereco())
+  // Endereço de entrega: só existe depois do login — a conta é a fonte oficial.
+  // Deslogado, nada é carregado e nada fica guardado neste aparelho.
+  const [endereco, setEndereco] = useState<EnderecoEntrega>(() =>
+    usuario ? carregarEndereco() : { ...ENDERECO_VAZIO }
+  )
+
+  // Saiu da conta (ou nunca entrou)? apaga o endereço que ficou salvo aqui.
+  useEffect(() => {
+    if (!usuario) limparEnderecoSalvo()
+  }, [usuario])
+
   const { toasts, showToast, dismissToast } = useToast()
   const carrinho = useCarrinho(mercadoId ?? 0)
   // Subtotal atual para revalidar o cupom restaurado (A5)
@@ -193,7 +215,7 @@ function CartWrapper() {
   useEffect(() => {
     if (!mercadoId || !cupomRestaurado || cupom || subtotalItens <= 0) return
     let vivo = true
-    api.validarCupom(mercadoId, cupomRestaurado, subtotalItens)
+    api.validarCupom(mercadoId, cupomRestaurado, subtotalItens, itensParaCupom(carrinho.itens))
       .then(resultado => {
         if (vivo) setCupom({ codigo: resultado.codigo, desconto: Number(resultado.desconto) })
       })
@@ -203,7 +225,7 @@ function CartWrapper() {
       })
       .finally(() => { if (vivo) setCupomRestaurado(null) })
     return () => { vivo = false }
-  }, [mercadoId, cupomRestaurado, cupom, subtotalItens])
+  }, [mercadoId, cupomRestaurado, cupom, subtotalItens, carrinho.itens])
 
   // A5 — Toda mudança de escolha é gravada no navegador
   useEffect(() => {
@@ -215,10 +237,11 @@ function CartWrapper() {
     })
   }, [mercadoId, tipoEntrega, cupom, agendamento])
 
-  // Item 1 — o endereço de entrega também é guardado no navegador
+  // Item 1 — o endereço escolhido é guardado no navegador, mas só enquanto a
+  // sessão está aberta (deslogado não grava endereço neste aparelho)
   useEffect(() => {
-    salvarEndereco(endereco)
-  }, [endereco])
+    if (usuario) salvarEndereco(endereco)
+  }, [endereco, usuario])
 
   // Entrega ou retirada efetiva (mesma regra usada dentro da tela do carrinho:
   // loja que só faz uma das opções já nasce com ela escolhida)
@@ -247,7 +270,7 @@ function CartWrapper() {
     if (!mercadoId) return
     setVerificandoCupom(true)
     try {
-      const resultado = await api.validarCupom(mercadoId, codigo, subtotal)
+      const resultado = await api.validarCupom(mercadoId, codigo, subtotal, itensParaCupom(carrinho.itens))
       setCupom({ codigo: resultado.codigo, desconto: Number(resultado.desconto) })
       showToast('sucesso', `Cupom ${resultado.codigo} aplicado: ${Number(resultado.desconto).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} de desconto.`)
     } catch (e: unknown) {
@@ -427,7 +450,7 @@ function Rotas() {
         <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
         <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
-        <Route path="/planos"            element={usuario?.is_admin ? <Navigate to="/registrar-mercado" /> : <SelecionarPlano />} />
+        <Route path="/planos"            element={<SelecionarPlano />} />
         <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
         <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
         <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />

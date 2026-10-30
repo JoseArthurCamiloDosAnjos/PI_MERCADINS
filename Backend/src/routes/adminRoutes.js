@@ -17,6 +17,9 @@ router.delete('/usuarios/:id',       adminController.excluirUsuario)
 router.get('/relatorios',   adminController.relatorios)
 router.get('/atividade',    adminController.atividadeRecente)
 router.get('/alertas',      adminController.alertas)
+// Aba "Mercados": lista e detalhe das lojas da plataforma
+router.get('/mercados',        adminController.listarMercadosAdmin)
+router.get('/mercados/:id',    adminController.detalheMercadoAdmin)
 router.put('/mercados/:id/bloquear', adminController.bloquearMercado)
 
 module.exports = router

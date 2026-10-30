@@ -93,6 +93,12 @@
   color: var(--text-muted);
 }
 
+/* Só no celular: o mercado e o endereço aparecem numa faixa própria acima da
+   lista de produtos (escondida no desktop, onde cabem na barra superior) */
+.cart-store-mobile {
+  display: none;
+}
+
 .cart-topbar__store strong {
   color: var(--text-secondary);
 }
@@ -290,7 +296,8 @@
   cursor: not-allowed;
 }
 
-.qty-stepper span {
+.qty-stepper span,
+.qty-stepper input {
   min-width: 26px;
   text-align: center;
   font-size: 13px;
@@ -450,6 +457,13 @@
 .cart-summary {
   position: sticky;
   top: 92px;
+  /* Fica fixo na tela: só a lista de itens rola. Se o resumo for maior que
+     a janela, ele ganha uma rolagem própria para o botão continuar acessível.
+     sem `overscroll-behavior: contain`, para que a rolagem sempre devolva
+     o controle para a página — ninguém fica preso dentro do painel */
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -457,6 +471,15 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.cart-summary::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cart-summary::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 8px;
 }
 
 .cart-summary h2 {
@@ -761,57 +784,24 @@
   color: var(--text-secondary);
 }
 
-.cart-endereco__grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.cart-endereco__campo {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  grid-column: span 2;
-  min-width: 0;
-}
-
-.cart-endereco__campo--rua         { grid-column: span 3; }
-.cart-endereco__campo--numero      { grid-column: span 1; }
-.cart-endereco__campo--bairro      { grid-column: span 2; }
-.cart-endereco__campo--cep         { grid-column: span 2; }
-.cart-endereco__campo--cidade      { grid-column: span 2; }
-.cart-endereco__campo--complemento { grid-column: span 2; }
-
-.cart-endereco__campo label {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.cart-endereco__campo input {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  min-width: 0;
-  transition: border-color 0.15s ease;
-}
-
-.cart-endereco__campo input::placeholder {
+/* Aviso curto acima da lista (ex.: cliente não logado, ou carregando) */
+.cart-endereco__nota {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 
-.cart-endereco__campo input:focus {
-  border-color: var(--accent);
-}
-
-.cart-endereco__campo.is-erro input {
-  border-color: var(--danger);
+/* Link "Entrar" dentro do aviso de cliente não logado */
+.cart-endereco__nota button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .cart-endereco__erro {
@@ -819,18 +809,6 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--danger);
-}
-
-@media (max-width: 640px) {
-  .cart-endereco__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cart-endereco__campo,
-  .cart-endereco__campo--rua,
-  .cart-endereco__campo--numero,
-  .cart-endereco__campo--bairro,
-  .cart-endereco__campo--cep,
-  .cart-endereco__campo--cidade,
-  .cart-endereco__campo--complemento { grid-column: span 1; }
-  .cart-endereco__campo--rua { grid-column: span 2; }
 }
 
 /* Agendamento: quando o cliente quer receber ou retirar */
@@ -964,6 +942,12 @@
 
   .cart-summary {
     position: static;
+    /* Uma coluna no celular: o resumo deixa de ter rolagem interna e passa a
+       seguir a página — dá para rolar até o fim e voltar ao topo livremente,
+       alcançando todos os itens sem depender da barra lateral */
+    max-height: none;
+    overflow-y: visible;
+    overscroll-behavior: auto;
   }
 
   .cart-item {
@@ -995,6 +979,52 @@
   }
   .cart-topbar__title h1 {
     font-size: 17px;
+  }
+  /* Sem espaço para o texto na barra: fica só a seta, em botão redondo com o
+     amarelo da marca para destacar a saída para a loja */
+  .cart-back__texto {
+    display: none;
+  }
+  .cart-back {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--accent);
+  }
+  .cart-back:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  /* O mercado e o endereço saem da barra e viram uma faixa acima dos itens */
+  .cart-topbar__store {
+    display: none;
+  }
+  .cart-store-mobile {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 11px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+  }
+  .cart-store-mobile strong {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .cart-store-mobile span {
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .cart-store-mobile span::before {
+    content: '· ';
   }
   .cart-item {
     grid-template-columns: 56px 1fr;
@@ -1031,8 +1061,9 @@
     gap: 10px;
   }
   .cart-back {
-    padding: 6px 8px;
-    font-size: 12px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
   }
   .cart-topbar__title h1 {
     font-size: 15px;
@@ -1057,3 +1088,273 @@
     font-size: 14px;
   }
 }
+
+/* ============================================================
+   Endereço de entrega — radiobuttons (igual ao pagamento)
+   ============================================================ */
+
+.cart-endereco__opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--bg-panel);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.cart-endereco__opcao.is-ativa {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-titulo {
+  color: var(--text-primary);
+}
+
+.cart-endereco__opcao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-icone {
+  color: var(--accent);
+}
+
+.cart-endereco__opcao-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cart-endereco__opcao-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-titulo {
+  color: var(--text-primary);
+}
+
+.cart-endereco__opcao-descricao {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-endereco__opcao.is-ativa .cart-endereco__opcao-descricao {
+  color: var(--text-secondary);
+}
+
+/* Botão "Cadastrar endereço de entrega" quando ainda não há endereço */
+.cart-endereco__btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1.5px dashed var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.15s ease;
+}
+
+.cart-endereco__btn-adicionar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Parte clicável de cada endereço (o rádio fica à esquerda e a lixeira à
+   direita, fora do label para não marcar o rádio sem querer) */
+.cart-endereco__opcao-conteudo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* Lixeira do endereço — apaga só aquele endereço salvo */
+.cart-endereco__remover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.cart-endereco__remover:hover {
+  color: #e2574c;
+  border-color: #e2574c;
+  background: rgba(226, 87, 76, 0.1);
+}
+
+/* Lápis — abre o endereço escolhido para edição no pop-up */
+.cart-endereco__editar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.cart-endereco__editar:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Selo "Principal" — o endereço que já vem marcado no carrinho */
+.cart-endereco__selo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   Pergunta "este endereço é o seu principal?"
+   Enviado para o <body>, então a paleta é declarada aqui.
+   ============================================================ */
+.cart-principal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.cart-principal {
+  --bg-card: #142744;
+  --border-subtle: #22375c;
+  --text-primary: #f2f5fa;
+  --text-secondary: #91a3c0;
+  --accent: #f5b90c;
+  --accent-hover: #ffc720;
+  --accent-ink: #241902;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --font-display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  padding: 22px;
+  font-family: var(--font-display);
+}
+
+.cart-principal__titulo {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cart-principal__texto {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.cart-principal__texto strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cart-principal__acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cart-principal__btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cart-principal__btn--nao {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.cart-principal__btn--nao:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.cart-principal__btn--sim {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+}
+
+.cart-principal__btn--sim:hover {
+  background: var(--accent-hover);
+}
+

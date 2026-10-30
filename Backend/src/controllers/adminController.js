@@ -112,68 +112,70 @@ async function dashboard(_req, res) {
 async function listarUsuarios(req, res) {
   try {
     const sql = await conectar()
-    const { busca = '', tipo = '', pagina = 1, limite = 20 } = req.query
-    const offset = (Number(pagina) - 1) * Number(limite)
+    const { busca = '', tipo = '', status = '', pagina = 1, limite = 20 } = req.query
 
-    // Filtro por tipo
-    let whereAdmin = ''
-    if (tipo === 'admin') {
-      whereAdmin = 'AND u.is_admin = TRUE'
-    } else if (tipo === 'vendedor') {
-      whereAdmin = `AND u.id_usuario IN (SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin'))`
-    } else if (tipo === 'cliente') {
-      whereAdmin = `AND u.id_usuario NOT IN (SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin')) AND u.is_admin = FALSE`
-    }
+    const paginaNum = Math.max(1, Number(pagina) || 1)
+    const limiteNum = Math.min(100, Math.max(1, Number(limite) || 20))
+    const offset = (paginaNum - 1) * limiteNum
 
-    // Usando query raw para suportar filtros dinâmicos com ILIKE
-    const buscaLower = `%${busca.toLowerCase()}%`
+    // Texto da busca em minúsculas (a comparação usa LOWER + LIKE)
+    const textoBusca = String(busca).trim()
+    const buscaLower = `%${textoBusca.toLowerCase()}%`
+    const tipoFiltro = ['admin', 'vendedor', 'cliente'].includes(tipo) ? tipo : ''
+    const statusFiltro = ['ativo', 'inativo', 'bloqueado'].includes(status) ? status : ''
 
-    let usuarios
-    if (busca) {
-      usuarios = await sql`
-        SELECT
-          u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro, u.foto_perfil, u.is_admin, u.status, u.ultimo_acesso,
-          COALESCE(
-            (SELECT papel FROM usuarios_mercados WHERE id_usuario = u.id_usuario LIMIT 1),
-            'cliente'
-          ) AS papel,
-          EXISTS(SELECT 1 FROM usuarios_mercados WHERE id_usuario = u.id_usuario AND papel IN ('dono','admin')) AS is_vendedor
-        FROM usuarios u
-        WHERE (LOWER(u.nome) LIKE ${buscaLower} OR LOWER(u.email) LIKE ${buscaLower})
-        ORDER BY u.data_cadastro DESC
-        LIMIT ${Number(limite)} OFFSET ${offset}
-      `
-    } else {
-      usuarios = await sql`
-        SELECT
-          u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro, u.foto_perfil, u.is_admin, u.status, u.ultimo_acesso,
-          COALESCE(
-            (SELECT papel FROM usuarios_mercados WHERE id_usuario = u.id_usuario LIMIT 1),
-            'cliente'
-          ) AS papel,
-          EXISTS(SELECT 1 FROM usuarios_mercados WHERE id_usuario = u.id_usuario AND papel IN ('dono','admin')) AS is_vendedor
-        FROM usuarios u
-        ORDER BY u.data_cadastro DESC
-        LIMIT ${Number(limite)} OFFSET ${offset}
-      `
-    }
+    // Todos os filtros entraram na consulta (antes o filtro de status que a
+    // tela enviava era ignorado e a paginação contava todo mundo).
+    // As condições são fixas e os valores vão como parâmetro — o banco do
+    // projeto não aceita montar SQL dinâmico colando texto.
+    const usuarios = await sql`
+      SELECT
+        u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro, u.foto_perfil, u.is_admin, u.status, u.ultimo_acesso,
+        COALESCE(
+          (SELECT papel FROM usuarios_mercados WHERE id_usuario = u.id_usuario LIMIT 1),
+          'cliente'
+        ) AS papel,
+        EXISTS(SELECT 1 FROM usuarios_mercados WHERE id_usuario = u.id_usuario AND papel IN ('dono','admin')) AS is_vendedor
+      FROM usuarios u
+      WHERE (${textoBusca}::text = ''
+            OR LOWER(u.nome) LIKE ${buscaLower}
+            OR LOWER(u.email) LIKE ${buscaLower})
+        AND (
+          ${tipoFiltro}::text = ''
+          OR (${tipoFiltro} = 'admin' AND u.is_admin = TRUE)
+          OR (${tipoFiltro} = 'vendedor' AND u.id_usuario IN (
+                SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin')))
+          OR (${tipoFiltro} = 'cliente' AND u.is_admin = FALSE AND u.id_usuario NOT IN (
+                SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin')))
+        )
+        AND (${statusFiltro}::text = '' OR COALESCE(u.status, 'ativo') = ${statusFiltro})
+      ORDER BY u.data_cadastro DESC
+      LIMIT ${limiteNum} OFFSET ${offset}
+    `
 
-    // Filtrar por tipo no JS (mais simples que SQL dinâmico)
-    let filtrados = usuarios
-    if (tipo === 'admin') {
-      filtrados = usuarios.filter(u => u.is_admin)
-    } else if (tipo === 'vendedor') {
-      filtrados = usuarios.filter(u => u.is_vendedor && !u.is_admin)
-    } else if (tipo === 'cliente') {
-      filtrados = usuarios.filter(u => !u.is_vendedor && !u.is_admin)
-    }
+    const [contFiltrados] = await sql`
+      SELECT COUNT(*)::int AS total FROM usuarios u
+      WHERE (${textoBusca}::text = ''
+            OR LOWER(u.nome) LIKE ${buscaLower}
+            OR LOWER(u.email) LIKE ${buscaLower})
+        AND (
+          ${tipoFiltro}::text = ''
+          OR (${tipoFiltro} = 'admin' AND u.is_admin = TRUE)
+          OR (${tipoFiltro} = 'vendedor' AND u.id_usuario IN (
+                SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin')))
+          OR (${tipoFiltro} = 'cliente' AND u.is_admin = FALSE AND u.id_usuario NOT IN (
+                SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin')))
+        )
+        AND (${statusFiltro}::text = '' OR COALESCE(u.status, 'ativo') = ${statusFiltro})
+    `
 
+    // Métricas dos cartões: sempre do sistema inteiro (não mudam com o filtro)
     const [contTotal]  = await sql`SELECT COUNT(*)::int AS total FROM usuarios`
     const [contAdmin]  = await sql`SELECT COUNT(*)::int AS total FROM usuarios WHERE is_admin = TRUE`
     const [contVend]   = await sql`SELECT COUNT(*)::int AS total FROM usuarios WHERE id_usuario IN (SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin'))`
 
     res.json({
-      usuarios: filtrados,
+      usuarios,
       metricas: {
         total: contTotal.total,
         administradores: contAdmin.total,
@@ -181,9 +183,10 @@ async function listarUsuarios(req, res) {
         clientes: contTotal.total - contVend.total - contAdmin.total,
       },
       paginacao: {
-        pagina: Number(pagina),
-        limite: Number(limite),
-        total: contTotal.total,
+        pagina: paginaNum,
+        limite: limiteNum,
+        total: contFiltrados.total,
+        totalPaginas: Math.max(1, Math.ceil(contFiltrados.total / limiteNum)),
       },
     })
   } catch (err) {
@@ -197,13 +200,32 @@ async function listarUsuarios(req, res) {
 async function relatorios(req, res) {
   try {
     const sql = await conectar()
-    const { periodo = 'tudo', data_inicio, data_fim } = req.query
+    const { periodo = 'tudo', data_inicio } = req.query
 
-    let filtroData = ''
-    let filtroMercado = ''
-    if (periodo !== 'tudo' && data_inicio) {
-      filtroData = data_inicio
+    // Período escolhido na tela (dia, mês ou ano) → [início, fim[
+    // Sem período (ou valor fora do padrão) fica null e nada é filtrado.
+    const pad = n => String(n).padStart(2, '0')
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 00:00:00`
+    const valor = typeof data_inicio === 'string' ? data_inicio.trim() : ''
+
+    let inicio = null
+    let fim = null
+    if (periodo === 'dia' && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+      const [a, m, d] = valor.split('-').map(Number)
+      inicio = fmt(new Date(a, m - 1, d))
+      fim = fmt(new Date(a, m - 1, d + 1))
+    } else if (periodo === 'mes' && /^\d{4}-\d{2}$/.test(valor)) {
+      const [a, m] = valor.split('-').map(Number)
+      inicio = fmt(new Date(a, m - 1, 1))
+      fim = fmt(new Date(a, m, 1))
+    } else if (periodo === 'ano' && /^\d{4}$/.test(valor)) {
+      const a = Number(valor)
+      inicio = fmt(new Date(a, 0, 1))
+      fim = fmt(new Date(a + 1, 0, 1))
     }
+
+    // Cada bloco repete a mesma janela de datas: a camada de banco só aceita
+    // valor como parâmetro, então o texto do SQL não pode ser montado em código.
 
     // Métricas gerais
     const [totalMercados]  = await sql`SELECT COUNT(*)::int AS total FROM mercados`
@@ -215,18 +237,29 @@ async function relatorios(req, res) {
     const [entregasConcluidas] = await sql`
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE status = 'entregue'
+        AND (${inicio}::text IS NULL
+             OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
     `
     const [receitaTotal] = await sql`
       SELECT COALESCE(SUM(valor_total), 0)::numeric AS total FROM historico_compras
+      WHERE (${inicio}::text IS NULL
+             OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
     `
 
-    // Pedidos por período (últimos 6 meses)
+    // Pedidos por período (últimos 6 meses, ou só o período escolhido)
     const pedidosPorPeriodo = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', data_compra), 'YYYY-MM') AS mes,
         COUNT(*)::int AS total
       FROM historico_compras
-      WHERE data_compra >= NOW() - INTERVAL '6 months'
+      WHERE (
+        ${inicio}::text IS NULL
+        AND data_compra >= NOW() - INTERVAL '6 months'
+      ) OR (
+        ${inicio}::text IS NOT NULL
+        AND data_compra >= ${inicio}::timestamp
+        AND data_compra < ${fim}::timestamp
+      )
       GROUP BY mes ORDER BY mes
     `
 
@@ -241,6 +274,8 @@ async function relatorios(req, res) {
     const entregasPorTipo = await sql`
       SELECT status, COUNT(*)::int AS total
       FROM historico_compras
+      WHERE (${inicio}::text IS NULL
+             OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
       GROUP BY status ORDER BY total DESC
     `
 
@@ -616,6 +651,138 @@ async function excluirUsuario(req, res) {
   }
 }
 
+// ─── Mercados (visão do administrador) ──────────────────────────────────────
+// Aba "Mercados" do painel: lista todas as lojas da plataforma (inclusive as
+// bloqueadas), com busca, filtro de status e contagem de produtos/cupons.
+// Também serve para entender por que uma loja não aparece no site público.
+
+async function listarMercadosAdmin(req, res) {
+  try {
+    const sql = await conectar()
+    const { busca = '', status = '' } = req.query
+
+    const texto = String(busca).trim()
+    const buscaLower = `%${texto.toLowerCase()}%`
+    const statusFiltro = ['ativo', 'bloqueado', 'suspenso'].includes(status) ? status : ''
+
+    const mercados = await sql`
+      SELECT
+        m.id_mercado, m.nome, m.slug, m.cidade, m.estado, m.status, m.plano,
+        m.cnpj, m.email, m.telefone, m.data_cadastro, m.pedido_minimo, m.taxa_entrega,
+        m.categorias, m.oferece_entrega, m.oferece_retirada,
+        (SELECT COUNT(*)::int FROM categorias c WHERE c.id_mercado = m.id_mercado) AS total_categorias,
+        (SELECT COUNT(*)::int FROM produtos p
+           JOIN categorias c ON c.id_categoria = p.id_categoria
+          WHERE c.id_mercado = m.id_mercado) AS total_produtos,
+        (SELECT COUNT(*)::int FROM cupons cp WHERE cp.id_mercado = m.id_mercado) AS total_cupons,
+        (SELECT COUNT(*)::int FROM cupons cp WHERE cp.id_mercado = m.id_mercado AND cp.ativo) AS total_cupons_ativos,
+        (SELECT COUNT(*)::int FROM historico_compras h WHERE h.id_mercado = m.id_mercado) AS total_pedidos,
+        (SELECT u.nome FROM usuarios_mercados um
+           JOIN usuarios u ON u.id_usuario = um.id_usuario
+          WHERE um.id_mercado = m.id_mercado AND um.papel = 'dono'
+          LIMIT 1) AS dono
+      FROM mercados m
+      WHERE (${texto}::text = ''
+            OR LOWER(m.nome) LIKE ${buscaLower}
+            OR LOWER(COALESCE(m.slug, '')) LIKE ${buscaLower}
+            OR LOWER(COALESCE(m.cidade, '')) LIKE ${buscaLower}
+            OR LOWER(COALESCE(m.cnpj, '')) LIKE ${buscaLower})
+        AND (${statusFiltro}::text = '' OR m.status = ${statusFiltro})
+      ORDER BY
+        CASE WHEN m.status = 'ativo' THEN 0 ELSE 1 END,
+        m.data_cadastro DESC,
+        m.nome ASC
+      LIMIT 500
+    `
+
+    const [{ total }] = await sql`SELECT COUNT(*)::int AS total FROM mercados`
+    const [{ ativos }] = await sql`SELECT COUNT(*)::int AS ativos FROM mercados WHERE status = 'ativo'`
+    const [{ bloqueados }] = await sql`SELECT COUNT(*)::int AS bloqueados FROM mercados WHERE status <> 'ativo'`
+
+    res.json({
+      mercados,
+      metricas: { total, ativos, bloqueados },
+    })
+  } catch (err) {
+    console.error('Erro ao listar mercados admin:', err.message)
+    res.status(500).json({ erro: 'Erro ao listar mercados' })
+  }
+}
+
+// GET /api/admin/mercados/:id — o que o administrador precisa ver de uma loja
+async function detalheMercadoAdmin(req, res) {
+  try {
+    const sql = await conectar()
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ erro: 'Mercado inválido.' })
+    }
+
+    const [mercado] = await sql`
+      SELECT m.*,
+        (SELECT COUNT(*)::int FROM produtos p
+           JOIN categorias c ON c.id_categoria = p.id_categoria
+          WHERE c.id_mercado = m.id_mercado) AS total_produtos,
+        (SELECT COUNT(*)::int FROM historico_compras h WHERE h.id_mercado = m.id_mercado) AS total_pedidos,
+        (SELECT COALESCE(SUM(h.valor_total), 0)::numeric FROM historico_compras h
+          WHERE h.id_mercado = m.id_mercado) AS faturamento
+      FROM mercados m
+      WHERE m.id_mercado = ${id}
+    `
+    if (!mercado) return res.status(404).json({ erro: 'Mercado não encontrado' })
+
+    const categorias = await sql`
+      SELECT c.id_categoria, c.nome,
+        (SELECT COUNT(*)::int FROM produtos p WHERE p.id_categoria = c.id_categoria) AS total_produtos
+      FROM categorias c
+      WHERE c.id_mercado = ${id}
+      ORDER BY c.nome ASC
+    `
+
+    const cupons = await sql`
+      SELECT id, codigo, tipo, valor, min_pedido, max_usos, usos, validade, ativo, criado_em
+      FROM cupons WHERE id_mercado = ${id}
+      ORDER BY ativo DESC, criado_em DESC
+      LIMIT 100
+    `
+
+    const escopos = cupons.length > 0
+      ? await sql`
+          SELECT cc.id_cupom, c.id_categoria, c.nome
+          FROM cupom_categorias cc
+          JOIN categorias c ON c.id_categoria = cc.id_categoria
+          WHERE cc.id_cupom = ANY(${cupons.map(c => c.id)})
+          ORDER BY c.nome ASC
+        `
+      : []
+
+    const donos = await sql`
+      SELECT u.id_usuario, u.nome, u.email, um.papel
+      FROM usuarios_mercados um
+      JOIN usuarios u ON u.id_usuario = um.id_usuario
+      WHERE um.id_mercado = ${id}
+      ORDER BY CASE um.papel WHEN 'dono' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END
+    `
+
+    const porCupom = new Map()
+    for (const linha of escopos) {
+      const chave = Number(linha.id_cupom)
+      if (!porCupom.has(chave)) porCupom.set(chave, [])
+      porCupom.get(chave).push({ id: Number(linha.id_categoria), nome: linha.nome })
+    }
+
+    res.json({
+      mercado,
+      categorias,
+      cupons: cupons.map(c => ({ ...c, categorias: porCupom.get(Number(c.id)) ?? [] })),
+      equipe: donos,
+    })
+  } catch (err) {
+    console.error('Erro ao ver mercado (admin):', err.message)
+    res.status(500).json({ erro: 'Erro ao carregar o mercado' })
+  }
+}
+
 // ─── Bloquear/Desbloquear Mercado ───────────────────────────────────────────
 
 async function bloquearMercado(req, res) {
@@ -660,5 +827,7 @@ module.exports = {
   relatorios,
   atividadeRecente,
   alertas,
+  listarMercadosAdmin,
+  detalheMercadoAdmin,
   bloquearMercado,
 }

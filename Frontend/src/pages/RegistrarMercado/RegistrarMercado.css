@@ -18,11 +18,20 @@
 .rm-cep-row {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  /* Campo e botão na mesma linha e com a mesma altura em qualquer tela —
+     `stretch` impede que um fique menor ou deslocado em relação ao outro */
+  align-items: stretch;
+  /* mesmo intervalo usado entre os campos da grade ao lado */
+  margin-bottom: 14px;
 }
 
 .rm-cep-row .field {
   flex: 1;
+  /* permite o campo encolher em telas estreitas sem vazar o botão */
+  min-width: 0;
+  /* sem essa margem a linha do flex ficaria mais alta que o input e o
+     botão, esticado, sairia 6px abaixo dele */
+  margin-bottom: 0;
 }
 
 /* Padding, raio e margem casados com `.register-page .field input`
@@ -52,7 +61,9 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 8px 0 12px;
+  /* 20px em cima: o rótulo da primeira seção não coloca no subtítulo do
+     cabeçalho — antes os dois ficavam quase colados, como se cortados */
+  margin: 20px 0 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -338,11 +349,30 @@
   .rm-grid {
     grid-template-columns: 1fr;
   }
-  .rm-cep-row {
-    flex-direction: column;
+}
+
+/* ── CADASTRO DE MERCADO MAIS COMPACTO NO CELULAR ───────────────────────────
+   O topo ocupava 274px (logo de 148px com 66px de respiro) e empurrava o
+   formulário para fora da primeira tela. A classe `.rmc-page` marca só as
+   telas de cadastro de mercado, deixando a página de cadastro de conta com
+   o visual de sempre. */
+@media (max-width: 768px) {
+  .register-page.rmc-page .left {
+    padding: 52px 20px 24px;
   }
-  .rm-cep-btn {
-    width: 100%;
-    margin-top: 8px;
+
+  .register-page.rmc-page .left .logo-img {
+    width: 122px;
+    height: 122px;
+  }
+
+  .register-page.rmc-page .form-header h1 {
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-page.rmc-page .right {
+    padding-top: 24px;
   }
 }

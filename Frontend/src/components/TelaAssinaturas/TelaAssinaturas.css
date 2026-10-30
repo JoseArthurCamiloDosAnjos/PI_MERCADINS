@@ -393,18 +393,22 @@
 
 /* ── Modal de confirmação de cancelamento ────────────────────────────────── */
 
+/* O pop-up é montado no <body>: fica centralizado na tela inteira, não no
+   meio da lista. z-index alto e sem clique fora fechando — só os botões. */
 .sa-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 10000;
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(4, 8, 16, 0.72);
+  background: rgba(4, 8, 16, 0.78);
 }
 
 .sa-modal {
   width: min(440px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   background: var(--azul-card);
   border: 1px solid var(--azul-borda);
   border-radius: var(--radius-lg);
@@ -426,6 +430,11 @@
   color: #f87171;
 }
 
+.sa-modal-icone--ok {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+}
+
 .sa-modal-titulo {
   margin: 0;
   font-family: var(--font-display);
@@ -441,6 +450,18 @@
 }
 
 .sa-modal-texto b { color: var(--branco); }
+
+/* Motivo da falha no cancelamento — aparece dentro do próprio pop-up */
+.sa-modal-erro {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
 
 .sa-modal-acoes {
   display: flex;

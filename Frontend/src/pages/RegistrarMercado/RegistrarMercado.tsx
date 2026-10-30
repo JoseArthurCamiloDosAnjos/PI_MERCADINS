@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
@@ -144,9 +144,16 @@ export default function RegistrarMercado() {
       .slice(0, 9);
   }
 
-  async function buscarCEP() {
+  // Guarda se o endereço veio do ViaCEP (aí apagar o CEP apaga ele junto)
+  const enderecoPeloCep = useRef(false);
+
+  // auto = true: chamado sozinho pelo CEP completo (não avisa erro de digitação)
+  const buscarCEP = useCallback(async (auto = false) => {
     const cep = form.cep.replace(/\D/g, '');
-    if (cep.length !== 8) return showToast('erro', 'CEP deve ter 8 dígitos.');
+    if (cep.length !== 8) {
+      if (!auto) showToast('erro', 'CEP deve ter 8 dígitos.');
+      return;
+    }
     setBuscandoCep(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -159,13 +166,24 @@ export default function RegistrarMercado() {
         bairro: data.bairro,
         rua: data.logradouro,
       }));
+      enderecoPeloCep.current = true;
       showToast('sucesso', 'Endereço preenchido automaticamente!');
     } catch {
       showToast('erro', 'Erro ao buscar CEP.');
     } finally {
       setBuscandoCep(false);
     }
-  }
+  }, [form.cep, showToast]);
+
+  // Com os 8 dígitos do CEP completos ele consulta sozinho — o botão "Buscar"
+  // continua servindo para repetir a busca. Cada CEP é consultado uma vez só.
+  const cepJaBuscado = useRef<string | null>(form.cep.replace(/\D/g, '') || null);
+  useEffect(() => {
+    const digitos = form.cep.replace(/\D/g, '');
+    if (digitos.length !== 8 || digitos === cepJaBuscado.current) return;
+    cepJaBuscado.current = digitos;
+    void buscarCEP(true);
+  }, [form.cep, buscarCEP]);
 
   // Admin sem plano: cria direto (paga de volta pelo webhook, mas não precisa)
   async function criarDireto() {
@@ -314,7 +332,7 @@ export default function RegistrarMercado() {
   // ── Tela de status (aguardando pagamento) ────────────────────────────────
   if (aguardandoPagamento) {
     return (
-      <div className="register-page">
+      <div className="register-page rmc-page">
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         <div className="left">
           <div className="left-bg" />
@@ -429,7 +447,7 @@ export default function RegistrarMercado() {
 
   // ── Formulário de cadastro ───────────────────────────────────────────────
   return (
-    <div className="register-page">
+    <div className="register-page rmc-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="left">
@@ -586,14 +604,22 @@ export default function RegistrarMercado() {
             <div className="rm-cep-row">
               <div className="field">
                 <input placeholder="CEP" value={form.cep}
-                  onChange={e => set('cep', formatarCEP(e.target.value))} />
+                  onChange={e => {
+                    const cep = formatarCEP(e.target.value);
+                    set('cep', cep);
+                    // Apagou o CEP: o endereço que ele preencheu sai junto
+                    if (cep === '' && enderecoPeloCep.current) {
+                      enderecoPeloCep.current = false;
+                      setForm(f => ({ ...f, estado: '', cidade: '', bairro: '', rua: '' }));
+                    }
+                  }} />
                 <FieldIcon>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
                 </FieldIcon>
               </div>
-              <button type="button" className="rm-cep-btn" onClick={buscarCEP} disabled={buscandoCep}>
+              <button type="button" className="rm-cep-btn" onClick={() => buscarCEP()} disabled={buscandoCep}>
                 {buscandoCep ? '...' : 'Buscar'}
               </button>
             </div>

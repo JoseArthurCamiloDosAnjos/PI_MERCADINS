@@ -2,13 +2,16 @@
 //  useEnderecos — carteira de endereços de entrega do cliente
 //
 //  • Cliente logado: os endereços moram na conta (banco) e aparecem em
-//    qualquer aparelho — é a fonte oficial;
-//  • Sem login: ficam guardados só neste navegador, e o que estava aqui é
+//    qualquer aparelho — é a única fonte oficial;
+//  • Sem login: não existe endereço. Nada é guardado no aparelho e nada é
+//    mostrado — a tela do carrinho leva a pessoa para o login antes de
+//    preencher qualquer campo;
+//  • O que estava guardado só no navegador (versão antiga) continua sendo
 //    enviado para a conta assim que ele entrar (migração única);
-//  • Servidor fora do ar: a tela continua com o que há no navegador.
+//  • Servidor fora do ar: a tela avisa, sem inventar endereço.
 //
 //  Usado na tela do carrinho (escolher onde receber) e no perfil
-//    (cadastrar e apagar endereços).
+//    (cadastrar, editar, apagar e escolher o endereço principal).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useState } from 'react';
@@ -35,6 +38,7 @@ function daConta(linha: unknown): EnderecoSalvo {
     bairro: e.bairro ?? '',
     cidade: e.cidade ?? '',
     complemento: e.complemento ?? '',
+    principal: e.principal === true,
   };
 }
 
@@ -125,7 +129,7 @@ export function useEnderecos() {
   const { usuario } = useAuth();
   const logado = !!usuario;
 
-  const [enderecos, setEnderecos] = useState<EnderecoSalvo[]>(() => noNavegador());
+  const [enderecos, setEnderecos] = useState<EnderecoSalvo[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   // Carrega quando a tela abre e de novo se o cliente entrar/sair da conta
@@ -140,11 +144,12 @@ export function useEnderecos() {
           lista = await naConta();
         } else {
           await Promise.resolve(); // mantém tudo fora do caminho síncrono
-          lista = noNavegador();
+          // Deslogado não tem endereço para mostrar — nem para guardar
+          lista = [];
         }
       } catch {
-        // Servidor fora do ar: segue com o que existe no navegador
-        lista = noNavegador();
+        // Servidor fora do ar: avisa sem mostrar endereço de ninguém
+        lista = [];
       }
 
       if (!ativo) return;
@@ -158,37 +163,51 @@ export function useEnderecos() {
     };
   }, [logado]);
 
-  /** Cadastra um endereço novo e devolve ele já com o id */
+  /** Cadastra um endereço novo e devolve ele já com o id (só da conta) */
   const adicionar = useCallback(
     async (novo: EnderecoEntrega): Promise<EnderecoSalvo> => {
-      if (logado) {
-        const resposta = await api.criarEndereco(novo);
-        const salvo = daConta(resposta?.endereco);
-        setEnderecos((atual) => [...atual, salvo]);
-        return salvo;
-      }
-
-      const salvo: EnderecoSalvo = { ...novo, id: gerarIdEndereco() };
-      const lista = [...enderecos, salvo];
-      guardarEnderecos(lista);
-      setEnderecos(lista);
+      if (!logado) throw new Error('Entre na sua conta para salvar o endereço.');
+      const resposta = await api.criarEndereco(novo);
+      const salvo = daConta(resposta?.endereco);
+      setEnderecos((atual) => [...atual, salvo]);
       return salvo;
     },
-    [logado, enderecos]
+    [logado]
   );
 
-  /** Apaga um endereço (da conta ou do navegador) */
+  /** Edita os dados de um endereço já cadastrado na conta */
+  const editar = useCallback(
+    async (id: string, dados: EnderecoEntrega): Promise<EnderecoSalvo> => {
+      if (!logado) throw new Error('Entre na sua conta para editar o endereço.');
+      const resposta = await api.atualizarEndereco(id, dados);
+      const atualizado = daConta(resposta?.endereco);
+      setEnderecos((atual) => atual.map((e) => (e.id === id ? atualizado : e)));
+      return atualizado;
+    },
+    [logado]
+  );
+
+  /** Define qual endereço é o principal da conta (o que vem marcado no carrinho) */
+  const definirPrincipal = useCallback(
+    async (id: string): Promise<void> => {
+      if (!logado) throw new Error('Entre na sua conta para definir o endereço principal.');
+      const resposta = await api.definirEnderecoPrincipal(id);
+      if (Array.isArray(resposta?.enderecos)) {
+        setEnderecos(resposta.enderecos.map(daConta));
+      }
+    },
+    [logado]
+  );
+
+  /** Apaga um endereço da conta */
   const remover = useCallback(
     async (id: string): Promise<void> => {
-      if (logado) {
-        await api.removerEndereco(id);
-      } else {
-        guardarEnderecos(enderecos.filter((e) => e.id !== id));
-      }
+      if (!logado) return;
+      await api.removerEndereco(id);
       setEnderecos((atual) => atual.filter((e) => e.id !== id));
     },
-    [logado, enderecos]
+    [logado]
   );
 
-  return { enderecos, carregando, logado, adicionar, remover };
+  return { enderecos, carregando, logado, adicionar, editar, remover, definirPrincipal };
 }

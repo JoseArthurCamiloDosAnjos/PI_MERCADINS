@@ -60,6 +60,15 @@ export function salvarEndereco(endereco: EnderecoEntrega): void {
   }
 }
 
+/** Apaga o endereço guardado — quem está deslogado não deixa dado no aparelho */
+export function limparEnderecoSalvo(): void {
+  try {
+    localStorage.removeItem(CHAVE);
+  } catch {
+    /* navegador sem espaço: não há o que apagar */
+  }
+}
+
 /** Máscara de CEP: 12345678 → 12345-678 */
 export function mascaraCep(valor: string): string {
   const digitos = valor.replace(/\D/g, '').slice(0, 8);
@@ -90,4 +99,52 @@ export function formatarEndereco(endereco: EnderecoEntrega): string {
     endereco.complemento.trim() ? `Complemento: ${endereco.complemento.trim()}` : '',
   ].filter(Boolean);
   return partes.join(' - ').slice(0, 300);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Carteira de endereços (vários endereços salvos)
+//
+//  O cliente pode guardar mais de um endereço e escolher qual recebe a entrega
+//  (rádio "Onde você quer receber?"). A lista fica no navegador; o endereço
+//  escolhido continua sendo o que vai para o pedido.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EnderecoSalvo extends EnderecoEntrega {
+  id: string;
+  /** Endereço principal da conta — o que já vem marcado no carrinho */
+  principal?: boolean;
+}
+
+const CHAVE_LISTA = 'mercadins_enderecos';
+
+/** Identificador simples de cada endereço salvo */
+export function gerarIdEndereco(): string {
+  return `e${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** Todos os endereços que o cliente já cadastrou neste navegador */
+export function carregarEnderecos(): EnderecoSalvo[] {
+  try {
+    const bruto = localStorage.getItem(CHAVE_LISTA);
+    if (!bruto) return [];
+    const dados: unknown = JSON.parse(bruto);
+    if (!Array.isArray(dados)) return [];
+    return dados
+      .filter(
+        (e): e is EnderecoSalvo =>
+          !!e && typeof e === 'object' && typeof (e as EnderecoSalvo).id === 'string'
+      )
+      .map(e => ({ ...ENDERECO_VAZIO, ...e }));
+  } catch {
+    return [];
+  }
+}
+
+/** Grava a lista inteira de endereços */
+export function guardarEnderecos(lista: EnderecoSalvo[]): void {
+  try {
+    localStorage.setItem(CHAVE_LISTA, JSON.stringify(lista));
+  } catch {
+    /* navegador sem espaço: a lista apenas não fica salva */
+  }
 }

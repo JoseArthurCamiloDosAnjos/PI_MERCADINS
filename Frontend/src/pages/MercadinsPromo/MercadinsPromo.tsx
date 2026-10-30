@@ -66,6 +66,17 @@ export default function MercadinsPromo() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Quem chega pelo menu "Crie seu mercado" cai na página já com os planos
+  // na tela (o restante continua acessível rolando para cima).
+  useEffect(() => {
+    if (window.location.hash !== "#planos") return;
+    const atraso = window.setTimeout(() => {
+      const alvo = document.getElementById("planos");
+      if (alvo) alvo.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(atraso);
+  }, []);
+
   useEffect(() => {
     const sections = document.querySelectorAll(
       ".mp-about, .mp-benefits, .mp-plans, .mp-testimonials, .mp-cta-final"
@@ -88,13 +99,14 @@ export default function MercadinsPromo() {
 
   const handleCTA = () => {
     if (!usuario) {
-      sessionStorage.setItem("posLoginDestino", "/promocional");
+      // Sem conta: cria a conta e volta já para a escolha do plano
+      sessionStorage.setItem("posLoginDestino", "/planos");
       navigate("/auth/register");
     } else if (temMercado) {
       navigate("/vendedor");
     } else {
-      // Usuário comum escolhe o plano antes de criar; admin pula direto
-      navigate(usuario.is_admin ? "/registrar-mercado" : "/planos");
+      // Escolher o plano é o passo obrigatório antes de criar o mercado
+      navigate("/planos");
     }
   };
 
@@ -108,7 +120,10 @@ export default function MercadinsPromo() {
       navigate("/vendedor");
       return;
     }
-    if (!usuario.is_admin) {
+    if (usuario.is_admin) {
+      // Admin não assina: não grava o plano para não ir para o pagamento
+      localStorage.removeItem("planoSelecionado");
+    } else {
       localStorage.setItem("planoSelecionado", JSON.stringify({
         id: plano.id,
         nome: plano.name,
@@ -448,11 +463,6 @@ export default function MercadinsPromo() {
           <p className="mp-cta-sub">
             Escolha o plano ideal e comece a vender hoje mesmo. Sem complicação.
           </p>
-          <div className="mp-cta-actions">
-            <button className="mp-btn-primary mp-btn-large" onClick={handleCTA}>
-              Criar meu mercado →
-            </button>
-          </div>
           <div className="mp-cta-checks">
             <span><CheckIcon /> Planos para todos os tamanhos</span>
             <span><CheckIcon /> Setup em 5 minutos</span>

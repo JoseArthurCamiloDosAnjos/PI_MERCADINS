@@ -8,6 +8,8 @@ gerencia loja, produtos, estoque e pedidos pelo painel.
 - **Site no ar:** https://mercadins.com.br
 - **API no ar:** https://pi-mercadins.onrender.com
 
+**Integrantes do grupo:** José Arthur Camilo dos Anjos, Juan Marcondes e Raul Diaz Vitoria.
+
 ---
 
 ## Como funciona
@@ -85,6 +87,37 @@ cd Frontend
 npm run dev            # site em http://localhost:5173
 ```
 
+### 6. Docker (opcional)
+
+O `compose.yaml` na raiz sobe **Postgres + API + site** em containers, sem
+precisar instalar Node/PostgreSQL na máquina:
+
+```bash
+copy .env.example .env      # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+docker compose up --build
+```
+
+| Serviço | URL |
+|---|---|
+| Site (nginx) | http://localhost:8080 |
+| API | http://localhost:3001 |
+| Banco | só dentro da rede do compose (`postgres:5432`) |
+
+O backend aplica as migrações sozinho antes de aceitar requisições; o nginx do
+frontend encaminha `/api/...` e `/sitemap.xml` para a API. O `Backend/.env`
+existente é aproveitado (o compose força `DB_PROVIDER=local` apontando para o
+Postgres do container).
+
+Comandos úteis:
+
+```bash
+docker compose up -d                # sobe em segundo plano
+docker compose logs -f backend      # acompanha a API
+docker compose exec postgres psql -U mercadins -d mercadins   # shell do banco
+docker compose down                 # para (dados do banco preservados no volume)
+docker compose down -v              # para e apaga os dados do banco
+```
+
 ---
 
 ## Scripts úteis (Backend)
@@ -102,7 +135,9 @@ npm run dev            # site em http://localhost:5173
 
 ```
 PI_MERCADINS/
+├── compose.yaml                     # stack Docker: Postgres + Backend + Frontend
 ├── Backend/
+│   ├── Dockerfile                   # imagem da API (Node 22)
 │   ├── scripts/auditar-sql.js      # guarda permanente contra SQL Injection
 │   └── src/
 │       ├── controllers/            # regras de negócio (auth, mercados, pedidos, cupons…)
@@ -111,6 +146,8 @@ PI_MERCADINS/
 │       ├── utils/                  # e-mails (mailer), validações, limitadores
 │       └── server.js               # entrada da API
 ├── Frontend/
+│   ├── Dockerfile                   # build Vite + nginx (proxy de /api)
+│   ├── nginx.conf                   # rotas do site + proxy para a API
 │   ├── public/                     # ícones, robots.txt
 │   └── src/
 │       ├── components/             # botões, modais, carrinho lateral, aviso de cookies

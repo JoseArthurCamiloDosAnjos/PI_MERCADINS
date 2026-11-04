@@ -90,6 +90,80 @@ async function devolverEstoque(sql, itens) {
   }
 }
 
+// ─────────────────────────────────────────────
+// Split do pedido — o dinheiro do Pix/cartão cai DIRETO na conta Asaas do
+// vendedor (100% do líquido, sem comissão da plataforma). Sem wallet
+// cadastrado, o comportamento é o antigo: valor na conta da plataforma.
+// ─────────────────────────────────────────────
+
+// Valor liquidado de um item de split: fixo ou % do líquido (netValue)
+function valorSplitCalculado(split, netValue) {
+  if (split?.fixedValue != null) return Number(split.fixedValue) || 0;
+  const pct = split?.percentualValue != null ? Number(split.percentualValue) : null;
+  const liquido = netValue != null ? Number(netValue) : null;
+  if (pct != null && liquido != null) return Math.round(liquido * pct) / 100;
+  return 0;
+}
+
+// Grava/atualiza as linhas de repasse a partir do array `split` que o Asaas
+// devolve na cobrança (ids, status e valores). Idempotente: o webhook pode
+// chegar várias vezes com o mesmo payload.
+async function sincronizarRepasses(sql, pedidoId, pagamento) {
+  const lista = Array.isArray(pagamento?.split) ? pagamento.split : [];
+  if (lista.length === 0) return;
+
+  // A cobrança TEM split → qualquer linha provisória sem split id é lixo
+  // (evita somar o mesmo valor duas vezes no financeiro)
+  await sql`
+    DELETE FROM repasses
+    WHERE id_pedido = ${pedidoId} AND asaas_split_id IS NULL
+  `;
+
+  for (const s of lista) {
+    if (!s?.id) continue;
+    const valor = valorSplitCalculado(s, pagamento.netValue);
+    await sql`
+      INSERT INTO repasses (id_pedido, asaas_payment_id, asaas_split_id, wallet_id, valor, status, motivo)
+      VALUES (
+        ${pedidoId}, ${pagamento.id || null}, ${s.id}, ${s.walletId || null},
+        ${Number(valor).toFixed(2)}, ${s.status || 'PENDENTE'}, ${s.refusalReason || ''}
+      )
+      ON CONFLICT (asaas_split_id) DO UPDATE
+      SET status = EXCLUDED.status,
+          valor = CASE WHEN EXCLUDED.valor > 0 THEN EXCLUDED.valor ELSE repasses.valor END,
+          asaas_payment_id = COALESCE(EXCLUDED.asaas_payment_id, repasses.asaas_payment_id),
+          motivo = CASE WHEN EXCLUDED.motivo != '' THEN EXCLUDED.motivo ELSE repasses.motivo END,
+          atualizado_em = NOW()
+    `;
+  }
+}
+
+// Linha criada junto da cobrança, quando a resposta do Asaas ainda não
+// trouxe o array de split (a sincronização do webhook completa depois).
+// Sem split no pedido → registra como retido na plataforma (visível no
+// financeiro do vendedor, para conciliação manual).
+async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, splitEnviado, valorTotal }) {
+  const temSplit = Array.isArray(pagamento?.split) && pagamento.split.length > 0;
+  if (temSplit) {
+    await sincronizarRepasses(sql, pedidoId, pagamento);
+    return;
+  }
+  if (splitEnviado) {
+    // Split enviado mas a resposta não veio com ele: o webhook sincroniza
+    // depois (processarPagamentoPedido). Não grava linha provisória.
+    return;
+  }
+  await sql`
+    INSERT INTO repasses (id_pedido, asaas_payment_id, wallet_id, valor, status, motivo)
+    VALUES (
+      ${pedidoId}, ${pagamento?.id || null}, ${walletId || null},
+      ${Number(valorTotal || 0).toFixed(2)},
+      'RETIDO_PLATAFORMA',
+      ${walletId ? 'Split recusado pelo Asaas — valor na conta da plataforma' : 'Sem wallet do vendedor — valor na conta da plataforma'}
+    )
+  `;
+}
+
 // POST /api/mercados/:id/pedidos — cria um pedido a partir do carrinho do usuário
 // forma_pagamento: 'presencial' (padrão, paga na entrega), 'pix' ou 'cartao'
 const criarPedido = async (req, res) => {
@@ -160,8 +234,9 @@ const criarPedido = async (req, res) => {
     }
 
     // Regras de entrega do mercado (taxa, mínimo e quais formas aceita)
+    // + wallet Asaas do vendedor (split: dinheiro do pedido cai na conta dele)
     const [mercado] = await sql`
-      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada
+      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id
       FROM mercados
       WHERE id_mercado = ${mercadoId}
     `;
@@ -346,31 +421,77 @@ const criarPedido = async (req, res) => {
           mobilePhone: usuario?.telefone || undefined,
         });
 
+        // Split: com wallet cadastrado, o valor líquido vai direto para a
+        // conta Asaas do vendedor. Sem wallet, cai na conta da plataforma
+        // (comportamento antigo) — registrado em "repasses" p/ conciliação.
+        const walletId = String(mercado.asaas_wallet_id || '').trim() || null;
+        const refPedido = `pedido:${pedido.id}`;
+        const splits = asaas.montarSplitVendedor(walletId, refPedido);
+        let splitEnviado = !!splits;
+
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         let pagamento;
-        if (formaPagamento === 'pix') {
-          pagamento = await asaas.criarPagamentoPedidoPix({
-            customerId: customer.id,
-            valor: totalPedido,
-            descricao,
-            externalReference: `pedido:${pedido.id}`,
-          });
-        } else {
-          const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-          pagamento = await asaas.criarPagamentoPedidoCartao({
-            customerId: customer.id,
-            valor: totalPedido,
-            descricao,
-            externalReference: `pedido:${pedido.id}`,
-            // Depois de pagar, o cliente volta para a página de acompanhamento
-            redirectUrl: frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined,
-          });
+        try {
+          if (formaPagamento === 'pix') {
+            pagamento = await asaas.criarPagamentoPedidoPix({
+              customerId: customer.id,
+              valor: totalPedido,
+              descricao,
+              externalReference: refPedido,
+              splits: splits || undefined,
+            });
+          } else {
+            const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+            pagamento = await asaas.criarPagamentoPedidoCartao({
+              customerId: customer.id,
+              valor: totalPedido,
+              descricao,
+              externalReference: refPedido,
+              splits: splits || undefined,
+              // Depois de pagar, o cliente volta para a página de acompanhamento
+              redirectUrl: frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined,
+            });
+          }
+        } catch (erroSplit) {
+          // Conta da plataforma sem Split habilitado (ou wallet inválido):
+          // a cobrança não pode falhar por isso — refaz SEM split e o valor
+          // fica na plataforma (linha RETIDO_PLATAFORMA no conciliamento).
+          const motivoSplit = String(erroSplit.message || '');
+          if (!splits || !/split|wallet|carteira|invalid_action/i.test(motivoSplit)) {
+            throw erroSplit;
+          }
+          console.error(`Pedido ${pedido.id}: split recusado (${motivoSplit}) — cobrança refeita sem split.`);
+          splitEnviado = false;
+          if (formaPagamento === 'pix') {
+            pagamento = await asaas.criarPagamentoPedidoPix({
+              customerId: customer.id,
+              valor: totalPedido,
+              descricao,
+              externalReference: refPedido,
+            });
+          } else {
+            const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+            pagamento = await asaas.criarPagamentoPedidoCartao({
+              customerId: customer.id,
+              valor: totalPedido,
+              descricao,
+              externalReference: refPedido,
+              redirectUrl: frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined,
+            });
+          }
         }
 
         await sql`
           UPDATE historico_compras SET asaas_payment_id = ${pagamento.id}
           WHERE id = ${pedido.id}
         `;
+
+        // Conciliação do repasse ao vendedor (split ou retido na plataforma)
+        await registrarRepassesCriacao(sql, pedido.id, pagamento, {
+          walletId,
+          splitEnviado,
+          valorTotal: totalPedido,
+        });
 
         // O cliente não recebe e-mail agora: o QR/link está na tela dele.
         // O e-mail de confirmação + aviso à loja sai quando o Asaas confirmar (webhook).
@@ -395,6 +516,7 @@ const criarPedido = async (req, res) => {
         // Pagamento não conseguiu ser criado → desfaz TUDO: para o cliente este
         // pedido nunca chegou a existir (estoque e cupom voltam ao normal)
         await sql`DELETE FROM historico_compras WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'`;
+        await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
         await devolverEstoque(sql, itensJson);
         if (cupomRegistro) {
           await sql`UPDATE cupons SET usos = GREATEST(usos - 1, 0) WHERE id = ${cupomRegistro.id}`;
@@ -639,8 +761,27 @@ const financeiroMercado = async (req, res) => {
     `;
 
     const [mercado] = await sql`
-      SELECT custos_fixos FROM mercados WHERE id_mercado = ${mercadoId}
+      SELECT custos_fixos, asaas_wallet_id FROM mercados WHERE id_mercado = ${mercadoId}
     `;
+
+    // Repasses do mês (Asaas Split): o que já caiu na conta do vendedor,
+    // o que está em análise e o que ficou retido na plataforma
+    const repassesMes = await sql`
+      SELECT r.status, COALESCE(r.valor, 0) AS valor
+      FROM repasses r
+      JOIN historico_compras h ON h.id = r.id_pedido
+      WHERE h.id_mercado = ${mercadoId}
+        AND h.data_compra >= ${folgaInicio}
+        AND h.data_compra <  ${folgaFim}
+      LIMIT 5000
+    `;
+    let repasseLiquidado = 0, repassePendente = 0, repasseRetido = 0;
+    for (const r of repassesMes) {
+      const v = Number(r.valor) || 0;
+      if (r.status === 'DONE') repasseLiquidado += v;
+      else if (r.status === 'RETIDO_PLATAFORMA') repasseRetido += v;
+      else repassePendente += v;
+    }
 
     const mapaProdutos = new Map(produtosMercado.map(p => [p.nome, p]));
 
@@ -695,6 +836,12 @@ const financeiroMercado = async (req, res) => {
       custoFixo: round2(custoFixo),
       lucro: round2(lucro),
       itensSemCusto,
+      recebimento: {
+        walletCadastrado: !!mercado?.asaas_wallet_id,
+        liquidado: round2(repasseLiquidado),
+        pendente: round2(repassePendente),
+        retidoPlataforma: round2(repasseRetido),
+      },
       porStatus,
       serieDiaria: Array.from({ length: diasNoMes }, (_, i) => {
         const reg = porDia.get(i + 1) || { pedidos: 0, receita: 0 };
@@ -730,12 +877,42 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
 
   // Confirmação na fonte: o status vem do Asaas, não do corpo da mensagem
   let statusAsaas = pagamentoAsaas?.status || '';
+  let confirmado = pagamentoAsaas;
   try {
-    const confirmado = await asaas.buscarPagamento(pagamentoAsaas.id);
+    confirmado = await asaas.buscarPagamento(pagamentoAsaas.id);
     statusAsaas = confirmado?.status || statusAsaas;
   } catch (erro) {
     // Sem confirmação não agimos; o Asaas reenvia o evento depois
     throw erro;
+  }
+
+  // ── Split: liquidação/cancelamento de UM repasse ao vendedor ──────────────
+  // PAYMENT_SPLIT_DONE chega por split (additionalInfo.splitId); o array
+  // payment.split também é sincronizado abaixo, quando existe.
+  if (String(evento).startsWith('PAYMENT_SPLIT_')) {
+    const splitId = pagamentoAsaas?.additionalInfo?.splitId || null;
+    const statusPorEvento = {
+      PAYMENT_SPLIT_DONE: 'DONE',
+      PAYMENT_SPLIT_CANCELLED: 'CANCELLED',
+      PAYMENT_SPLIT_DIVERGENCE_BLOCK: 'DIVERGENCE_BLOCK',
+      PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED: 'PENDENTE',
+    };
+    if (splitId && statusPorEvento[evento]) {
+      await sql`
+        UPDATE repasses SET status = ${statusPorEvento[evento]}, atualizado_em = NOW()
+        WHERE asaas_split_id = ${splitId}
+      `;
+    }
+  }
+
+  // Conciliação: grava/atualiza as linhas de repasse com o estado real
+  // (ids, status e valores) que o Asaas devolve na cobrança
+  try {
+    await sincronizarRepasses(sql, pedido.id, confirmado);
+  } catch (erroRepasses) {
+    // Falha na conciliação não pode impedir a baixa do pedido:
+    // o próximo evento de webhook tenta de novo
+    console.error(`Pedido ${pedido.id}: falha ao sincronizar repasses (${erroRepasses.message}).`);
   }
 
   const pago = ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas);
@@ -763,6 +940,7 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
       UPDATE historico_compras SET status = 'cancelado', asaas_payment_id = ${pagamentoAsaas.id}
       WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
     `;
+    await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
     await devolverEstoque(sql, pedido.itens_json);
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
@@ -847,6 +1025,10 @@ const cancelarPedido = async (req, res) => {
 
     // Devolve o estoque que foi baixado na compra
     await devolverEstoque(sql, pedido.itens_json);
+
+    // Sem pedido não há repasse a conciliar (se houver linha de split, o
+    // Asaas cancela o próprio split ao excluir a cobrança)
+    await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
 
     // Se havia uma cobrança Pix/cartão pendente, cancela no Asaas para não
     // deixar um QR "vivo" que o cliente poderia pagar depois
@@ -1114,6 +1296,8 @@ const detalharPedido = async (req, res) => {
           pedido.status = 'pendente';
           avisarVendedorPedido(sql, pedido.id);
         }
+        // Mesmo sem webhook: a conciliação do split acompanha a cobrança
+        await sincronizarRepasses(sql, pedido.id, cobranca);
       } catch (err) {
         // Asaas fora do ar não quebra a tela: só sem o QR
         console.error('Falha ao buscar pagamento do pedido:', err.message);

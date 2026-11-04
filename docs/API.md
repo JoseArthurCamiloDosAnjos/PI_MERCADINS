@@ -66,13 +66,13 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 | GET | `/slug/:slug` | opcional | Abre a vitrine pelo endereço amigável (`/vitrine/meu-mercado`) — devolve loja, categorias, horários, entrega e avaliação |
 | GET | `/:id` | opcional | Dados de uma loja pelo número |
 | GET | `/:id/dashboard` | token | Painel do vendedor (vendas, pedidos e resumos) |
-| PUT | `/:id` | token | Atualiza a loja (inclui taxa de entrega, pedido mínimo, entrega/retirada, cores e horários) |
+| PUT | `/:id` | token | Atualiza a loja (inclui taxa de entrega, pedido mínimo, entrega/retirada, cores, horários e wallet Asaas) |
 | DELETE | `/:id` | token | Remove a loja |
 | POST | `/:id/favoritar` | token | Adiciona aos favoritos do cliente |
 | DELETE | `/:id/favoritar` | token | Remove dos favoritos |
 | GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja |
 | POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5 e texto) |
-| GET | `/:id/financeiro` | token | Resumo financeiro do mês escolhido |
+| GET | `/:id/financeiro` | token | Resumo financeiro do mês escolhido (inclui bloco `recebimento` com os repasses do Split) |
 
 ### Entrega e retirada (campos da loja)
 
@@ -89,6 +89,26 @@ Ao criar ou atualizar, a loja pode receber:
 
 O `taxa_entrega` é cobrado no pedido de entrega; o `pedido_minimo` só trava
 pedidos com entrega (retirada não tem mínimo).
+
+### Recebimento — `asaas_wallet_id` (Split)
+
+Campo opcional aceito na criação e na atualização (`PUT /:id`) da loja:
+
+```json
+{ "asaas_wallet_id": "48548710-9baa-4ec1-a11f-9010193527c6" }
+```
+
+- é o **walletId da conta Asaas do vendedor** (formato UUID ou id numérico);
+- com wallet cadastrado, o Pix/cartão dos pedidos online é criado com
+  Split de 100% do valor líquido → o dinheiro cai direto na conta do
+  vendedor (sem comissão da plataforma);
+- string **vazia limpa** o valor (volta ao comportamento antigo: valor na
+  conta da plataforma); sem o campo no corpo, o banco não muda;
+- validação no servidor: `^[A-Za-z0-9_-]{4,64}$` → erro
+  `Wallet ID do Asaas inválido.`
+
+Passo a passo para habilitar o Split no Asaas: ver
+[docs/pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor).
 
 ---
 
@@ -182,10 +202,27 @@ Corpo de um pedido:
 
 - `tipo_entrega`: `entrega` (cobra a taxa e exige o pedido mínimo) ou `retirada` (taxa zero);
 - `cupom` (opcional): código validado no servidor — inválido, expirado ou abaixo do mínimo rejeita o pedido;
-- `agendamento` (opcional): texto livre combinado com a loja.
+- `agendamento` (opcional): texto livre combinado com a loja;
+- `forma_pagamento`: `presencial` (padrão, paga na entrega), `pix` ou `cartao`.
+  Nas duas últimas a cobrança é criada no Asaas com `externalReference
+  "pedido:<id>"`; se a loja tem `asaas_wallet_id`, a cobrança sai com
+  **Split de 100%** e o valor líquido vai direto para a conta do vendedor
+  (ver [pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor)).
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").
+
+O resumo financeiro da loja (`GET /:id/financeiro`) devolve o bloco
+`recebimento` com o estado dos repasses do mês:
+
+```json
+"recebimento": {
+  "walletCadastrado": true,
+  "liquidado": 152.40,
+  "pendente": 38.10,
+  "retidoPlataforma": 0
+}
+```
 
 ---
 

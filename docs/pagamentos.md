@@ -192,6 +192,10 @@ Diferença fundamental: essas cobranças vêm com
 por `processarPagamentoPedido` (que confere o status direto no Asaas antes de
 dar baixa no estoque) e nunca mexem em assinatura.
 
+Quando o mercado tem `asaas_wallet_id`, a cobrança é criada com **Split**
+(`splits: [{ walletId, percentualValue: 100 }]`): o valor líquido vai direto
+para a conta Asaas do vendedor — ver [§13](#13-split-de-pagamento-dinheiro-direto-ao-vendedor).
+
 ---
 
 ## 9. Banco de dados
@@ -201,6 +205,8 @@ dar baixa no estoque) e nunca mexem em assinatura.
 | `assinaturas` | um plano contratado: `codigo_plano`, `ciclo`, `valor`, `asaas_customer_id`, `asaas_subscription_id`, `status`, `proximo_pagamento`, `dados_mercado` (JSONB com o formulário da loja), `id_mercado` |
 | `pagamentos` | faturas das assinaturas, com `asaas_payment_id` único (idempotência) |
 | `mercados.suspenso_em` | data da suspensão por cobrança (migração `010`) |
+| `mercados.asaas_wallet_id` | carteira Asaas do vendedor, destino do split dos pedidos online (migração `015`) |
+| `repasses` | conciliação de cada repasse ao vendedor: `asaas_split_id`, `status` (`PENDENTE`/`DONE`/`CANCELLED`/`RETIDO_PLATAFORMA`…), `valor` (migração `015`) |
 | `pagamentos_legado` | antiga tabela de pagamentos, renomeada pela migração `009` (esquema antigo incompatível) |
 
 Migrações aplicadas com:
@@ -310,3 +316,75 @@ Quando o pagamento online falha, a API responde `502` com
 | `Frontend/src/services/api.ts` | `criarCheckout`, `minhaAssinatura`, `cancelarAssinatura` |
 
 Referência das rotas: [docs/API.md](API.md).
+
+---
+
+## 13. Split de pagamento (dinheiro direto ao vendedor)
+
+O Pix/cartão de um pedido pode cair **direto na conta Asaas do lojista**,
+sem passar pela conta da plataforma. A plataforma não cobra comissão nas
+vendas (coerente com o "0% de comissão" dos planos) — a receita dela é só
+das assinaturas.
+
+### Pré-requisitos (fora do código)
+
+1. **Habilitar Split na conta emissora**: painel do Asaas →
+   Integrações → Segurança → Habilitar Split (confirmação por SMS/token).
+   Sem isso a API responde `invalid_action` e o sistema faz o fallback
+   descrito abaixo.
+2. Cada vendedor precisa de **conta Asaas própria** e o **walletId** dela
+   (UUID tipo `48548710-9baa-4ec1-a11f-9010193527c6`). Quem já tem conta
+   recupera o walletId com o suporte/`GET /v3/wallets`; subcontas criadas
+   pela plataforma devolvem o walletId na criação.
+3. O webhook precisa receber os eventos de split:
+   `PAYMENT_SPLIT_DONE`, `PAYMENT_SPLIT_CANCELLED`,
+   `PAYMENT_SPLIT_DIVERGENCE_BLOCK`, `PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED`.
+
+### Fluxo no sistema
+
+1. O lojista cadastrou `asaas_wallet_id` (campo "Recebimento das vendas" no
+   cadastro da loja ou "Recebimento dos pedidos online" em Informações →
+   Editar). Obrigatório: o valor vai para `mercados.asaas_wallet_id`
+   (migração `015`).
+2. Na criação do pedido online, `asaasService.montarSplitVendedor` monta
+   `splits: [{ walletId, percentualValue: 100 }]` e a cobrança Pix/cartão
+   é criada com esse array. O percentual é sobre o **líquido** (netValue,
+   após a taxa do Asaas).
+3. O split é executado pelo Asaas **no recebimento** da cobrança. O status
+   de cada repasse é gravado em `repasses` (idempotente):
+   - criação da cobrança → linha por split (`PENDENTE`) ou nenhuma linha
+     (a sincronização do webhook completa);
+   - webhook `PAYMENT_SPLIT_DONE` → linha vira `DONE` (valor já disponível
+     na conta do vendedor); `PAYMENT_SPLIT_CANCELLED` → `CANCELLED`;
+   - divergência de valor → `DIVERGENCE_BLOCK` (ajustar em 2 dias úteis).
+4. **Fallback**: se o Split estiver desabilitado ou o wallet for recusado,
+   a cobrança é refeita **sem split** (o pedido nunca falha por causa do
+   split) e a linha fica `RETIDO_PLATAFORMA` — o financeiro do vendedor
+   mostra o valor "Retido na plataforma" para conciliação manual
+   (transferência entre contas Asaas: `POST /v3/transfers`).
+5. Sem `asaas_wallet_id`, tudo continua como antes: o valor fica na conta
+   da plataforma e a linha `RETIDO_PLATAFORMA` é registrada (motivo
+   "Sem wallet do vendedor").
+6. Cancelamento do pedido (cliente, falha de pagamento) apaga as linhas de
+   `repasses` do pedido — o Asaas cancela o próprio split junto.
+
+### Onde olhar
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `Backend/src/db/migrations/015_split_vendedor.js` | coluna `asaas_wallet_id` + tabela `repasses` |
+| `Backend/src/services/asaasService.js` | `montarSplitVendedor` + campo `splits` nas cobranças de pedido |
+| `Backend/src/controllers/pedidoController.js` | envia o split, grava `repasses`, sincroniza no webhook e no detalhe do pedido; `financeiroMercado` devolve o resumo `recebimento` |
+| `Backend/src/controllers/marketController.js` | valida/grava `asaas_wallet_id` no cadastro e na edição |
+| `Backend/src/controllers/assinaturaController.js` | webhook repassa `additionalInfo.splitId` dos eventos de split |
+| `Frontend/.../RegistrarMercado` | campo "Recebimento das vendas" no cadastro da loja |
+| `Frontend/.../GerenciamentoMercado` | wallet em Informações (leitura/edição) e bloco de recebimento na aba Financeiro |
+
+### Teste rápido (sandbox)
+
+1. Habilitar Split na conta sandbox e cadastrar o walletId do vendedor.
+2. Fazer um pedido pagando com Pix e conferir em `repasses`:
+   `SELECT * FROM repasses ORDER BY id DESC LIMIT 5;`
+3. Confirmar o Pix no painel sandbox → webhook `PAYMENT_CONFIRMED` +
+   `PAYMENT_SPLIT_DONE` → status `DONE` e o saldo cai na conta do vendedor
+   (Visão financeira → Extrato, no painel do Asaas dele).

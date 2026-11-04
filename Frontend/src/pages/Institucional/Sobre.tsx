@@ -67,6 +67,67 @@ export default function Sobre() {
         </p>
       </section>
 
+      <section className="inst-section inst-legal">
+        <h2>Equipe de desenvolvimento</h2>
+        <p>
+          O Mercadins nasceu como projeto de integração e é mantido por um grupo
+          de desenvolvedores que projetou e construiu a plataforma de ponta a
+          ponta — do banco de dados à interface que você está usando agora.
+        </p>
+
+        <div className="inst-team">
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">JA</span>
+            <div>
+              <h3>José Arthur Camilo dos Anjos</h3>
+              <p>Desenvolvedor</p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">JM</span>
+            <div>
+              <h3>Juan de Oliveira Marcondes Xavier</h3>
+              <p>Desenvolvedor</p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">RV</span>
+            <div>
+              <h3>Raul Diaz Vitoria</h3>
+              <p>Desenvolvedor</p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">CB</span>
+            <div>
+              <h3>Cayo Barroso</h3>
+              <p>Desenvolvedor</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="inst-section inst-legal">
+        <h2>Agradecimento especial</h2>
+        <p>
+          A quem contribuiu de forma decisiva para a construção deste projeto,
+          nosso sincero agradecimento:
+        </p>
+
+        <div className="inst-team">
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">RC</span>
+            <div>
+              <h3>Raiane de Oliveira Cecilio</h3>
+              <p>Agradecimento especial</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="inst-ctas">
         <Link className="inst-cta" to="/mercados-parceiros">
           Conhecer mercados parceiros

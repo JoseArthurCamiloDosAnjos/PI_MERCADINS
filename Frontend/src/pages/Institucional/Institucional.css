@@ -394,6 +394,57 @@
   margin-top: 32px;
 }
 
+/* ── Equipe de desenvolvimento ────────────────────────── */
+
+.inst-team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.inst-team-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.inst-team-card:hover {
+  transform: translateY(-3px);
+  border-color: #ffd426;
+}
+
+.inst-team-avatar {
+  flex: 0 0 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 212, 38, 0.15);
+  color: #ffd426;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.inst-team-card h3 {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 0 0 3px;
+}
+
+.inst-team-card p {
+  color: #9fb2d4;
+  font-size: 13px;
+  margin: 0;
+}
+
 /* ── Responsivo ───────────────────────────────────────── */
 
 @media (max-width: 640px) {

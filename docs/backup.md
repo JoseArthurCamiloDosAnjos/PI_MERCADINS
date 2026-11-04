@@ -40,7 +40,9 @@ prazo, baixe o arquivo e guarde também em um local próprio (HD, nuvem).
 
 ## Como restaurar um backup
 
-O `.dump` é o formato nativo do `pg_dump` — restaura com `pg_restore`:
+O `.dump` é o formato nativo do `pg_dump` — restaura com `pg_restore`
+(ferramentas do cliente PostgreSQL instalado localmente, ex.:
+`apt install postgresql-client` ou o instalador oficial para Windows):
 
 ```bash
 # Restaurar tudo em um banco novo (ex.: conferir o backup)

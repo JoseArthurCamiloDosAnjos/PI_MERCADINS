@@ -203,7 +203,7 @@ function normalizarEntrega(body) {
 function validarDadosMercado(dados = {}) {
   const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua,
     descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones,
-    cor_texto_sec, plano, categorias, horario,
+    cor_texto_sec, plano, categorias, horario, asaas_wallet_id,
     taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = dados;
 
   // Revalidação de payload já normalizado: a entrega vem embutida em
@@ -243,6 +243,12 @@ function validarDadosMercado(dados = {}) {
   if (horarioNovo.erro)
     return { erro: horarioNovo.erro };
 
+  // Wallet Asaas do vendedor (opcional): identifica a carteira que recebe
+  // o split dos pedidos pagos online. Formato: UUID ou id numérico do Asaas.
+  const wallet = typeof asaas_wallet_id === 'string' ? asaas_wallet_id.trim() : '';
+  if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet))
+    return { erro: 'Wallet ID do Asaas inválido.' };
+
   return {
     dados: {
       nome: nome.trim(),
@@ -265,6 +271,7 @@ function validarDadosMercado(dados = {}) {
       cats,
       horario: horarioNovo,
       entrega,
+      asaas_wallet_id: wallet || null,
     },
   };
 }
@@ -319,7 +326,7 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
 
   // Cria o mercado
   const [novoMercado] = await sql`
-    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada)
+    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id)
     VALUES (
       ${d.nome},
       ${d.email},
@@ -344,7 +351,8 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
       ${Number(d.entrega?.taxa ?? 0).toFixed(2)},
       ${Number(d.entrega?.minimo ?? 0).toFixed(2)},
       ${d.entrega?.entrega ?? true},
-      ${d.entrega?.retirada ?? true}
+      ${d.entrega?.retirada ?? true},
+      ${d.asaas_wallet_id || null}
     )
     RETURNING *
   `;
@@ -609,6 +617,17 @@ const atualizarMercado = async (req, res) => {
     custosFixosNovo = v;
   }
 
+  // Wallet Asaas do vendedor (recebimento direto dos pedidos online).
+  // Diferente dos outros campos, string vazia LIMPA o valor (volta ao
+  // comportamento antigo: dinheiro na conta da plataforma).
+  const temWallet = req.body.asaas_wallet_id !== undefined && req.body.asaas_wallet_id !== null;
+  let walletNovo = null;
+  if (temWallet) {
+    walletNovo = String(req.body.asaas_wallet_id).trim();
+    if (walletNovo && !/^[A-Za-z0-9_-]{4,64}$/.test(walletNovo))
+      return res.status(400).json({ erro: 'Wallet ID do Asaas inválido.' });
+  }
+
   // Entrega e retirada (taxa, mínimo e opções) — mesmo critério dos custos
   const entregaEdicao = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
   if (entregaEdicao.erro)
@@ -651,6 +670,14 @@ const atualizarMercado = async (req, res) => {
     if (!horarioEdicao.manter) {
       await sql`
         UPDATE mercados SET horario = ${horarioEdicao.valor ?? null}
+        WHERE id_mercado = ${Number(id)}
+      `;
+    }
+
+    // Wallet Asaas à parte pelo mesmo motivo: pode ser limpa com string vazia
+    if (temWallet) {
+      await sql`
+        UPDATE mercados SET asaas_wallet_id = ${walletNovo || null}
         WHERE id_mercado = ${Number(id)}
       `;
     }

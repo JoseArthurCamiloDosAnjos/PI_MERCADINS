@@ -36,9 +36,9 @@ e lojas, relatórios e alertas.
 | Camada | Ferramentas |
 |---|---|
 | **Frontend** | React + TypeScript, Vite, React Router, CSS puro por página |
-| **Backend** | Node.js, Express, JWT (autenticação), Nodemailer + Resend (E-mails) |
+| **Backend** | Node.js, Express, JWT (autenticação), Nodemailer + Resend (E-mails), Asaas (cobrança e Split) |
 | **Banco** | PostgreSQL — local em desenvolvimento, **Neon** em produção |
-| **Serviços** | Vercel (site), Render (API), GitHub (código e verificações) |
+| **Serviços** | Render (API **e** site, conforme `render.yaml`), Neon (banco), Supabase (fotos), Asaas (pagamentos), GitHub (código e verificações) |
 
 ---
 
@@ -93,7 +93,7 @@ O `compose.yaml` na raiz sobe **Postgres + API + site** em containers, sem
 precisar instalar Node/PostgreSQL na máquina:
 
 ```bash
-copy .env.example .env      # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+copy .env.example .env      # preencha VITE_SUPABASE_* (obrigatórias) e VITE_API_URL (opcional)
 docker compose up --build
 ```
 
@@ -120,14 +120,29 @@ docker compose down -v              # para e apaga os dados do banco
 
 ---
 
-## Scripts úteis (Backend)
+## Scripts úteis
+
+Na raiz:
+
+| Script | O que faz |
+|---|---|
+| `npm run dev` | Sobe Backend e Frontend juntos (via `concurrently`) |
+| `npm run install:all` | Instala as dependências da raiz, do Backend e do Frontend |
+
+Backend (`cd Backend`):
 
 | Script | O que faz |
 |---|---|
 | `npm run dev` / `dev:neon` / `dev:local` | Sobe a API com o banco escolhido |
 | `npm run migrate` | Aplica as migrações pendentes do banco |
 | `npm run auditar-sql` | Confere se alguma consulta SQL deixou de usar parâmetros (proteção contra SQL Injection) |
-| `npm run build` (Frontend) | Compila o site para produção, com checagem de tipos |
+
+Frontend (`cd Frontend`):
+
+| Script | O que faz |
+|---|---|
+| `npm run dev` | Sobe o site em modo de desenvolvimento |
+| `npm run build` | Compila o site para produção, com checagem de tipos |
 
 ---
 
@@ -138,36 +153,42 @@ PI_MERCADINS/
 ├── compose.yaml                     # stack Docker: Postgres + Backend + Frontend
 ├── Backend/
 │   ├── Dockerfile                   # imagem da API (Node 22)
-│   ├── scripts/auditar-sql.js      # guarda permanente contra SQL Injection
+│   ├── scripts/                     # auditar-sql (guarda contra SQL Injection), dados demo
 │   └── src/
-│       ├── controllers/            # regras de negócio (auth, mercados, pedidos, cupons…)
-│       ├── db/                     # conexão + migrações versionadas
-│       ├── routes/                 # rotas HTTP (inclui /sitemap.xml)
-│       ├── utils/                  # e-mails (mailer), validações, limitadores
-│       └── server.js               # entrada da API
+│       ├── controllers/             # regras de negócio (auth, mercados, pedidos, cupons…)
+│       ├── db/                      # conexão + migrações versionadas
+│       ├── middleware/              # autenticação, rate limit, CORS
+│       ├── routes/                  # rotas HTTP (inclui /sitemap.xml)
+│       ├── services/                # Asaas, Supabase, envio de E-mails
+│       ├── utils/                   # validações, planos, formatadores
+│       └── server.js                # entrada da API
 ├── Frontend/
 │   ├── Dockerfile                   # build Vite + nginx (proxy de /api)
 │   ├── nginx.conf                   # rotas do site + proxy para a API
-│   ├── public/                     # ícones, robots.txt
+│   ├── public/                      # ícones, robots.txt
 │   └── src/
-│       ├── components/             # botões, modais, carrinho lateral, aviso de cookies
-│       ├── pages/                  # login, home, vitrine, produto, carrinho, painel do vendedor, admin
-│       ├── services/api.ts         # comunicação com a API
-│       └── utils/                  # SEO por página, tipos de loja, paletas
+│       ├── assets/                  # imagens e ícones do site
+│       ├── components/              # botões, modais, carrinho lateral, aviso de cookies
+│       ├── context/                 # estado global (carrinho, autenticação)
+│       ├── hooks/                   # hooks reutilizáveis
+│       ├── pages/                   # login, home, vitrine, produto, carrinho, painel do vendedor, admin
+│       ├── services/api.ts          # comunicação com a API
+│       └── utils/                   # SEO por página, tipos de loja, paletas
 ├── docs/
-│   ├── API.md                      # documentação de todos os endpoints
-│   ├── pagamentos.md               # sistema de pagamento (planos, Asaas, vigência)
-│   ├── backup.md                   # backup e restauração do banco
-│   └── ambientes.md                # desenvolvimento x produção
-└── .github/workflows/              # verificações automáticas e backup do banco
+│   ├── API.md                       # documentação das rotas da API
+│   ├── pagamentos.md                # sistema de pagamento (planos, Asaas, Split, vigência)
+│   ├── backup.md                    # backup e restauração do banco
+│   └── ambientes.md                 # desenvolvimento x produção
+└── .github/workflows/               # verificações automáticas e backup do banco
 ```
 
 ---
 
 ## Documentação
 
-- **[docs/API.md](docs/API.md)** — todos os endpoints da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, administração);
-- **[docs/pagamentos.md](docs/pagamentos.md)** — sistema de pagamento: planos, confirmação via webhook, vigência, suspensão e cancelamento;
+- **[docs/API.md](docs/API.md)** — rotas da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, webhook, administração);
+- **[docs/pagamentos.md](docs/pagamentos.md)** — sistema de pagamento: planos, confirmação via webhook, vigência, suspensão, cancelamento e **Split com o vendedor**;
+- **[docs/backup.md](docs/backup.md)** — backup e restauração do banco de dados;
 - **[docs/ambientes.md](docs/ambientes.md)** — como os ambientes de desenvolvimento e produção são separados.
 
 ---

@@ -141,18 +141,40 @@ function vencimentoPedido() {
   return d.toISOString().slice(0, 10)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Split de pagamento (repasse automático ao vendedor)
+//  O percentual é calculado sobre o LÍQUIDO (netValue, após a taxa do Asaas).
+//  100% pro lojista: a plataforma não cobra comissão nas vendas — a receita
+//  dela é só das assinaturas de plano. O saldo que não for direcionado (0%)
+//  permanece na conta emissora.
+// ─────────────────────────────────────────────────────────────────────────────
+function montarSplitVendedor(walletId, externalReference) {
+  if (!walletId) return null;
+  const split = {
+    walletId: String(walletId).trim(),
+    percentualValue: 100,
+  };
+  if (externalReference) split.externalReference = String(externalReference).slice(0, 100);
+  return [split];
+}
+
 // POST /v3/payments (billingType PIX) — devolve QR code + código copia e cola
-async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference }) {
+async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference, splits }) {
+  const corpo = {
+    customer: customerId,
+    billingType: 'PIX',
+    value: valor,
+    description: descricao,
+    dueDate: vencimentoPedido(),
+    externalReference,
+  };
+  // Split: o Asaas transfere o valor líquido para a carteira do vendedor
+  // assim que o Pix cai (docs.asaas.com/docs/split-de-pagamentos)
+  if (Array.isArray(splits) && splits.length > 0) corpo.splits = splits;
+
   const pagamento = await chamarApi('/v3/payments', {
     method: 'POST',
-    body: {
-      customer: customerId,
-      billingType: 'PIX',
-      value: valor,
-      description: descricao,
-      dueDate: vencimentoPedido(),
-      externalReference,
-    },
+    body: corpo,
   })
   // QR não vem junto na criação: o Asaas só entrega em /pixQrCode
   let qr = null
@@ -171,12 +193,14 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
     qrCodeBase64: fonte?.encodedImage || '',
     copiaEcola: fonte?.payload || '',
     urlPagamento: pagamento.invoiceUrl || '',
+    // Splits criados junto da cobrança (ids p/ conciliar o repasse)
+    split: Array.isArray(pagamento.split) ? pagamento.split : [],
   }
 }
 
 // POST /v3/payments (billingType CREDIT_CARD) — monta o link de pagamento
 // (o cartão é digitado na página segura do Asaas; o número nunca passa por aqui)
-async function criarPagamentoPedidoCartao({ customerId, valor, descricao, externalReference, redirectUrl }) {
+async function criarPagamentoPedidoCartao({ customerId, valor, descricao, externalReference, redirectUrl, splits }) {
   const corpo = {
     customer: customerId,
     billingType: 'CREDIT_CARD',
@@ -185,6 +209,7 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
     dueDate: vencimentoPedido(),
     externalReference,
   }
+  if (Array.isArray(splits) && splits.length > 0) corpo.splits = splits
   // Criação sem dados de cartão gera o link de pagamento (invoiceUrl) usado
   // pelo checkout do Asaas; o redirect volta o cliente para o pedido
   if (redirectUrl) {
@@ -198,6 +223,7 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
       status: pagamento.status,
       vencimento: pagamento.dueDate || null,
       urlPagamento: pagamento.invoiceUrl || '',
+      split: Array.isArray(pagamento.split) ? pagamento.split : [],
     }
   } catch (erro) {
     // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
@@ -209,6 +235,7 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
         status: pagamento.status,
         vencimento: pagamento.dueDate || null,
         urlPagamento: pagamento.invoiceUrl || '',
+        split: Array.isArray(pagamento.split) ? pagamento.split : [],
       }
     }
     throw erro
@@ -240,6 +267,7 @@ module.exports = {
   buscarUrlPagamento,
   buscarPagamentosAssinatura,
   cancelarAssinatura,
+  montarSplitVendedor,
   criarPagamentoPedidoPix,
   criarPagamentoPedidoCartao,
   buscarPagamento,

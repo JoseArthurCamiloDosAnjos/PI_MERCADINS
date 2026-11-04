@@ -67,6 +67,90 @@ export default function Sobre() {
         </p>
       </section>
 
+      <section className="inst-section inst-legal">
+        <h2>Equipe de desenvolvimento</h2>
+        <p>
+          O Mercadins nasceu como projeto de integração e é mantido por um grupo
+          de desenvolvedores que projetou e construiu a plataforma de ponta a
+          ponta — do banco de dados à interface que você está usando agora.
+        </p>
+
+        <div className="inst-team">
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">JA</span>
+            <div>
+              <h3>José Arthur Camilo dos Anjos</h3>
+              <p>Desenvolvedor</p>
+              <p className="inst-team-desc">
+                Líder técnico do projeto. Atuou em toda a stack — do banco de
+                dados à interface — e cuidou da arquitetura e da publicação
+                do site.
+              </p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">JM</span>
+            <div>
+              <h3>Juan de Oliveira Marcondes Xavier</h3>
+              <p>Desenvolvedor</p>
+              <p className="inst-team-desc">
+                Desenvolvedor full-stack. Trabalhou nas telas do site e na
+                integração entre front-end e API, além de boa parte das
+                funcionalidades do painel do vendedor.
+              </p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">RV</span>
+            <div>
+              <h3>Raul Diaz Vitoria</h3>
+              <p>Desenvolvedor</p>
+              <p className="inst-team-desc">
+                Desenvolvedor front-end. Participou da construção das telas
+                do Mercadins e na experiência de compra do cliente.
+              </p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">CB</span>
+            <div>
+              <h3>Cayo Barroso dos Santos</h3>
+              <p>Desenvolvedor</p>
+              <p className="inst-team-desc">
+                Desenvolvedor front-end. Contribuiu com a interface do site
+                e com melhorias na usabilidade do Mercadins.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="inst-section inst-legal">
+        <h2>Agradecimento especial</h2>
+        <p>
+          A quem contribuiu de forma decisiva para a construção deste projeto,
+          nosso sincero agradecimento:
+        </p>
+
+        <div className="inst-team">
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">RC</span>
+            <div>
+              <h3>Raiane de Oliveira Cecilio</h3>
+              <p>Agradecimento especial</p>
+              <p className="inst-team-desc">
+                Nosso agradecimento especial pelo apoio, incentivo e
+                contribuição que foram essenciais para a construção deste
+                projeto.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="inst-ctas">
         <Link className="inst-cta" to="/mercados-parceiros">
           Conhecer mercados parceiros

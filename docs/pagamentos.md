@@ -203,10 +203,10 @@ para a conta Asaas do vendedor — ver [§13](#13-split-de-pagamento-dinheiro-di
 | Tabela / coluna | Papel |
 |---|---|
 | `assinaturas` | um plano contratado: `codigo_plano`, `ciclo`, `valor`, `asaas_customer_id`, `asaas_subscription_id`, `status`, `proximo_pagamento`, `dados_mercado` (JSONB com o formulário da loja), `id_mercado` |
-| `pagamentos` | faturas das assinaturas, com `asaas_payment_id` único (idempotência) |
+| `pagamentos` | faturas das assinaturas, com `asaas_payment_id` único (idempotência) — migração `004` (renomeada em `009`) |
 | `mercados.suspenso_em` | data da suspensão por cobrança (migração `010`) |
 | `mercados.asaas_wallet_id` | carteira Asaas do vendedor, destino do split dos pedidos online (migração `015`) |
-| `repasses` | conciliação de cada repasse ao vendedor: `asaas_split_id`, `status` (`PENDENTE`/`DONE`/`CANCELLED`/`RETIDO_PLATAFORMA`…), `valor` (migração `015`) |
+| `repasses` | conciliação de cada repasse ao vendedor: `asaas_split_id`, `status` (`PENDENTE`/`DONE`/`CANCELLED`/`REFUSED`/`DIVERGENCE_BLOCK`/`RETIDO_PLATAFORMA`), `valor`, `motivo` (migração `015`) |
 | `pagamentos_legado` | antiga tabela de pagamentos, renomeada pela migração `009` (esquema antigo incompatível) |
 
 Migrações aplicadas com:
@@ -227,7 +227,7 @@ npm run migrate                   # banco local (DB_PROVIDER)
 | Variável (Backend) | O que é |
 |---|---|
 | `Assas_API_KEY` | token de acesso à API do Asaas |
-| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API (o código escolhe pela `NODE_ENV`) |
+| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API (o código escolhe pela produção detectada: `NODE_ENV=production` **ou** a variável `RENDER` do plano) |
 | `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token` (obrigatório em produção) |
 | `FRONTEND_URL` | para onde o Asaas devolve o cliente após pagar (`/registrar-mercado?pagamento=1`) |
 
@@ -275,8 +275,9 @@ exposto):
 
 ```json
 { "ambiente": "producao",
+  "banco": "auto",
   "asaas": { "url_usada": "https://api.asaas.com/", "chave_api": true,
-             "url_producao": true, "webhook_token": true },
+             "url_producao": true, "url_sandbox": false, "webhook_token": true },
   "frontend_url": "https://mercadins.com.br" }
 ```
 
@@ -286,7 +287,6 @@ exposto):
 
 - [ ] `Assas_API_KEY` = chave de **produção** (a de sandbox não serve na URL de produção);
 - [ ] `Assas_API_URL_Producao=https://api.asaas.com/`;
-- [ ] `NODE_ENV=production`;
 - [ ] `FRONTEND_URL=https://mercadins.com.br`;
 - [ ] `ASAAS_WEBHOOK_TOKEN` preenchido **e** a integração de webhook criada no
       Asaas apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`

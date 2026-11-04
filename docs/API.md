@@ -31,10 +31,10 @@ Erros seguem sempre o mesmo formato:
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| POST | `/register` | público | Cria conta de cliente; envia código de verificação por E-mail |
-| POST | `/login` | público | Valida E-mail + senha e devolve `{ token }` (limite de 10 tentativas/minuto) |
+| POST | `/register` | público | Cria conta de cliente; envia código de verificação por E-mail (com limite de tentativas) |
+| POST | `/login` | público | Valida E-mail + senha e devolve `{ token, usuario }` (limite de 10 tentativas/minuto; exige e-mail verificado — senão `403`) |
 | GET | `/perfil` | token | Devolve o perfil de quem está logado |
-| PUT | `/perfil` | token | Atualiza nome, telefone e foto do perfil |
+| PUT | `/perfil` | token | Atualiza o perfil — **`nome` e `email` são obrigatórios no corpo**; opcionais: `telefone`, `data_nascimento`, `foto_perfil_url` |
 | POST | `/verificar-email` | público | Confirma o código recebido por E-mail no cadastro |
 | POST | `/reenviar-verificacao` | público | Reenvia o código de verificação |
 | POST | `/esqueci-senha` | público | Dispara E-mail de recuperação de senha |
@@ -51,7 +51,7 @@ Exemplo de login:
 curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"cliente@exemplo.com","senha":"SuaSenha@123"}'
-# → { "token": "eyJhbGci..." }
+# → { "token": "eyJhbGci...", "usuario": { "id_usuario": 1, "nome": "...", ... } }
 ```
 
 ---
@@ -60,8 +60,8 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/` | público | Lista mercados (filtros por tipo, cidade, busca e ordenação) |
-| POST | `/` | token (vendedor) | Cria uma loja |
+| GET | `/` | público | Lista lojas ativas com paginação: `?page=1&limit=20&busca=texto` → `{ mercados, paginacao: { page, limit, total, totalPages }, stats }` |
+| POST | `/` | token (**somente administrador**) | Cria uma loja direto (o usuário comum cria só via checkout de assinatura — ver Assinaturas) |
 | GET | `/meus` | token | Lista as lojas do vendedor logado |
 | GET | `/slug/:slug` | opcional | Abre a vitrine pelo endereço amigável (`/vitrine/meu-mercado`) — devolve loja, categorias, horários, entrega e avaliação |
 | GET | `/:id` | opcional | Dados de uma loja pelo número |
@@ -72,7 +72,11 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 | DELETE | `/:id/favoritar` | token | Remove dos favoritos |
 | GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja |
 | POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5 e texto) |
-| GET | `/:id/financeiro` | token | Resumo financeiro do mês escolhido (inclui bloco `recebimento` com os repasses do Split) |
+| PUT | `/:id/avaliacoes/:avaliacaoId` | token (dono) | Moderação: oculta/exibe uma avaliação da loja |
+| GET | `/:id/avaliacoes-produtos` | token (dono) | Avaliações de produtos da loja (moderação no painel) |
+| GET | `/:id/financeiro?ano=&mes=` | token | Resumo financeiro do mês (padrão: mês atual; inclui bloco `recebimento` com os repasses do Split) |
+
+Rota auxiliar de lojas do logado (prefixo próprio): `GET /api/usuarios-mercados/meus`.
 
 ### Entrega e retirada (campos da loja)
 
@@ -131,13 +135,22 @@ Criação de cupom:
   "valor": 10,
   "min_pedido": 30,
   "max_usos": 100,
-  "validade": "2026-12-31"
+  "validade": "2026-12-31",
+  "categorias": [12, 18]
 }
 ```
 
 - `tipo`: `percentual` (percentual) ou `valor` (valor fixo em reais);
 - `max_usos` vazio/omitido = sem limite; `validade` vazia = não expira;
+- `categorias` (opcional): lista de ids de categorias em que o cupom vale —
+  vazio/omitido vale para a loja inteira;
 - o desconto é sempre calculado **no servidor** — o cliente nunca envia o valor do desconto.
+
+Validação no carrinho (`POST /validar`):
+
+```json
+{ "codigo": "BEMVINDO10", "subtotal": 87.5, "itens": [ { "id_categoria": 12, "preco": 10, "quantidade": 2 } ] }
+```
 
 ---
 
@@ -148,7 +161,6 @@ Criação de cupom:
 | POST | `/checkout` | token | Cria *customer* + assinatura no Asaas e devolve `{ idAssinatura, urlCheckout }` (o mercado só nasce depois, quando o pagamento confirma) |
 | GET | `/minha` | token | **Todas** as assinaturas do usuário: plano, validade, dias restantes, **mercado vinculado**, faturas e link de pagamento |
 | POST | `/:id/cancelar` | token | Cancela no Asaas e localmente (a loja segue no ar até o fim da vigência) |
-| POST | `/api/webhooks/asaas` | token do webhook | Recebe os eventos de pagamento do Asaas (sem JWT; valida o cabeçalho `webhook-security-token`) |
 
 Corpo do checkout:
 
@@ -170,11 +182,42 @@ Fluxo completo, estados, carência de 3 dias e como testar:
 
 ---
 
-## Diagnóstico — `/api/saude`
+## Webhook do Asaas — `POST /api/webhooks/asaas`
+
+Recebe os eventos de pagamento do Asaas (assinaturas **e** pedidos online).
+**Não usa JWT** — valida o cabeçalho `webhook-security-token` contra a variável
+`ASAAS_WEBHOOK_TOKEN`: token diferente → `401`; variável ausente em produção →
+`500` (em desenvolvimento sem a variável, processa mesmo assim).
+
+| Evento | Efeito |
+|---|---|
+| `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` (assinatura) | Confirma a assinatura → cria a loja a partir de `dados_mercado` |
+| `PAYMENT_OVERDUE` (assinatura) | Fatura vencida → assinatura fica `inadimplente` (a suspensão das lojas só ocorre após a carência) |
+| `SUBSCRIPTION_DELETED` (assinatura) | Cancela a assinatura |
+| `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` / `RECEIVED_IN_CASH` (pedido — `externalReference "pedido:<id>"`) | Pedido `aguardando_pagamento` vira `pendente`; e-mails de confirmação ao cliente e aviso ao vendedor |
+| Pagamento falhou (`DELETED`, `FAILED`, `EXPIRED`, `REFUNDED`…) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
+| `PAYMENT_SPLIT_*` | Sincroniza os repasses (tabela `repasses`) do Split |
+
+---
+
+## Diagnóstico
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/pagamentos` | público | Mostra se o ambiente tem as variáveis do Asaas (só `true`/`false` + URL base — nenhum segredo) |
+| GET | `/api/health` | público | Responde `{ status: "ok" }` (healthcheck do Render) |
+| GET | `/api/saude/pagamentos` | público | Mostra o ambiente, o banco e a **presença** das variáveis do Asaas (nenhum segredo é exposto) |
+
+Resposta de `/api/saude/pagamentos`:
+
+```json
+{ "ambiente": "producao",
+  "banco": "auto",
+  "asaas": { "url_usada": "https://api.asaas.com/", "chave_api": true,
+             "url_producao": true, "url_sandbox": false, "webhook_token": true },
+  "frontend_url": "https://mercadins.com.br" }
+```
+
+`chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
 
 ---
 
@@ -184,30 +227,44 @@ Fluxo completo, estados, carência de 3 dias e como testar:
 |---|---|---|---|
 | POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, mínimo e cupom; envia E-mail de confirmação) |
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
+| GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
+| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
 | PUT | `/api/pedidos/:id/status` | token (dono) | Muda o status e avisa o cliente por E-mail |
+| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível) |
+| GET | `/api/pedidos/:id/itens-recompra` | token | Produtos do pedido com preço/estoque atuais (base do botão "comprar de novo") |
+| DELETE | `/api/pedidos/:id/historico` | token | Cliente remove o pedido da própria lista |
 | GET | `/api/usuario/historico` | token | Histórico de compras do cliente |
 
 Corpo de um pedido:
 
 ```json
 {
-  "produtos": [ { "id_produto": 254, "quantidade": 2 } ],
+  "itens": [ { "id_produto": 254, "quantidade": 2 } ],
   "tipo_entrega": "entrega",
+  "endereco_entrega": "Rua das Flores, 123 — Centro",
   "cupom": "BEMVINDO10",
   "agendamento": "Hoje à tarde",
-  "observacoes": "Trocar a nota, por favor",
+  "observacao": "Trocar a nota, por favor",
   "forma_pagamento": "pix"
 }
 ```
 
+- `itens`: lista de `{ id_produto, quantidade }`;
 - `tipo_entrega`: `entrega` (cobra a taxa e exige o pedido mínimo) ou `retirada` (taxa zero);
+- `endereco_entrega` (opcional): endereço de entrega digitado pelo cliente;
 - `cupom` (opcional): código validado no servidor — inválido, expirado ou abaixo do mínimo rejeita o pedido;
 - `agendamento` (opcional): texto livre combinado com a loja;
+- `observacao` (opcional): recado do cliente;
 - `forma_pagamento`: `presencial` (padrão, paga na entrega), `pix` ou `cartao`.
   Nas duas últimas a cobrança é criada no Asaas com `externalReference
   "pedido:<id>"`; se a loja tem `asaas_wallet_id`, a cobrança sai com
   **Split de 100%** e o valor líquido vai direto para a conta do vendedor
   (ver [pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor)).
+
+Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
+`pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda
+os estados especiais `aguardando_pagamento` (webhook ainda não confirmou) e
+`cancelado` (não muda mais).
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").
@@ -255,8 +312,8 @@ antes (checado no histórico de compras, no servidor).
 | PUT | `/api/mercados/:m/categorias/:c/produtos/:p` | token (dono) | Atualiza produto |
 | DELETE | `/api/mercados/:m/categorias/:c/produtos/:p` | token (dono) | Remove produto |
 
-O produto traz `estoque` e, no painel, a margem de lucro é calculada do
-`custo` cadastrado — o campo `margem` do JSON serve para isso.
+O produto traz `estoque` e o `custo` cadastrado — no painel, a margem de lucro
+é calculada a partir desse `custo` (é valor derivado, não um campo gravado).
 
 ---
 
@@ -273,11 +330,32 @@ O produto traz `estoque` e, no painel, a margem de lucro é calculada do
 
 ---
 
+## Endereços de entrega — `/api/enderecos`
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| GET | `/` | token | Lista os endereços do cliente logado |
+| POST | `/` | token | Cria um endereço |
+| PUT | `/:id` | token | Atualiza um endereço |
+| PUT | `/:id/principal` | token | Define o endereço como principal |
+| DELETE | `/:id` | token | Remove o endereço |
+
+---
+
+## Depoimentos — `/api/depoimentos`
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| GET | `/` | opcional | Depoimentos visíveis; com token, devolve `minha` no depoimento de quem está logado |
+| POST | `/` | token | Escreve (ou edita) o próprio depoimento |
+
+---
+
 ## Busca — `/api/busca`
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/produtos?termo=pão` | público | Busca produtos em todas as lojas ativas |
+| GET | `/produtos?q=pão` | público | Busca produtos em todas as lojas ativas (`q` = termo) |
 
 ---
 
@@ -289,8 +367,9 @@ O produto traz `estoque` e, no painel, a margem de lucro é calculada do
 | GET | `/usuarios` · `/usuarios/:id` | Lista e detalhes de contas |
 | PUT | `/usuarios/:id` · `/:id/bloquear` · `/:id/status` | Edita, bloqueia e muda situação |
 | DELETE | `/usuarios/:id` | Exclui conta |
-| GET | `/relatorios` · `/atividade` · `/alertas` | Relatórios, atividade recente e alertas |
+| GET | `/mercados` · `/mercados/:id` | Lista e detalhe de todas as lojas (moderação) |
 | PUT | `/mercados/:id/bloquear` | Bloqueia uma loja |
+| GET | `/relatorios` · `/atividade` · `/alertas` | Relatórios, atividade recente e alertas |
 
 ---
 

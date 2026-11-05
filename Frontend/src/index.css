@@ -110,6 +110,13 @@ body {
 
   --novo-bg:        rgba(99,102,241,0.15);
   --novo-texto:     #a5b4fc;
+
+  /* Transições padronizadas do site (item: consistência visual).
+     Use estes valores em vez de inventar tempos diferentes em cada tela. */
+  --transicao-rapida: 140ms;
+  --transicao:        200ms;
+  --transicao-lenta:  280ms;
+  --transicao-curva:  cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── TEMA CLARO ── */
@@ -210,6 +217,31 @@ body {
 
 button {
   cursor: pointer;
+}
+
+/* ── Transições padronizadas ────────────────────────────────────────────────
+   Todo elemento clicável ou digitável ganha o mesmo tempo e a mesma curva.
+   Telas que já definem uma transição própria continuam funcionando: aqui só
+   entra a base para quem não definia nada (evita "pulos" secos ao passar o
+   mouse, focar um campo ou abrir um menu). */
+button,
+a,
+input,
+select,
+textarea,
+summary,
+[role="button"] {
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+  transition-duration: var(--transicao);
+  transition-timing-function: var(--transicao-curva);
+}
+
+/* Entrada suave da página ao navegar entre rotas. Dura menos de 0,3 s para
+   não cansar a vista nem atrapalhar quem está com pressa. */
+.pagina-transicao {
+  width: 100%;
+  min-height: 100vh;
+  animation: fadeIn var(--transicao-lenta) var(--transicao-curva);
 }
 
 /* ── Acessibilidade (C8) ────────────────────────────────────────────────── */

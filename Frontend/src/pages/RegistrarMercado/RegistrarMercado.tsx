@@ -4,10 +4,16 @@ import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
 import { BASE_URL, api } from '../../services/api';
 import ToastContainer from '../../components/Toast';
+import AceiteTermos from '../../components/AceiteTermos/AceiteTermos';
 import './RegistrarMercado.css';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.jpeg';
 import { irParaInicio } from '../../utils/inicio';
+import {
+  obterEnderecoPorLocalizacao,
+  ErroLocalizacao,
+  localizacaoDisponivel,
+} from '../../utils/geolocalizacao';
 import {
   IconShoppingCart,
   IconStore,
@@ -61,6 +67,7 @@ export default function RegistrarMercado() {
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [localizando, setLocalizando] = useState(false);
   const [categorias, setCategorias] = useState<string[]>([]);
   // Flag persistida no localStorage OU vinda do redirect do Asaas (?pagamento=1)
   const [aguardandoPagamento, setAguardandoPagamento] = useState(() => {
@@ -127,6 +134,10 @@ export default function RegistrarMercado() {
     taxa: '',
     minimo: '',
   });
+
+  // Aceite obrigatório dos Termos de Uso e da Política de Privacidade.
+  const [aceite, setAceite] = useState(false);
+  const [erroAceite, setErroAceite] = useState('');
 
   function dadosEntrega() {
     const valor = (v: string) => {
@@ -208,6 +219,42 @@ export default function RegistrarMercado() {
     void buscarCEP(true);
   }, [form.cep, buscarCEP]);
 
+  // Preenche o endereço pelo GPS do celular/notebook. O navegador pede
+  // autorização; se a pessoa negar, nada muda e o CEP manual continua valendo.
+  async function usarLocalizacao() {
+    if (localizando) return;
+    setLocalizando(true);
+    try {
+      const achado = await obterEnderecoPorLocalizacao();
+      const cepFormatado = achado.cep ? formatarCEP(achado.cep) : '';
+      setForm((atual) => ({
+        ...atual,
+        cep: cepFormatado || atual.cep,
+        estado: achado.estado || atual.estado,
+        cidade: achado.cidade || atual.cidade,
+        bairro: achado.bairro || atual.bairro,
+        rua: achado.rua || atual.rua,
+      }));
+      if (achado.cep) {
+        cepJaBuscado.current = achado.cep.replace(/\D/g, '');
+      }
+      enderecoPeloCep.current = true;
+      showToast(
+        'sucesso',
+        'Endereço aproximado preenchido pela localização. Confira o número.'
+      );
+    } catch (erro) {
+      showToast(
+        'erro',
+        erro instanceof ErroLocalizacao
+          ? erro.message
+          : 'Não foi possível usar sua localização agora. Digite o CEP manualmente.'
+      );
+    } finally {
+      setLocalizando(false);
+    }
+  }
+
   // Admin sem plano: cria direto (paga de volta pelo webhook, mas não precisa)
   async function criarDireto() {
     const token = localStorage.getItem('token');
@@ -234,6 +281,7 @@ export default function RegistrarMercado() {
         categorias,
         horario: horarioEnvioLocal(),
         ...dadosEntrega(),
+        aceite_termos: aceite,
       }),
     });
     const data = await res.json();
@@ -269,6 +317,7 @@ export default function RegistrarMercado() {
         categorias,
         horario: horarioEnvioLocal(),
         ...dadosEntrega(),
+        aceite_termos: aceite,
       },
     });
     if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
@@ -292,6 +341,17 @@ export default function RegistrarMercado() {
 
     if (!formEntrega.entrega && !formEntrega.retirada)
       return showToast('erro', 'Escolha entrega, retirada ou as duas formas.');
+
+    if (!aceite) {
+      setErroAceite(
+        'Para continuar, marque a caixa confirmando que leu e aceita os Termos de Uso e a Política de Privacidade.'
+      );
+      return showToast(
+        'erro',
+        'É necessário aceitar os Termos de Uso e a Política de Privacidade.'
+      );
+    }
+    setErroAceite('');
 
     const horarioEnvio = horarioEnvioLocal();
     const diaRuim = Object.values(horarioEnvio).find(f => !f[0] || !f[1] || f[0] === f[1]);
@@ -652,6 +712,32 @@ export default function RegistrarMercado() {
               </button>
             </div>
 
+            {localizacaoDisponivel() && (
+              <button
+                type="button"
+                className="rm-localizacao-btn"
+                onClick={usarLocalizacao}
+                disabled={localizando}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="7" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                </svg>
+                {localizando ? 'Buscando sua localização...' : 'Usar minha localização'}
+              </button>
+            )}
+
             <div className="rm-grid">
               <div className="field">
                 <input placeholder="Estado (UF)" value={form.estado}
@@ -764,6 +850,16 @@ export default function RegistrarMercado() {
                 </small>
               </div>
             )}
+
+            <AceiteTermos
+              marcado={aceite}
+              onChange={(valor) => {
+                setAceite(valor);
+                if (valor) setErroAceite('');
+              }}
+              erro={erroAceite}
+              contexto="mercado"
+            />
 
             <button type="submit" className="btn btn-primary" disabled={salvando}>
               {salvando ? (

@@ -15,6 +15,7 @@ const buscaRoutes            = require('./routes/buscaRoutes.js')
 const adminRoutes            = require('./routes/adminRoutes.js')
 const assinaturaRoutes       = require('./routes/assinaturaRoutes.js')
 const enderecoRoutes         = require('./routes/enderecoRoutes.js')
+const notificacaoRoutes      = require('./routes/notificacaoRoutes.js')
 const { webhookAsaas }       = require('./controllers/assinaturaController.js')
 const { conectar }           = require('./db/neon.js')
 const { encerrarVencidas }   = require('./services/vigenciaService.js')
@@ -100,6 +101,7 @@ app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoR
 
 app.use('/api/assinaturas',        assinaturaRoutes)
 app.use('/api/enderecos',          enderecoRoutes)
+app.use('/api/notificacoes',       notificacaoRoutes)
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────

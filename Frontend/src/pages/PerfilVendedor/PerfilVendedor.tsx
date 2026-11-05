@@ -10,6 +10,7 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
+import TelaNotificacoes from '../../components/TelaNotificacoes/TelaNotificacoes';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 // As abas de Endereços e Depoimentos são as mesmas do perfil do usuário: o
 // vendedor também é uma conta comum, então reaproveitamos as telas inteiras.
@@ -30,6 +31,7 @@ import {
   IconMail,
   IconInbox,
   IconCreditCard,
+  IconBell,
 } from '../../components/Icons';
 
 interface Mercado {
@@ -53,13 +55,14 @@ const ROTA_CRIAR_MERCADO = '/planos';
 
 const NAV_ITEMS = [
   { icon: <IconUser size={18} />, label: 'Painel do vendedor' },
+  { icon: <IconBell size={18} />, label: 'Notificações' },
   { icon: <IconLock size={18} />, label: 'Segurança' },
   { icon: <IconMapPin size={18} />, label: 'Endereços' },
   { icon: <IconStar size={18} />, label: 'Depoimentos' },
   { icon: <IconCreditCard size={18} />, label: 'Assinaturas' },
 ];
 
-const TITULOS = ['Painel do vendedor', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
+const TITULOS = ['Painel do vendedor', 'Notificações', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -496,6 +499,7 @@ export default function PerfilVendedor() {
 
   const TELAS = [
     <TelaPerfil mercados={mercados} carregando={carregando} favoritos={favoritos} historico={historico} avaliacoes={avaliacoes} onAtualizarFavoritos={setFavoritos} />,
+    <TelaNotificacoes key="notificacoes" />,
     <TelaSeguranca />,
     <TelaEnderecos key="enderecos" />,
     <TelaDepoimentos key="depoimentos" />,

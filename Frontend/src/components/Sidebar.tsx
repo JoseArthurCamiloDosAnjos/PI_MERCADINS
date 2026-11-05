@@ -12,6 +12,7 @@ import {
   IconMessage,
   IconCreditCard,
   IconMapPin,
+  IconBell,
 } from "./Icons";
 import { getReturnUrl } from "../utils/returnUrl";
 
@@ -39,6 +40,7 @@ interface SidebarProps {
 // (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
   { icon: <IconUser size={18} />, label: "Meu perfil" },
+  { icon: <IconBell size={18} />, label: "Notificações" },
   { icon: <IconLock size={18} />, label: "Segurança" },
   { icon: <IconMapPin size={18} />, label: "Endereços" },
   { icon: <IconMessage size={18} />, label: "Depoimentos" },

@@ -1,0 +1,119 @@
+.aceite-termos {
+  --aceite-texto: var(--navy, #0d2a5e);
+  --aceite-apoio: var(--text-muted, #8892a4);
+  --aceite-borda: var(--input-border, #dde3ef);
+  --aceite-marca: var(--gold, #f5c518);
+  --aceite-erro: var(--danger, #e05252);
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--aceite-borda);
+  border-radius: 10px;
+  background: rgba(13, 42, 94, 0.03);
+}
+
+.aceite-termos__linha {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.aceite-termos__linha input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.8px solid #b8c4d9;
+  border-radius: 6px;
+  background: var(--white, #ffffff);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--transicao, 200ms) var(--transicao-curva, ease),
+    border-color var(--transicao, 200ms) var(--transicao-curva, ease),
+    box-shadow var(--transicao, 200ms) var(--transicao-curva, ease);
+}
+
+.aceite-termos__linha input[type='checkbox']::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid var(--aceite-texto);
+  border-bottom: 2px solid var(--aceite-texto);
+  transform: rotate(-45deg) translateY(-1px) scale(0);
+  transition: transform var(--transicao-rapida, 140ms) var(--transicao-curva, ease);
+}
+
+.aceite-termos__linha input[type='checkbox']:checked {
+  background: var(--aceite-marca);
+  border-color: var(--aceite-marca);
+}
+
+.aceite-termos__linha input[type='checkbox']:checked::after {
+  transform: rotate(-45deg) translateY(-1px) scale(1);
+}
+
+.aceite-termos__linha input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--aceite-texto);
+  outline-offset: 2px;
+}
+
+.aceite-termos__linha label {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--aceite-texto);
+  cursor: pointer;
+}
+
+.aceite-termos__linha label a {
+  color: var(--navy-mid, #1a3a7a);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.aceite-termos__linha label a:hover {
+  color: var(--navy, #0d2a5e);
+}
+
+.aceite-termos__ajuda {
+  margin: 0;
+  padding-left: 30px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--aceite-apoio);
+}
+
+.aceite-termos__erro {
+  margin: 0;
+  padding-left: 30px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--aceite-erro);
+}
+
+.aceite-termos--erro {
+  border-color: var(--aceite-erro);
+  background: rgba(224, 82, 82, 0.06);
+}
+
+@media (max-width: 480px) {
+  .aceite-termos {
+    padding: 10px 11px;
+  }
+
+  .aceite-termos__linha label {
+    font-size: 12.5px;
+  }
+
+  .aceite-termos__ajuda,
+  .aceite-termos__erro {
+    padding-left: 0;
+  }
+}

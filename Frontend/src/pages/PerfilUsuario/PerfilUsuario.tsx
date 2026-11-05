@@ -11,6 +11,7 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
+import TelaNotificacoes from '../../components/TelaNotificacoes/TelaNotificacoes';
 import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
 import { useEnderecos } from '../../hooks/useEnderecos';
 import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../../utils/endereco';
@@ -52,7 +53,7 @@ interface ItemCarrinhoLocal {
   quantidade: number;
 }
 
-const TITULOS = ['Meu perfil', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
+const TITULOS = ['Meu perfil', 'Notificações', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -978,6 +979,7 @@ export default function PerfilUsuario() {
       onAtualizarFavoritos={setFavoritos}
       onPedidoCancelado={marcarPedidoCancelado}
     />,
+    <TelaNotificacoes key="notificacoes" />,
     <TelaSeguranca key="seguranca" />,
     <TelaEnderecos key="enderecos" />,
     <TelaDepoimentos key="depoimentos" />,

@@ -5,6 +5,7 @@ const {
   enviarEmailStatusPedido,
   enviarEmailPedidoVendedor,
 } = require('../utils/mailer');
+const { enviarNotificacaoTelefone } = require('../utils/notificacoes');
 
 // ─────────────────────────────────────────────
 // E-mails do pedido — busca os dados prontos e dispara sem travar a resposta
@@ -14,8 +15,9 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
   const [dados] = await sql`
     SELECT h.id, h.produtos, h.valor_total, h.taxa_entrega, h.desconto, h.cupom_codigo,
            h.tipo_entrega, h.agendamento, h.status, h.observacao, h.forma_pagamento,
-           h.endereco_entrega,
-           u.email, u.nome AS cliente, m.nome AS mercado, m.email AS email_vendedor
+           h.endereco_entrega, h.id_usuario, h.id_mercado,
+           u.email, u.nome AS cliente, u.telefone AS telefone_cliente,
+           m.nome AS mercado, m.email AS email_vendedor, m.telefone AS telefone_vendedor
     FROM historico_compras h
     JOIN usuarios u ON u.id_usuario = h.id_usuario
     JOIN mercados m ON m.id_mercado = h.id_mercado
@@ -24,7 +26,11 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
   if (!dados || !dados.email) return null;
   return {
     numero: dados.id,
+    idUsuario: dados.id_usuario,
+    idMercado: dados.id_mercado,
     cliente: dados.cliente,
+    telefoneCliente: dados.telefone_cliente || '',
+    telefoneVendedor: dados.telefone_vendedor || '',
     mercado: dados.mercado,
     itens: dados.produtos,
     valorTotal: Number(dados.valor_total) || 0,
@@ -47,8 +53,64 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
 // (dispara sem segurar a resposta; falha de e-mail não afeta o pedido)
 function avisarVendedorPedido(sql, idPedido) {
   montarDadosPedidoParaEmail(sql, idPedido)
-    .then((dados) => dados && enviarEmailPedidoVendedor(dados.emailVendedor, dados))
+    .then((dados) => {
+      if (!dados) return;
+      enviarEmailPedidoVendedor(dados.emailVendedor, dados);
+      if (dados.telefoneVendedor) {
+        enviarNotificacaoTelefone(sql, {
+          id_mercado: dados.idMercado,
+          telefone: dados.telefoneVendedor,
+          tipo: 'pedido_novo_vendedor',
+          titulo: 'Novo pedido recebido',
+          mensagem: `Olá! O ${dados.mercado} recebeu um novo pedido nº ${dados.numero}, de ${dados.cliente}, no valor de R$ ${dados.total.toFixed(2).replace('.', ',')}. Abra o painel do vendedor para acompanhar.`,
+        });
+      }
+    })
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
+}
+
+// Avisa o CLIENTE no telefone cadastrado sobre o andamento do pedido.
+// Dispara sem segurar a resposta; qualquer falha fica só no log.
+function avisarClientePedidoTelefone(sql, idPedido, status) {
+  montarDadosPedidoParaEmail(sql, idPedido)
+    .then((dados) => {
+      if (!dados?.telefoneCliente) return;
+      const primeiroNome = String(dados.cliente || '').split(' ')[0];
+      const textos = {
+        pendente: [
+          'Pedido recebido',
+          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi recebido e já está com a loja.`,
+        ],
+        preparo: [
+          'Pedido em preparo',
+          `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero}.`,
+        ],
+        caminho: [
+          'Pedido saiu para entrega',
+          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
+        ],
+        entregue: [
+          'Pedido entregue',
+          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
+        ],
+        cancelado: [
+          'Pedido cancelado',
+          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`,
+        ],
+      };
+      const [titulo, mensagem] = textos[status] || [
+        'Atualização do pedido',
+        `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi atualizado para: ${status}.`,
+      ];
+      return enviarNotificacaoTelefone(sql, {
+        id_usuario: dados.idUsuario,
+        telefone: dados.telefoneCliente,
+        tipo: `pedido_${status}`,
+        titulo,
+        mensagem,
+      });
+    })
+    .catch((err) => console.error('Falha na notificação de telefone do pedido:', err.message));
 }
 
 // ─────────────────────────────────────────────
@@ -421,6 +483,7 @@ const criarPedido = async (req, res) => {
       .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
       .catch((err) => console.error('Falha no e-mail de confirmação do pedido:', err.message));
     avisarVendedorPedido(sql, pedido.id);
+    avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
 
     res.status(201).json({
       mensagem: 'Pedido criado com sucesso.',
@@ -554,6 +617,7 @@ const atualizarStatusPedido = async (req, res) => {
     montarDadosPedidoParaEmail(sql, pedidoId)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, status))
       .catch((err) => console.error('Falha no e-mail de status do pedido:', err.message));
+    avisarClientePedidoTelefone(sql, pedidoId, status);
 
     res.status(200).json({ mensagem: 'Status atualizado com sucesso.', pedido: atualizado });
   } catch (err) {
@@ -753,6 +817,7 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
         .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
         .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
       avisarVendedorPedido(sql, pedido.id);
+      avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
     }
     return { recebido: true, pago: true };
   }
@@ -767,6 +832,7 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
+    avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
     console.error(`Pedido ${pedido.id} cancelado: pagamento ${statusAsaas} (${evento}).`);
     return { recebido: true, cancelado: true };
   }
@@ -863,6 +929,7 @@ const cancelarPedido = async (req, res) => {
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
+    avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
 
     res.status(200).json({
       mensagem: 'Pedido cancelado. O estoque dos produtos voltou para a loja.',
@@ -1113,6 +1180,7 @@ const detalharPedido = async (req, res) => {
           await sql`UPDATE historico_compras SET status = 'pendente' WHERE id = ${pedido.id}`;
           pedido.status = 'pendente';
           avisarVendedorPedido(sql, pedido.id);
+          avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
         }
       } catch (err) {
         // Asaas fora do ar não quebra a tela: só sem o QR

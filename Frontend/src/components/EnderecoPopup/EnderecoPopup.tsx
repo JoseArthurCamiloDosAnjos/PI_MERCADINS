@@ -21,6 +21,11 @@ import {
   mascaraCep,
 } from "../../utils/endereco";
 import { buscarCep, digitosCep } from "../../utils/cep";
+import {
+  obterEnderecoPorLocalizacao,
+  ErroLocalizacao,
+  localizacaoDisponivel,
+} from "../../utils/geolocalizacao";
 import "./EnderecoPopup.css";
 
 // Um campo do endereço (rua, número, bairro, CEP, cidade, complemento)
@@ -100,6 +105,8 @@ export default function EnderecoPopup({
   const [tentouSalvar, setTentouSalvar] = useState(false);
   // Aviso do preenchimento automático (buscando, preenchido ou CEP sem achado)
   const [avisoCep, setAvisoCep] = useState<string | null>(null);
+  // Botão "Usar minha localização": fica ocupado enquanto o navegador responde
+  const [localizando, setLocalizando] = useState(false);
   // CEP que já foi consultado — evita buscar a mesma coisa duas vezes
   const ultimoCepBuscado = useRef<string | null>(
     digitosCep(enderecoInicial?.cep ?? "") || null
@@ -180,6 +187,44 @@ export default function EnderecoPopup({
     onSalvar(endereco);
   };
 
+  // Pede autorização ao navegador e preenche o que der (CEP, rua, bairro e
+  // cidade). O número e o complemento continuam por conta da pessoa, porque
+  // nenhum serviço de mapa acerta o número exato do imóvel.
+  const usarMinhaLocalizacao = async () => {
+    if (localizando) return;
+    setLocalizando(true);
+    setAvisoCep("Pedindo autorização de localização ao navegador...");
+
+    try {
+      const achado = await obterEnderecoPorLocalizacao();
+
+      setEndereco((atual) => ({
+        ...atual,
+        cep: achado.cep ? mascaraCep(achado.cep) : atual.cep,
+        rua: achado.rua || atual.rua,
+        bairro: achado.bairro || atual.bairro,
+        cidade: achado.cidade || atual.cidade,
+      }));
+
+      if (achado.cep) {
+        ultimoCepBuscado.current = digitosCep(achado.cep);
+        veioDoCep.current = true;
+      }
+
+      setAvisoCep(
+        "Endereço aproximado preenchido pela sua localização. Confira o número e complete o complemento."
+      );
+    } catch (erro) {
+      setAvisoCep(
+        erro instanceof ErroLocalizacao
+          ? erro.message
+          : "Não foi possível usar sua localização agora. Digite o CEP manualmente."
+      );
+    } finally {
+      setLocalizando(false);
+    }
+  };
+
   if (!aberto) return null;
 
   const nomesFaltando = faltando.map((campo) => NOMES_CAMPOS_ENDERECO[campo]);
@@ -209,6 +254,38 @@ export default function EnderecoPopup({
         </div>
 
         <div className="endereco-popup__body">
+          {localizacaoDisponivel() && (
+            <>
+              <button
+                type="button"
+                className="endereco-popup__localizacao"
+                onClick={usarMinhaLocalizacao}
+                disabled={localizando}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="7" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                </svg>
+                {localizando ? "Buscando sua localização..." : "Usar minha localização"}
+              </button>
+              <p className="endereco-popup__localizacao-ajuda">
+                O navegador vai pedir autorização. O número e o complemento
+                continuam para você completar.
+              </p>
+            </>
+          )}
+
           <div className="endereco-grid">
             <CampoEndereco
               id="popup-endereco-rua"

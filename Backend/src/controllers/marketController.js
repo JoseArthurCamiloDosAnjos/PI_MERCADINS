@@ -1,5 +1,7 @@
 const { conectar } = require("../db/neon");
 const { limitesDoPlano, normalizarPlano } = require("../utils/planos");
+const { VERSAO_TERMOS } = require("../utils/termos");
+const { enviarNotificacaoTelefone } = require("../utils/notificacoes");
 
 // ─────────────────────────────────────────────
 // Helper — gera slug a partir do nome
@@ -206,6 +208,11 @@ function validarDadosMercado(dados = {}) {
     cor_texto_sec, plano, categorias, horario,
     taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = dados;
 
+  // Aceite dos Termos/Privacidade: vem do formulário (checkbox) e é gravado
+  // junto com a data, a versão dos textos e o IP de origem.
+  const aceiteTermos = dados.aceite_termos === true;
+  const termosIp = String(dados.termos_ip || '').slice(0, 80);
+
   // Revalidação de payload já normalizado: a entrega vem embutida em
   // dados.entrega {taxa, minimo, entrega, retirada} em vez dos campos soltos
   const entregaFonte = dados.entrega && typeof dados.entrega === 'object'
@@ -265,6 +272,8 @@ function validarDadosMercado(dados = {}) {
       cats,
       horario: horarioNovo,
       entrega,
+      aceite_termos: aceiteTermos,
+      termos_ip: termosIp,
     },
   };
 }
@@ -319,7 +328,7 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
 
   // Cria o mercado
   const [novoMercado] = await sql`
-    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada)
+    INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, termos_aceitos_em, termos_versao, termos_ip)
     VALUES (
       ${d.nome},
       ${d.email},
@@ -344,7 +353,10 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
       ${Number(d.entrega?.taxa ?? 0).toFixed(2)},
       ${Number(d.entrega?.minimo ?? 0).toFixed(2)},
       ${d.entrega?.entrega ?? true},
-      ${d.entrega?.retirada ?? true}
+      ${d.entrega?.retirada ?? true},
+      ${d.aceite_termos ? new Date() : null},
+      ${d.aceite_termos ? VERSAO_TERMOS : ''},
+      ${d.termos_ip || ''}
     )
     RETURNING *
   `;
@@ -354,6 +366,18 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
     VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
   `;
+
+  // Avisa o telefone cadastrado que a loja entrou no ar. O envio real depende
+  // do provedor de WhatsApp/SMS configurado; sem provedor o aviso fica no
+  // histórico da conta (aba Notificações) com o link pronto do WhatsApp.
+  await enviarNotificacaoTelefone(sql, {
+    id_usuario,
+    id_mercado: novoMercado.id_mercado,
+    telefone: d.telefone,
+    tipo: 'mercado_cadastrado',
+    titulo: 'Mercado cadastrado',
+    mensagem: `Olá! O mercado ${d.nome} foi cadastrado com sucesso no Mercadins. Acesse o painel do vendedor para cadastrar seus produtos e acompanhar os pedidos.`,
+  });
 
   // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
   // tabela "categorias" — é daí que a página do mercado lê as abas de
@@ -407,7 +431,7 @@ const criarMercado = async (req, res) => {
       });
     }
 
-    const validacao = validarDadosMercado(req.body);
+    const validacao = validarDadosMercado({ ...req.body, termos_ip: req.ip });
     if (validacao.erro)
       return res.status(400).json({ erro: validacao.erro });
 

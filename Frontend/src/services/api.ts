@@ -236,6 +236,12 @@ export const api = {
       body: JSON.stringify({}),
     }),
 
+  // ── Notificações por telefone (histórico e teste) ─────────────────────────
+  listarNotificacoes: () =>
+    request('/notificacoes'),
+  enviarNotificacaoTeste: () =>
+    request('/notificacoes/teste', { method: 'POST' }),
+
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/cupons`),

@@ -9,6 +9,7 @@ const {
 } = require('../services/vigenciaService');
 const { LIMITES_PLANOS } = require('../utils/planos');
 const { validarDadosMercado, criarMercadoCompleto } = require('./marketController');
+const { MENSAGEM_ACEITE_OBRIGATORIO } = require('../utils/termos');
 const { processarPagamentoPedido } = require('./pedidoController');
 
 // Dados exibidos na tela "Assinaturas": nome comercial + preço do ciclo.
@@ -184,8 +185,18 @@ const criarCheckout = async (req, res) => {
   try {
     const sql = await conectar();
 
+    // O cadastro do mercado só pode avançar com o aceite explícito dos
+    // Termos de Uso e da Política de Privacidade (LGPD).
+    if (mercado.aceite_termos !== true) {
+      return res.status(400).json({ erro: MENSAGEM_ACEITE_OBRIGATORIO });
+    }
+
     // Valida os dados do mercado (mesma validação do cadastro direto)
-    const validacao = validarDadosMercado({ ...mercado, plano: codigo_plano });
+    const validacao = validarDadosMercado({
+      ...mercado,
+      plano: codigo_plano,
+      termos_ip: req.ip,
+    });
     if (validacao.erro) {
       return res.status(400).json({ erro: validacao.erro });
     }

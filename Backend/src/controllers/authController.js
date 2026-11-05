@@ -9,6 +9,8 @@ const {
   validarCPF,
 } = require("../utils/validators");
 const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } = require("../utils/mailer");
+const { VERSAO_TERMOS, MENSAGEM_ACEITE_OBRIGATORIO } = require("../utils/termos");
+const { enviarNotificacaoTelefone } = require("../utils/notificacoes");
 
 // Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
@@ -29,6 +31,8 @@ const signUp = async (req, res) => {
   if (!req.body) return res.status(400).json({ erro: "Body inválido" });
   if (!nome || !email || !senha || !telefone || !cpf || !confirmarSenha)
     return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
+  if (req.body.aceite_termos !== true)
+    return res.status(400).json({ erro: MENSAGEM_ACEITE_OBRIGATORIO });
   const emailValido = await validarEmail(email);
   if (!emailValido)
     return res
@@ -64,10 +68,21 @@ const signUp = async (req, res) => {
     const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await sql`
-      INSERT INTO usuarios (nome, email, senha, telefone, cpf, data_nascimento, email_verificado, token_verificacao, token_expiracao)
-      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, ${data_nascimento || null}, FALSE, ${codigoVerificacao}, ${expiracao})
+    const [novoUsuario] = await sql`
+      INSERT INTO usuarios (nome, email, senha, telefone, cpf, data_nascimento, email_verificado, token_verificacao, token_expiracao, termos_aceitos_em, termos_versao, termos_ip)
+      VALUES (${nome}, ${email}, ${senhaHash}, ${telefone}, ${cpfLimpo}, ${data_nascimento || null}, FALSE, ${codigoVerificacao}, ${expiracao}, NOW(), ${VERSAO_TERMOS}, ${String(req.ip || '').slice(0, 80)})
+      RETURNING id_usuario
     `;
+
+    // Aviso no telefone cadastrado. Sem provedor configurado ele fica no
+    // histórico da conta e pode ser aberto no WhatsApp.
+    await enviarNotificacaoTelefone(sql, {
+      id_usuario: novoUsuario?.id_usuario ?? null,
+      telefone,
+      tipo: 'cadastro',
+      titulo: 'Cadastro realizado',
+      mensagem: `Olá, ${nome.split(' ')[0]}! Seu cadastro no Mercadins foi realizado com sucesso. Confirme seu e-mail para ativar a conta e começar a comprar.`,
+    });
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
     await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
@@ -90,7 +105,7 @@ const verificarEmail = async (req, res) => {
     const sql = await conectar();
 
     const [usuario] = await sql`
-      SELECT id_usuario, token_expiracao FROM usuarios
+      SELECT id_usuario, nome, telefone, token_expiracao FROM usuarios
       WHERE token_verificacao = ${codigo} AND email_verificado = FALSE
     `;
 
@@ -108,6 +123,14 @@ const verificarEmail = async (req, res) => {
       SET email_verificado = TRUE, token_verificacao = NULL, token_expiracao = NULL
       WHERE id_usuario = ${usuario.id_usuario}
     `;
+
+    await enviarNotificacaoTelefone(sql, {
+      id_usuario: usuario.id_usuario,
+      telefone: usuario.telefone,
+      tipo: 'email_confirmado',
+      titulo: 'E-mail confirmado',
+      mensagem: `Olá, ${String(usuario.nome || '').split(' ')[0]}! Seu e-mail foi confirmado com sucesso. Sua conta no Mercadins está ativa.`,
+    });
 
     res.json({
       mensagem: "Email verificado com sucesso! Você já pode fazer login.",

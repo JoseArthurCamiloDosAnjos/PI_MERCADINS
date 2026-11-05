@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { api } from './services/api'
@@ -414,6 +414,7 @@ function VitrineVendedorWrapper() {
 
 function Rotas() {
   const { usuario, carregando, temMercado } = useAuth()
+  const location = useLocation()
   const posLoginDestino = typeof window !== 'undefined'
     ? sessionStorage.getItem('posLoginDestino')
     : null
@@ -423,39 +424,41 @@ function Rotas() {
 
   return (
     <Suspense fallback={<LoadingOverlay mensagem="Carregando..." />}>
-      <Routes>
-        <Route path="/"                  element={<MenuPrincipal/>} />
-        <Route path="/promocional"       element={<MercadinsPromos />}/>
-        <Route path="/sobre"             element={<Sobre />} />
-        <Route path="/como-funciona"     element={<ComoFunciona />} />
-        <Route path="/mercados-parceiros" element={<MercadosParceiros />} />
-        <Route path="/atendimento"       element={<Atendimento />} />
-        <Route path="/termos"            element={<Termos />} />
-        <Route path="/privacidade"       element={<Privacidade />} />
-        <Route path="/cookies"           element={<Cookies />} />
-        <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
-        <Route path="/login"             element={!usuario ? <Login />    : <Navigate to={destino} />} />
-        <Route path="/auth/login"        element={!usuario ? <Login />    : <Navigate to={destino} />} />
-        <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
-        <Route path="/register"          element={!usuario ? <Register /> : <Navigate to={destino} />} />
-        <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
-        <Route path="/verificar-email"   element={<VerificarEmail />} />
-        <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
-        <Route path="/favoritos"         element={usuario ? <Favoritos /> : <Navigate to="/auth" />} />
-        {/* B4 — Acompanhamento de pedidos (cliente logado) */}
-        <Route path="/pedidos"           element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
-        <Route path="/pedidos/:pedidoId" element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
-        <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
-        <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
-        <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
-        <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
-        <Route path="/planos"            element={<SelecionarPlano />} />
-        <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
-        <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
-        <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
-        <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
-        <Route path="*"                  element={<PaginaNaoEncontrada />} />
-      </Routes>
+      <div className="pagina-transicao" key={location.pathname}>
+        <Routes>
+          <Route path="/"                  element={<MenuPrincipal/>} />
+          <Route path="/promocional"       element={<MercadinsPromos />}/>
+          <Route path="/sobre"             element={<Sobre />} />
+          <Route path="/como-funciona"     element={<ComoFunciona />} />
+          <Route path="/mercados-parceiros" element={<MercadosParceiros />} />
+          <Route path="/atendimento"       element={<Atendimento />} />
+          <Route path="/termos"            element={<Termos />} />
+          <Route path="/privacidade"       element={<Privacidade />} />
+          <Route path="/cookies"           element={<Cookies />} />
+          <Route path="/auth"              element={!usuario ? <Login />    : <Navigate to={destino} />} />
+          <Route path="/login"             element={!usuario ? <Login />    : <Navigate to={destino} />} />
+          <Route path="/auth/login"        element={!usuario ? <Login />    : <Navigate to={destino} />} />
+          <Route path="/auth/register"     element={!usuario ? <Register /> : <Navigate to={destino} />} />
+          <Route path="/register"          element={!usuario ? <Register /> : <Navigate to={destino} />} />
+          <Route path="/redefinir-senha"   element={<RedefinirSenha />} />
+          <Route path="/verificar-email"   element={<VerificarEmail />} />
+          <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
+          <Route path="/favoritos"         element={usuario ? <Favoritos /> : <Navigate to="/auth" />} />
+          {/* B4 — Acompanhamento de pedidos (cliente logado) */}
+          <Route path="/pedidos"           element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
+          <Route path="/pedidos/:pedidoId" element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
+          <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+          <Route path="/vendedor/mercado/:mercadoId"         element={usuario && temMercado ? <GerenciamentoMercadoWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+          <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
+          <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
+          <Route path="/planos"            element={<SelecionarPlano />} />
+          <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
+          <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
+          <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
+          <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
+          <Route path="*"                  element={<PaginaNaoEncontrada />} />
+        </Routes>
+      </div>
     </Suspense>
   )
 }

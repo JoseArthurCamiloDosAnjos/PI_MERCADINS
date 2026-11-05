@@ -10,6 +10,7 @@ import { useToast } from '../../hooks/useToast';
 import { removeEmojis, LIMITS, bloquearEspaco, sanitizeEmail, sanitizeName, sanitizePassword } from '../../hooks/useBlockEmojis';
 import ToastContainer from '../../components/Toast';
 import PasswordStrength from "../../components/PasswordStrength";
+import AceiteTermos from '../../components/AceiteTermos/AceiteTermos';
 import logoImg from "../../assets/logo.jpeg";
 import logo2Img from "../../assets/logo2.png";
 import { irParaInicio } from "../../utils/inicio";
@@ -57,6 +58,8 @@ export default function Register() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmar, setShowConfirmar] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [aceite, setAceite] = useState(false);
+  const [erroAceite, setErroAceite] = useState("");
   const [calendarioAberto, setCalendarioAberto] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +277,19 @@ export default function Register() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+
+    if (!aceite) {
+      setErroAceite(
+        "Para continuar, marque a caixa confirmando que leu e aceita os Termos de Uso e a Política de Privacidade."
+      );
+      showToast(
+        "erro",
+        "É necessário aceitar os Termos de Uso e a Política de Privacidade."
+      );
+      return;
+    }
+    setErroAceite("");
+
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/api/auth/register`, {
@@ -287,6 +303,7 @@ export default function Register() {
           email: form.email.trim(),
           senha: form.senha,
           confirmarSenha: form.confirmar,
+          aceite_termos: true,
         }),
       });
 
@@ -581,6 +598,16 @@ export default function Register() {
               </div>
               <span className="field-msg">{fields.confirmar.msg}</span>
             </div>
+
+            <AceiteTermos
+              marcado={aceite}
+              onChange={(valor) => {
+                setAceite(valor);
+                if (valor) setErroAceite("");
+              }}
+              erro={erroAceite}
+              contexto="cliente"
+            />
 
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? (

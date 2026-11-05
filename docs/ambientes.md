@@ -10,16 +10,22 @@ clientes usam), e como manter essa separação sem segredo.
 
 | O quê | Desenvolvimento | Produção |
 |---|---|---|
-| **Site (frontend)** | `http://localhost:5173` (Vite) | `https://mercadins.com.br` (Vercel) |
+| **Site (frontend)** | `http://localhost:5173` (Vite) | `https://mercadins.com.br` (Render — `static_site` do blueprint `render.yaml`) |
 | **API (backend)** | `http://localhost:3001` (nodemon) | `https://pi-mercadins.onrender.com` (Render) |
 | **Banco de dados** | PostgreSQL local (`DATABASE_URL_LOCAL`) | Neon (`DATABASE_URL_NEON`) |
-| **Variáveis** | Arquivo `Backend/.env` e `Frontend/.env` (não versionados) | Cadastradas na painel do Render e da Vercel |
+| **Variáveis** | Arquivos `Backend/.env`, `Frontend/.env` e `.env` da raiz (não versionados) | Cadastradas no painel do Render (backend e site) |
 | **E-mails** | Podem ficar desativados (sem chave) | Resend com chave de produção |
 
 O backend escolhe qual banco usar pela variável `DB_PROVIDER`:
 
 - `DB_PROVIDER=local` → usa `DATABASE_URL_LOCAL` (banco da própria máquina);
-- `DB_PROVIDER=neon` → usa `DATABASE_URL_NEON` (banco online compartilhado pelo site no ar).
+- `DB_PROVIDER=neon` → usa `DATABASE_URL_NEON` (banco online compartilhado pelo site no ar);
+- **sem a variável (padrão `auto`)** → tenta o Neon primeiro e usa o local como
+  fallback — é o que acontece no Render, onde `DB_PROVIDER` nem é obrigatório.
+
+Em produção o backend também detecta sozinho o ambiente (a variável `RENDER`
+já é definida pela plataforma), então `NODE_ENV=production` não precisa ser
+cadastrada à mão.
 
 Assim, quem programa nunca arrisca apagar ou alterar dados do site real.
 
@@ -31,6 +37,7 @@ Cada pasta tem um modelo com todas as variáveis explicadas:
 
 - `Backend/.env.example`
 - `Frontend/.env.example`
+- `.env.example` na raiz (só para o Docker — interpola o `compose.yaml`)
 
 Para ligar o projeto na sua máquina:
 
@@ -46,8 +53,9 @@ documentação viva para quem chegar no projeto.
 ## O que NUNCA deve se misturar
 
 1. **Chaves de produção ficam só nos serviços.** A chave do Resend, a senha do
-   banco da Neon e o `JWT_SECRET` do site no ar existem apenas no Render/Vercel —
-   nunca em arquivo commitado, nunca em mensagem de commit, nunca em print.
+   banco da Neon, o `JWT_SECRET` e a chave do Asaas do site no ar existem
+   apenas no painel do Render — nunca em arquivo commitado, nunca em mensagem
+   de commit, nunca em print.
 2. **Banco de produção não é usado para testar.** Testes de funcionalidade nova
    usam banco local (ou o banco da Neon apenas para dados de demonstração já
    preparados, como os mercados de exemplo).
@@ -59,19 +67,31 @@ documentação viva para quem chegar no projeto.
 
 ## Como cada serviço recebe as variáveis em produção
 
-### Render (backend)
+O blueprint **`render.yaml` na raiz** define os dois serviços (backend e site)
+e a maioria das variáveis. Os valores com `sync: false` são cadastrados à mão
+no painel na primeira sincronização.
+
+### Render — backend (`mercadins-backend`)
 
 1. Painel do serviço → **Environment** → **Add Environment Variable**;
-2. Cadastrar: `NODE_ENV=production`, `DB_PROVIDER=neon`, `DATABASE_URL_NEON`,
-   `JWT_SECRET`, `RESEND_API_KEY`, `FRONTEND_URL=https://mercadins.com.br`,
-   `ALLOWED_ORIGINS=https://mercadins.com.br,https://www.mercadins.com.br`;
-3. Salvar — o Render reinicia o serviço sozinho.
+2. Cadastrar as que não vêm do blueprint (`sync: false`):
+   `DATABASE_URL_NEON`, `JWT_SECRET`, `RESEND_API_KEY`, `Assas_API_KEY`,
+   `ASAAS_WEBHOOK_TOKEN`;
+3. As demais já vêm do `render.yaml`: `FRONTEND_URL`, `ALLOWED_ORIGINS`,
+   `Assas_API_URL_Producao`, `Assas_API_URL_Sandbox`;
+4. Salvar — o Render reinicia o serviço sozinho.
 
-### Vercel (frontend)
+### Render — site (`mercadins-frontend`, static_site)
 
-1. Painel do projeto → **Settings** → **Environment Variables**;
-2. Cadastrar `VITE_API_URL=https://pi-mercadins.onrender.com`;
-3. Fazer um novo deploy (ou usar "Redeploy") para a variável valer.
+1. Painel do serviço → **Environment**;
+2. `VITE_API_URL=https://pi-mercadins.onrender.com` já vem do `render.yaml`;
+3. Cadastrar também (obrigatórias em tempo de execução — o app aborta sem elas):
+   `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`;
+4. Fazer um novo deploy para as variáveis `VITE_*` valerem (elas entram no build).
+
+> O repositório não tem `vercel.json` — o deploy do site é o `static_site` do
+> `render.yaml`. Se algum dia o site passar para outro serviço (ex.: Vercel),
+> basta cadastrar as mesmas variáveis `VITE_*` no painel de lá.
 
 ---
 
@@ -79,7 +99,7 @@ documentação viva para quem chegar no projeto.
 
 - [ ] Adicionada ao `.env.example` com comentário explicando o que é;
 - [ ] Valor de desenvolvimento testado localmente;
-- [ ] Valor de produção cadastrado no Render/Vercel (conforme o caso);
+- [ ] Valor de produção cadastrado no Render (backend ou site, conforme o caso);
 - [ ] Nenhum valor real commitado;
 - [ ] Código usa `process.env.NOME` (backend) ou `import.meta.env.VITE_NOME`
       (frontend) com um padrão seguro quando a variável falta.

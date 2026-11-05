@@ -550,6 +550,12 @@ const webhookAsaas = async (req, res) => {
     return res.status(400).json({ erro: 'Payload de webhook inválido.' });
   }
 
+  // Eventos de split (PAYMENT_SPLIT_DONE etc.) identificam o repasse pelo
+  // additionalInfo.splitId — repassa junto para processarPagamentoPedido
+  if (req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
+    pagamento.additionalInfo = req.body.additionalInfo;
+  }
+
   try {
     const sql = await conectar();
 

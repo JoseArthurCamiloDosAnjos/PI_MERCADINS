@@ -104,6 +104,13 @@ interface FinanceiroResumo {
   custoFixo: number;
   lucro: number;           // pode ser negativo (prejuízo)
   itensSemCusto: number;   // unidades vendidas sem custo cadastrado
+  // Repasses do mês (Asaas Split): dinheiro dos pedidos online
+  recebimento?: {
+    walletCadastrado: boolean;
+    liquidado: number;          // já caiu na conta do vendedor
+    pendente: number;           // split em análise/pendente
+    retidoPlataforma: number;   // ficou na conta da plataforma
+  };
   porStatus: Record<string, number>;
   serieDiaria: { dia: number; pedidos: number; receita: number }[];
   topProdutos: { nome: string; qtd: number; receita: number }[];
@@ -132,6 +139,8 @@ interface MercadoInfo {
   pedido_minimo?: number | string | null;
   oferece_entrega?: boolean | null;
   oferece_retirada?: boolean | null;
+  // Carteira Asaas do vendedor (pedidos online pagos direto pra conta dele)
+  asaas_wallet_id?: string | null;
 }
 
 interface ResumoDashboard {
@@ -966,6 +975,40 @@ function SecFinanceiro({
         ))}
       </div>
 
+      {/* Repasse dos pedidos online (Asaas Split) */}
+      {!carregando && fin?.recebimento && (
+        <div className="gm-fixos-card">
+          <div className="gm-fixos-texto">
+            <strong>
+              {fin.recebimento.walletCadastrado
+                ? 'Recebimento direto na sua conta Asaas'
+                : 'Pedidos online na conta da plataforma'}
+            </strong>
+            <span>
+              {fin.recebimento.walletCadastrado
+                ? 'O Pix/cartão dos pedidos é repassado automaticamente para a sua carteira Asaas (100%, sem comissão).'
+                : 'Cadastre o Wallet ID do Asaas em Informações para o dinheiro dos pedidos online cair direto na sua conta.'}
+            </span>
+          </div>
+          <div className="gm-fixos-acoes" style={{ gap: '1.2rem', flexWrap: 'wrap' }}>
+            <div className="gm-stat-info">
+              <p className="gm-stat-val gm-yellow">{formatarBRL(fin.recebimento.liquidado)}</p>
+              <p className="gm-stat-lbl">Liquidado no mês</p>
+            </div>
+            <div className="gm-stat-info">
+              <p className="gm-stat-val">{formatarBRL(fin.recebimento.pendente)}</p>
+              <p className="gm-stat-lbl">Pendente</p>
+            </div>
+            {fin.recebimento.retidoPlataforma > 0 && (
+              <div className="gm-stat-info">
+                <p className="gm-stat-val gm-red">{formatarBRL(fin.recebimento.retidoPlataforma)}</p>
+                <p className="gm-stat-lbl">Retido na plataforma</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {avisoSemCusto && (
         <div className="gm-aviso-custo">
           <p>
@@ -1409,7 +1452,7 @@ function InfoConteudo({ mercado, onSalvo }: {
   const [erro, setErro] = useState('');
   const [form, setForm] = useState({
     nome: '', telefone: '', email: '', rua: '', bairro: '',
-    cidade: '', estado: '', cep: '',
+    cidade: '', estado: '', cep: '', asaas_wallet_id: '',
   });
   // Entrega e retirada (B2): taxa, pedido mínimo e quais formas a loja aceita
   const [entrega, setEntrega] = useState({
@@ -1495,6 +1538,7 @@ function InfoConteudo({ mercado, onSalvo }: {
       nome: mercado.nome ?? '', telefone: mercado.telefone ?? '', email: mercado.email ?? '',
       rua: mercado.rua ?? '', bairro: mercado.bairro ?? '', cidade: mercado.cidade ?? '',
       estado: mercado.estado ?? '', cep: mercado.cep ?? '',
+      asaas_wallet_id: mercado.asaas_wallet_id ?? '',
     });
     setEntrega({
       taxa: mercado.taxa_entrega != null ? String(Number(mercado.taxa_entrega)) : '0',
@@ -1545,6 +1589,12 @@ function InfoConteudo({ mercado, onSalvo }: {
       setErro('Taxa de entrega e pedido mínimo não podem ser negativos.');
       return;
     }
+    // Wallet Asaas (recebimento direto): formato do id de carteira do Asaas
+    const wallet = form.asaas_wallet_id.trim();
+    if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet)) {
+      setErro('Wallet ID do Asaas inválido (confira o valor no painel do Asaas).');
+      return;
+    }
 
     setSalvando(true);
     setErro('');
@@ -1563,6 +1613,7 @@ function InfoConteudo({ mercado, onSalvo }: {
         pedido_minimo: minimo,
         oferece_entrega: entrega.ofereceEntrega,
         oferece_retirada: entrega.ofereceRetirada,
+        asaas_wallet_id: wallet,
       });
       setEditando(false);
       onSalvo({ ...mercado, ...form, ...(res.mercado ?? {}) } as MercadoInfo);
@@ -1690,6 +1741,24 @@ function InfoConteudo({ mercado, onSalvo }: {
             </label>
           </div>
 
+          <p className="gm-info-subtitulo"><IconCreditCard size={13} /> Recebimento dos pedidos online</p>
+          <div className="gm-info-entrega">
+            <label className="gm-info-campo gm-info-campo--full">
+              Wallet ID do Asaas (opcional)
+              <input
+                className="gm-modal-input"
+                value={form.asaas_wallet_id}
+                maxLength={64}
+                placeholder="Ex.: 48548710-9baa-4ec1-a11f-9010193527c6"
+                onChange={e => set('asaas_wallet_id', e.target.value.trim())}
+              />
+              <small className="gm-info-dica-cep">
+                Com o wallet cadastrado, o Pix/cartão dos pedidos cai direto na sua conta Asaas
+                (100% para você, sem comissão). Deixe vazio para manter o valor na plataforma.
+              </small>
+            </label>
+          </div>
+
           {erro && <p className="gm-info-erro">{erro}</p>}
 
           <div className="gm-info-acoes">
@@ -1739,6 +1808,14 @@ function InfoConteudo({ mercado, onSalvo }: {
             <div className="gm-info-row">
               <span className="gm-info-lbl"><IconStore size={13} /> Retirada</span>
               <span className="gm-info-val">{mercado.oferece_retirada === false ? 'não aceita' : 'aceita no balcão'}</span>
+            </div>
+            <div className="gm-info-row">
+              <span className="gm-info-lbl"><IconCreditCard size={13} /> Recebimento</span>
+              <span className="gm-info-val" title={mercado.asaas_wallet_id || undefined}>
+                {mercado.asaas_wallet_id
+                  ? `direto na conta Asaas (${mercado.asaas_wallet_id.slice(0, 8)}…)`
+                  : 'na conta da plataforma'}
+              </span>
             </div>
           </div>
         </div>

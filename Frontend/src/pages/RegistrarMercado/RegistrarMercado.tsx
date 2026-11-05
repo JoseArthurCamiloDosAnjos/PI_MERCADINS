@@ -125,6 +125,9 @@ export default function RegistrarMercado() {
     nome: '', email: '', telefone: '', cnpj: '', descricao: '',
     cep: '', estado: '', cidade: '', bairro: '', rua: '',
   });
+  // Wallet Asaas do lojista (opcional): pedidos pagos online caem direto
+  // na conta dele via Asaas Split (100%, sem comissão da plataforma)
+  const [wallet, setWallet] = useState('');
 
   // Como o mercado entrega os pedidos. A taxa e o pedido mínimo só valem
   // quando a entrega está marcada; a retirada é sempre grátis.
@@ -282,6 +285,7 @@ export default function RegistrarMercado() {
         horario: horarioEnvioLocal(),
         ...dadosEntrega(),
         aceite_termos: aceite,
+        asaas_wallet_id: wallet.trim() || null,
       }),
     });
     const data = await res.json();
@@ -318,6 +322,7 @@ export default function RegistrarMercado() {
         horario: horarioEnvioLocal(),
         ...dadosEntrega(),
         aceite_termos: aceite,
+        asaas_wallet_id: wallet.trim() || null,
       },
     });
     if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
@@ -357,6 +362,10 @@ export default function RegistrarMercado() {
     const diaRuim = Object.values(horarioEnvio).find(f => !f[0] || !f[1] || f[0] === f[1]);
     if (diaRuim)
       return showToast('erro', 'Confira o horário: abertura e fechamento precisam ser diferentes.');
+
+    // Wallet Asaas é opcional, mas se vier precisa ter o formato certo
+    if (wallet.trim() && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet.trim()))
+      return showToast('erro', 'Wallet ID do Asaas inválido (confira o valor no painel do Asaas).');
 
     const token = localStorage.getItem('token');
     if (!token) return showToast('erro', 'Sessão expirada. Faça login novamente.');
@@ -685,6 +694,28 @@ export default function RegistrarMercado() {
             <p className="rm-horario-dica">
               Fechar depois da meia-noite? Marque a hora de fechar menor que a de abrir
               (ex.: abre 18:00, fecha 02:00).
+            </p>
+
+            <p className="rm-section-label">
+              Recebimento das vendas <small>opcional</small>
+            </p>
+
+            <div className="field">
+              <input
+                placeholder="Wallet ID do Asaas (para receber direto)"
+                value={wallet}
+                maxLength={64}
+                onChange={e => setWallet(e.target.value.trim())}
+              />
+              <FieldIcon>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="15" r="1"/>
+                </svg>
+              </FieldIcon>
+            </div>
+            <p className="rm-horario-dica">
+              Com o wallet, o Pix/cartão dos pedidos online cai direto na sua conta Asaas
+              (100% para você, sem comissão). Sem wallet, o valor fica na plataforma.
             </p>
 
             <p className="rm-section-label">Endereço</p>

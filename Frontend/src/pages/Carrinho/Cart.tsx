@@ -478,6 +478,39 @@ export default function CartScreen({
     onAplicarCupom?.(codigo);
   };
 
+  // Texto do botão de finalizar: usado no painel de resumo (desktop) e na
+  // barra fixa do celular, para os dois mostrarem sempre a mesma ação.
+  const textoCheckout = finalizando
+    ? "Enviando…"
+    : faltaMinimo
+      ? "Abaixo do pedido mínimo"
+      : formaPagamento === "pix"
+        ? "Criar pedido e pagar com Pix"
+        : formaPagamento === "cartao"
+          ? "Ir para o pagamento do cartão"
+          : "Finalizar pedido";
+
+  // Na barra do celular o espaço é menor: mesma ação, texto mais curto
+  const textoCheckoutCurto = finalizando
+    ? "Enviando…"
+    : faltaMinimo
+      ? "Abaixo do mínimo"
+      : formaPagamento === "pix"
+        ? "Pagar com Pix"
+        : formaPagamento === "cartao"
+          ? "Pagar com cartão"
+          : "Finalizar pedido";
+
+  // Quando falta algum dado da entrega, leva a pessoa até o aviso (ele fica no
+  // resumo, que no celular pode estar bem abaixo dos itens).
+  useEffect(() => {
+    if (!erroEndereco) return;
+    document.querySelector(".cart-endereco")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [erroEndereco]);
+
   return (
     <div className="cart-page">
       {/* Barra superior */}
@@ -503,9 +536,16 @@ export default function CartScreen({
             {itemCount} {itemCount === 1 ? "item" : "itens"}
           </span>
           {items.length > 0 && (
-            <button className="cart-clear" onClick={clearCart} type="button">
+            <button
+              className="cart-clear"
+              onClick={clearCart}
+              type="button"
+              aria-label="Limpar carrinho"
+            >
               <IconTrash />
-              Limpar carrinho
+              {/* Em telas muito estreitas sobra só o ícone; o aria-label
+                  mantém a ação descrita para leitores de tela */}
+              <span className="cart-clear__texto">Limpar carrinho</span>
             </button>
           )}
         </div>
@@ -924,35 +964,52 @@ export default function CartScreen({
             </fieldset>
           )}
 
-          <div className="cart-summary__total">
-            <span>Total</span>
-            <strong>{formatBRL(total)}</strong>
-          </div>
+          {/* Rodapé do resumo: no computador fica preso na base do painel
+              (que rola por dentro), então o botão de finalizar nunca some */}
+          <div className="cart-summary__rodape">
+            <div className="cart-summary__total">
+              <span>Total</span>
+              <strong>{formatBRL(total)}</strong>
+            </div>
 
-          <button
-            className="cart-checkout-btn"
-            onClick={handleCheckout}
-            disabled={items.length === 0 || finalizando || faltaMinimo}
-            type="button"
-          >
-            {finalizando
-              ? 'Enviando…'
-              : faltaMinimo
-                ? 'Abaixo do pedido mínimo'
-                : formaPagamento === 'pix'
-                  ? 'Criar pedido e pagar com Pix'
-                  : formaPagamento === 'cartao'
-                    ? 'Ir para o pagamento do cartão'
-                    : 'Finalizar pedido'}
-            {!finalizando && !faltaMinimo && <IconArrowRight />}
-          </button>
+            <button
+              className="cart-checkout-btn"
+              onClick={handleCheckout}
+              disabled={items.length === 0 || finalizando || faltaMinimo}
+              type="button"
+            >
+              {textoCheckout}
+              {!finalizando && !faltaMinimo && <IconArrowRight />}
+            </button>
 
-          <div className="cart-summary__secure">
-            <span className="dot" />
-            Conexão segura e criptografada
+            <div className="cart-summary__secure">
+              <span className="dot" />
+              Conexão segura e criptografada
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Barra fixa do celular: mostra o total e o botão de finalizar o tempo
+          todo, como nos aplicativos de compra — sem precisar rolar até o fim
+          do resumo para achar a ação principal */}
+      {items.length > 0 && (
+        <div className="cart-mobile-bar">
+          <div className="cart-mobile-bar__resumo">
+            <span>Total</span>
+            <strong>{formatBRL(total)}</strong>
+          </div>
+          <button
+            className="cart-mobile-bar__btn"
+            onClick={handleCheckout}
+            disabled={finalizando || faltaMinimo}
+            type="button"
+          >
+            {textoCheckoutCurto}
+            {!finalizando && !faltaMinimo && <IconArrowRight />}
+          </button>
+        </div>
+      )}
 
       {/* Pop-up de cadastro/edição de endereço de entrega */}
       <EnderecoPopup

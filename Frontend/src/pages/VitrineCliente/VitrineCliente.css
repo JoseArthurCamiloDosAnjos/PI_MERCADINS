@@ -737,9 +737,37 @@
 .vtc-produto-img img { width: 100%; height: 100%; object-fit: cover; }
 .vtc-produto-img-placeholder { font-size: 10px; color: var(--vt-cinza); font-weight: 600; text-align: center; padding: 0 8px; }
 
-.vtc-produto-info { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.vtc-produto-info { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .vtc-produto-nome { font-size: 12.5px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; line-height: 1.3; }
 .vtc-produto-preco { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo); margin: 0; }
+
+/* Botão "+" do card: adiciona 1 unidade sem abrir a página do produto */
+.vtc-produto-add {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s, background 0.15s;
+  font-family: var(--font);
+}
+.vtc-produto-add:hover:not(:disabled) { transform: scale(1.08); background: var(--vt-amarelo-hover); }
+.vtc-produto-add:disabled { opacity: 0.45; cursor: not-allowed; }
+.vtc-produto-add--ativo { font-weight: 800; font-size: 13px; }
+.vtc-produto-add-qtd { line-height: 1; }
+
+/* Horário recolhido do celular (o quadro completo fica no computador) */
+.vtc-horarios-mobile { display: none; }
 
 .vtc-produto-add-icon {
   position: absolute;
@@ -904,7 +932,7 @@
 .vtc-card-counter {
   position: absolute;
   bottom: 4px;
-  right: 4px;
+  left: 4px;
   background: rgba(0, 0, 0, 0.6);
   color: #fff;
   font-size: 9px;
@@ -920,10 +948,41 @@
   /* Horário desce para baixo das informações em tela estreita */
   .vtc-header-identity { flex-wrap: wrap; }
   .vtc-header-identity > .vtc-horario-semana {
-    flex: 1 1 100%;
-    width: auto;
-    max-width: 340px;
-    margin: 0.4rem 0 0;
+    display: none;
+  }
+  .vtc-horarios-mobile {
+    display: block;
+    width: 100%;
+    margin-top: 0.55rem;
+  }
+  .vtc-horarios-mobile summary {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border: 1px solid rgba(245, 200, 74, 0.35);
+    border-radius: var(--vt-radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--vt-amarelo);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+  .vtc-horarios-mobile summary::-webkit-details-marker { display: none; }
+  .vtc-horarios-seta {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+  }
+  .vtc-horarios-mobile[open] .vtc-horarios-seta { transform: rotate(90deg); }
+  .vtc-horarios-mobile .hs-box {
+    margin: 6px 0 0;
+    --hs-borda: rgba(245, 200, 74, 0.35);
+    --hs-fundo: rgba(255, 255, 255, 0.05);
+    --hs-titulo: var(--vt-amarelo);
+    --hs-texto: #c9d8ef;
+    --hs-aberto: #7fe0a8;
+    --hs-fechado: #f3a3a3;
   }
   .vtc-filtros { top: 61px; padding: 0.8rem 1.4rem; }
   .vtc-categoria, .vtc-main { scroll-margin-top: 178px; }
@@ -936,23 +995,80 @@
   .vtc-btn-carrinho { display: none; }
   .vtc-topbar-mercado-nome { display: none; }
   .vtc-topbar-mercado { padding: 4px; }
-  .vtc-header-identity { gap: 1rem; }
-  .vtc-logo-img, .vtc-logo-placeholder { width: 60px; height: 60px; }
+
+  /* Logo e nome lado a lado (como nas lojas de aplicativo), em vez de o logo
+     ocupar uma linha inteira e empurrar todo o conteúdo para baixo */
+  .vtc-header-identity {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    column-gap: 0.85rem;
+    row-gap: 0;
+    align-items: start;
+  }
+  .vtc-logo { grid-column: 1; grid-row: 1; }
+  .vtc-logo-img, .vtc-logo-placeholder { width: 48px; height: 48px; }
+  /* O bloco de texto vira parte da grade: o nome fica ao lado do logo e as
+     demais informações usam a largura inteira, quebrando menos linhas */
+  .vtc-header-text { display: contents; }
+  .vtc-header-nome-wrap { grid-column: 2; grid-row: 1; }
+  .vtc-desc-mercado,
+  .vtc-avaliacao,
+  .vtc-local,
+  .vtc-entrega-info,
+  .vtc-status,
+  .vtc-tipos,
+  .vtc-btn-whatsapp,
+  .vtc-horarios-mobile {
+    grid-column: 1 / -1;
+  }
   .vtc-nome-mercado { font-size: 17px; }
-  .vtc-produto-card { width: calc(50% - 6px); }
-  .vtc-produtos-grid { justify-content: space-between; }
+  .vtc-desc-mercado {
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .vtc-local, .vtc-entrega-info { font-size: 12.5px; margin-top: 7px; }
+  /* Os tipos de loja já aparecem nas categorias de produtos logo abaixo;
+     no celular saem para os produtos chegarem mais cedo à tela */
+  .vtc-tipos { display: none; }
+  .vtc-btn-whatsapp { margin-top: 8px; padding: 8px 12px; font-size: 12.5px; }
+  .vtc-horarios-mobile { grid-column: 1 / -1; }
+
+  /* Duas colunas no celular, como no Mercado Livre — inclusive em 320px */
+  .vtc-produtos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    justify-content: stretch;
+  }
+  .vtc-produto-card { width: auto; min-width: 0; }
+  .vtc-produto-img { height: auto; aspect-ratio: 1 / 1; }
+  .vtc-produto-nome {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.35;
+    min-height: 2.7em;
+  }
+  .vtc-produto-preco { font-size: 14px; }
+  .vtc-produto-info { padding: 8px 9px 10px; }
   .vtc-main { padding: 1.2rem 1rem 7rem; gap: 1.6rem; }
   .vtc-banner { height: 120px; }
+  .vtc-filtros { top: 54px; }
   .vtc-tags-row { gap: 6px; }
   .vtc-tag { padding: 5px 12px; font-size: 11.5px; }
   .vtc-btn-cats { padding: 5px 11px; font-size: 11.5px; }
 }
 
 @media (max-width: 400px) {
-  .vtc-produto-card { width: 100%; }
+  /* Mantém duas colunas também nas telas menores; o card só fica mais
+     estreito, sem virar uma lista de uma coluna */
+  .vtc-produto-card { width: auto; }
   .vtc-header { padding: 1rem; }
   .vtc-filtros { padding: 0.8rem 1rem; }
   .vtc-busca-wrap { padding: 8px 12px; }
+  .vtc-produto-add { width: 30px; height: 30px; right: 6px; bottom: 6px; }
 }
 
 /* ─── Modo claro ─────────────────────────────────────────────────────────── */

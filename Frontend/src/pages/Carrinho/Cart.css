@@ -140,9 +140,17 @@
   margin: 0 auto;
   padding: 28px 32px 0;
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 24px;
   align-items: start;
+  min-width: 0;
+}
+
+/* Cada coluna precisa poder encolher abaixo do conteúdo mínimo (nome longo,
+   linha do cupom etc.) — sem isso a grade estoura e corta o lado direito em
+   telas de 320px */
+.cart-body > * {
+  min-width: 0;
 }
 
 /* ---------------- Items list ---------------- */
@@ -150,17 +158,19 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 
 .cart-item {
   display: grid;
-  grid-template-columns: 76px 1fr auto;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
   gap: 16px;
   align-items: center;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 14px;
+  min-width: 0;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -455,22 +465,24 @@
 
 /* ---------------- Summary panel ---------------- */
 .cart-summary {
+  --cart-summary-pad: 22px;
   position: sticky;
   top: 92px;
   /* Fica fixo na tela: só a lista de itens rola. Se o resumo for maior que
-     a janela, ele ganha uma rolagem própria para o botão continuar acessível.
-     sem `overscroll-behavior: contain`, para que a rolagem sempre devolva
-     o controle para a página — ninguém fica preso dentro do painel */
+     a janela, ele ganha uma rolagem própria; o rodapé (total + botão) fica
+     preso na base, então a ação principal nunca fica escondida. */
   max-height: calc(100vh - 108px);
   overflow-y: auto;
+  overscroll-behavior: auto;
   scrollbar-width: thin;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 22px;
+  padding: var(--cart-summary-pad) var(--cart-summary-pad) 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .cart-summary::-webkit-scrollbar {
@@ -538,10 +550,12 @@
 .cart-coupon {
   display: flex;
   gap: 8px;
+  min-width: 0;
 }
 
 .cart-coupon input {
   flex: 1;
+  min-width: 0;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -561,6 +575,7 @@
 }
 
 .cart-coupon button {
+  flex-shrink: 0;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
@@ -929,10 +944,31 @@
   flex-shrink: 0;
 }
 
+/* Rodapé do resumo: fica preso na base do painel enquanto o conteúdo rola.
+   No celular ele volta ao fluxo normal (a barra fixa assume o botão). */
+.cart-summary__rodape {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 calc(-1 * var(--cart-summary-pad));
+  padding: 14px var(--cart-summary-pad) 18px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* Barra fixa de finalização do celular (escondida no computador) */
+.cart-mobile-bar {
+  display: none;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 860px) {
   .cart-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 20px 16px 0;
   }
 
@@ -948,10 +984,22 @@
     max-height: none;
     overflow-y: visible;
     overscroll-behavior: auto;
+    padding-bottom: var(--cart-summary-pad);
+  }
+
+  /* Sem rolagem interna o rodapé não precisa mais ficar preso: ele volta ao
+     fluxo, no fim do resumo */
+  .cart-summary__rodape {
+    position: static;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    background: none;
+    border-radius: 0;
   }
 
   .cart-item {
-    grid-template-columns: 60px 1fr;
+    grid-template-columns: 60px minmax(0, 1fr);
     grid-template-rows: auto auto;
   }
 
@@ -1037,16 +1085,111 @@
   }
   .cart-item__name {
     font-size: 14px;
+    /* No celular o nome pode ocupar duas linhas; antes ele era cortado com
+       reticências logo na primeira, escondendo qual produto era */
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .cart-item__bottom-row {
+    flex-wrap: wrap;
+    gap: 8px 12px;
   }
   .cart-item__line-total {
     font-size: 14px;
     min-width: auto;
   }
+  .cart-endereco__opcao-descricao {
+    /* Endereço completo em até duas linhas, em vez de cortar no meio */
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
   .cart-summary {
-    padding: 16px;
+    --cart-summary-pad: 16px;
+    padding: 16px 16px 0;
   }
   .cart-summary__total strong {
     font-size: 20px;
+  }
+
+  /* Espaço para a barra fixa não cobrir o fim do resumo */
+  .cart-page {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* No celular o botão do resumo dá lugar à barra fixa */
+  .cart-checkout-btn {
+    display: none;
+  }
+
+  .cart-mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 22, 40, 0.97);
+    border-top: 1px solid var(--border-strong);
+    backdrop-filter: blur(12px);
+  }
+
+  .cart-mobile-bar__resumo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    flex-shrink: 0;
+  }
+
+  .cart-mobile-bar__resumo span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .cart-mobile-bar__resumo strong {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--price);
+    letter-spacing: -0.01em;
+  }
+
+  .cart-mobile-bar__btn {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 13px 12px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .cart-mobile-bar__btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .cart-mobile-bar__btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 }
 
@@ -1075,6 +1218,25 @@
   .cart-clear {
     font-size: 11px;
     padding: 7px 10px;
+  }
+  /* Em 320–400px o texto não cabe na barra; fica só a lixeira, em botão
+     redondo, com o rótulo preservado pelo aria-label */
+  .cart-clear__texto {
+    display: none;
+  }
+  .cart-clear {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .cart-mobile-bar__resumo strong {
+    font-size: 18px;
+  }
+  .cart-mobile-bar__btn {
+    font-size: 12px;
+    padding: 12px 10px;
   }
   .cart-item__right {
     gap: 8px;

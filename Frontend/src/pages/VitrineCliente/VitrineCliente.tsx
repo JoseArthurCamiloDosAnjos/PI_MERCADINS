@@ -27,10 +27,13 @@ import {
   IconMenu,
   IconX,
   IconTruck,
+  IconPlus,
+  IconClock,
+  IconChevronRight,
 } from '../../components/Icons';
 import { useCarrinho } from '../../hooks/useCarrinho';
 import { localizacaoCompleta } from '../../utils/localizacao';
-import { estaAberto, parseHorario, proximaAbertura } from '../../utils/horario';
+import { estaAberto, parseHorario, proximaAbertura, gruposDaSemana } from '../../utils/horario';
 
 // ─── Ícones locais (não existiam no set do vendedor) ──────────────────────────
 
@@ -75,6 +78,8 @@ interface Produto {
   descricao: string;
   preco?: string;
   id_categoria: number;
+  /** Unidades disponíveis — usado para travar o botão de adicionar */
+  estoque?: number;
 }
 
 interface Categoria {
@@ -152,11 +157,16 @@ function ProdutoCardCliente({
   slug,
   categoriaId,
   onAbrir,
+  onAdicionar,
+  noCarrinho = 0,
 }: {
   produto: Produto;
   slug?: string;
   categoriaId: number;
   onAbrir?: () => void;
+  onAdicionar?: (produto: Produto) => void;
+  /** Quantas unidades já estão no carrinho (mostra no botão) */
+  noCarrinho?: number;
 }) {
   const navigate = useNavigate();
 
@@ -199,8 +209,8 @@ function ProdutoCardCliente({
               <img src={imagens[imgIdx]} alt={produto.nome} />
               {imagens.length > 1 && (
                 <>
-                  <button className="vtc-card-seta vtc-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} aria-label="Imagem anterior">‹</button>
-                  <button className="vtc-card-seta vtc-card-seta--next" onClick={(e) => { e.stopPropagation(); slide('next'); }} aria-label="Próxima imagem">›</button>
+                  <button className="vtc-card-seta vtc-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} onKeyDown={(e) => e.stopPropagation()} aria-label="Imagem anterior">‹</button>
+                  <button className="vtc-card-seta vtc-card-seta--next" onClick={(e) => { e.stopPropagation(); slide('next'); }} onKeyDown={(e) => e.stopPropagation()} aria-label="Próxima imagem">›</button>
                   <span className="vtc-card-counter">{imgIdx + 1}/{imagens.length}</span>
                 </>
               )}
@@ -208,6 +218,23 @@ function ProdutoCardCliente({
           )
           : <span className="vtc-produto-img-placeholder">Sem imagem</span>
         }
+        <button
+          type="button"
+          className={`vtc-produto-add ${noCarrinho > 0 ? 'vtc-produto-add--ativo' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onAdicionar?.(produto); }}
+          onKeyDown={(e) => e.stopPropagation()}
+          disabled={produto.estoque === 0}
+          aria-label={
+            produto.estoque === 0
+              ? `${produto.nome} está sem estoque`
+              : `Adicionar ${produto.nome} ao carrinho`
+          }
+          title={produto.estoque === 0 ? 'Sem estoque' : 'Adicionar ao carrinho'}
+        >
+          {noCarrinho > 0
+            ? <span className="vtc-produto-add-qtd">{noCarrinho}</span>
+            : <IconPlus size={16} />}
+        </button>
       </div>
       <div className="vtc-produto-info">
         <p className="vtc-produto-nome">{produto.nome}</p>
@@ -252,6 +279,35 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const { usuario } = useAuth();
   const carrinho = useCarrinho(mercadoId);
   const refsCategoria = useRef<Record<number, HTMLElement | null>>({});
+
+  // Quantidade de cada produto já no carrinho — o botão "+" do card mostra
+  // esse número, como nas lojas de aplicativo
+  const quantidadesNoCarrinho = useMemo(
+    () => new Map(carrinho.itens.map(i => [i.produto.id_produto, i.quantidade])),
+    [carrinho.itens]
+  );
+
+  function adicionarPelaVitrine(produto: Produto) {
+    const ok = carrinho.adicionar(
+      {
+        id_produto: produto.id_produto,
+        id_categoria: produto.id_categoria,
+        nome: produto.nome,
+        descricao: produto.descricao,
+        preco: produto.preco,
+        imagem: produto.imagem,
+        imagens: produto.imagens,
+        estoque: produto.estoque,
+      },
+      1
+    );
+    showToast(
+      ok ? 'sucesso' : 'erro',
+      ok
+        ? `${produto.nome} foi adicionado ao carrinho.`
+        : 'Não foi possível adicionar. Confira o estoque disponível.'
+    );
+  }
 
   useEffect(() => {
     async function carregarDados() {
@@ -697,6 +753,18 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                 </a>
               );
             })()}
+
+            {/* No celular o quadro completo da semana ocupa muito espaço;
+                fica recolhido neste botão e o quadro grande some pelo CSS */}
+            {gruposDaSemana(parseHorario(dados.horario)).length > 0 && (
+              <details className="vtc-horarios-mobile">
+                <summary>
+                  <IconClock size={14} /> Horário de funcionamento
+                  <IconChevronRight size={14} className="vtc-horarios-seta" aria-hidden="true" />
+                </summary>
+                <HorarioSemana horario={dados.horario} semTitulo />
+              </details>
+            )}
           </div>
 
           {/* Lado direito: horário de funcionamento da semana inteira */}
@@ -779,6 +847,8 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                   produto={produto}
                   slug={slug}
                   categoriaId={catId}
+                  onAdicionar={adicionarPelaVitrine}
+                  noCarrinho={quantidadesNoCarrinho.get(produto.id_produto) ?? 0}
                 />
               ))}
             </div>
@@ -798,6 +868,8 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
                     produto={p}
                     slug={slug}
                     categoriaId={cat.id}
+                    onAdicionar={adicionarPelaVitrine}
+                    noCarrinho={quantidadesNoCarrinho.get(p.id_produto) ?? 0}
                   />
                 ))}
               </div>

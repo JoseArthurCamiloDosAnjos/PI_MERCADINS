@@ -10,18 +10,24 @@ import './HorarioSemana.css';
 export default function HorarioSemana({
   horario,
   className = '',
+  semTitulo = false,
 }: {
   horario: unknown;
   className?: string;
+  /** Quando o título já aparece fora (ex.: dentro de um <details>), esconde
+      a linha "Horário da semana" para não repetir a informação. */
+  semTitulo?: boolean;
 }) {
   const grupos = gruposDaSemana(parseHorario(horario));
   if (grupos.length === 0) return null;
 
   return (
     <div className={`hs-box ${className}`.trim()}>
-      <span className="hs-titulo">
-        <IconClock size={13} /> Horário da semana
-      </span>
+      {!semTitulo && (
+        <span className="hs-titulo">
+          <IconClock size={13} /> Horário da semana
+        </span>
+      )}
       <dl className="hs-lista">
         {grupos.map(grupo => (
           <div className="hs-linha" key={grupo.dias.join('-')}>

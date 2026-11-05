@@ -16,6 +16,7 @@ import {
   IconBread,
   IconBottle,
   IconCutlery,
+  IconTruck,
 } from '../../components/Icons';
 
 interface Form {
@@ -118,6 +119,28 @@ export default function RegistrarMercado() {
     cep: '', estado: '', cidade: '', bairro: '', rua: '',
   });
 
+  // Como o mercado entrega os pedidos. A taxa e o pedido mínimo só valem
+  // quando a entrega está marcada; a retirada é sempre grátis.
+  const [formEntrega, setFormEntrega] = useState({
+    entrega: true,
+    retirada: true,
+    taxa: '',
+    minimo: '',
+  });
+
+  function dadosEntrega() {
+    const valor = (v: string) => {
+      const n = Number(String(v).replace(',', '.'));
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    return {
+      taxa_entrega: formEntrega.entrega ? valor(formEntrega.taxa) : 0,
+      pedido_minimo: formEntrega.entrega ? valor(formEntrega.minimo) : 0,
+      oferece_entrega: formEntrega.entrega,
+      oferece_retirada: formEntrega.retirada,
+    };
+  }
+
   function set(campo: keyof Form, valor: string) {
     setForm(f => ({ ...f, [campo]: valor }));
   }
@@ -210,6 +233,7 @@ export default function RegistrarMercado() {
         plano: planoId,
         categorias,
         horario: horarioEnvioLocal(),
+        ...dadosEntrega(),
       }),
     });
     const data = await res.json();
@@ -244,6 +268,7 @@ export default function RegistrarMercado() {
         plano: planoId,
         categorias,
         horario: horarioEnvioLocal(),
+        ...dadosEntrega(),
       },
     });
     if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
@@ -264,6 +289,9 @@ export default function RegistrarMercado() {
 
     if (categorias.length === 0)
       return showToast('erro', 'Escolha ao menos um tipo de loja.');
+
+    if (!formEntrega.entrega && !formEntrega.retirada)
+      return showToast('erro', 'Escolha entrega, retirada ou as duas formas.');
 
     const horarioEnvio = horarioEnvioLocal();
     const diaRuim = Object.values(horarioEnvio).find(f => !f[0] || !f[1] || f[0] === f[1]);
@@ -665,6 +693,77 @@ export default function RegistrarMercado() {
                 </FieldIcon>
               </div>
             </div>
+
+            <p className="rm-section-label">Entrega e retirada</p>
+            <p className="rm-entrega-ajuda">
+              Escolha como o cliente pode receber os pedidos. É possível mudar
+              depois no painel do mercado.
+            </p>
+
+            <div className="rm-entrega-opcoes">
+              <label className={`rm-entrega-opcao ${formEntrega.entrega ? 'is-ativa' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={formEntrega.entrega}
+                  onChange={e => setFormEntrega(x => ({ ...x, entrega: e.target.checked }))}
+                />
+                <span className="rm-entrega-icone"><IconTruck size={18} /></span>
+                <span className="rm-entrega-texto">
+                  <strong>Entrega</strong>
+                  <small>Levamos até o cliente</small>
+                </span>
+              </label>
+
+              <label className={`rm-entrega-opcao ${formEntrega.retirada ? 'is-ativa' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={formEntrega.retirada}
+                  onChange={e => setFormEntrega(x => ({ ...x, retirada: e.target.checked }))}
+                />
+                <span className="rm-entrega-icone"><IconStore size={18} /></span>
+                <span className="rm-entrega-texto">
+                  <strong>Retirada no balcão</strong>
+                  <small>O cliente busca na loja</small>
+                </span>
+              </label>
+            </div>
+
+            {formEntrega.entrega && (
+              <div className="rm-grid rm-entrega-campos">
+                <div className="field">
+                  <input
+                    aria-label="Taxa de entrega em reais"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Taxa de entrega (R$)"
+                    value={formEntrega.taxa}
+                    onChange={e => setFormEntrega(x => ({ ...x, taxa: e.target.value }))}
+                  />
+                  <FieldIcon><span className="rm-moeda">R$</span></FieldIcon>
+                </div>
+
+                <div className="field">
+                  <input
+                    aria-label="Pedido mínimo para entrega em reais"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Pedido mínimo (R$)"
+                    value={formEntrega.minimo}
+                    onChange={e => setFormEntrega(x => ({ ...x, minimo: e.target.value }))}
+                  />
+                  <FieldIcon><span className="rm-moeda">R$</span></FieldIcon>
+                </div>
+
+                <small className="rm-ajuda rm-full">
+                  Deixe 0 na taxa para não cobrar a entrega e 0 no mínimo para
+                  não exigir valor mínimo.
+                </small>
+              </div>
+            )}
 
             <button type="submit" className="btn btn-primary" disabled={salvando}>
               {salvando ? (

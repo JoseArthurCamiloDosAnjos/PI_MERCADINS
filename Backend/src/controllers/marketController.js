@@ -226,6 +226,8 @@ function validarDadosMercado(dados = {}) {
   const entrega = normalizarEntrega(entregaFonte);
   if (entrega.erro)
     return { erro: entrega.erro };
+  if (entrega.entrega === false && entrega.retirada === false)
+    return { erro: 'Escolha pelo menos uma forma de recebimento: entrega ou retirada.' };
 
   if (!nome || !email || !telefone || !cnpj || !cep || !estado || !cidade || !bairro || !rua)
     return { erro: "Todos os campos são obrigatórios" };
@@ -656,6 +658,8 @@ const atualizarMercado = async (req, res) => {
   const entregaEdicao = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
   if (entregaEdicao.erro)
     return res.status(400).json({ erro: entregaEdicao.erro });
+  if (entregaEdicao.entrega === false && entregaEdicao.retirada === false)
+    return res.status(400).json({ erro: 'Escolha pelo menos uma forma de recebimento: entrega ou retirada.' });
 
   const catsEdicao = normalizarCategorias(categorias);
   if (catsEdicao.erro)

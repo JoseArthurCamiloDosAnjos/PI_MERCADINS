@@ -813,8 +813,9 @@ export default function RegistrarMercado() {
 
             <p className="rm-section-label">Entrega e retirada</p>
             <p className="rm-entrega-ajuda">
-              Escolha como o cliente pode receber os pedidos. É possível mudar
-              depois no painel do mercado.
+              Nem todo mercado precisa oferecer entrega. Marque como o cliente
+              pode receber os pedidos; é possível mudar depois no painel do
+              mercado.
             </p>
 
             <div className="rm-entrega-opcoes">
@@ -826,7 +827,7 @@ export default function RegistrarMercado() {
                 />
                 <span className="rm-entrega-icone"><IconTruck size={18} /></span>
                 <span className="rm-entrega-texto">
-                  <strong>Entrega</strong>
+                  <strong>Ofereço entrega</strong>
                   <small>Levamos até o cliente</small>
                 </span>
               </label>
@@ -839,11 +840,21 @@ export default function RegistrarMercado() {
                 />
                 <span className="rm-entrega-icone"><IconStore size={18} /></span>
                 <span className="rm-entrega-texto">
-                  <strong>Retirada no balcão</strong>
+                  <strong>Ofereço retirada</strong>
                   <small>O cliente busca na loja</small>
                 </span>
               </label>
             </div>
+
+            <p className="rm-entrega-resumo" role="status">
+              {formEntrega.entrega && formEntrega.retirada
+                ? 'O cliente poderá escolher entre receber em casa ou retirar na loja.'
+                : formEntrega.entrega
+                  ? 'O cliente verá apenas a opção de entrega. A retirada não aparecerá.'
+                  : formEntrega.retirada
+                    ? 'O cliente verá apenas a opção de retirada na loja. A entrega não aparecerá.'
+                    : 'Marque pelo menos uma forma de recebimento para continuar.'}
+            </p>
 
             {formEntrega.entrega && (
               <div className="rm-grid rm-entrega-campos">

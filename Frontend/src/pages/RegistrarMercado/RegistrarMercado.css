@@ -417,6 +417,17 @@
   color: var(--text-muted);
 }
 
+.rm-entrega-resumo {
+  margin: 8px 0 0;
+  padding: 9px 11px;
+  border: 1px solid #dbe5f5;
+  border-radius: 10px;
+  background: #f4f7fd;
+  color: #40506b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .rm-entrega-opcoes {
   display: grid;
   grid-template-columns: 1fr 1fr;

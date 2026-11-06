@@ -102,6 +102,7 @@ app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoR
 app.use('/api/assinaturas',        assinaturaRoutes)
 app.use('/api/enderecos',          enderecoRoutes)
 app.use('/api/notificacoes',       notificacaoRoutes)
+app.use('/api/catalogo',           require('./routes/catalogoRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────

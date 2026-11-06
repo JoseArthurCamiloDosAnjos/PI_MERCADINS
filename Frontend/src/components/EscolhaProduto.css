@@ -1,0 +1,135 @@
+/* ─── EscolhaProduto — modal "produto pronto × criar do zero" ──────────────── */
+/* Usa os tokens --vt-* da paleta personalizada da vitrine do vendedor         */
+/* (definidos em Vitrine.tsx via style={estiloPaleta}).                        */
+
+.ep-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.ep-modal {
+  background: var(--vt-azul-bg);
+  border: 1.5px solid var(--vt-azul-borda);
+  border-radius: var(--vt-radius-lg, 14px);
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  color: var(--vt-cor-texto);
+}
+
+.ep-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--vt-azul-borda);
+}
+
+.ep-titulo {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--vt-cor-texto);
+}
+
+.ep-btn-fechar {
+  border: none;
+  background: none;
+  color: var(--vt-cinza);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--vt-radius-sm, 8px);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ep-btn-fechar:hover {
+  background: var(--vt-azul-item);
+  color: var(--vt-cor-texto);
+}
+
+.ep-body {
+  padding: 18px 20px 22px;
+}
+
+.ep-sub {
+  margin: 0 0 14px;
+  color: var(--vt-cor-texto-sec);
+  font-size: 14px;
+}
+
+.ep-opcoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ep-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border: 2px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md, 12px);
+  background: var(--vt-azul-card);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.ep-opcao:hover {
+  border-color: var(--vt-amarelo);
+  background: var(--vt-azul-item);
+}
+
+.ep-opcao:active { transform: scale(0.99); }
+
+.ep-opcao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--vt-radius-md, 10px);
+}
+
+.ep-opcao-icone--pronto {
+  background: var(--vt-azul-medio);
+  color: var(--vt-amarelo);
+}
+
+.ep-opcao-icone--novo {
+  background: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+}
+
+.ep-opcao-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ep-opcao-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--vt-cor-texto);
+}
+
+.ep-opcao-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--vt-cor-texto-sec);
+}
+
+@media (max-width: 480px) {
+  .ep-opcoes { grid-template-columns: 1fr; }
+}

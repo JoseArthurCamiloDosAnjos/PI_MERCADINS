@@ -317,6 +317,32 @@ O produto traz `estoque` e o `custo` cadastrado — no painel, a margem de lucro
 
 ---
 
+## Catálogo de produtos prontos — `/api/catalogo`
+
+O vendedor pode escolher "produto pronto" no card "＋" da vitrine: um item do
+catálogo já vem com nome, descrição, fotos e preço sugerido — ao selecionar,
+os dados são copiados para um produto normal da loja (o preço/estoque ficam
+livres para ajuste).
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| GET | `/api/catalogo?tipo=padaria` | público | Itens **ativos** do catálogo; `tipo` filtra por tipo de loja (sempre inclui os `geral`) |
+
+Campos do item: `id`, `nome`, `descricao`, `imagens` (lista de URLs),
+`preco_sugerido`, `tipo_loja` (`geral`, `mercado`, `hortifruti`, `acougue`,
+`padaria`, `bebidas`, `organicos`, `conveniencia`).
+
+CRUD completo (painel → aba "Catálogo"):
+
+| Método | Rota | O que faz |
+|---|---|---|
+| GET | `/api/admin/catalogo` | Lista todos os itens (inclusive ocultos) |
+| POST | `/api/admin/catalogo` | Cria item (`nome` obrigatório; `descricao`, `imagens`, `preco_sugerido`, `tipo_loja`) |
+| PUT | `/api/admin/catalogo/:id` | Atualiza (edição parcial; aceita `ativo` para ocultar/restaurar) |
+| DELETE | `/api/admin/catalogo/:id` | Remove item |
+
+---
+
 ## Cliente — `/api/usuario` e `/api/carrinho`
 
 | Método | Rota | Acesso | O que faz |
@@ -369,6 +395,7 @@ O produto traz `estoque` e o `custo` cadastrado — no painel, a margem de lucro
 | DELETE | `/usuarios/:id` | Exclui conta |
 | GET | `/mercados` · `/mercados/:id` | Lista e detalhe de todas as lojas (moderação) |
 | PUT | `/mercados/:id/bloquear` | Bloqueia uma loja |
+| GET/POST | `/catalogo` · PUT/DELETE `/catalogo/:id` | CRUD do catálogo de produtos prontos |
 | GET | `/relatorios` · `/atividade` · `/alertas` | Relatórios, atividade recente e alertas |
 
 ---

@@ -5,6 +5,7 @@ import {
   IconBarChart,
   IconUser,
   IconStore,
+  IconPackage,
   IconReceipt,
   IconGear,
   IconMenu,
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { icon: <IconBarChart size={18} />, label: 'Dashboard' },
   { icon: <IconUser size={18} />, label: 'Usuários' },
   { icon: <IconStore size={18} />, label: 'Mercados' },
+  { icon: <IconPackage size={18} />, label: 'Catálogo' },
   { icon: <IconReceipt size={18} />, label: 'Relatórios' },
   { icon: <IconGear size={18} />, label: 'Configurações' },
 ]

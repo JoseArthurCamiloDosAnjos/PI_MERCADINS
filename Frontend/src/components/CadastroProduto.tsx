@@ -30,10 +30,20 @@ interface Erros {
   preco?: string;
 }
 
+/** Pré-preenchimento vindo de um item do catálogo de produtos prontos */
+interface ProdutoInicial {
+  nome?: string;
+  descricao?: string;
+  /** Pode vir como número ("12.90"), texto com vírgula ("12,90") ou já formatado */
+  preco?: string;
+  imagens?: string[];
+}
+
 interface CadastroProdutoProps {
   categoriaId: number;
   salvando?: boolean;
   produto?: { id_produto: number; nome: string; descricao?: string; preco?: string; imagem?: string; imagens?: string[]; estoque?: number };
+  inicial?: ProdutoInicial;
   onSalvar: (produto: ProdutoForm) => void;
   onCancelar: () => void;
 }
@@ -47,14 +57,20 @@ export default function CadastroProduto({
   categoriaId,
   salvando = false,
   produto,
+  inicial,
   onSalvar,
   onCancelar,
 }: CadastroProdutoProps) {
-  const [nome, setNome]               = useState(produto?.nome ?? '');
-  const [descricao, setDescricao]     = useState(produto?.descricao ?? '');
+  const [nome, setNome]               = useState(produto?.nome ?? inicial?.nome ?? '');
+  const [descricao, setDescricao]     = useState(produto?.descricao ?? inicial?.descricao ?? '');
   const [preco, setPreco]             = useState(() => {
-    if (!produto?.preco) return '';
-    const valor = Number(produto.preco);
+    const origem = produto?.preco ?? inicial?.preco;
+    if (!origem) return '';
+    // "12,90" → 12.9 (o formato vindo do banco é "12.90", com ponto)
+    const limpo = typeof origem === 'string' && origem.includes(',')
+      ? origem.replace(/\./g, '').replace(',', '.')
+      : origem;
+    const valor = Number(limpo);
     if (Number.isNaN(valor)) return '';
     return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   });
@@ -64,6 +80,9 @@ export default function CadastroProduto({
     }
     if (produto?.imagem) {
       return [{ url: produto.imagem, file: null as unknown as File }];
+    }
+    if (inicial?.imagens && inicial.imagens.length > 0) {
+      return inicial.imagens.map(url => ({ url, file: null as unknown as File }));
     }
     return [];
   });

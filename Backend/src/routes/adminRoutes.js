@@ -2,6 +2,7 @@ const { Router } = require('express')
 const authMiddleware = require('../middleware/authMiddleware')
 const adminMiddleware = require('../middleware/adminMiddleware')
 const adminController = require('../controllers/adminController')
+const catalogoController = require('../controllers/catalogoController')
 
 const router = Router()
 
@@ -21,5 +22,11 @@ router.get('/alertas',      adminController.alertas)
 router.get('/mercados',        adminController.listarMercadosAdmin)
 router.get('/mercados/:id',    adminController.detalheMercadoAdmin)
 router.put('/mercados/:id/bloquear', adminController.bloquearMercado)
+
+// Catálogo de produtos prontos (o vendedor "puxa" fotos/descrição daqui)
+router.get('/catalogo',        catalogoController.listarCatalogoAdmin)
+router.post('/catalogo',       catalogoController.criarItemCatalogo)
+router.put('/catalogo/:id',    catalogoController.atualizarItemCatalogo)
+router.delete('/catalogo/:id', catalogoController.deletarItemCatalogo)
 
 module.exports = router

@@ -6,12 +6,15 @@ import EditarMercado    from '../../components/EditarMercado';
 import CriarCategoria   from '../../components/CriarCategoria';
 import ConfirmarSaida   from '../../components/ConfirmarSaida';
 import DescricaoModal   from '../../components/DescricaoModal';
+import EscolhaProduto   from '../../components/EscolhaProduto';
+import CatalogoModal, { type ItemCatalogo } from '../../components/CatalogoModal';
 import ToastContainer   from '../../components/Toast';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { api }          from '../../services/api';
 import { useTheme }     from '../../context/ThemeContext';
+import { parseTiposLoja } from '../../utils/tiposLoja';
 import {
   IconStore,
   IconPlus,
@@ -72,6 +75,8 @@ interface VitrineMercado {
   bairro?: string | null;
   cidade?: string | null;
   estado?: string | null;
+  /** Tipos de loja (mercados.categorias) — usado para pré-filtrar o catálogo */
+  tiposLoja?: string[];
   categorias: Categoria[];
 }
 
@@ -266,6 +271,7 @@ interface CategoriaSectionProps {
   categoria: Categoria;
   mercadoId: number;
   filtro: string;
+  tiposLoja?: string[];
   onAlterado: () => void;
   onErroProduto: (msg: string) => void;
   onRenomear: (categoriaId: number, novoNome: string) => void;
@@ -273,15 +279,20 @@ interface CategoriaSectionProps {
 }
 
 function CategoriaSection({
-  categoria, mercadoId, filtro, onAlterado, onErroProduto, onRenomear, sectionRef,
+  categoria, mercadoId, filtro, tiposLoja, onAlterado, onErroProduto, onRenomear, sectionRef,
 }: CategoriaSectionProps) {
   const { produtos, setProdutos, carregando, erro } =
     useProdutos(mercadoId, categoria.id, categoria.produtos);
 
-  const [modalAberto, setModalAberto]   = useState(false);
-  const [salvando, setSalvando]         = useState(false);
-  const [editandoNome, setEditandoNome] = useState(false);
-  const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
+  const [modalAberto, setModalAberto]           = useState(false);
+  const [escolhaAberta, setEscolhaAberta]       = useState(false);
+  const [catalogoAberto, setCatalogoAberto]     = useState(false);
+  const [inicial, setInicial]                   = useState<{
+    nome?: string; descricao?: string; preco?: string; imagens?: string[];
+  } | null>(null);
+  const [salvando, setSalvando]                 = useState(false);
+  const [editandoNome, setEditandoNome]         = useState(false);
+  const [produtoEditando, setProdutoEditando]   = useState<Produto | null>(null);
 
   async function handleSalvar(dados: ProdutoForm) {
     if (mercadoId === 0) {
@@ -291,6 +302,7 @@ function CategoriaSection({
         estoque: dados.estoque,
       }]);
       setModalAberto(false);
+      setInicial(null);
       onAlterado();
       return;
     }
@@ -306,6 +318,7 @@ function CategoriaSection({
       });
       setProdutos(prev => [...prev, novo]);
       setModalAberto(false);
+      setInicial(null);
       onAlterado();
     } catch (e: unknown) {
       onErroProduto(e instanceof Error ? e.message : 'Erro ao salvar produto.');
@@ -392,16 +405,46 @@ function CategoriaSection({
                 />
               ))
           }
-          {!termo && <ProdutoAddCard onAdd={() => setModalAberto(true)} />}
+          {!termo && <ProdutoAddCard onAdd={() => setEscolhaAberta(true)} />}
         </div>
       </section>
+
+      {/* ── Escolha: produto pronto (catálogo) × criar do zero ──────────── */}
+      {escolhaAberta && (
+        <EscolhaProduto
+          onPronto={() => { setEscolhaAberta(false); setCatalogoAberto(true); }}
+          onNovo={() => { setEscolhaAberta(false); setInicial(null); setModalAberto(true); }}
+          onCancelar={() => setEscolhaAberta(false)}
+        />
+      )}
+
+      {/* ── Catálogo de produtos prontos ────────────────────────────────── */}
+      {catalogoAberto && (
+        <CatalogoModal
+          tiposLoja={tiposLoja}
+          onSelecionar={(item: ItemCatalogo) => {
+            setCatalogoAberto(false);
+            setInicial({
+              nome: item.nome,
+              descricao: item.descricao,
+              preco: item.preco_sugerido !== undefined && Number(item.preco_sugerido) > 0
+                ? String(item.preco_sugerido)
+                : '',
+              imagens: item.imagens ?? [],
+            });
+            setModalAberto(true);
+          }}
+          onCancelar={() => setCatalogoAberto(false)}
+        />
+      )}
 
       {modalAberto && (
         <CadastroProduto
           categoriaId={categoria.id}
           salvando={salvando}
+          inicial={inicial ?? undefined}
           onSalvar={handleSalvar}
-          onCancelar={() => setModalAberto(false)}
+          onCancelar={() => { setModalAberto(false); setInicial(null); }}
         />
       )}
 
@@ -496,6 +539,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           bairro: mercadoData.mercado.bairro ?? null,
           cidade: mercadoData.mercado.cidade ?? null,
           estado: mercadoData.mercado.estado ?? null,
+          tiposLoja: parseTiposLoja(mercadoData.mercado.categorias),
           categorias: categoriasComProdutos,
         });
       } catch (err) {
@@ -805,6 +849,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                 categoria={cat}
                 mercadoId={dados.id}
                 filtro={busca}
+                tiposLoja={dados.tiposLoja}
                 onAlterado={() => setTemAlteracoes(true)}
                 onErroProduto={(msg) => showToast('erro', msg)}
                 onRenomear={handleRenomear}

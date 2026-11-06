@@ -368,6 +368,10 @@ export const api = {
   cancelarAssinatura: (id: number) =>
     request(`/assinaturas/${id}/cancelar`, { method: 'POST' }),
 
+  // ── Catálogo de produtos prontos ────────────────────────────────────────────
+  listarCatalogo: (tipo?: string) =>
+    request(`/catalogo${tipo ? `?tipo=${encodeURIComponent(tipo)}` : ''}`),
+
   // ── Admin ───────────────────────────────────────────────────────────────────
   adminDashboard:   ()         => request('/admin/dashboard'),
   adminUsuarios:    (params?: string) => request(`/admin/usuarios${params ? `?${params}` : ''}`),
@@ -389,4 +393,29 @@ export const api = {
   adminMercados: (params?: string) =>
     request(`/admin/mercados${params ? `?${params}` : ''}`),
   adminMercadoDetalhe: (id: number) => request(`/admin/mercados/${id}`),
+
+  // Aba "Catálogo": produtos genéricos prontos que o vendedor pode reaproveitar
+  adminCatalogo: () => request('/admin/catalogo'),
+  adminCriarCatalogo: (dados: {
+    nome: string;
+    descricao?: string;
+    imagens?: string[];
+    preco_sugerido?: number;
+    tipo_loja: string;
+  }) =>
+    request('/admin/catalogo', { method: 'POST', body: JSON.stringify(dados) }),
+  adminAtualizarCatalogo: (
+    id: number,
+    dados: {
+      nome?: string;
+      descricao?: string;
+      imagens?: string[];
+      preco_sugerido?: number;
+      tipo_loja?: string;
+      ativo?: boolean;
+    }
+  ) =>
+    request(`/admin/catalogo/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
+  adminExcluirCatalogo: (id: number) =>
+    request(`/admin/catalogo/${id}`, { method: 'DELETE' }),
 }

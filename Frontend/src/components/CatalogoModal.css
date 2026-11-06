@@ -1,0 +1,292 @@
+/* ─── CatalogoModal — seleção de produto pronto ────────────────────────────── */
+/* Usa os tokens --vt-* da paleta personalizada da vitrine do vendedor         */
+/* (definidos em Vitrine.tsx via style={estiloPaleta}).                        */
+
+.cm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.cm-modal {
+  background: var(--vt-azul-bg);
+  border: 1.5px solid var(--vt-azul-borda);
+  border-radius: var(--vt-radius-lg, 14px);
+  width: 100%;
+  max-width: 760px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  color: var(--vt-cor-texto);
+}
+
+.cm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--vt-azul-borda);
+}
+
+.cm-titulo {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--vt-cor-texto);
+}
+
+.cm-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--vt-cor-texto-sec);
+  line-height: 1.4;
+}
+
+.cm-btn-fechar {
+  border: none;
+  background: none;
+  color: var(--vt-cinza);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--vt-radius-sm, 8px);
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.cm-btn-fechar:hover {
+  background: var(--vt-azul-item);
+  color: var(--vt-cor-texto);
+}
+
+/* ── Busca + chips ─────────────────────────────────────────────────────────── */
+
+.cm-filtros {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--vt-azul-borda);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cm-busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--vt-azul-card);
+  border: 1px solid var(--vt-azul-borda);
+  border-radius: var(--vt-radius-sm, 8px);
+  padding: 8px 10px;
+  color: var(--vt-cinza);
+}
+
+.cm-busca-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+  color: var(--vt-cor-texto);
+}
+
+.cm-busca-input::placeholder { color: var(--vt-cinza); }
+
+.cm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cm-chip {
+  border: 1px solid var(--vt-azul-borda);
+  background: var(--vt-azul-card);
+  color: var(--vt-cor-texto-sec);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cm-chip:hover {
+  border-color: var(--vt-amarelo);
+  color: var(--vt-cor-texto);
+}
+
+.cm-chip--ativo {
+  background: var(--vt-amarelo);
+  border-color: var(--vt-amarelo);
+  color: var(--vt-azul-escuro);
+  font-weight: 600;
+}
+
+.cm-chip--ativo:hover { color: var(--vt-azul-escuro); }
+
+/* ── Grid de cards ─────────────────────────────────────────────────────────── */
+
+.cm-body {
+  padding: 14px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 160px;
+}
+
+.cm-status {
+  text-align: center;
+  color: var(--vt-cinza);
+  font-size: 14px;
+  padding: 32px 12px;
+  margin: 0;
+}
+
+.cm-status--erro { color: #f87171; }
+
+.cm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.cm-card {
+  border: 2px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-md, 12px);
+  background: var(--vt-azul-card);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+.cm-card:hover {
+  border-color: var(--vt-amarelo);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.cm-card-img {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--vt-azul-item);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cm-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cm-card-placeholder {
+  font-size: 12px;
+  color: var(--vt-cinza);
+}
+
+.cm-card-tipo {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--vt-azul-medio);
+  color: var(--vt-cor-texto);
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.cm-card-info {
+  padding: 9px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.cm-card-nome {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--vt-cor-texto);
+  line-height: 1.3;
+}
+
+.cm-card-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--vt-cinza);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.cm-card-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.cm-card-preco {
+  font-size: 11.5px;
+  color: var(--vt-amarelo);
+  font-weight: 700;
+}
+
+.cm-card-usar {
+  font-size: 11.5px;
+  color: var(--vt-amarelo);
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cm-card:hover .cm-card-usar { opacity: 1; }
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+
+.cm-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--vt-azul-borda);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cm-btn {
+  border: none;
+  border-radius: var(--vt-radius-sm, 8px);
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cm-btn--secundario {
+  background: var(--vt-azul-item);
+  color: var(--vt-cor-texto);
+}
+
+.cm-btn--secundario:hover { background: var(--vt-azul-medio); }
+
+@media (max-width: 560px) {
+  .cm-overlay { padding: 0; }
+  .cm-modal { max-width: 100%; max-height: 100vh; border-radius: 0; }
+  .cm-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .cm-card-usar { opacity: 1; }
+}

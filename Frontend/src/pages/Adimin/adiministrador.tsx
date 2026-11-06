@@ -9,10 +9,11 @@ import './Admin.css'
 const Dashboard = lazy(() => import('./Dashboard'))
 const Usuarios = lazy(() => import('./Usuarios'))
 const Mercados = lazy(() => import('./Mercados'))
+const Catalogo = lazy(() => import('./Catalogo'))
 const Relatorios = lazy(() => import('./Relatorios'))
 const Configuracoes = lazy(() => import('./Configuracoes'))
 
-const ABAS = ['Dashboard', 'Usuários', 'Mercados', 'Relatórios', 'Configurações']
+const ABAS = ['Dashboard', 'Usuários', 'Mercados', 'Catálogo', 'Relatórios', 'Configurações']
 
 export default function Adiministrador() {
   const { usuario } = useAuth()
@@ -41,8 +42,9 @@ export default function Adiministrador() {
             {abaAtiva === 0 && <Dashboard />}
             {abaAtiva === 1 && <Usuarios />}
             {abaAtiva === 2 && <Mercados />}
-            {abaAtiva === 3 && <Relatorios />}
-            {abaAtiva === 4 && <Configuracoes />}
+            {abaAtiva === 3 && <Catalogo />}
+            {abaAtiva === 4 && <Relatorios />}
+            {abaAtiva === 5 && <Configuracoes />}
           </Suspense>
         </section>
       </main>

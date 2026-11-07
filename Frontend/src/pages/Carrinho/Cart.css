@@ -466,15 +466,11 @@
 /* ---------------- Summary panel ---------------- */
 .cart-summary {
   --cart-summary-pad: 22px;
-  position: sticky;
-  top: 92px;
-  /* Fica fixo na tela: só a lista de itens rola. Se o resumo for maior que
-     a janela, ele ganha uma rolagem própria; o rodapé (total + botão) fica
-     preso na base, então a ação principal nunca fica escondida. */
-  max-height: calc(100vh - 108px);
-  overflow-y: auto;
-  overscroll-behavior: auto;
-  scrollbar-width: thin;
+  /* O resumo acompanha a página em qualquer tamanho de tela. Antes ele tinha
+     rolagem interna no computador: em notebooks de 768px de altura as seções
+     de pagamento, agendamento e observações ficavam escondidas dentro do
+     painel e pareciam cortadas. Sem rolagem interna, tudo é alcançado pela
+     rolagem normal da página. */
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -483,15 +479,6 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-
-.cart-summary::-webkit-scrollbar {
-  width: 8px;
-}
-
-.cart-summary::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: 8px;
 }
 
 .cart-summary h2 {
@@ -660,6 +647,23 @@
 .cart-delivery__texto small {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* Aviso quando a loja oferece só entrega ou só retirada */
+.cart-delivery__nota {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.cart-delivery__nota.is-erro {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-bg);
 }
 
 /* Aviso de loja fechada — aparece logo abaixo das opções de entrega/retirada
@@ -944,12 +948,10 @@
   flex-shrink: 0;
 }
 
-/* Rodapé do resumo: fica preso na base do painel enquanto o conteúdo rola.
-   No celular ele volta ao fluxo normal (a barra fixa assume o botão). */
+/* Rodapé do resumo: total, botão de finalizar e aviso de segurança. Fica no
+   fim do painel, sem sobrepor as seções acima. No celular a barra fixa assume
+   o botão e este rodapé volta ao fluxo simples. */
 .cart-summary__rodape {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 12px;

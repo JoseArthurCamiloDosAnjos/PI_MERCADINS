@@ -321,6 +321,9 @@ export default function CartScreen({
   // Apenas uma forma disponível = escolhida sozinha, sem seletor
   const soEntrega = ofereceEntrega && !ofereceRetirada;
   const soRetirada = !ofereceEntrega && ofereceRetirada;
+  // O cadastro do mercado exige pelo menos uma forma. Esta trava protege a
+  // tela caso um mercado antigo tenha ficado sem nenhuma das duas.
+  const semFormaRecebimento = !ofereceEntrega && !ofereceRetirada;
   const tipoEfetivo: "entrega" | "retirada" = soRetirada
     ? "retirada"
     : soEntrega
@@ -365,7 +368,7 @@ export default function CartScreen({
   const nomeLoja = storeName.trim() || "a loja";
 
   const handleCheckout = () => {
-    if (faltaMinimo) return;
+    if (faltaMinimo || semFormaRecebimento) return;
     // Entrega sem conta: não existe endereço para mostrar nesta tela, então
     // leva para o login e devolve a pessoa para este mesmo carrinho
     if (tipoEfetivo === "entrega" && items.length > 0 && !logado) {
@@ -695,6 +698,18 @@ export default function CartScreen({
             </fieldset>
           )}
 
+          {/* Quando a loja oferece só uma forma de recebimento, o seletor acima
+              não aparece. Este aviso deixa claro o que vai acontecer. */}
+          {items.length > 0 && (soEntrega || soRetirada || semFormaRecebimento) && (
+            <p className={`cart-delivery__nota ${semFormaRecebimento ? "is-erro" : ""}`} role="status">
+              {semFormaRecebimento
+                ? "Esta loja não configurou entrega nem retirada. Não é possível finalizar o pedido agora."
+                : soRetirada
+                  ? "Esta loja não faz entrega: o seu pedido será retirado no balcão, sem taxa."
+                  : "Esta loja trabalha somente com entrega. A retirada no balcão não está disponível."}
+            </p>
+          )}
+
           {/* Loja fechada: avisa quando a compra poderá ser retirada ou quando
               ela vai chegar (o pedido só é preparado quando a loja abrir) */}
           {items.length > 0 && lojaAberta === false && (
@@ -782,7 +797,7 @@ export default function CartScreen({
                pagamento), com botão para adicionar outro. Deslogado: não
                existe endereço para mostrar, fica só o botão que leva para o
                login (onde ele pode cadastrar o dele). */}
-          {items.length > 0 && tipoEfetivo === "entrega" && (
+          {items.length > 0 && !semFormaRecebimento && tipoEfetivo === "entrega" && (
             <fieldset className="cart-endereco">
               <legend className="cart-endereco__legenda">
                 <IconMapPin />
@@ -929,7 +944,7 @@ export default function CartScreen({
                 />
                 <IconStore />
                 <span className="cart-payment__texto">
-                  <strong>Pagar na entrega</strong>
+                  <strong>{tipoEfetivo === "retirada" ? "Pagar na retirada" : "Pagar na entrega"}</strong>
                   <small>Dinheiro ou cartão na entrega/retirada</small>
                 </span>
               </label>
@@ -964,8 +979,8 @@ export default function CartScreen({
             </fieldset>
           )}
 
-          {/* Rodapé do resumo: no computador fica preso na base do painel
-              (que rola por dentro), então o botão de finalizar nunca some */}
+          {/* Rodapé do resumo: total, botão de finalizar e aviso de segurança.
+              Fica no fim do painel, sem esconder as seções acima. */}
           <div className="cart-summary__rodape">
             <div className="cart-summary__total">
               <span>Total</span>
@@ -975,7 +990,7 @@ export default function CartScreen({
             <button
               className="cart-checkout-btn"
               onClick={handleCheckout}
-              disabled={items.length === 0 || finalizando || faltaMinimo}
+              disabled={items.length === 0 || finalizando || faltaMinimo || semFormaRecebimento}
               type="button"
             >
               {textoCheckout}
@@ -1002,7 +1017,7 @@ export default function CartScreen({
           <button
             className="cart-mobile-bar__btn"
             onClick={handleCheckout}
-            disabled={finalizando || faltaMinimo}
+            disabled={finalizando || faltaMinimo || semFormaRecebimento}
             type="button"
           >
             {textoCheckoutCurto}

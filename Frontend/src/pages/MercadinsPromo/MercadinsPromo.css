@@ -977,12 +977,16 @@
     gap: 0;
     padding: 32px 24px;
     transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Fora da tela o menu não deve receber foco pelo teclado. A visibilidade
+       só muda depois da animação de saída, então o deslize continua suave. */
+    visibility: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s;
     z-index: 150;
     overflow-y: auto;
   }
   .mp-nav-links--open {
     transform: translateX(0);
+    visibility: visible;
   }
   .mp-nav-links a {
     font-size: 18px;

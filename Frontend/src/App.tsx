@@ -281,6 +281,12 @@ function CartWrapper() {
 
   async function handleCheckout() {
     if (!mercadoId) return
+    // Proteção para cadastro antigo sem entrega e sem retirada: o botão já
+    // fica desativado no carrinho, mas o pedido também não é enviado.
+    if (!ofereceEntrega && !ofereceRetirada) {
+      showToast('erro', 'Esta loja não configurou entrega nem retirada.')
+      return
+    }
     if (!localStorage.getItem('token')) {
       showToast('erro', 'Faça login para finalizar o pedido. Seus itens ficam salvos no carrinho.')
       // Pausa curta para o cliente ler o aviso antes de mudar de tela
@@ -292,7 +298,7 @@ function CartWrapper() {
       const resposta = await api.criarPedido(mercadoId, {
         itens: carrinho.itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade })),
         observacao: observacao.trim() || undefined,
-        tipo_entrega: tipoEntrega,
+        tipo_entrega: tipoEfetivo,
         // Só existe endereço quando a compra será entregue
         endereco_entrega: tipoEfetivo === 'entrega' ? formatarEndereco(endereco) : undefined,
         cupom: cupom?.codigo || undefined,
@@ -309,7 +315,7 @@ function CartWrapper() {
         setObservacao('')
         setCupom(null)
         setAgendamento('')
-        if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega })
+        if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
         window.location.href = resposta.pagamento.urlPagamento
         return
       }
@@ -320,7 +326,7 @@ function CartWrapper() {
       setObservacao('')
       setCupom(null)
       setAgendamento('')
-      if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega })
+      if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
       showToast('sucesso', formaPagamento === 'pix'
         ? 'Pedido criado! Pague com o Pix para a loja iniciar o preparo.'
         : 'Pedido enviado com sucesso!')

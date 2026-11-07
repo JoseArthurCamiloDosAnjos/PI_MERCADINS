@@ -25,6 +25,8 @@ const TITULOS: Array<[RegExp, string]> = [
   [/^\/redefinir-senha/, 'Redefinir senha — Mercadins'],
   [/^\/verificar-email/, 'Verificar e-mail — Mercadins'],
   [/^\/perfil/, 'Minha conta — Mercadins'],
+  [/^\/favoritos/, 'Meus favoritos — Mercadins'],
+  [/^\/pedidos/, 'Meus pedidos — Mercadins'],
   [/^\/vendedor\/mercado\/\d+\/vitrine/, 'Minha vitrine — Mercadins'],
   [/^\/vendedor\/mercado\/\d+/, 'Gerenciamento do mercado — Mercadins'],
   [/^\/vendedor/, 'Painel do vendedor — Mercadins'],

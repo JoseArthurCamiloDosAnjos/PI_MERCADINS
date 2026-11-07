@@ -3,4 +3,10 @@ node_modules
 .env.*
 !.env.example
 .git
+.github
 coverage
+dist
+docs
+*.md
+*.log
+.DS_Store

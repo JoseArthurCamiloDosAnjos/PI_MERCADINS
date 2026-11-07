@@ -22,16 +22,19 @@ const listar = async (req, res) => {
       WHERE n.id_usuario = ${req.usuarioId}
          OR n.id_mercado IN (
            SELECT id_mercado FROM usuarios_mercados WHERE id_usuario = ${req.usuarioId}
-         )
-      ORDER BY n.id DESC
+           )
+      ORDER BY n.lida ASC, n.id DESC
       LIMIT 50
     `;
+
+    const naoLidas = notificacoes.filter((item) => !item.lida).length;
 
     res.json({
       notificacoes: notificacoes.map((item) => ({
         ...item,
         linkWhatsApp: linkWhatsApp(item.telefone, item.mensagem),
       })),
+      naoLidas,
       telefone: usuario?.telefone || '',
       canal: nomeDoCanal(),
       canalConfigurado: provedorConfigurado(),
@@ -39,6 +42,64 @@ const listar = async (req, res) => {
   } catch (err) {
     console.error('ERRO listar notificações:', err);
     res.status(500).json({ erro: 'Não foi possível carregar as notificações.' });
+  }
+};
+
+// POST /api/notificacoes/:id/lida — marca um aviso como lido.
+// Só afeta notificações da própria conta (ou dos mercados que ela gerencia).
+const marcarComoLida = async (req, res) => {
+  try {
+    const sql = await conectar();
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ erro: 'Identificador de notificação inválido.' });
+    }
+
+    const [atualizada] = await sql`
+      UPDATE notificacoes n
+      SET lida = TRUE
+      WHERE n.id = ${id}
+        AND (
+          n.id_usuario = ${req.usuarioId}
+          OR n.id_mercado IN (
+            SELECT id_mercado FROM usuarios_mercados WHERE id_usuario = ${req.usuarioId}
+          )
+        )
+      RETURNING n.id
+    `;
+
+    if (!atualizada) {
+      return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    }
+
+    res.json({ ok: true, id: atualizada.id });
+  } catch (err) {
+    console.error('ERRO marcar notificação como lida:', err);
+    res.status(500).json({ erro: 'Não foi possível marcar a notificação como lida.' });
+  }
+};
+
+// POST /api/notificacoes/lidas — marca todas as do usuário como lidas.
+const marcarTodasComoLidas = async (req, res) => {
+  try {
+    const sql = await conectar();
+
+    await sql`
+      UPDATE notificacoes n
+      SET lida = TRUE
+      WHERE n.lida = FALSE
+        AND (
+          n.id_usuario = ${req.usuarioId}
+          OR n.id_mercado IN (
+            SELECT id_mercado FROM usuarios_mercados WHERE id_usuario = ${req.usuarioId}
+          )
+        )
+    `;
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('ERRO marcar notificações como lidas:', err);
+    res.status(500).json({ erro: 'Não foi possível marcar as notificações como lidas.' });
   }
 };
 
@@ -90,4 +151,4 @@ const enviarTeste = async (req, res) => {
   }
 };
 
-module.exports = { listar, enviarTeste };
+module.exports = { listar, enviarTeste, marcarComoLida, marcarTodasComoLidas };

@@ -368,6 +368,26 @@ CRUD completo (painel → aba "Catálogo"):
 
 ---
 
+## Notificações por telefone — `/api/notificacoes`
+
+Avisos enviados (ou registrados) para o telefone do cadastro: conta criada,
+e-mail confirmado, loja criada e andamento de pedidos. Sem provedor de
+WhatsApp/SMS configurado, o aviso fica no histórico com o link "Abrir no
+WhatsApp" e status `sem_provedor`. Variáveis de configuração: ver
+`Backend/.env.example` (seção *Notificações por telefone*).
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| GET | `/` | token | Últimos 50 avisos da conta e dos mercados que ela gerencia; devolve `naoLidas`, telefone, canal e `canalConfigurado` |
+| POST | `/teste` | token | Envia/registra um aviso de teste no telefone do próprio usuário (limite 5 a cada 15 min) |
+| POST | `/:id/lida` | token | Marca um aviso como lido (só os da própria conta) |
+| POST | `/lidas` | token | Marca todos os avisos do usuário como lidos |
+
+Os avisos gravados têm `status`: `enviada`, `sem_provedor`, `registrada` ou
+`erro`. A listagem vem com `lida` (boolean) e não lidas primeiro.
+
+---
+
 ## Depoimentos — `/api/depoimentos`
 
 | Método | Rota | Acesso | O que faz |
@@ -412,7 +432,8 @@ O `robots.txt` do frontend aponta para esta rota.
 
 ## Limites e proteções
 
-- **Limite de requisições:** as rotas de autenticação têm limite (ex.: login, 10 por minuto por IP);
+- **Limite de requisições:** as rotas de autenticação têm limite (ex.: login, 10 por minuto por IP); o teste de notificação também (5 a cada 15 minutos);
 - **Validação:** todos os campos são validados no servidor (nada confia no navegador);
 - **SQL:** todas as consultas usam parâmetros do driver (nunca concatenação de texto) — verificado pelo script `npm run auditar-sql`;
-- **E-mails:** envio em segundo plano — falha de E-mail nunca impede um pedido de ser criado.
+- **E-mails:** envio em segundo plano — falha de E-mail nunca impede um pedido de ser criado;
+- **Notificações por telefone:** envio em segundo plano, com timeout de 8 s — provedor lento nunca atrasa cadastro ou pedido.

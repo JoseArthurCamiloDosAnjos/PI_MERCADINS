@@ -983,12 +983,15 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
   const falhou = ['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
 
   if (pago) {
-    // Idempotente: webhook pode chegar mais de uma vez
-    if (pedido.status === 'aguardando_pagamento') {
-      await sql`
-        UPDATE historico_compras SET status = 'pendente', asaas_payment_id = ${pagamentoAsaas.id}
-        WHERE id = ${pedido.id}
-      `;
+    // Idempotente: webhook pode chegar mais de uma vez (e o GET /pedido tem
+    // fallback de conciliação). O WHERE com status trava a transição — só
+    // quem realmente atualizou a linha dispara e-mail e avisos.
+    const [atualizado] = await sql`
+      UPDATE historico_compras SET status = 'pendente', asaas_payment_id = ${pagamentoAsaas.id}
+      WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
+      RETURNING id
+    `;
+    if (atualizado) {
       // Confirmação para o cliente + aviso de pedido novo para a loja (B2)
       montarDadosPedidoParaEmail(sql, pedido.id)
         .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
@@ -1357,12 +1360,19 @@ const detalharPedido = async (req, res) => {
           copiaEcola: pix?.payload || '',
           urlPagamento: cobranca?.invoiceUrl || '',
         };
-        // Pagamento já confirmou mas o webhook atrasou → confirma agora
-        if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas) && pedido.status === 'aguardando_pagamento') {
-          await sql`UPDATE historico_compras SET status = 'pendente' WHERE id = ${pedido.id}`;
-          pedido.status = 'pendente';
-          avisarVendedorPedido(sql, pedido.id);
-          avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+        // Pagamento já confirmou mas o webhook atrasou → confirma agora.
+        // WHERE com status: se o webhook já confirmou, não reavisa.
+        if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas)) {
+          const [atualizado] = await sql`
+            UPDATE historico_compras SET status = 'pendente'
+            WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
+            RETURNING id
+          `;
+          if (atualizado) {
+            pedido.status = 'pendente';
+            avisarVendedorPedido(sql, pedido.id);
+            avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+          }
         }
         // Mesmo sem webhook: a conciliação do split acompanha a cobrança
         await sincronizarRepasses(sql, pedido.id, cobranca);

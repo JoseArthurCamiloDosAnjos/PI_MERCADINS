@@ -78,6 +78,14 @@ function nomeDoCanal() {
   return 'whatsapp';
 }
 
+// Timeout curto no envio: um provedor lento/travado nunca deve atrasar
+// o cadastro, o pedido ou a resposta da API. Em 8 s sem resposta, aborta.
+const TIMEOUT_ENVIO_MS = 8000;
+
+function opcoesFetch(extra = {}) {
+  return { ...extra, signal: AbortSignal.timeout(TIMEOUT_ENVIO_MS) };
+}
+
 async function enviarPeloProvedor(telefone, mensagem) {
   const provedor = String(process.env.WHATSAPP_PROVIDER || '').toLowerCase().trim();
   const numero = telefoneInternacional(telefone);
@@ -86,7 +94,7 @@ async function enviarPeloProvedor(telefone, mensagem) {
     const versao = process.env.WHATSAPP_API_VERSION || 'v20.0';
     const resposta = await fetch(
       `https://graph.facebook.com/${versao}/${process.env.WHATSAPP_PHONE_ID}/messages`,
-      {
+      opcoesFetch({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +106,7 @@ async function enviarPeloProvedor(telefone, mensagem) {
           type: 'text',
           text: { body: mensagem },
         }),
-      }
+      })
     );
     if (!resposta.ok) {
       throw new Error(`Meta WhatsApp respondeu ${resposta.status}: ${await resposta.text()}`);
@@ -117,14 +125,14 @@ async function enviarPeloProvedor(telefone, mensagem) {
     ).toString('base64');
     const resposta = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
+      opcoesFetch({
         method: 'POST',
         headers: {
           Authorization: `Basic ${credenciais}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: corpo.toString(),
-      }
+      })
     );
     if (!resposta.ok) {
       throw new Error(`Twilio respondeu ${resposta.status}: ${await resposta.text()}`);
@@ -133,14 +141,14 @@ async function enviarPeloProvedor(telefone, mensagem) {
   }
 
   if (provedor === 'zapi') {
-    const resposta = await fetch(process.env.ZAPI_URL, {
+    const resposta = await fetch(process.env.ZAPI_URL, opcoesFetch({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(process.env.ZAPI_TOKEN ? { 'x-api-key': process.env.ZAPI_TOKEN } : {}),
       },
       body: JSON.stringify({ phone: numero, message: mensagem }),
-    });
+    }));
     if (!resposta.ok) {
       throw new Error(`Z-API respondeu ${resposta.status}: ${await resposta.text()}`);
     }
@@ -151,14 +159,14 @@ async function enviarPeloProvedor(telefone, mensagem) {
     const base = String(process.env.EVOLUTION_URL).replace(/\/+$/, '');
     const resposta = await fetch(
       `${base}/message/sendText/${process.env.EVOLUTION_INSTANCE}`,
-      {
+      opcoesFetch({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(process.env.EVOLUTION_TOKEN ? { apikey: process.env.EVOLUTION_TOKEN } : {}),
         },
         body: JSON.stringify({ number: numero, text: mensagem }),
-      }
+      })
     );
     if (!resposta.ok) {
       throw new Error(`Evolution API respondeu ${resposta.status}: ${await resposta.text()}`);
@@ -167,7 +175,7 @@ async function enviarPeloProvedor(telefone, mensagem) {
   }
 
   if (provedor === 'webhook') {
-    const resposta = await fetch(process.env.NOTIFICACOES_WEBHOOK_URL, {
+    const resposta = await fetch(process.env.NOTIFICACOES_WEBHOOK_URL, opcoesFetch({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -176,7 +184,7 @@ async function enviarPeloProvedor(telefone, mensagem) {
           : {}),
       },
       body: JSON.stringify({ telefone: numero, mensagem, canal: nomeDoCanal() }),
-    });
+    }));
     if (!resposta.ok) {
       throw new Error(`Webhook respondeu ${resposta.status}: ${await resposta.text()}`);
     }

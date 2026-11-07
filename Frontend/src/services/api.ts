@@ -236,11 +236,15 @@ export const api = {
       body: JSON.stringify({}),
     }),
 
-  // ── Notificações por telefone (histórico e teste) ─────────────────────────
+  // ── Notificações por telefone (histórico, teste e leitura) ───────────────
   listarNotificacoes: () =>
     request('/notificacoes'),
   enviarNotificacaoTeste: () =>
     request('/notificacoes/teste', { method: 'POST' }),
+  marcarNotificacaoLida: (id: string | number) =>
+    request(`/notificacoes/${id}/lida`, { method: 'POST' }),
+  marcarNotificacoesLidas: () =>
+    request('/notificacoes/lidas', { method: 'POST' }),
 
   // ── Cupons de desconto (B3) ────────────────────────────────────────────────
   cuponsMercado: (mercadoId: string | number) =>

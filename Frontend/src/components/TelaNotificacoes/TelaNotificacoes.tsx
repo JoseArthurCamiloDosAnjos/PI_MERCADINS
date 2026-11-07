@@ -24,6 +24,7 @@ interface Notificacao {
   mensagem: string;
   status: string;
   erro?: string;
+  lida: boolean;
   criado_em: string;
   enviado_em?: string | null;
   linkWhatsApp?: string;
@@ -54,8 +55,10 @@ export default function TelaNotificacoes() {
   const [telefone, setTelefone] = useState('');
   const [canalConfigurado, setCanalConfigurado] = useState(false);
   const [canal, setCanal] = useState('whatsapp');
+  const [naoLidas, setNaoLidas] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [enviandoTeste, setEnviandoTeste] = useState(false);
+  const [marcando, setMarcando] = useState(false);
   const [aviso, setAviso] = useState('');
   const [erro, setErro] = useState('');
 
@@ -65,6 +68,7 @@ export default function TelaNotificacoes() {
     try {
       const dados = await api.listarNotificacoes();
       setNotificacoes(dados.notificacoes ?? []);
+      setNaoLidas(Number(dados.naoLidas ?? 0));
       setTelefone(dados.telefone ?? '');
       setCanalConfigurado(Boolean(dados.canalConfigurado));
       setCanal(dados.canal ?? 'whatsapp');
@@ -111,6 +115,43 @@ export default function TelaNotificacoes() {
     }
   }
 
+  async function marcarLida(id: number) {
+    if (marcando) return;
+    setErro('');
+    try {
+      await api.marcarNotificacaoLida(id);
+      setNotificacoes((atual) =>
+        atual.map((item) => (item.id === id ? { ...item, lida: true } : item))
+      );
+      setNaoLidas((n) => Math.max(0, n - 1));
+    } catch (falha) {
+      setErro(
+        falha instanceof Error
+          ? falha.message
+          : 'Não foi possível marcar como lida.'
+      );
+    }
+  }
+
+  async function marcarTodasLidas() {
+    if (marcando || naoLidas === 0) return;
+    setMarcando(true);
+    setErro('');
+    try {
+      await api.marcarNotificacoesLidas();
+      setNotificacoes((atual) => atual.map((item) => ({ ...item, lida: true })));
+      setNaoLidas(0);
+    } catch (falha) {
+      setErro(
+        falha instanceof Error
+          ? falha.message
+          : 'Não foi possível marcar todas como lidas.'
+      );
+    } finally {
+      setMarcando(false);
+    }
+  }
+
   return (
     <div className="notificacoes">
       <div className="notificacoes__cabecalho">
@@ -121,8 +162,8 @@ export default function TelaNotificacoes() {
           <h2 className="notificacoes__titulo">Avisos no seu telefone</h2>
           <p className="notificacoes__texto">
             O Mercadins usa o telefone do seu cadastro para avisar quando algo
-            importante acontece: conta criada, e-mail confirmado, mercado
-            aprovado e andamento dos pedidos.
+            importante acontece: conta criada, e-mail confirmado, loja criada e
+            andamento dos pedidos.
           </p>
         </div>
       </div>
@@ -178,6 +219,18 @@ export default function TelaNotificacoes() {
         >
           {carregando ? 'Atualizando...' : 'Atualizar lista'}
         </button>
+        {naoLidas > 0 && (
+          <button
+            type="button"
+            className="notificacoes__btn-lidas"
+            onClick={() => void marcarTodasLidas()}
+            disabled={marcando}
+          >
+            {marcando
+              ? 'Marcando...'
+              : `Marcar todas como lidas (${naoLidas})`}
+          </button>
+        )}
       </div>
 
       {aviso && (
@@ -204,7 +257,12 @@ export default function TelaNotificacoes() {
         )}
 
         {notificacoes.map((item) => (
-          <article className="notificacoes__item" key={item.id}>
+          <article
+            className={`notificacoes__item${
+              item.lida ? '' : ' notificacoes__item--nao-lida'
+            }`}
+            key={item.id}
+          >
             <div className="notificacoes__item-topo">
               <strong className="notificacoes__item-titulo">
                 {item.titulo || 'Aviso do Mercadins'}
@@ -218,16 +276,28 @@ export default function TelaNotificacoes() {
             <p className="notificacoes__item-mensagem">{item.mensagem}</p>
             <div className="notificacoes__item-rodape">
               <span>{formatarData(item.criado_em)}</span>
-              {item.linkWhatsApp && (
-                <a
-                  className="notificacoes__link"
-                  href={item.linkWhatsApp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir no WhatsApp
-                </a>
-              )}
+              <div className="notificacoes__item-acoes">
+                {item.linkWhatsApp && (
+                  <a
+                    className="notificacoes__link"
+                    href={item.linkWhatsApp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Abrir no WhatsApp
+                  </a>
+                )}
+                {!item.lida && (
+                  <button
+                    type="button"
+                    className="notificacoes__btn-lida"
+                    onClick={() => void marcarLida(item.id)}
+                    disabled={marcando}
+                  >
+                    Marcar como lida
+                  </button>
+                )}
+              </div>
             </div>
           </article>
         ))}

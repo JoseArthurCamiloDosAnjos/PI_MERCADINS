@@ -75,14 +75,15 @@ const signUp = async (req, res) => {
     `;
 
     // Aviso no telefone cadastrado. Sem provedor configurado ele fica no
-    // histórico da conta e pode ser aberto no WhatsApp.
-    await enviarNotificacaoTelefone(sql, {
+    // histórico da conta e pode ser aberto no WhatsApp. Fire-and-forget:
+    // o cadastro não espera o envio (timeout de 8 s no provedor).
+    enviarNotificacaoTelefone(sql, {
       id_usuario: novoUsuario?.id_usuario ?? null,
       telefone,
       tipo: 'cadastro',
       titulo: 'Cadastro realizado',
       mensagem: `Olá, ${nome.split(' ')[0]}! Seu cadastro no Mercadins foi realizado com sucesso. Confirme seu e-mail para ativar a conta e começar a comprar.`,
-    });
+    }).catch((err) => console.error('Falha na notificação de cadastro:', err.message));
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
     await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
@@ -124,13 +125,14 @@ const verificarEmail = async (req, res) => {
       WHERE id_usuario = ${usuario.id_usuario}
     `;
 
-    await enviarNotificacaoTelefone(sql, {
+    // Fire-and-forget: não bloqueia a resposta de e-mail confirmado.
+    enviarNotificacaoTelefone(sql, {
       id_usuario: usuario.id_usuario,
       telefone: usuario.telefone,
       tipo: 'email_confirmado',
       titulo: 'E-mail confirmado',
       mensagem: `Olá, ${String(usuario.nome || '').split(' ')[0]}! Seu e-mail foi confirmado com sucesso. Sua conta no Mercadins está ativa.`,
-    });
+    }).catch((err) => console.error('Falha na notificação de e-mail:', err.message));
 
     res.json({
       mensagem: "Email verificado com sucesso! Você já pode fazer login.",

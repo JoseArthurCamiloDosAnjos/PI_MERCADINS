@@ -380,14 +380,15 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
   // Avisa o telefone cadastrado que a loja entrou no ar. O envio real depende
   // do provedor de WhatsApp/SMS configurado; sem provedor o aviso fica no
   // histórico da conta (aba Notificações) com o link pronto do WhatsApp.
-  await enviarNotificacaoTelefone(sql, {
+  // Fire-and-forget: a criação do mercado não espera o envio.
+  enviarNotificacaoTelefone(sql, {
     id_usuario,
     id_mercado: novoMercado.id_mercado,
     telefone: d.telefone,
     tipo: 'mercado_cadastrado',
     titulo: 'Mercado cadastrado',
     mensagem: `Olá! O mercado ${d.nome} foi cadastrado com sucesso no Mercadins. Acesse o painel do vendedor para cadastrar seus produtos e acompanhar os pedidos.`,
-  });
+  }).catch((err) => console.error('Falha na notificação de mercado:', err.message));
 
   // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
   // tabela "categorias" — é daí que a página do mercado lê as abas de

@@ -234,13 +234,6 @@ function ProdutoCardCliente({
           {noCarrinho > 0
             ? <span className="vtc-produto-add-qtd">{noCarrinho}</span>
             : <IconPlus size={16} />}
-          <span className="vtc-produto-add-texto">
-            {produto.estoque === 0
-              ? 'Sem estoque'
-              : noCarrinho > 0
-                ? 'no carrinho'
-                : 'Adicionar'}
-          </span>
         </button>
       </div>
       <div className="vtc-produto-info">
@@ -566,13 +559,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     '--vt-cor-icones': paletaAtual.cores.corIcones,
   } as CSSProperties;
 
-  // Telefone da loja no formato do WhatsApp (55 + DDD + número). No celular
-  // o contato fica como ícone na barra de cima para o cabeçalho não crescer.
-  const telefoneLoja = (dados.telefone ?? '').replace(/\D/g, '');
-  const whatsappLoja = telefoneLoja
-    ? (telefoneLoja.startsWith('55') ? telefoneLoja : `55${telefoneLoja}`)
-    : '';
-
   return (
     <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
 
@@ -603,23 +589,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             if (onVoltar) onVoltar();
             else navigate('/');
           }}
-          aria-label="Voltar ao menu"
         >
           <IconArrowLeft size={16} />
           <span>Voltar ao menu</span>
         </button>
         <div className="vtc-topbar-direita">
-          {whatsappLoja.length >= 12 && (
-            <a
-              className="vtc-btn-whatsapp-topo"
-              href={`https://wa.me/${whatsappLoja}?text=${encodeURIComponent(`Olá! Vim pelo site Mercadins e gostaria de falar com a ${dados.nome}.`)}`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Falar no WhatsApp"
-            >
-              <IconMessage size={18} />
-            </a>
-          )}
           {usuario ? (
             <ProfileMenu />
           ) : (
@@ -763,16 +737,22 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             )}
 
             {/* Falar com a loja no WhatsApp (usa o telefone do cadastro) */}
-            {whatsappLoja.length >= 12 && (
-              <a
-                className="vtc-btn-whatsapp"
-                href={`https://wa.me/${whatsappLoja}?text=${encodeURIComponent(`Olá! Vim pelo site Mercadins e gostaria de falar com a ${dados.nome}.`)}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <IconMessage size={15} /> Falar no WhatsApp
-              </a>
-            )}
+            {(() => {
+              const tel = (dados.telefone ?? '').replace(/\D/g, '');
+              // Números brasileiros: 55 + DDD + número
+              const wa = tel ? (tel.startsWith('55') ? tel : `55${tel}`) : '';
+              if (wa.length < 12) return null;
+              return (
+                <a
+                  className="vtc-btn-whatsapp"
+                  href={`https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Vim pelo site Mercadins e gostaria de falar com a ${dados.nome}.`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <IconMessage size={15} /> Falar no WhatsApp
+                </a>
+              );
+            })()}
 
             {/* No celular o quadro completo da semana ocupa muito espaço;
                 fica recolhido neste botão e o quadro grande some pelo CSS */}
@@ -913,17 +893,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
       {/* ── FAB carrinho (mobile) ────────────────────────────────────── */}
       {carrinho.totalItens > 0 && (
-        <button
-          className="vtc-fab-carrinho"
-          onClick={() => {
-            if (slug) {
-              setCarrinhoAberto(false);
-              navigate(`/vitrine/${slug}/carrinho`);
-            } else {
-              setCarrinhoAberto(true);
-            }
-          }}
-        >
+        <button className="vtc-fab-carrinho" onClick={() => setCarrinhoAberto(true)}>
           <IconCart size={20} />
           <span>{carrinho.totalItens} {carrinho.totalItens === 1 ? 'item' : 'itens'} · R$ {formatarPreco(String(carrinho.totalValor))}</span>
         </button>

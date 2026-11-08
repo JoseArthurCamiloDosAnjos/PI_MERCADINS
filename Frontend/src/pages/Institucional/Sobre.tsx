@@ -160,6 +160,18 @@ export default function Sobre() {
               </p>
             </div>
           </div>
+
+          <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">CC</span>
+            <div>
+              <h3>Professor Carlos Pereira De Castro Filho</h3>
+              <p>Professor de IoT e Programação Mobile</p>
+              <p className="inst-team-desc">
+                Nosso agradecimento especial pelas ótimas ideias e possíveis
+                melhorias que trouxe para o projeto.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

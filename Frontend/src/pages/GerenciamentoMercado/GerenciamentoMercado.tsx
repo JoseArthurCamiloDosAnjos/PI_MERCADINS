@@ -25,6 +25,7 @@ import {
   IconStore,
   IconTag,
   IconTruck,
+  IconReceipt,
 } from '../../components/Icons';
 
 // Alturas fixas para o skeleton do gráfico (evita Math.random no render)
@@ -204,6 +205,7 @@ const SIDEBAR_NAV: { icon: ReactNode; label: string }[] = [
   { icon: <IconStar size={18} />, label: 'Avaliações' },
   { icon: <IconTag size={18} />, label: 'Cupons' },
   { icon: <IconCreditCard size={18} />, label: 'Financeiro' },
+  { icon: <IconReceipt size={18} />, label: 'Recebimento' },
   { icon: <IconInfo size={18} />, label: 'Informações' },
 ];
 
@@ -874,6 +876,7 @@ function SecFinanceiro({
   salvandoCustos,
   onSalvarCustos,
   onIrProdutos,
+  onIrRecebimento,
   onExportar,
 }: {
   fin: FinanceiroResumo | null;
@@ -886,6 +889,7 @@ function SecFinanceiro({
   salvandoCustos: boolean;
   onSalvarCustos: () => void;
   onIrProdutos: () => void;
+  onIrRecebimento: () => void;
   onExportar: () => void;
 }) {
   const carregando = loading || !fin;
@@ -1006,6 +1010,19 @@ function SecFinanceiro({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Sem Wallet ID: o Pix/cartão dos pedidos online fica na conta da
+          plataforma em vez de cair direto na conta do vendedor */}
+      {!carregando && fin?.recebimento && !fin.recebimento.walletCadastrado && (
+        <div className="gm-aviso-custo">
+          <p>
+            Seus pagamentos online estão caindo <strong>na conta da plataforma</strong> —
+            crie sua conta Asaas na aba Recebimento (automático, um clique) para o valor
+            das vendas cair direto na sua conta.
+          </p>
+          <button className="gm-btn-sec" onClick={onIrRecebimento}>Criar conta Asaas</button>
         </div>
       )}
 
@@ -1148,10 +1165,182 @@ function resumirHorario(h: HorarioMercado | null): string {
 
 function SecInformacoes({ mercado, onSalvo }: {
   mercado: MercadoInfo | null;
-  onSalvo: (atualizado: MercadoInfo) => void;
+  // aviso null = atualiza a tela sem mostrar o toast padrão (usado pela
+  // criação automática da conta Asaas, que tem aviso próprio)
+  onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
 }) {
   if (!mercado) return <EmptyState msg="Carregando informações..." />;
   return <InfoConteudo mercado={mercado} onSalvo={onSalvo} />;
+}
+
+// ─── Recebimento dos pedidos online (aba própria) ─────────────────────────────
+// Status do split + criação automática da conta Asaas (wallet) + campo
+// manual para quem já tem carteira. Fica FORA de Informações de propósito:
+// é configuração de pagamento, não dado cadastrais nem de entrega.
+
+// Tipos de empresa aceitos pelo Asaas em companyType (exigido na criação
+// da subconta para CNPJ) — o vendedor escolhe no painel antes de criar
+const TIPOS_EMPRESA = [
+  { valor: 'MEI', nome: 'MEI' },
+  { valor: 'LIMITED', nome: 'Ltda' },
+  { valor: 'INDIVIDUAL', nome: 'Empresário individual' },
+  { valor: 'ASSOCIATION', nome: 'Associação' },
+] as const;
+
+function SecRecebimento({ mercado, onSalvo }: {
+  mercado: MercadoInfo | null;
+  onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
+}) {
+  if (!mercado) return <EmptyState msg="Carregando recebimento..." />;
+  return <RecebimentoConteudo mercado={mercado} onSalvo={onSalvo} />;
+}
+
+function RecebimentoConteudo({ mercado, onSalvo }: {
+  mercado: MercadoInfo;
+  onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
+}) {
+  const [empresa, setEmpresa] = useState<string>('LIMITED');
+  const [gerandoWallet, setGerandoWallet] = useState(false);
+  const [walletManual, setWalletManual] = useState(mercado.asaas_wallet_id ?? '');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const { toasts, showToast, dismissToast } = useToast();
+
+  const walletAtual = mercado.asaas_wallet_id ?? '';
+  const alterado = walletManual.trim() !== walletAtual;
+
+  // Cria a subconta do vendedor no Asaas (POST /:id/asaas/subconta) e
+  // preenche o Wallet ID sozinho — sem precisar copiar nada do painel do Asaas
+  async function gerarWallet() {
+    setGerandoWallet(true);
+    setErro('');
+    try {
+      const res = await api.criarSubcontaAsaas(mercado.id_mercado, empresa);
+      const walletId = String(res.walletId ?? '').trim();
+      if (!walletId) throw new Error('O Asaas não devolveu o Wallet ID da subconta.');
+      setWalletManual(walletId);
+      onSalvo({ ...mercado, asaas_wallet_id: walletId }, null);
+      showToast('sucesso', 'Conta Asaas criada! Os pedidos online passam a cair direto na sua conta.');
+    } catch (err: unknown) {
+      setErro(err instanceof Error ? err.message : 'Erro ao criar a conta Asaas.');
+    } finally {
+      setGerandoWallet(false);
+    }
+  }
+
+  // Wallet manual: para quem já tem conta Asaas (ou para limpar e voltar
+  // a deixar o valor na plataforma). PUT parcial — só o wallet muda.
+  async function salvarManual() {
+    const wallet = walletManual.trim();
+    if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet)) {
+      setErro('Wallet ID do Asaas inválido (confira o valor no painel do Asaas).');
+      return;
+    }
+    setSalvando(true);
+    setErro('');
+    try {
+      const res = await api.atualizarMercado(mercado.id_mercado, { asaas_wallet_id: wallet });
+      onSalvo({ ...mercado, ...(res.mercado ?? { asaas_wallet_id: wallet }) } as MercadoInfo, null);
+      showToast('sucesso', wallet
+        ? 'Wallet ID salvo — os pedidos online passam a cair na sua conta.'
+        : 'Carteira removida — o valor dos pedidos fica na plataforma.');
+    } catch (err: unknown) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar a carteira.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="gm-section-wrap">
+      <div className="gm-sec-row">
+        <h2 className="gm-sec-title"><IconReceipt size={15} /> Recebimento dos pedidos online</h2>
+      </div>
+
+      <div className="gm-info-grid">
+        <div className="gm-info-card">
+          <div className="gm-info-row">
+            <span className="gm-info-lbl"><IconCreditCard size={13} /> Recebimento</span>
+            <span className="gm-info-val" title={walletAtual || undefined}>
+              {walletAtual
+                ? `direto na conta Asaas (${walletAtual.slice(0, 8)}…)`
+                : 'na conta da plataforma'}
+            </span>
+          </div>
+          <div className="gm-info-row">
+            <span className="gm-info-lbl"><IconInfo size={13} /> Como funciona</span>
+            <span className="gm-info-val">100% do Pix/cartão online para você, sem comissão</span>
+          </div>
+        </div>
+      </div>
+
+      {!walletAtual && (
+        <>
+          <div className="gm-aviso-custo">
+            <p>
+              Seus pagamentos online estão caindo <strong>na conta da plataforma</strong> —
+              crie sua conta Asaas aqui (automático, um clique) para o valor das vendas
+              cair direto na sua conta.
+            </p>
+          </div>
+          <div className="gm-wallet-auto">
+            <label className="gm-info-campo gm-wallet-empresa">
+              Tipo de empresa
+              <select
+                className="gm-modal-input"
+                value={empresa}
+                onChange={e => setEmpresa(e.target.value)}
+              >
+                {TIPOS_EMPRESA.map(t => (
+                  <option key={t.valor} value={t.valor}>{t.nome}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="gm-btn-sec"
+              onClick={gerarWallet}
+              disabled={gerandoWallet || salvando}
+            >
+              {gerandoWallet ? 'Criando conta no Asaas…' : 'Criar conta automaticamente'}
+            </button>
+          </div>
+        </>
+      )}
+
+      <p className="gm-info-subtitulo"><IconCreditCard size={13} /> Carteira Asaas (manual)</p>
+      <div className="gm-info-entrega">
+        <label className="gm-info-campo gm-info-campo--full">
+          Wallet ID do Asaas (opcional)
+          <input
+            className="gm-modal-input"
+            value={walletManual}
+            maxLength={64}
+            placeholder="Ex.: 48548710-9baa-4ec1-a11f-9010193527c6"
+            onChange={e => setWalletManual(e.target.value.trim())}
+          />
+          <small className="gm-info-dica-cep">
+            Já tem conta no Asaas? Cole o Wallet ID aqui. Deixe vazio para manter o valor
+            na plataforma.
+          </small>
+        </label>
+      </div>
+
+      {erro && <p className="gm-info-erro">{erro}</p>}
+
+      <div className="gm-info-acoes">
+        <button
+          className="gm-btn-primary"
+          onClick={salvarManual}
+          disabled={salvando || gerandoWallet || !alterado}
+        >
+          {salvando ? 'Salvando…' : 'Salvar carteira'}
+        </button>
+      </div>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
 }
 
 // ─── Cupons de desconto (B3) ─────────────────────────────────────────────────
@@ -1542,16 +1731,17 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
 // valores atuais (inclusive o horário) nos campos; o "Salvar" grava no banco
 // (PUT /api/mercados/:id) e atualiza a tela com a resposta; o "Cancelar"
 // descarta as mudanças. O CNPJ fica somente leitura (é o documento da loja).
+// O recebimento (Wallet Asaas) tem aba própria — ver SecRecebimento acima.
 function InfoConteudo({ mercado, onSalvo }: {
   mercado: MercadoInfo;
-  onSalvo: (atualizado: MercadoInfo) => void;
+  onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
 }) {
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
   const [form, setForm] = useState({
     nome: '', telefone: '', email: '', rua: '', bairro: '',
-    cidade: '', estado: '', cep: '', asaas_wallet_id: '',
+    cidade: '', estado: '', cep: '',
   });
   // Entrega e retirada (B2): taxa, pedido mínimo e quais formas a loja aceita
   const [entrega, setEntrega] = useState({
@@ -1637,7 +1827,6 @@ function InfoConteudo({ mercado, onSalvo }: {
       nome: mercado.nome ?? '', telefone: mercado.telefone ?? '', email: mercado.email ?? '',
       rua: mercado.rua ?? '', bairro: mercado.bairro ?? '', cidade: mercado.cidade ?? '',
       estado: mercado.estado ?? '', cep: mercado.cep ?? '',
-      asaas_wallet_id: mercado.asaas_wallet_id ?? '',
     });
     setEntrega({
       taxa: mercado.taxa_entrega != null ? String(Number(mercado.taxa_entrega)) : '0',
@@ -1688,13 +1877,6 @@ function InfoConteudo({ mercado, onSalvo }: {
       setErro('Taxa de entrega e pedido mínimo não podem ser negativos.');
       return;
     }
-    // Wallet Asaas (recebimento direto): formato do id de carteira do Asaas
-    const wallet = form.asaas_wallet_id.trim();
-    if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet)) {
-      setErro('Wallet ID do Asaas inválido (confira o valor no painel do Asaas).');
-      return;
-    }
-
     setSalvando(true);
     setErro('');
     try {
@@ -1712,7 +1894,6 @@ function InfoConteudo({ mercado, onSalvo }: {
         pedido_minimo: minimo,
         oferece_entrega: entrega.ofereceEntrega,
         oferece_retirada: entrega.ofereceRetirada,
-        asaas_wallet_id: wallet,
       });
       setEditando(false);
       onSalvo({ ...mercado, ...form, ...(res.mercado ?? {}) } as MercadoInfo);
@@ -1840,24 +2021,6 @@ function InfoConteudo({ mercado, onSalvo }: {
             </label>
           </div>
 
-          <p className="gm-info-subtitulo"><IconCreditCard size={13} /> Recebimento dos pedidos online</p>
-          <div className="gm-info-entrega">
-            <label className="gm-info-campo gm-info-campo--full">
-              Wallet ID do Asaas (opcional)
-              <input
-                className="gm-modal-input"
-                value={form.asaas_wallet_id}
-                maxLength={64}
-                placeholder="Ex.: 48548710-9baa-4ec1-a11f-9010193527c6"
-                onChange={e => set('asaas_wallet_id', e.target.value.trim())}
-              />
-              <small className="gm-info-dica-cep">
-                Com o wallet cadastrado, o Pix/cartão dos pedidos cai direto na sua conta Asaas
-                (100% para você, sem comissão). Deixe vazio para manter o valor na plataforma.
-              </small>
-            </label>
-          </div>
-
           {erro && <p className="gm-info-erro">{erro}</p>}
 
           <div className="gm-info-acoes">
@@ -1907,14 +2070,6 @@ function InfoConteudo({ mercado, onSalvo }: {
             <div className="gm-info-row">
               <span className="gm-info-lbl"><IconStore size={13} /> Retirada</span>
               <span className="gm-info-val">{mercado.oferece_retirada === false ? 'não aceita' : 'aceita no balcão'}</span>
-            </div>
-            <div className="gm-info-row">
-              <span className="gm-info-lbl"><IconCreditCard size={13} /> Recebimento</span>
-              <span className="gm-info-val" title={mercado.asaas_wallet_id || undefined}>
-                {mercado.asaas_wallet_id
-                  ? `direto na conta Asaas (${mercado.asaas_wallet_id.slice(0, 8)}…)`
-                  : 'na conta da plataforma'}
-              </span>
             </div>
           </div>
         </div>
@@ -2250,9 +2405,9 @@ export default function GerenciamentoMercado({
 
   // edição das informações do mercado (aba Informações): atualiza a tela
   // com o que o servidor salvou e avisa o usuário
-  function handleInfoSalva(atualizado: MercadoInfo) {
+  function handleInfoSalva(atualizado: MercadoInfo, aviso?: string | null) {
     setDados(prev => ({ ...prev, mercado: { ...prev.mercado!, ...atualizado } }));
-    showToast('sucesso', 'Informações atualizadas com sucesso!');
+    if (aviso !== null) showToast('sucesso', aviso ?? 'Informações atualizadas com sucesso!');
   }
 
   const stats: Stat[] = [
@@ -2305,8 +2460,11 @@ export default function GerenciamentoMercado({
       salvandoCustos={salvandoCustos}
       onSalvarCustos={salvarCustosFixos}
       onIrProdutos={() => setNav(1)}
+      // Sem cupons o filtro encolhe a lista: Recebimento fica no 5 ou no 6
+      onIrRecebimento={() => setNav(plano !== 'basico' ? 6 : 5)}
       onExportar={handleExportarRelatorio}
     />,
+    <SecRecebimento mercado={mercado} onSalvo={handleInfoSalva} />,
     <SecInformacoes mercado={mercado} onSalvo={handleInfoSalva} />,
   ];
 

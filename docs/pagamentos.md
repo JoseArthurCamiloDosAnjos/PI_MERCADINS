@@ -340,19 +340,30 @@ das assinaturas.
    Sem isso a API responde `invalid_action` e o sistema faz o fallback
    descrito abaixo.
 2. Cada vendedor precisa de **conta Asaas própria** e o **walletId** dela
-   (UUID tipo `48548710-9baa-4ec1-a11f-9010193527c6`). Quem já tem conta
-   recupera o walletId com o suporte/`GET /v3/wallets`; subcontas criadas
-   pela plataforma devolvem o walletId na criação.
+   (UUID tipo `48548710-9baa-4ec1-a11f-9010193527c6`). A plataforma cria
+   essa conta automaticamente (subconta via `POST /v3/accounts`, ver fluxo
+   abaixo) e grava o walletId sozinha; quem já tem conta no Asaas recupera o
+   walletId com o suporte/`GET /v3/wallets` e cola no campo manual.
+   Pré-requisito: a **conta-pai (plataforma) precisa ser Pessoa Jurídica
+   (CNPJ)** — sem isso o Asaas recusa a criação da subconta.
 3. O webhook precisa receber os eventos de split:
    `PAYMENT_SPLIT_DONE`, `PAYMENT_SPLIT_CANCELLED`,
    `PAYMENT_SPLIT_DIVERGENCE_BLOCK`, `PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED`.
 
 ### Fluxo no sistema
 
-1. O lojista cadastrou `asaas_wallet_id` (campo "Recebimento das vendas" no
-   cadastro da loja ou "Recebimento dos pedidos online" em Informações →
-   Editar). Obrigatório: o valor vai para `mercados.asaas_wallet_id`
-   (migração `015`).
+1. O wallet vai para `mercados.asaas_wallet_id` (migração `015`) por um de
+   três caminhos:
+   - **automático no cadastro**: logo após a criação do mercado,
+     `marketController.criarSubcontaDoMercado` chama `POST /v3/accounts`
+     (subconta do vendedor, tipo de empresa padrão `LIMITED`) e grava o
+     walletId — fire-and-forget: se falhar, o cadastro segue normalmente;
+   - **botão "Criar conta automaticamente"** na aba **Recebimento** (o
+     botão "Criar conta Asaas" da aba Financeiro leva até lá), com select
+     do **tipo de empresa** (`companyType`: MEI/Ltda/Empresário/Associação —
+     exigido pelo Asaas para CNPJ) → `POST /api/mercados/:id/asaas/subconta`;
+   - **manual**: na mesma aba Recebimento, colar o walletId de uma conta
+     Asaas já existente no campo "Wallet ID do Asaas".
 2. Na criação do pedido online, `asaasService.montarSplitVendedor` monta
    `splits: [{ walletId, percentualValue: 100 }]` e a cobrança Pix/cartão
    é criada com esse array. O percentual é sobre o **líquido** (netValue,
@@ -380,16 +391,19 @@ das assinaturas.
 | Arquivo | Responsabilidade |
 |---|---|
 | `Backend/src/db/migrations/015_split_vendedor.js` | coluna `asaas_wallet_id` + tabela `repasses` |
-| `Backend/src/services/asaasService.js` | `montarSplitVendedor` + campo `splits` nas cobranças de pedido |
+| `Backend/src/services/asaasService.js` | `criarSubconta` (`POST /v3/accounts`), `montarSplitVendedor` + campo `splits` nas cobranças de pedido |
+| `Backend/src/controllers/marketController.js` | `criarSubcontaDoMercado` (automático no cadastro + endpoint `POST /:id/asaas/subconta`), valida/grava `asaas_wallet_id` na edição |
+| `Backend/src/routes/marketRoutes.js` | rota `POST /:id/asaas/subconta` |
 | `Backend/src/controllers/pedidoController.js` | envia o split, grava `repasses`, sincroniza no webhook e no detalhe do pedido; `financeiroMercado` devolve o resumo `recebimento` |
-| `Backend/src/controllers/marketController.js` | valida/grava `asaas_wallet_id` no cadastro e na edição |
 | `Backend/src/controllers/assinaturaController.js` | webhook repassa `additionalInfo.splitId` dos eventos de split |
-| `Frontend/.../RegistrarMercado` | campo "Recebimento das vendas" no cadastro da loja |
-| `Frontend/.../GerenciamentoMercado` | wallet em Informações (leitura/edição) e bloco de recebimento na aba Financeiro |
+| `Frontend/.../RegistrarMercado` | campo "Recebimento das vendas" no cadastro da loja (opcional — sem ele, o backend cria a subconta sozinho) |
+| `Frontend/.../GerenciamentoMercado` | **aba Recebimento** (status, select do tipo de empresa + botão "Criar conta automaticamente", wallet manual) e aviso com atalho na aba Financeiro |
 
 ### Teste rápido (sandbox)
 
-1. Habilitar Split na conta sandbox e cadastrar o walletId do vendedor.
+1. Habilitar Split na conta sandbox e criar a conta do vendedor (aba
+   Recebimento → "Criar conta automaticamente") ou cadastrar o walletId
+   manualmente.
 2. Fazer um pedido pagando com Pix e conferir em `repasses`:
    `SELECT * FROM repasses ORDER BY id DESC LIMIT 5;`
 3. Confirmar o Pix no painel sandbox → webhook `PAYMENT_CONFIRMED` +

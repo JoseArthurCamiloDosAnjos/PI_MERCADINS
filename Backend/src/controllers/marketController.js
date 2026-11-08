@@ -2,6 +2,7 @@ const { conectar } = require("../db/neon");
 const { limitesDoPlano, normalizarPlano } = require("../utils/planos");
 const { VERSAO_TERMOS } = require("../utils/termos");
 const { enviarNotificacaoTelefone } = require("../utils/notificacoes");
+const asaasService = require("../services/asaasService");
 
 // ─────────────────────────────────────────────
 // Helper — gera slug a partir do nome
@@ -414,6 +415,15 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     mensagem: `Olá! O mercado ${d.nome} foi cadastrado com sucesso no Mercadins. Acesse o painel do vendedor para cadastrar seus produtos e acompanhar os pedidos.`,
   }).catch((err) => console.error('Falha na notificação de mercado:', err.message));
 
+  // Carteira Asaas automática: cria a subconta do vendedor para o split dos
+  // pedidos online cair direto na conta dele (o walletId vai para
+  // mercados.asaas_wallet_id). Fire-and-forget: se falhar (ex.: conta raiz
+  // sem CNPJ, CEP não localizado), o cadastro segue e o vendedor pode usar o
+  // botão "Criar automaticamente" no painel depois.
+  criarSubcontaDoMercado(sql, novoMercado).catch((err) =>
+    console.error('Falha ao criar subconta Asaas do mercado', novoMercado.id_mercado, ':', err.message)
+  );
+
   // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
   // tabela "categorias" — é daí que a página do mercado lê as abas de
   // produtos. Sem isso a vitrine do mercado novo ficava sempre vazia.
@@ -444,6 +454,43 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
   }
 
   return novoMercado;
+}
+
+// ─────────────────────────────────────────────
+// Cria a subconta do vendedor no Asaas (POST /v3/accounts) e grava o
+// walletId em mercados.asaas_wallet_id. Usado (a) logo após o cadastro do
+// mercado (sem usuário para perguntar → default 'LIMITED') e (b) pelo
+// endpoint POST /:id/asaas/subconta (botão "Criar automaticamente" do
+// painel, que envia o tipo de empresa escolhido). Já com wallet devolve o
+// valor atual.
+// ─────────────────────────────────────────────
+// Valores aceitos pelo Asaas em companyType (exigido para CNPJ)
+const TIPOS_EMPRESA_ASAAS = ['MEI', 'LIMITED', 'INDIVIDUAL', 'ASSOCIATION'];
+
+async function criarSubcontaDoMercado(sql, m, companyType = 'LIMITED') {
+  const atual = typeof m.asaas_wallet_id === 'string' ? m.asaas_wallet_id.trim() : '';
+  if (atual) return atual;
+
+  const conta = await asaasService.criarSubconta({
+    nome: m.nome,
+    email: m.email,
+    cpfCnpj: m.cnpj,
+    mobilePhone: m.telefone,
+    endereco: m.rua,
+    bairro: m.bairro,
+    cep: m.cep,
+    companyType,
+  });
+
+  const walletId = typeof conta?.walletId === 'string' ? conta.walletId.trim() : '';
+  if (!walletId) throw new Error('O Asaas não devolveu o Wallet ID da subconta.');
+
+  await sql`
+    UPDATE mercados SET asaas_wallet_id = ${walletId}
+    WHERE id_mercado = ${m.id_mercado}
+      AND (asaas_wallet_id IS NULL OR asaas_wallet_id = '')
+  `;
+  return walletId;
 }
 
 // ─────────────────────────────────────────────
@@ -482,6 +529,62 @@ const criarMercado = async (req, res) => {
     }
     console.error("ERRO criarMercado:", err);
     res.status(500).json({ erro: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/mercados/:id/asaas/subconta — cria a subconta do vendedor no
+// Asaas e grava o Wallet ID automaticamente (split dos pedidos online).
+// Dono/admin do mercado; se já houver wallet, devolve o existente.
+// Body opcional: { companyType: MEI|LIMITED|INDIVIDUAL|ASSOCIATION }.
+// ─────────────────────────────────────────────
+const criarSubcontaAsaas = async (req, res) => {
+  const id_usuario = req.usuarioId;
+  if (!id_usuario)
+    return res.status(401).json({ erro: "Não autenticado" });
+
+  const idMercado = Number(req.params.id);
+
+  // Tipo de empresa (exigido pelo Asaas para CNPJ); default se não enviado
+  const companyType = typeof req.body?.companyType === 'string'
+    ? req.body.companyType.trim().toUpperCase()
+    : 'LIMITED';
+  if (!TIPOS_EMPRESA_ASAAS.includes(companyType))
+    return res.status(400).json({
+      erro: `Tipo de empresa inválido. Use: ${TIPOS_EMPRESA_ASAAS.join(', ')}.`,
+    });
+
+  try {
+    const sql = await conectar();
+
+    const [permissao] = await sql`
+      SELECT papel FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario} AND id_mercado = ${idMercado}
+    `;
+    if (!permissao)
+      return res.status(403).json({ erro: "Você não tem acesso a este mercado" });
+    if (!["dono", "admin"].includes(permissao.papel))
+      return res.status(403).json({ erro: "Apenas o dono ou admin pode gerenciar o recebimento" });
+
+    const [mercado] = await sql`
+      SELECT * FROM mercados WHERE id_mercado = ${idMercado}
+    `;
+    if (!mercado)
+      return res.status(404).json({ erro: "Mercado não encontrado" });
+
+    const walletId = await criarSubcontaDoMercado(sql, mercado, companyType);
+    res.status(201).json({
+      walletId,
+      mensagem: "Conta Asaas criada. Os pedidos online passam a cair direto na sua conta.",
+    });
+  } catch (err) {
+    console.error("ERRO criarSubcontaAsaas:", err);
+    // Motivo real vindo do Asaas (ex.: conta raiz sem CNPJ, CEP inválido)
+    // vai em "detalhe" e é exibido pelo frontend junto do aviso
+    res.status(400).json({
+      erro: "Não foi possível criar a conta Asaas automaticamente.",
+      detalhe: err.message,
+    });
   }
 };
 
@@ -966,6 +1069,7 @@ const dashboardMercado = async (req, res) => {
 
 module.exports = {
   criarMercado,
+  criarSubcontaAsaas,
   listarMercados,
   buscarMercadoPorId,
   buscarMercadoPorSlug,

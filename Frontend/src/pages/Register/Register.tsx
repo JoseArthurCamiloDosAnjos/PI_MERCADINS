@@ -46,12 +46,12 @@ export default function Register() {
   });
 
   const [fields, setFields] = useState({
-    nome:      { ...emptyField },
-    telefone:  { ...emptyField },
-    cpf:       { ...emptyField },
+    nome: { ...emptyField },
+    telefone: { ...emptyField },
+    cpf: { ...emptyField },
     data_nascimento: { ...emptyField },
-    email:     { ...emptyField },
-    senha:     { ...emptyField },
+    email: { ...emptyField },
+    senha: { ...emptyField },
     confirmar: { ...emptyField },
   });
 

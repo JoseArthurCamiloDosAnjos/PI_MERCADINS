@@ -204,8 +204,9 @@ async function sincronizarRepasses(sql, pedidoId, pagamento) {
 // Linha criada junto da cobrança, quando a resposta do Asaas ainda não
 // trouxe o array de split (a sincronização do webhook completa depois).
 // Sem split no pedido → registra como retido na plataforma (visível no
-// financeiro do vendedor, para conciliação manual).
-async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, splitEnviado, valorTotal }) {
+// financeiro do vendedor, para conciliação manual). Quando o split foi
+// recusado, o motivo real vindo do Asaas é guardado junto.
+async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, splitEnviado, motivoSplit, valorTotal }) {
   const temSplit = Array.isArray(pagamento?.split) && pagamento.split.length > 0;
   if (temSplit) {
     await sincronizarRepasses(sql, pedidoId, pagamento);
@@ -216,13 +217,16 @@ async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, sp
     // depois (processarPagamentoPedido). Não grava linha provisória.
     return;
   }
+  const motivo = walletId
+    ? `Split recusado pelo Asaas${motivoSplit ? `: ${motivoSplit}` : ''} — valor na conta da plataforma`
+    : 'Sem wallet do vendedor — valor na conta da plataforma';
   await sql`
     INSERT INTO repasses (id_pedido, asaas_payment_id, wallet_id, valor, status, motivo)
     VALUES (
       ${pedidoId}, ${pagamento?.id || null}, ${walletId || null},
       ${Number(valorTotal || 0).toFixed(2)},
       'RETIDO_PLATAFORMA',
-      ${walletId ? 'Split recusado pelo Asaas — valor na conta da plataforma' : 'Sem wallet do vendedor — valor na conta da plataforma'}
+      ${motivo}
     )
   `;
 }
@@ -524,6 +528,7 @@ const criarPedido = async (req, res) => {
         const refPedido = `pedido:${pedido.id}`;
         const splits = asaas.montarSplitVendedor(walletId, refPedido);
         let splitEnviado = !!splits;
+        let motivoSplit = '';
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         let pagamento;
@@ -552,7 +557,7 @@ const criarPedido = async (req, res) => {
           // Conta da plataforma sem Split habilitado (ou wallet inválido):
           // a cobrança não pode falhar por isso — refaz SEM split e o valor
           // fica na plataforma (linha RETIDO_PLATAFORMA no conciliamento).
-          const motivoSplit = String(erroSplit.message || '');
+          motivoSplit = String(erroSplit.message || '');
           if (!splits || !/split|wallet|carteira|invalid_action/i.test(motivoSplit)) {
             throw erroSplit;
           }
@@ -586,6 +591,7 @@ const criarPedido = async (req, res) => {
         await registrarRepassesCriacao(sql, pedido.id, pagamento, {
           walletId,
           splitEnviado,
+          motivoSplit,
           valorTotal: totalPedido,
         });
 

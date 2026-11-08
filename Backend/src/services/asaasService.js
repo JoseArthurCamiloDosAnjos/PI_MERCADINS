@@ -58,11 +58,50 @@ async function chamarApi(path, { method = 'GET', body } = {}) {
   const dados = await resposta.json().catch(() => null)
 
   if (!resposta.ok) {
-    const detalhes = dados?.errors?.map(e => e.description).filter(Boolean).join('; ')
+    // Motivo real do Asaas: errors[] (padrão), message ou error. O 403 de
+    // permissão de chave vem sem errors e virava "Erro na API do Asaas (403)"
+    // sem dizer nada — loga o corpo bruto para diagnóstico também.
+    const detalhes = Array.isArray(dados?.errors)
+      ? dados.errors.map(e => e?.description || e?.message || e?.code).filter(Boolean).join('; ')
+      : (typeof dados?.message === 'string' && dados.message) ||
+        (typeof dados?.error === 'string' && dados.error) ||
+        (typeof dados === 'string' ? dados : '')
+    console.error(
+      `asaasService: ${resposta.status} ${method} ${path} →`,
+      JSON.stringify(dados)?.slice(0, 800)
+    )
     throw new Error(detalhes || `Erro na API do Asaas (${resposta.status}).`)
   }
 
   return dados
+}
+
+// POST /v3/accounts — cria uma SUBCONTA vinculada à conta-pai (a plataforma).
+// O split usa o walletId devolvido; a apiKey da resposta não é gravada aqui
+// (os repasses são feitos pela conta raiz, que já é quem emite a cobrança).
+// Pré-requisitos: conta-pai precisa ser Pessoa Jurídica (CNPJ), o CEP precisa
+// ser válido (o Asaas retorna 400 se não localizar) e companyType é exigido
+// pela API para CNPJ (MEI/LIMITED/INDIVIDUAL/ASSOCIATION) mesmo não constando
+// no `required` do OpenAPI. Renda mensal: o cadastro não coleta faturamento —
+// usa um piso declarado, ajustável pelo dono no painel do Asaas depois.
+async function criarSubconta({ nome, email, cpfCnpj, mobilePhone, endereco, bairro, cep, companyType }) {
+  const cepNum = String(cep || '').replace(/\D/g, '')
+  const postalCode = cepNum.length === 8 ? `${cepNum.slice(0, 5)}-${cepNum.slice(5)}` : cepNum
+  return chamarApi('/v3/accounts', {
+    method: 'POST',
+    body: {
+      name: nome,
+      email,
+      cpfCnpj,
+      mobilePhone,
+      incomeValue: 1000,
+      companyType: companyType || 'LIMITED',
+      address: endereco,
+      addressNumber: 'S/N',
+      province: bairro,
+      postalCode,
+    },
+  })
 }
 
 // POST /v3/customers
@@ -262,6 +301,7 @@ async function cancelarPagamento(paymentId) {
 
 module.exports = {
   obterPlano,
+  criarSubconta,
   criarCustomer,
   criarAssinatura,
   buscarUrlPagamento,

@@ -69,8 +69,15 @@ export const api = {
     return request(`/mercados/${mercadoId}`, {
       method: 'PUT',
       body: JSON.stringify(dados),
-    })
+    });
   },
+  // Cria a subconta do vendedor no Asaas e devolve o Wallet ID (split automático).
+  // companyType: MEI | LIMITED | INDIVIDUAL | ASSOCIATION (exigido pelo Asaas p/ CNPJ)
+  criarSubcontaAsaas: (mercadoId: string | number, companyType: string) =>
+    request(`/mercados/${mercadoId}/asaas/subconta`, {
+      method: 'POST',
+      body: JSON.stringify({ companyType }),
+    }),
   dashboardMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/dashboard`),
   // Painel financeiro do mês: faturamento, custos, lucro e demanda

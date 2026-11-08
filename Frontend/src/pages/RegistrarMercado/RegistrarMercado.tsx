@@ -715,7 +715,8 @@ export default function RegistrarMercado() {
             </div>
             <p className="rm-horario-dica">
               Com o wallet, o Pix/cartão dos pedidos online cai direto na sua conta Asaas
-              (100% para você, sem comissão). Sem wallet, o valor fica na plataforma.
+              (100% para você, sem comissão). Sem wallet, criamos uma conta Asaas para você
+              automaticamente no cadastro — a chave vem por e-mail do Asaas.
             </p>
 
             <p className="rm-section-label">Endereço</p>

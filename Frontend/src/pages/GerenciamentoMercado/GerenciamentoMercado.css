@@ -1102,6 +1102,14 @@
   gap: 0.8rem; align-items: end; margin-bottom: 0.8rem;
 }
 
+/* Criação automática da conta Asaas (Wallet): select do tipo de empresa
+   ao lado do botão, sem esticar na largura toda */
+.gm-wallet-auto {
+  display: flex; gap: 0.8rem; align-items: end; flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+.gm-wallet-empresa { min-width: 180px; }
+
 .gm-info-check {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.8rem; color: var(--branco-suave); cursor: pointer;

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const autenticar = require('../middleware/authMiddleware');
 const autenticarOpcional = require('../middleware/authOpcionalMiddleware');
-const { criarMercado, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado } = require('../controllers/marketController');
+const { criarMercado, criarSubcontaAsaas, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado } = require('../controllers/marketController');
 const { favoritarMercado } = require('../controllers/usuarioController');
 const { listarAvaliacoesMercado, criarAvaliacao, alternarVisibilidadeAvaliacao, listarAvaliacoesProdutosDoMercado } = require('../controllers/avaliacaoController');
 const { criarPedido, listarPedidosMercado, financeiroMercado } = require('../controllers/pedidoController');
@@ -17,6 +17,8 @@ router.get('/:id/pedidos',  autenticar, listarPedidosMercado);
 router.get('/:id/financeiro', autenticar, financeiroMercado);
 router.post('/:id/favoritar',  autenticar, favoritarMercado);
 router.delete('/:id/favoritar', autenticar, favoritarMercado);
+// Split: cria a subconta do vendedor no Asaas e grava o Wallet ID (automático)
+router.post('/:id/asaas/subconta', autenticar, criarSubcontaAsaas);
 router.get('/:id/avaliacoes',  autenticarOpcional, listarAvaliacoesMercado);
 router.post('/:id/avaliacoes', autenticar, criarAvaliacao);
 // B6 — Moderação: vendedor/admin oculta ou exibe uma avaliação da loja

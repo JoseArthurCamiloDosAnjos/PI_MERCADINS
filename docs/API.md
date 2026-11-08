@@ -75,6 +75,7 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 | PUT | `/:id/avaliacoes/:avaliacaoId` | token (dono) | Moderação: oculta/exibe uma avaliação da loja |
 | GET | `/:id/avaliacoes-produtos` | token (dono) | Avaliações de produtos da loja (moderação no painel) |
 | GET | `/:id/financeiro?ano=&mes=` | token | Resumo financeiro do mês (padrão: mês atual; inclui bloco `recebimento` com os repasses do Split) |
+| POST | `/:id/asaas/subconta` | token (dono) | Cria a subconta do vendedor no Asaas e grava o Wallet ID automaticamente → `{ walletId, mensagem }` |
 
 Rota auxiliar de lojas do logado (prefixo próprio): `GET /api/usuarios-mercados/meus`.
 
@@ -113,6 +114,31 @@ Campo opcional aceito na criação e na atualização (`PUT /:id`) da loja:
 
 Passo a passo para habilitar o Split no Asaas: ver
 [docs/pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor).
+
+### Criação automática do wallet — `POST /:id/asaas/subconta`
+
+Cria uma **subconta Asaas** vinculada à conta-pai (a plataforma) a partir
+dos dados da loja (nome, e-mail, CNPJ, telefone e endereço) e grava o
+`walletId` em `asaas_wallet_id`. Corpo (opcional):
+
+```json
+{ "companyType": "LIMITED" }
+```
+
+- `companyType` é **exigido pelo Asaas** para CNPJ: `MEI`, `LIMITED`,
+  `INDIVIDUAL` ou `ASSOCIATION` (default `LIMITED`);
+- resposta: `{ "walletId": "...", "mensagem": "Conta Asaas criada. …" }`;
+- roda **automaticamente** logo após o cadastro de um mercado novo
+  (fire-and-forget, com `LIMITED` — se falhar, o cadastro segue e o botão
+  fica disponível);
+- no painel: **aba Recebimento** (select do tipo de empresa + botão
+  "Criar conta automaticamente"; a aba Financeiro leva até lá pelo botão
+  "Criar conta Asaas"); a mesma aba tem o campo manual para quem já tem
+  carteira no Asaas;
+- se o mercado já tem wallet, devolve o existente sem criar outra conta;
+- pré-requisitos na conta do Asaas: conta-pai **Pessoa Jurídica (CNPJ)** e
+  Split habilitado; erros do Asaas vêm em `detalhe` junto do `erro`;
+- o dono recebe e-mail do Asaas para ativar a conta da subconta.
 
 ---
 

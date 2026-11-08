@@ -136,21 +136,34 @@ Criação de cupom:
   "min_pedido": 30,
   "max_usos": 100,
   "validade": "2026-12-31",
-  "categorias": [12, 18]
+  "categorias": [12, 18],
+  "produtos": [45, 62]
 }
 ```
 
 - `tipo`: `percentual` (percentual) ou `valor` (valor fixo em reais);
 - `max_usos` vazio/omitido = sem limite; `validade` vazia = não expira;
-- `categorias` (opcional): lista de ids de categorias em que o cupom vale —
-  vazio/omitido vale para a loja inteira;
+- `categorias` (opcional): lista de ids de categorias em que o cupom vale;
+- `produtos` (opcional): lista de ids de **produtos específicos** em que o
+  cupom vale — é possível marcar **um ou mais produtos**;
+- escopo: o desconto vale para os itens que estiverem em **uma das categorias
+  escolhidas OU forem um dos produtos escolhidos** (união das duas listas);
+  as duas vazias/omitidas = cupom vale para o pedido inteiro;
+  máximo de 20 categorias e 20 produtos por cupom;
+- no `PUT`, os campos `categorias`/`produtos` só substituem o escopo quando
+  são enviados (omitir mantém o que já estava);
 - o desconto é sempre calculado **no servidor** — o cliente nunca envia o valor do desconto.
 
 Validação no carrinho (`POST /validar`):
 
 ```json
-{ "codigo": "BEMVINDO10", "subtotal": 87.5, "itens": [ { "id_categoria": 12, "preco": 10, "quantidade": 2 } ] }
+{ "codigo": "BEMVINDO10", "subtotal": 87.5, "itens": [ { "id_produto": 45, "id_categoria": 12, "preco": 10, "quantidade": 2 } ] }
 ```
+
+- `itens` carrega produto, categoria, preço e quantidade de cada item do
+  carrinho — é a base de cálculo quando o cupom tem escopo;
+- resposta inclui `baseElegivel` (subtotal dos itens do escopo), `categorias`
+  e `produtos` (`[{ id, nome }]`).
 
 ---
 

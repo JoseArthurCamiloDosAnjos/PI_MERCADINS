@@ -334,8 +334,8 @@ const criarPedido = async (req, res) => {
     // O valor total é calculado SEMPRE pelo preço do banco, nunca pelo cliente
     let valorTotal = 0;
     const resumo = [];
-    // Subtotal por categoria: usado para o escopo do cupom de desconto
-    const totaisPorCategoria = new Map();
+    // Itens do pedido (produto + categoria + total) — base do escopo do cupom
+    const itensPedido = [];
     for (const item of itens) {
       const produto    = mapaProdutos.get(Number(item.id_produto));
       const quantidade = Number(item.quantidade);
@@ -351,8 +351,11 @@ const criarPedido = async (req, res) => {
       }
       const totalItem = Number(produto.preco ?? 0) * quantidade;
       valorTotal += totalItem;
-      const categoria = Number(produto.id_categoria);
-      totaisPorCategoria.set(categoria, (totaisPorCategoria.get(categoria) ?? 0) + totalItem);
+      itensPedido.push({
+        id_produto: Number(produto.id_produto),
+        id_categoria: Number(produto.id_categoria),
+        total: totalItem,
+      });
       resumo.push(`${quantidade}x ${produto.nome}`);
     }
 
@@ -398,8 +401,10 @@ const criarPedido = async (req, res) => {
         });
       }
 
-      // Escopo (B10): o cupom pode valer só para algumas categorias — nesse
-      // caso o desconto sai de cima do subtotal dessas categorias.
+      // Escopo (B10): o cupom pode valer só para algumas categorias e/ou para
+      // produtos específicos — nesse caso o desconto sai de cima do subtotal
+      // dos itens que estiverem nas categorias escolhidas OU forem um dos
+      // produtos escolhidos (união dos dois).
       const categoriasCupom = await sql`
         SELECT cc.id_categoria, c.nome
         FROM cupom_categorias cc
@@ -407,20 +412,33 @@ const criarPedido = async (req, res) => {
         WHERE cc.id_cupom = ${registro.id}
         ORDER BY c.nome ASC
       `;
+      const produtosCupom = await sql`
+        SELECT cp.id_produto, p.nome
+        FROM cupom_produtos cp
+        JOIN produtos p ON p.id_produto = cp.id_produto
+        WHERE cp.id_cupom = ${registro.id}
+        ORDER BY p.nome ASC
+      `;
 
       let baseDesconto = valorTotal;
-      if (categoriasCupom.length > 0) {
-        const ids = new Set(categoriasCupom.map(c => Number(c.id_categoria)));
+      if (categoriasCupom.length > 0 || produtosCupom.length > 0) {
+        const idsCategorias = new Set(categoriasCupom.map(c => Number(c.id_categoria)));
+        const idsProdutos = new Set(produtosCupom.map(p => Number(p.id_produto)));
         baseDesconto = Math.round(
-          [...totaisPorCategoria.entries()]
-            .filter(([categoria]) => ids.has(categoria))
-            .reduce((soma, [, total]) => soma + total, 0) * 100
+          itensPedido
+            .filter(item =>
+              (idsCategorias.size > 0 && idsCategorias.has(item.id_categoria)) ||
+              (idsProdutos.size > 0 && idsProdutos.has(item.id_produto))
+            )
+            .reduce((soma, item) => soma + item.total, 0) * 100
         ) / 100;
 
         if (baseDesconto <= 0) {
-          const nomes = categoriasCupom.map(c => c.nome).join(', ');
+          const partes = [];
+          if (categoriasCupom.length > 0) partes.push(categoriasCupom.map(c => c.nome).join(', '));
+          if (produtosCupom.length > 0) partes.push(produtosCupom.map(p => p.nome).join(', '));
           return res.status(400).json({
-            erro: `Este cupom vale apenas para produtos de: ${nomes}.`,
+            erro: `Este cupom vale apenas para: ${partes.join(' | ')}.`,
           });
         }
       }

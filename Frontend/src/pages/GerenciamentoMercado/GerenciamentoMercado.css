@@ -1074,6 +1074,27 @@
 }
 .gm-cupom-categorias-dica { font-size: 0.74rem; color: var(--cinza-texto); line-height: 1.5; }
 
+/* ── Seletor de produtos específicos do cupom ────────────────────────────── */
+.gm-cupom-produtos-painel {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--azul-card); border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md); padding: 0.75rem;
+}
+.gm-cupom-produtos-lista {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 220px; overflow-y: auto;
+}
+.gm-cupom-produto-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 9px; border-radius: var(--radius-sm);
+  font-size: 0.78rem; color: var(--branco-suave); cursor: pointer;
+  transition: background 0.12s ease;
+}
+.gm-cupom-produto-item:hover { background: rgba(245,200,74,0.08); }
+.gm-cupom-produto-item input { accent-color: var(--amarelo); cursor: pointer; }
+.gm-cupom-produto-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gm-cupom-produto-cat { font-size: 0.7rem; color: var(--cinza-texto); white-space: nowrap; }
+
 
 /* ── Entrega e retirada na aba Informações (B2) ─────────────────────────── */
 .gm-info-entrega {

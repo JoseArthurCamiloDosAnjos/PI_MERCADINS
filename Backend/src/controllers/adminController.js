@@ -756,6 +756,16 @@ async function detalheMercadoAdmin(req, res) {
         `
       : []
 
+    const escoposProdutos = cupons.length > 0
+      ? await sql`
+          SELECT cp.id_cupom, p.id_produto, p.nome
+          FROM cupom_produtos cp
+          JOIN produtos p ON p.id_produto = cp.id_produto
+          WHERE cp.id_cupom = ANY(${cupons.map(c => c.id)})
+          ORDER BY p.nome ASC
+        `
+      : []
+
     const donos = await sql`
       SELECT u.id_usuario, u.nome, u.email, um.papel
       FROM usuarios_mercados um
@@ -771,10 +781,21 @@ async function detalheMercadoAdmin(req, res) {
       porCupom.get(chave).push({ id: Number(linha.id_categoria), nome: linha.nome })
     }
 
+    const produtosPorCupom = new Map()
+    for (const linha of escoposProdutos) {
+      const chave = Number(linha.id_cupom)
+      if (!produtosPorCupom.has(chave)) produtosPorCupom.set(chave, [])
+      produtosPorCupom.get(chave).push({ id: Number(linha.id_produto), nome: linha.nome })
+    }
+
     res.json({
       mercado,
       categorias,
-      cupons: cupons.map(c => ({ ...c, categorias: porCupom.get(Number(c.id)) ?? [] })),
+      cupons: cupons.map(c => ({
+        ...c,
+        categorias: porCupom.get(Number(c.id)) ?? [],
+        produtos: produtosPorCupom.get(Number(c.id)) ?? [],
+      })),
       equipe: donos,
     })
   } catch (err) {

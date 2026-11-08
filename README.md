@@ -62,7 +62,8 @@ O sistema tem **três papéis**:
    (alerta de estoque baixo/esgotado);
 3. Escolhe produtos prontos do **catálogo** da plataforma (padaria, açougue…);
 4. Recebe e atualiza **pedidos** (pendente → preparo → a caminho → entregue);
-5. Cria **cupons** (percentual ou valor fixo, com mínimo, limite e validade);
+5. Cria **cupons** (percentual ou valor fixo, com mínimo, limite, validade e
+   escopo por categorias e/ou **produtos específicos**);
 6. Acompanha o **painel financeiro** por mês e o **split** dos pedidos online
    (valor cai direto na conta Asaas do lojista).
 

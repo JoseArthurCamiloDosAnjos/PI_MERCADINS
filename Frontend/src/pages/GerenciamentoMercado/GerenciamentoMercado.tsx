@@ -1169,11 +1169,15 @@ interface Cupom {
   usos: number;
   validade: string | null;
   ativo: boolean;
-  // Categorias de produtos em que o cupom vale (vazio = vale para tudo)
+  // Escopo do cupom (as duas vazias = vale para tudo)
   categorias: { id: number; nome: string }[];
+  produtos: { id: number; nome: string }[];
 }
 
-function SecCupons({ mercadoId }: { mercadoId: number }) {
+// Máximo de itens no escopo — espelho do backend (cupomController.lerProdutos/lerCategorias)
+const MAX_ESCOPO_CUPOM = 20;
+
+function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produto[] }) {
   const { toasts, showToast, dismissToast } = useToast();
   const [cupons, setCupons] = useState<Cupom[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nome: string }[]>([]);
@@ -1181,11 +1185,14 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
+  const [selecionandoProdutos, setSelecionandoProdutos] = useState(false);
+  const [buscaProduto, setBuscaProduto] = useState('');
   const [form, setForm] = useState({
     codigo: '', tipo: 'percentual' as 'percentual' | 'valor',
     valor: '', min_pedido: '', max_usos: '', validade: '',
-    // Categorias escolhidas: vazia = o cupom vale para todos os produtos
+    // Escopo: vazias as duas = o cupom vale para todos os produtos
     categorias: [] as number[],
+    produtos: [] as number[],
   });
 
   // Categorias do mercado — é delas que o vendedor escolhe o escopo do cupom
@@ -1233,6 +1240,10 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
     if (codigo.length < 3) { setErro('O código precisa de pelo menos 3 letras ou números.'); return; }
     if (!Number.isFinite(valor) || valor <= 0) { setErro('Informe um valor maior que zero.'); return; }
     if (form.tipo === 'percentual' && valor > 100) { setErro('Cupom percentual não pode passar de 100%.'); return; }
+    if (form.categorias.length > MAX_ESCOPO_CUPOM || form.produtos.length > MAX_ESCOPO_CUPOM) {
+      setErro(`Um cupom pode cobrir no máximo ${MAX_ESCOPO_CUPOM} categorias e ${MAX_ESCOPO_CUPOM} produtos.`);
+      return;
+    }
 
     setSalvando(true);
     setErro('');
@@ -1245,10 +1256,13 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
         max_usos: form.max_usos ? Number(form.max_usos) : null,
         validade: form.validade || null,
         categorias: form.categorias,
+        produtos: form.produtos,
       });
       showToast('sucesso', `Cupom ${codigo} criado com sucesso.`);
-      setForm({ codigo: '', tipo: 'percentual', valor: '', min_pedido: '', max_usos: '', validade: '', categorias: [] });
+      setForm({ codigo: '', tipo: 'percentual', valor: '', min_pedido: '', max_usos: '', validade: '', categorias: [], produtos: [] });
       setMostrarForm(false);
+      setSelecionandoProdutos(false);
+      setBuscaProduto('');
       recarregar();
     } catch (err: unknown) {
       setErro(err instanceof Error ? err.message : 'Erro ao criar o cupom.');
@@ -1265,6 +1279,18 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
         ? f.categorias.filter(c => c !== id)
         : [...f.categorias, id],
     }));
+  }
+
+  /** Marca/desmarca um produto específico no escopo do cupom */
+  function alternarProduto(id: number) {
+    setForm(f => {
+      const jaTem = f.produtos.includes(id);
+      if (!jaTem && f.produtos.length >= MAX_ESCOPO_CUPOM) return f;
+      return {
+        ...f,
+        produtos: jaTem ? f.produtos.filter(p => p !== id) : [...f.produtos, id],
+      };
+    });
   }
 
   async function alternarAtivo(c: Cupom) {
@@ -1297,11 +1323,20 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
     return `até ${data.toLocaleDateString('pt-BR')}`;
   }
 
-  // Nomes das categorias marcadas no formulário (para o aviso embaixo dos chips)
-  const nomesEscolhidos = form.categorias
+  // Nomes das categorias/produtos marcados no formulário (avisos e badge)
+  const nomesCategorias = form.categorias
     .map(id => categorias.find(c => c.id === id)?.nome ?? '')
     .filter(Boolean)
     .join(', ');
+  const nomesProdutos = form.produtos
+    .map(id => produtos.find(p => p.id_produto === id)?.nome ?? '')
+    .filter(Boolean)
+    .join(', ');
+
+  // Lista de produtos pra busca do seletor (filtra por nome)
+  const produtosFiltrados = buscaProduto.trim()
+    ? produtos.filter(p => p.nome.toLowerCase().includes(buscaProduto.trim().toLowerCase()))
+    : produtos;
 
   return (
     <div className="gm-section-wrap">
@@ -1351,16 +1386,16 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
             </label>
           </div>
 
-          {/* Escopo do cupom: em quais categorias de produtos ele dá desconto */}
+          {/* Escopo do cupom: categorias e/ou produtos específicos */}
           <div className="gm-cupom-categorias">
-            <span className="gm-cupom-categorias-titulo">Produtos do cupom</span>
+            <span className="gm-cupom-categorias-titulo">Categorias do cupom</span>
             <div className="gm-cupom-chips">
               <button
                 type="button"
                 className={`gm-cupom-chip${form.categorias.length === 0 ? ' gm-cupom-chip--ativo' : ''}`}
                 onClick={() => setForm(f => ({ ...f, categorias: [] }))}
               >
-                Todos os produtos
+                Todas as categorias
               </button>
               {categorias.map(c => (
                 <button
@@ -1377,8 +1412,67 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
               {categorias.length === 0
                 ? 'Cadastre categorias de produtos para aplicar o cupom só em um tipo de produto.'
                 : form.categorias.length === 0
-                  ? 'Nenhuma categoria marcada: o cupom vale para o pedido inteiro.'
-                  : `Desconto só nos produtos de: ${nomesEscolhidos}.`}
+                  ? 'Nenhuma categoria marcada: o desconto não é limitado por categoria.'
+                  : `Desconto também nas categorias: ${nomesCategorias}.`}
+            </p>
+          </div>
+
+          {/* Produtos específicos: o vendedor pode marcar um ou mais produtos */}
+          <div className="gm-cupom-categorias">
+            <span className="gm-cupom-categorias-titulo">Produtos específicos (opcional)</span>
+            <div className="gm-cupom-chips">
+              <button
+                type="button"
+                className="gm-cupom-chip"
+                onClick={() => { setSelecionandoProdutos(v => !v); setBuscaProduto(''); }}
+              >
+                {selecionandoProdutos ? 'Fechar seleção' : `Escolher produtos (${form.produtos.length})`}
+              </button>
+              {form.produtos.map(id => (
+                <button
+                  key={id}
+                  type="button"
+                  className="gm-cupom-chip gm-cupom-chip--ativo"
+                  onClick={() => alternarProduto(id)}
+                  title="Remover produto do escopo"
+                >
+                  {produtos.find(p => p.id_produto === id)?.nome ?? `#${id}`} ×
+                </button>
+              ))}
+            </div>
+
+            {selecionandoProdutos && (
+              <div className="gm-cupom-produtos-painel">
+                <input
+                  className="gm-modal-input"
+                  placeholder="Buscar produto pelo nome…"
+                  value={buscaProduto}
+                  onChange={e => setBuscaProduto(e.target.value)}
+                />
+                <div className="gm-cupom-produtos-lista">
+                  {produtosFiltrados.length === 0 ? (
+                    <p className="gm-cupom-categorias-dica">Nenhum produto encontrado.</p>
+                  ) : (
+                    produtosFiltrados.map(p => (
+                      <label key={p.id_produto} className="gm-cupom-produto-item">
+                        <input
+                          type="checkbox"
+                          checked={form.produtos.includes(p.id_produto)}
+                          onChange={() => alternarProduto(p.id_produto)}
+                        />
+                        <span className="gm-cupom-produto-nome">{p.nome}</span>
+                        <span className="gm-cupom-produto-cat">{p.categoria}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            <p className="gm-cupom-categorias-dica">
+              {form.produtos.length === 0 && form.categorias.length === 0
+                ? 'Nada marcado: o cupom vale para o pedido inteiro.'
+                : `O desconto vale para itens das categorias e/ou dos produtos escolhidos (união). Produtos: ${nomesProdutos || 'nenhum'}.`}
             </p>
           </div>
 
@@ -1400,19 +1494,23 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
         <EmptyState msg="Nenhum cupom criado ainda — crie o primeiro para atrair clientes" />
       ) : (
         <div className="gm-cupom-lista">
-          {cupons.map((c, i) => (
+          {cupons.map((c, i) => {
+            const escopoItens = [
+              ...c.categorias.map(x => x.nome),
+              ...c.produtos.map(x => x.nome),
+            ];
+            const escopoTexto = escopoItens.length > 0 ? escopoItens.join(', ') : 'todos os produtos';
+            return (
             <div key={c.id} className={`gm-cupom-row${c.ativo ? '' : ' gm-cupom-row--inativo'}`} style={{ animationDelay: `${0.05 + i * 0.05}s` }}>
               <span className="gm-cupom-codigo"><IconTag size={13} /> {c.codigo}</span>
               <span className="gm-cupom-desconto">
                 {c.tipo === 'percentual' ? `${c.valor}% de desconto` : `${formatarBRL(c.valor)} de desconto`}
               </span>
               <span
-                className={`gm-cupom-escopo${c.categorias.length === 0 ? '' : ' gm-cupom-escopo--restrito'}`}
-                title={c.categorias.length === 0 ? 'Vale para todos os produtos' : c.categorias.map(x => x.nome).join(', ')}
+                className={`gm-cupom-escopo${escopoItens.length === 0 ? '' : ' gm-cupom-escopo--restrito'}`}
+                title={escopoItens.length === 0 ? 'Vale para todos os produtos' : escopoTexto}
               >
-                {c.categorias.length === 0
-                  ? 'todos os produtos'
-                  : c.categorias.map(x => x.nome).join(', ')}
+                {escopoTexto}
               </span>
               <span className="gm-cupom-info">
                 {c.minPedido > 0 ? `mínimo ${formatarBRL(c.minPedido)}` : 'sem pedido mínimo'}
@@ -1431,7 +1529,8 @@ function SecCupons({ mercadoId }: { mercadoId: number }) {
                 Apagar
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -2194,7 +2293,7 @@ export default function GerenciamentoMercado({
       onModerar={handleModerarAvaliacao}
       onModerarProduto={handleModerarAvaliacaoProduto}
     />,
-    <SecCupons mercadoId={mercadoId} />,
+    <SecCupons mercadoId={mercadoId} produtos={produtos} />,
     <SecFinanceiro
       fin={fin}
       loading={finLoading}

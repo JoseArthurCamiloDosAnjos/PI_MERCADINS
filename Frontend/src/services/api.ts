@@ -254,8 +254,9 @@ export const api = {
     dados: {
       codigo: string; tipo: 'percentual' | 'valor'; valor: number;
       min_pedido?: number; max_usos?: number | null; validade?: string | null;
-      // Categorias de produtos em que o cupom vale (vazio = vale para tudo)
+      // Escopo do cupom (vazio nas duas = vale para tudo)
       categorias?: number[];
+      produtos?: number[];
     }
   ) =>
     request(`/mercados/${mercadoId}/cupons`, {
@@ -273,13 +274,14 @@ export const api = {
     }),
   deletarCupom: (mercadoId: string | number, cupomId: string | number) =>
     request(`/mercados/${mercadoId}/cupons/${cupomId}`, { method: 'DELETE' }),
-  // Confere o cupom no carrinho. Os itens (categoria, preço e quantidade) vão
-  // junto: são a base de cálculo quando o cupom vale só para algumas categorias.
+  // Confere o cupom no carrinho. Os itens (produto, categoria, preço e
+  // quantidade) vão junto: são a base de cálculo quando o cupom vale só para
+  // algumas categorias/produtos (escopo do cupom).
   validarCupom: (
     mercadoId: string | number,
     codigo: string,
     subtotal: number,
-    itens?: { id_categoria: number; preco: number; quantidade: number }[]
+    itens?: { id_produto: number; id_categoria: number; preco: number; quantidade: number }[]
   ) =>
     request(`/mercados/${mercadoId}/cupons/validar`, {
       method: 'POST',

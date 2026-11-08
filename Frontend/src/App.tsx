@@ -100,12 +100,13 @@ function ProdutoTelaWrapper() {
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a tela de carrinho ───────
 
 // Itens do carrinho no formato que o backend usa para calcular o cupom:
-// categoria, preço e quantidade de cada item. É a base de cálculo quando o
-// cupom vale só para algumas categorias de produtos (escopo do cupom).
+// produto, categoria, preço e quantidade de cada item. É a base de cálculo
+// quando o cupom vale só para algumas categorias/produtos (escopo do cupom).
 function itensParaCupom(
-  itens: { produto: { id_categoria?: unknown; preco?: unknown }; quantidade?: unknown }[]
+  itens: { produto: { id_produto?: unknown; id_categoria?: unknown; preco?: unknown }; quantidade?: unknown }[]
 ) {
   return itens.map(item => ({
+    id_produto: Number(item.produto.id_produto),
     id_categoria: Number(item.produto.id_categoria),
     preco: Number(item.produto.preco ?? 0),
     quantidade: Number(item.quantidade),

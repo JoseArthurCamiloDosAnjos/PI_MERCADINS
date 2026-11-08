@@ -27,6 +27,16 @@ export default function PaginaInstitucional({ titulo, subtitulo, children }: Pro
   }, [location.key, location.hash]);
 
   function voltar() {
+    // Veio do cadastro (link aberto em outra aba pelo AceiteTermos): fecha
+    // esta aba e deixa a pessoa no formulário que já estava preenchido.
+    // Se o navegador não deixar fechar a aba, navega para o cadastro aqui.
+    const origem = new URLSearchParams(location.search).get("origem");
+    if (origem === "cadastro" || origem === "registro-mercado") {
+      const destino = origem === "cadastro" ? "/auth/register" : "/registrar-mercado";
+      window.close();
+      navigate(destino);
+      return;
+    }
     if (window.history.length > 1) navigate(-1);
     else navigate("/");
   }

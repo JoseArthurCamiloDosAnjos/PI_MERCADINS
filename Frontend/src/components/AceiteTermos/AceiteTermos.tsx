@@ -13,8 +13,10 @@ interface Props {
  * Caixa de aceite dos Termos de Uso e da Política de Privacidade.
  *
  * Aparece no cadastro de clientes e no cadastro de mercados. Os links abrem os
- * documentos em outra aba para a pessoa poder ler sem perder o formulário.
- * O aceite é gravado no banco com data, versão dos textos e IP (LGPD).
+ * documentos em outra aba para a pessoa poder ler sem perder o formulário —
+ * o parâmetro `origem` na URL permite que o botão "Voltar" dessas páginas
+ * retorne para o cadastro de onde vieram. O aceite é gravado no banco com
+ * data, versão dos textos e IP (LGPD).
  */
 export default function AceiteTermos({
   marcado,
@@ -22,6 +24,7 @@ export default function AceiteTermos({
   erro,
   contexto = 'cliente',
 }: Props) {
+  const origem = contexto === 'mercado' ? 'registro-mercado' : 'cadastro';
   return (
     <div className={`aceite-termos ${erro ? 'aceite-termos--erro' : ''}`}>
       <div className="aceite-termos__linha">
@@ -35,7 +38,7 @@ export default function AceiteTermos({
         <label htmlFor="aceite-termos">
           Li e aceito os{' '}
           <Link
-            to="/termos"
+            to={`/termos?origem=${origem}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(evento) => evento.stopPropagation()}
@@ -44,7 +47,7 @@ export default function AceiteTermos({
           </Link>{' '}
           e a{' '}
           <Link
-            to="/privacidade"
+            to={`/privacidade?origem=${origem}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(evento) => evento.stopPropagation()}

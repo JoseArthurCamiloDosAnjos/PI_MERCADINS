@@ -115,6 +115,8 @@ interface VitrineMercado {
   estado?: string | null;
   /** Telefone da loja (usado no botão de WhatsApp) */
   telefone?: string | null;
+  /** Plano da loja — 'basico' (Essencial) não tem integração de WhatsApp */
+  plano?: string | null;
   /** Entrega e retirada (vêm do cadastro da loja) */
   taxaEntrega?: number | null;
   pedidoMinimo?: number | null;
@@ -350,6 +352,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           cidade: mercadoData.mercado.cidade ?? null,
           estado: mercadoData.mercado.estado ?? null,
           telefone: mercadoData.mercado.telefone ?? null,
+          plano: mercadoData.mercado.plano ?? 'basico',
           taxaEntrega: Number(mercadoData.mercado.taxa_entrega) || 0,
           pedidoMinimo: Number(mercadoData.mercado.pedido_minimo) || 0,
           ofereceEntrega: mercadoData.mercado.oferece_entrega !== false,
@@ -736,8 +739,12 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               </div>
             )}
 
-            {/* Falar com a loja no WhatsApp (usa o telefone do cadastro) */}
+            {/* Falar com a loja no WhatsApp — recurso dos planos Plus e
+                Personalizado; o Essencial não tem integração de WhatsApp */}
             {(() => {
+              if (dados.plano !== 'profissional' && dados.plano !== 'personalizado') {
+                return null;
+              }
               const tel = (dados.telefone ?? '').replace(/\D/g, '');
               // Números brasileiros: 55 + DDD + número
               const wa = tel ? (tel.startsWith('55') ? tel : `55${tel}`) : '';

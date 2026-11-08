@@ -9,6 +9,7 @@ import DescricaoModal   from '../../components/DescricaoModal';
 import EscolhaProduto   from '../../components/EscolhaProduto';
 import CatalogoModal, { type ItemCatalogo } from '../../components/CatalogoModal';
 import ToastContainer   from '../../components/Toast';
+import LoadingOverlay   from '../../components/LoadingOverlay';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
@@ -731,11 +732,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   }
 
   if (carregando) {
-    return (
-      <div className="vt-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
-        <div className="vt-loading"><p>Carregando vitrine...</p></div>
-      </div>
-    );
+    return <LoadingOverlay mensagem="Carregando..." />;
   }
 
   return (

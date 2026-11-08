@@ -53,15 +53,6 @@
   transition: background 0.3s ease;
 }
 
-.vt-loading {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--vt-cinza);
-  font-size: 14px;
-}
-
 /* ─── Topbar ─────────────────────────────────────────────────────────────── */
 .vt-topbar {
   display: flex;

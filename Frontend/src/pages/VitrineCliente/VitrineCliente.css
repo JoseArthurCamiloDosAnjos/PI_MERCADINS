@@ -50,15 +50,6 @@
   overflow-y: auto;
 }
 
-.vtc-loading {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--vt-cinza);
-  font-size: 14px;
-}
-
 /* ─── Topbar ─────────────────────────────────────────────────────────────── */
 .vtc-topbar {
   display: flex;

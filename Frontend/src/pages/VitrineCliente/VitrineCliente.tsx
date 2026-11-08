@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
+import LoadingOverlay from '../../components/LoadingOverlay';
 import DescricaoModal from '../../components/DescricaoModal';
 import AvaliacoesModal from '../../components/AvaliacoesModal';
 import { useToast } from '../../hooks/useToast';
@@ -524,26 +525,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   }
 
   if (carregando || !dados) {
-    const paletaPadrao = resolverPaleta();
-    const estiloPaletaPadrao = {
-      '--vt-azul-escuro': paletaPadrao.cores.azulEscuro,
-      '--vt-azul-medio': paletaPadrao.cores.azulMedio,
-      '--vt-azul-claro': paletaPadrao.cores.azulClaro,
-      '--vt-azul-bg': paletaPadrao.cores.azulBg,
-      '--vt-azul-card': paletaPadrao.cores.azulCard,
-      '--vt-azul-borda': paletaPadrao.cores.azulBorda,
-      '--vt-azul-item': paletaPadrao.cores.azulItem,
-      '--vt-amarelo': paletaPadrao.cores.amarelo,
-      '--vt-amarelo-hover': paletaPadrao.cores.amareloHover,
-      '--vt-cor-texto': paletaPadrao.cores.corTexto,
-      '--vt-cor-texto-sec': paletaPadrao.cores.corTextoSec,
-      '--vt-cor-icones': paletaPadrao.cores.corIcones,
-    } as CSSProperties;
-    return (
-      <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaletaPadrao}>
-        <div className="vtc-loading"><p>Carregando vitrine...</p></div>
-      </div>
-    );
+    return <LoadingOverlay mensagem="Carregando..." />;
   }
 
   const paletaAtual = resolverPaleta(dados.paleta, dados.corBase, dados.corDestaque, dados.corTexto, dados.corTextoSec, dados.corIcones);

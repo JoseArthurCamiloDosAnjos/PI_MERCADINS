@@ -19,8 +19,10 @@ export default function ProdutoTelaContainer({
   produtoId,
   onVoltar,
   onAbrirCarrinho,
+  onAbrirProduto,
 }: ProdutoTelaContainerProps) {
   const [produto, setProduto] = useState<ProdutoDetalhe | null>(null);
+  const [recomendados, setRecomendados] = useState<ProdutoDetalhe[]>([]);
   const [categoriaNome, setCategoriaNome] = useState<string | undefined>(undefined);
   const [mercadoNome, setMercadoNome] = useState('');
   const [mercadoLogo, setMercadoLogo] = useState<string | undefined>(undefined);
@@ -55,6 +57,17 @@ export default function ProdutoTelaContainer({
         if (encontrado) {
           setProduto(encontrado);
         }
+
+        // Recomendados: outros produtos da mesma categoria, melhor avaliação primeiro
+        const recomendadosCategoria = (produtosData as ProdutoDetalhe[])
+          .filter((p) => p.id_produto !== produtoId)
+          .sort(
+            (a, b) =>
+              (b.avaliacao ?? 0) - (a.avaliacao ?? 0) ||
+              (b.numAvaliacoes ?? 0) - (a.numAvaliacoes ?? 0)
+          )
+          .slice(0, 8);
+        setRecomendados(recomendadosCategoria);
 
         const categorias = await api.listarCategorias(mercadoId);
         const cat = (categorias as { id: number; nome: string }[]).find(
@@ -99,6 +112,8 @@ export default function ProdutoTelaContainer({
       paleta={paleta}
       corBase={corBase}
       corDestaque={corDestaque}
+      recomendados={recomendados}
+      onAbrirProduto={onAbrirProduto}
       onVoltar={onVoltar}
       onIrParaCarrinho={onAbrirCarrinho}
     />

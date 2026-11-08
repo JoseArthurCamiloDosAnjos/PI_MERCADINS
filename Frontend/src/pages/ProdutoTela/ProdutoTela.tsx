@@ -135,6 +135,9 @@ interface ProdutoTelaProps {
   paleta?: string;
   corBase?: string;
   corDestaque?: string;
+  /** Outros produtos da mesma categoria sugeridos acima das avaliações */
+  recomendados?: ProdutoDetalhe[];
+  onAbrirProduto?: (catId: number, prodId: number) => void;
   onVoltar: () => void;
   onIrParaCarrinho?: () => void;
 }
@@ -148,7 +151,7 @@ function formatarPreco(valor?: string) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ProdutoTela({
-  produto, categoriaId, categoriaNome, mercado, paleta, corBase, corDestaque, onVoltar, onIrParaCarrinho,
+  produto, categoriaId, categoriaNome, mercado, paleta, corBase, corDestaque, recomendados, onAbrirProduto, onVoltar, onIrParaCarrinho,
 }: ProdutoTelaProps) {
   const { toasts, showToast, dismissToast } = useToast();
   const { tema } = useTheme();
@@ -563,6 +566,48 @@ export default function ProdutoTela({
             </div>
           </div>
         </section>
+
+        {/* ── Produtos recomendados ──────────────────────────────────────── */}
+        {recomendados && recomendados.length > 0 && (
+          <section className="pd-recomendados">
+            <div className="pd-reco-head">
+              <h2>Produtos recomendados</h2>
+              <span className="pd-reco-sub">
+                Outros produtos de {categoriaNome ? `“${categoriaNome}”` : 'esta categoria'}
+              </span>
+            </div>
+            <div className="pd-reco-grid">
+              {recomendados.map(p => {
+                const imagensReco = p.imagens && p.imagens.length > 0 ? p.imagens : p.imagem ? [p.imagem] : [];
+                const notaReco = p.avaliacao ?? 0;
+                return (
+                  <button
+                    key={p.id_produto}
+                    type="button"
+                    className="pd-reco-card"
+                    onClick={() => onAbrirProduto?.(categoriaId, p.id_produto)}
+                  >
+                    <span className="pd-reco-img">
+                      {imagensReco.length > 0
+                        ? <img src={imagensReco[0]} alt={p.nome} loading="lazy" />
+                        : <span className="pd-reco-img-placeholder">Sem imagem</span>}
+                    </span>
+                    <span className="pd-reco-nome">{p.nome}</span>
+                    <span className="pd-reco-preco">R$ {formatarPreco(p.preco)}</span>
+                    {notaReco > 0 && (
+                      <span className="pd-reco-estrelas">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <IconStar key={i} size={12} filled={i < Math.round(notaReco)} />
+                        ))}
+                        <span className="pd-reco-nota">{notaReco.toFixed(1)}</span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ── Avaliações do produto ─────────────────────────────────────── */}
         <section className="pd-avaliacoes">

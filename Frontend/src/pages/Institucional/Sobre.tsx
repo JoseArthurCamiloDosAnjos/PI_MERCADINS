@@ -137,6 +137,18 @@ export default function Sobre() {
 
         <div className="inst-team">
           <div className="inst-team-card">
+            <span className="inst-team-avatar" aria-hidden="true">GD</span>
+            <div>
+              <h3>Professor Gustavo Del Vechio</h3>
+              <p>Orientador da PI</p>
+              <p className="inst-team-desc">
+                Nosso orientador no Projeto Integrador: pela paciência,
+                orientação e apoio do início ao fim deste projeto.
+              </p>
+            </div>
+          </div>
+
+          <div className="inst-team-card">
             <span className="inst-team-avatar" aria-hidden="true">RC</span>
             <div>
               <h3>Raiane de Oliveira Cecilio</h3>

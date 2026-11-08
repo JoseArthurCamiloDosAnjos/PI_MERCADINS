@@ -21,11 +21,6 @@ gerencia loja, produtos, estoque e pedidos pelo painel.
 > Projeto Integrador (PI) — disciplina do curso. Repositório principal:
 > [JoseArthurCamiloDosAnjos/PI_MERCADINS](https://github.com/JoseArthurCamiloDosAnjos/PI_MERCADINS).
 
-### Agradecimentos especiais
-
-Ao nosso orientador da PI, **Professor Gustavo Del Vechio**, pela paciência,
-orientação e apoio do início ao fim deste projeto.
-
 ---
 
 ## Sumário

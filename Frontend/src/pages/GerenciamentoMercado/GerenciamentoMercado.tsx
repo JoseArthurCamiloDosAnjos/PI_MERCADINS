@@ -2211,6 +2211,14 @@ export default function GerenciamentoMercado({
     <SecInformacoes mercado={mercado} onSalvo={handleInfoSalva} />,
   ];
 
+  // Cupons são recurso dos planos Plus e Personalizado: no Essencial a aba
+  // some da sidebar e o índice da seção acompanha o filtro.
+  const temCupons = plano !== 'basico';
+  const navItens = SIDEBAR_NAV.filter((_, i) => temCupons || i !== 4);
+  const secoes = SECTIONS.filter((_, i) => temCupons || i !== 4);
+  // Defesa: se o conjunto encolheu (plano carregou como Essencial), volta ao início
+  const navAtual = nav < secoes.length ? nav : 0;
+
   return (
     <div className="gm-shell">
 
@@ -2258,17 +2266,17 @@ export default function GerenciamentoMercado({
           </label>
         )}
         <nav className="gm-nav">
-          {SIDEBAR_NAV.map((item, i) => (
+          {navItens.map((item, i) => (
             <button
               key={i}
-              className={`gm-nav-btn${nav === i ? ' active' : ''}`}
+              className={`gm-nav-btn${navAtual === i ? ' active' : ''}`}
               style={{ animationDelay: `${0.18 + i * 0.06}s` }}
               aria-label={item.label}
               onClick={() => setNav(i)}
             >
               <span className="gm-nav-icon">{item.icon}</span>
               <span className="gm-nav-label">{item.label}</span>
-              {nav === i && <span className="gm-nav-dot" />}
+              {navAtual === i && <span className="gm-nav-dot" />}
             </button>
           ))}
         </nav>
@@ -2285,7 +2293,7 @@ export default function GerenciamentoMercado({
               <IconArrowLeft size={14} /> Meus mercados
             </button>
             <span className="gm-topbar-title">
-              {SIDEBAR_NAV[nav].icon} {SIDEBAR_NAV[nav].label}
+              {navItens[navAtual].icon} {navItens[navAtual].label}
             </span>
           </div>
           <div className="gm-topbar-actions">
@@ -2295,8 +2303,8 @@ export default function GerenciamentoMercado({
           </div>
         </div>
 
-        <div className="gm-content" key={nav}>
-          {SECTIONS[nav]}
+        <div className="gm-content" key={navAtual}>
+          {secoes[navAtual]}
         </div>
       </main>
 

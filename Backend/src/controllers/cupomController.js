@@ -1,4 +1,5 @@
 const { conectar } = require('../db/neon');
+const { limitesDoPlano } = require('../utils/planos');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Cupons de desconto (B3)
@@ -84,6 +85,14 @@ async function podeGerenciar(sql, idUsuario, mercadoId) {
     WHERE id_usuario = ${idUsuario} AND id_mercado = ${mercadoId}
   `;
   return !!permissao && ['dono', 'admin'].includes(permissao.papel);
+}
+
+// Cupons são recurso dos planos Plus e Personalizado (Essencial não cria/edita)
+async function planoPermiteCupons(sql, mercadoId) {
+  const [mercado] = await sql`
+    SELECT plano FROM mercados WHERE id_mercado = ${mercadoId}
+  `;
+  return limitesDoPlano(mercado?.plano).cupons === true;
 }
 
 // Valida os campos do cupom na entrada (criação e edição)
@@ -202,6 +211,9 @@ const criarCupom = async (req, res) => {
     if (!(await podeGerenciar(sql, idUsuario, mercadoId))) {
       return res.status(403).json({ erro: 'Você não tem acesso aos cupons deste mercado.' });
     }
+    if (!(await planoPermiteCupons(sql, mercadoId))) {
+      return res.status(403).json({ erro: 'Cupons estão disponíveis nos planos Plus e Personalizado. Faça upgrade para ativar.' });
+    }
 
     // As categorias escolhidas precisam ser do mercado em questão
     if (escopo && escopo.ids.length > 0) {
@@ -261,6 +273,9 @@ const atualizarCupom = async (req, res) => {
     const sql = await conectar();
     if (!(await podeGerenciar(sql, idUsuario, mercadoId))) {
       return res.status(403).json({ erro: 'Você não tem acesso aos cupons deste mercado.' });
+    }
+    if (!(await planoPermiteCupons(sql, mercadoId))) {
+      return res.status(403).json({ erro: 'Cupons estão disponíveis nos planos Plus e Personalizado. Faça upgrade para ativar.' });
     }
 
     const [atual] = await sql`

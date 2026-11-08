@@ -326,6 +326,30 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     throw erro;
   }
 
+  // Limite de lojas do usuário: o plano Personalizado permite até 5;
+  // Essencial/Plus são "1 loja" (2º mercado exige upgrade antes de criar).
+  // Admin (criação direta pela API) não passa por esse teto.
+  const [dono] = await sql`
+    SELECT is_admin FROM usuarios WHERE id_usuario = ${id_usuario}
+  `;
+  if (!dono?.is_admin) {
+    const [{ total: totalLojas }] = await sql`
+      SELECT COUNT(*)::int AS total
+      FROM usuarios_mercados
+      WHERE id_usuario = ${id_usuario} AND papel = 'dono'
+    `;
+    const limiteLojas = d.plano === 'personalizado' ? 5 : 1;
+    if (totalLojas >= limiteLojas) {
+      const nomePlano = d.plano === 'personalizado' ? 'Personalizado'
+        : d.plano === 'profissional' ? 'Plus' : 'Essencial';
+      const erro = new Error(
+        `Seu plano ${nomePlano} permite até ${limiteLojas} ${limiteLojas === 1 ? 'loja' : 'lojas'}. Faça upgrade para adicionar mais.`
+      );
+      erro.status = 409;
+      throw erro;
+    }
+  }
+
   // Gera slug único
   let slug = gerarSlug(d.nome);
   const slugExistente = await sql`

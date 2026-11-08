@@ -6,6 +6,7 @@ const {
   enviarEmailPedidoVendedor,
 } = require('../utils/mailer');
 const { enviarNotificacaoTelefone } = require('../utils/notificacoes');
+const { limitesDoPlano } = require('../utils/planos');
 
 // ─────────────────────────────────────────────
 // E-mails do pedido — busca os dados prontos e dispara sem travar a resposta
@@ -298,12 +299,27 @@ const criarPedido = async (req, res) => {
     // Regras de entrega do mercado (taxa, mínimo e quais formas aceita)
     // + wallet Asaas do vendedor (split: dinheiro do pedido cai na conta dele)
     const [mercado] = await sql`
-      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id
+      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id, plano
       FROM mercados
       WHERE id_mercado = ${mercadoId}
     `;
     if (!mercado) {
       return res.status(404).json({ erro: 'Mercado não encontrado.' });
+    }
+
+    // Limite de pedidos/mês do plano (Essencial 100, Plus 500, Personalizado 5000)
+    const limites = limitesDoPlano(mercado.plano);
+    const [pedidosMes] = await sql`
+      SELECT COUNT(*)::int AS total
+      FROM historico_compras
+      WHERE id_mercado = ${mercadoId}
+        AND status <> 'cancelado'
+        AND data_compra >= DATE_TRUNC('month', NOW())
+    `;
+    if (pedidosMes.total >= limites.pedidosMes) {
+      return res.status(403).json({
+        erro: `Seu plano ${limites.nome} permite até ${limites.pedidosMes} pedidos por mês. Faça upgrade para continuar recebendo pedidos.`,
+      });
     }
 
     if (tipoEntrega === 'entrega' && mercado.oferece_entrega === false) {

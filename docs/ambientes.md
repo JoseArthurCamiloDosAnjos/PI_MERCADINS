@@ -15,6 +15,7 @@ clientes usam), e como manter essa separação sem segredo.
 | **Banco de dados** | PostgreSQL local (`DATABASE_URL_LOCAL`) | Neon (`DATABASE_URL_NEON`) |
 | **Variáveis** | Arquivos `Backend/.env`, `Frontend/.env` e `.env` da raiz (não versionados) | Cadastradas no painel do Render (backend e site) |
 | **E-mails** | Podem ficar desativados (sem chave) | Resend com chave de produção |
+| **Notificações por telefone** | Opcional — sem provedor, avisos ficam só no histórico (`sem_provedor`) | Mesmas variáveis `WHATSAPP_*`/`TWILIO_*` etc. no painel do Render (opcional) |
 
 O backend escolhe qual banco usar pela variável `DB_PROVIDER`:
 
@@ -79,7 +80,12 @@ no painel na primeira sincronização.
    `ASAAS_WEBHOOK_TOKEN`;
 3. As demais já vêm do `render.yaml`: `FRONTEND_URL`, `ALLOWED_ORIGINS`,
    `Assas_API_URL_Producao`, `Assas_API_URL_Sandbox`;
-4. Salvar — o Render reinicia o serviço sozinho.
+4. **Opcional — notificações por telefone:** se quiser envio automático de
+   WhatsApp/SMS (cadastro, pedidos etc.), cadastrar também
+   `WHATSAPP_PROVIDER` + as credenciais do provedor escolhido (ver seção
+   *Notificações por telefone* em `Backend/.env.example`). Sem isso, os avisos
+   continuam gravados no histórico com status `sem_provedor`;
+5. Salvar — o Render reinicia o serviço sozinho.
 
 ### Render — site (`mercadins-frontend`, static_site)
 
@@ -103,3 +109,17 @@ no painel na primeira sincronização.
 - [ ] Nenhum valor real commitado;
 - [ ] Código usa `process.env.NOME` (backend) ou `import.meta.env.VITE_NOME`
       (frontend) com um padrão seguro quando a variável falta.
+
+---
+
+## Docker local
+
+O `compose.yaml` da raiz sobe Postgres + API + site em containers (ver
+[README — Docker](../README.md#6-docker-opcional)):
+
+- O `.env` **da raiz** alimenta o build do frontend (`VITE_*`);
+- O `Backend/.env` é lido pelo serviço `backend` (formato `raw`, para o token
+  do Asaas que começa com `$`) — se faltar, o compose segue assim mesmo;
+- O compose força `DB_PROVIDER=local` apontando para o Postgres do container;
+- As migrações rodam sozinhas na subida do backend
+  (`node src/db/migrate.js && node src/server.js`).

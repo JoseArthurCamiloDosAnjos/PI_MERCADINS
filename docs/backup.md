@@ -65,7 +65,11 @@ confira.
 - Se um backup for restaurado, ele já traz o `schema_migrations` da época do
   backup — basta rodar `npm run migrate` para aplicar o que faltou até hoje;
 - Nunca altere um arquivo de migração já aplicado: crie um novo arquivo com o
-  próximo número.
+  próximo número;
+- O executor usa o **nome do arquivo** como id (ex.:
+  `018_notificacoes_lida`) — o campo `id` do `module.exports` é só
+  documentação. Por isso a duplicação de número `015_*` não quebra nada, mas
+  deve ser evitada em migrações novas (use sempre o próximo número livre).
 
 ---
 

@@ -196,6 +196,11 @@ Quando o mercado tem `asaas_wallet_id`, a cobrança é criada com **Split**
 (`splits: [{ walletId, percentualValue: 100 }]`): o valor líquido vai direto
 para a conta Asaas do vendedor — ver [§13](#13-split-de-pagamento-dinheiro-direto-ao-vendedor).
 
+A confirmação de um pedido é **idempotente**: webhook e o fallback do
+`GET /pedido` disputam a mesma transição `aguardando_pagamento → pendente`
+com `UPDATE ... WHERE status = 'aguardando_pagamento' RETURNING` — só quem
+atualiza a linha dispara e-mail e notificação por telefone (nunca em dobro).
+
 ---
 
 ## 9. Banco de dados
@@ -309,6 +314,8 @@ Quando o pagamento online falha, a API responde `502` com
 | `Backend/src/services/vigenciaService.js` | vigência, carência, suspensão e reativação |
 | `Backend/src/utils/planos.js` | limites por plano |
 | `Backend/src/routes/assinaturaRoutes.js` | rotas de assinatura |
+| `Backend/src/controllers/pedidoController.js` | webhook/fallback de pagamento de pedido (idempotência + avisos) |
+| `Backend/src/utils/notificacoes.js` | envio dos avisos por telefone no fluxo de pedido |
 | `Backend/src/server.js` | montagem das rotas + job horário de vigência |
 | `Backend/src/db/migrations/009_*.js`, `010_*.js` | tabelas de pagamento e `suspenso_em` |
 | `Frontend/src/pages/RegistrarMercado/` | checkout, tela de aguardando pagamento e botão "Já paguei" |

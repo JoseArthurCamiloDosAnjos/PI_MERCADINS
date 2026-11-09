@@ -299,6 +299,13 @@ async function cancelarPagamento(paymentId) {
   return chamarApi(`/v3/payments/${paymentId}`, { method: 'DELETE' })
 }
 
+// POST /v3/payments/{id}/refund — estorno total de pagamento já confirmado.
+// Só funciona para cartão; Pix não é estornável pela API (a falha é capturada
+// pelo chamador e vira alerta para estorno manual no painel do Asaas).
+async function estornarPagamento(paymentId) {
+  return chamarApi(`/v3/payments/${paymentId}/refund`, { method: 'POST', body: {} })
+}
+
 module.exports = {
   obterPlano,
   criarSubconta,
@@ -313,4 +320,5 @@ module.exports = {
   buscarPagamento,
   buscarQrPix,
   cancelarPagamento,
+  estornarPagamento,
 }

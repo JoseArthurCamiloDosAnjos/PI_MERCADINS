@@ -4,6 +4,7 @@ const {
   enviarEmailPedidoConfirmado,
   enviarEmailStatusPedido,
   enviarEmailPedidoVendedor,
+  enviarEmailPagamentoAposCancelamento,
 } = require('../utils/mailer');
 const { enviarNotificacaoTelefone } = require('../utils/notificacoes');
 const { limitesDoPlano } = require('../utils/planos');
@@ -150,6 +151,20 @@ async function devolverEstoque(sql, itens) {
       UPDATE produtos SET estoque = estoque + ${Number(item.quantidade)}
       WHERE id_produto = ${Number(item.id_produto)}
     `;
+  }
+}
+
+// Devolve 1 uso de cupom (cancelamento ou falha de pagamento) — espelho do +1
+// feito na criação do pedido. Usa o código gravado no próprio pedido.
+async function devolverCupom(sql, idMercado, cupomCodigo) {
+  const codigo = String(cupomCodigo || '').trim().toUpperCase();
+  if (!codigo) return;
+  const [cupom] = await sql`
+    SELECT id FROM cupons
+    WHERE id_mercado = ${Number(idMercado)} AND upper(codigo) = ${codigo}
+  `;
+  if (cupom) {
+    await sql`UPDATE cupons SET usos = GREATEST(usos - 1, 0) WHERE id = ${cupom.id}`;
   }
 }
 
@@ -303,12 +318,17 @@ const criarPedido = async (req, res) => {
     // Regras de entrega do mercado (taxa, mínimo e quais formas aceita)
     // + wallet Asaas do vendedor (split: dinheiro do pedido cai na conta dele)
     const [mercado] = await sql`
-      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id, plano
+      SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id, plano, status
       FROM mercados
       WHERE id_mercado = ${mercadoId}
     `;
     if (!mercado) {
       return res.status(404).json({ erro: 'Mercado não encontrado.' });
+    }
+    // Só lojas ativas recebem pedidos (bloqueada pelo admin ou suspensa por
+    // assinatura não podem ser contornadas chamando a API direto)
+    if (mercado.status !== 'ativo') {
+      return res.status(403).json({ erro: 'Este mercado não está aceitando pedidos no momento.' });
     }
 
     // Limite de pedidos/mês do plano (Essencial 100, Plus 500, Personalizado 5000)
@@ -506,7 +526,9 @@ const criarPedido = async (req, res) => {
         AND id_produto = ANY(${idsProdutos})
     `;
 
-    const totalPedido = valorTotal - desconto + taxaEntrega;
+    // Arredondamento obrigatório: a soma em JS pode gerar fração
+    // (ex.: 1.15 * 3 = 3.4499...) e o Asaas rejeita valor com mais de 2 casas
+    const totalPedido = round2(valorTotal - desconto + taxaEntrega);
 
     // ── Pagamento online (Pix ou cartão) — B3 ────────────────────────────────
     if (formaPagamento !== 'presencial') {
@@ -847,7 +869,7 @@ const financeiroMercado = async (req, res) => {
     const folgaFim    = new Date(ano, mes, 2);
 
     const pedidos = await sql`
-      SELECT h.produtos, h.valor_total, h.status,
+      SELECT h.produtos, h.valor_total, h.desconto, h.taxa_entrega, h.status,
              (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo' AS data_local
       FROM historico_compras h
       WHERE h.id_mercado = ${mercadoId}
@@ -898,12 +920,20 @@ const financeiroMercado = async (req, res) => {
       const d = new Date(p.data_local);
       if (d.getFullYear() !== ano || d.getMonth() + 1 !== mes) continue;
 
-      const valor = Number(p.valor_total) || 0;
-      faturamento += valor;
-      totalPedidos += 1;
-
       const st = p.status || 'pendente';
       porStatus[st] = (porStatus[st] || 0) + 1;
+
+      // Cancelado e ainda não pagado NÃO são receita (o painel já filtra
+      // esses status na lista de pedidos — GerenciamentoMercado)
+      if (st === 'cancelado' || st === 'aguardando_pagamento') continue;
+
+      // Total real do pedido: valor − desconto + entrega (mesma fórmula
+      // usada no detalhe do pedido) — nunca só o valor_total bruto
+      const valor = round2(
+        (Number(p.valor_total) || 0) - (Number(p.desconto) || 0) + (Number(p.taxa_entrega) || 0)
+      );
+      faturamento += valor;
+      totalPedidos += 1;
 
       const dia = d.getDate();
       const reg = porDia.get(dia) || { pedidos: 0, receita: 0 };
@@ -961,6 +991,67 @@ const financeiroMercado = async (req, res) => {
     res.status(500).json({ erro: 'Não foi possível carregar o financeiro do mercado.' });
   }
 };
+
+// ─────────────────────────────────────────────
+// Cancela um pedido que ainda estava "aguardando_pagamento" porque a cobrança
+// caiu (EXPIRED/FAILED/DELETED). Atômico: o WHERE + RETURNING garante que
+// webhook e fallback de conciliação não desfaçam duas vezes. Devolve estoque e
+// cupom, apaga repasses e avisa o cliente. Retorna true só se este chamado
+// foi quem cancelou.
+// ─────────────────────────────────────────────
+async function cancelarPedidoPorFalha(sql, pedido, { statusAsaas, paymentId, origem }) {
+  const [cancelado] = await sql`
+    UPDATE historico_compras
+    SET status = 'cancelado',
+        motivo_cancelamento = ${`Pagamento não confirmado no Asaas (${statusAsaas})`},
+        asaas_payment_id = COALESCE(${paymentId || null}, asaas_payment_id)
+    WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
+    RETURNING id
+  `;
+  if (!cancelado) return false;
+
+  await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
+  await devolverEstoque(sql, pedido.itens_json);
+  await devolverCupom(sql, pedido.id_mercado, pedido.cupom_codigo);
+  montarDadosPedidoParaEmail(sql, pedido.id)
+    .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
+    .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
+  avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
+  console.error(`Pedido ${pedido.id} cancelado [${origem}]: pagamento ${statusAsaas}.`);
+  return true;
+}
+
+// Avisa cliente e loja que o pagamento de um pedido JÁ CANCELADO confirmou.
+// estornado=true → estorno automático pedido no Asaas; false → falhou e fica
+// para ação manual (o log crítico já saiu em processarPagamentoPedido).
+function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
+  montarDadosPedidoParaEmail(sql, idPedido)
+    .then((dados) => {
+      if (!dados) return;
+      const desfecho = estornado
+        ? 'O estorno já foi solicitado no Asaas e o valor volta para o meio de pagamento do cliente.'
+        : 'Atenção: o estorno automático falhou — faça o estorno manualmente no painel do Asaas.';
+      if (dados.telefoneCliente) {
+        enviarNotificacaoTelefone(sql, {
+          id_usuario: dados.idUsuario,
+          telefone: dados.telefoneCliente,
+          tipo: 'pedido_pagamento_estorno',
+          titulo: 'Pagamento confirmado após cancelamento',
+          mensagem: `Olá, ${String(dados.cliente || '').split(' ')[0]}! O pagamento do pedido nº ${dados.numero} foi confirmado depois do cancelamento. ${desfecho}`,
+        });
+      }
+      if (dados.telefoneVendedor) {
+        enviarNotificacaoTelefone(sql, {
+          id_mercado: dados.idMercado,
+          telefone: dados.telefoneVendedor,
+          tipo: 'pedido_pagamento_estorno_vendedor',
+          titulo: 'Pagamento após cancelamento',
+          mensagem: `O pedido nº ${dados.numero} do ${dados.mercado} teve o pagamento confirmado DEPOIS de cancelado. ${desfecho}`,
+        });
+      }
+    })
+    .catch((err) => console.error('Falha ao avisar pagamento pós-cancelamento:', err.message));
+}
 
 // ─────────────────────────────────────────────
 // B3 — Webhook do Asaas para PAGAMENTO DE PEDIDO
@@ -1038,24 +1129,92 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
         .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
       avisarVendedorPedido(sql, pedido.id);
       avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+      return { recebido: true, pago: true };
     }
+
+    // O UPDATE não achou "aguardando_pagamento": ou o webhook já confirmou
+    // antes (idempotência normal — nada a fazer) ou o cliente CANCELOU o
+    // pedido antes da confirmação: o dinheiro entrou para um pedido desfeito
+    // e precisa ser estornado.
+    const [atual] = await sql`
+      SELECT status FROM historico_compras WHERE id = ${pedido.id}
+    `;
+    if (atual?.status === 'cancelado') {
+      // Rastreia o pagamento no pedido cancelado (auditoria + estorno)
+      await sql`
+        UPDATE historico_compras SET asaas_payment_id = ${pagamentoAsaas.id}
+        WHERE id = ${pedido.id}
+      `;
+      let estornado = false;
+      try {
+        await asaas.estornarPagamento(pagamentoAsaas.id);
+        estornado = true;
+        console.error(
+          `Pedido ${pedido.id}: pagamento ${pagamentoAsaas.id} confirmado APÓS cancelamento — estorno automático solicitado.`
+        );
+      } catch (erroEstorno) {
+        // Pix não é estornável pela API (e falhas de rede acontecem): alerta
+        // para a equipe estornar manualmente no painel do Asaas
+        console.error(
+          `CRÍTICO — Pedido ${pedido.id}: pagamento ${pagamentoAsaas.id} confirmado após cancelamento e o estorno FALHOU (${erroEstorno.message}). Estornar manualmente no painel do Asaas.`
+        );
+      }
+      montarDadosPedidoParaEmail(sql, pedido.id)
+        .then((dados) => dados && enviarEmailPagamentoAposCancelamento(dados.email, dados, { estornado }))
+        .catch((err) => console.error('Falha no e-mail de pagamento pós-cancelamento:', err.message));
+      avisarPagamentoAposCancelamento(sql, pedido.id, estornado);
+      return { recebido: true, estornado };
+    }
+
     return { recebido: true, pago: true };
   }
 
-  if (falhou && pedido.status === 'aguardando_pagamento') {
-    // Pagamento falhou/caiu: cancela o pedido e devolve o estoque
-    await sql`
-      UPDATE historico_compras SET status = 'cancelado', asaas_payment_id = ${pagamentoAsaas.id}
-      WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
+  const estornoPago = ['REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
+
+  if (falhou && !estornoPago) {
+    // Cobrança caiu/expirou: cancela o pedido (se ainda aguarda pagamento),
+    // devolve estoque e cupom. Atômico — o helper é no-op se o status mudou.
+    const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
+      statusAsaas,
+      paymentId: pagamentoAsaas.id,
+      origem: 'webhook',
+    });
+    return { recebido: true, ...(cancelado ? { cancelado: true } : {}) };
+  }
+
+  // ── Estorno/chargeback de pedido JÁ CONFIRMADO ─────────────────────────────
+  // O dinheiro voltou (REFUNDED) ou está em disputa (CHARGBACK_*) depois que
+  // o pedido já estava ativo: cancela, apaga repasses e devolve os recursos.
+  // Estoque só volta se a mercadoria não saiu (entregue).
+  if (falhou && estornoPago) {
+    const [atual] = await sql`
+      SELECT status FROM historico_compras WHERE id = ${pedido.id}
     `;
-    await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
-    await devolverEstoque(sql, pedido.itens_json);
-    montarDadosPedidoParaEmail(sql, pedido.id)
-      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
-      .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-    avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
-    console.error(`Pedido ${pedido.id} cancelado: pagamento ${statusAsaas} (${evento}).`);
-    return { recebido: true, cancelado: true };
+    if (atual && !['cancelado', 'aguardando_pagamento'].includes(atual.status)) {
+      const [cancelado] = await sql`
+        UPDATE historico_compras
+        SET status = 'cancelado',
+            motivo_cancelamento = ${`Estorno/chargeback do pagamento (${statusAsaas})`}
+        WHERE id = ${pedido.id} AND status = ${atual.status}
+        RETURNING id
+      `;
+      if (cancelado) {
+        await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
+        if (atual.status !== 'entregue') {
+          await devolverEstoque(sql, pedido.itens_json);
+        }
+        await devolverCupom(sql, pedido.id_mercado, pedido.cupom_codigo);
+        montarDadosPedidoParaEmail(sql, pedido.id)
+          .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
+          .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
+        avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
+        console.error(
+          `Pedido ${pedido.id} cancelado: ${statusAsaas} em pedido já confirmado (status anterior: ${atual.status}, ${evento}).`
+        );
+        return { recebido: true, cancelado: true };
+      }
+    }
+    return { recebido: true };
   }
 
   // PENDING, IN_ANALYSIS etc. — ainda em análise, nada a fazer agora
@@ -1086,7 +1245,7 @@ const cancelarPedido = async (req, res) => {
     const sql = await conectar();
 
     const [pedido] = await sql`
-      SELECT id, id_usuario, id_mercado, status, forma_pagamento, asaas_payment_id, itens_json
+      SELECT id, id_usuario, id_mercado, status, forma_pagamento, asaas_payment_id, itens_json, cupom_codigo
       FROM historico_compras
       WHERE id = ${pedidoId}
     `;
@@ -1134,6 +1293,10 @@ const cancelarPedido = async (req, res) => {
 
     // Devolve o estoque que foi baixado na compra
     await devolverEstoque(sql, pedido.itens_json);
+
+    // Devolve 1 uso do cupom (se houver) — senão campanhas perdem usos a
+    // cada cancelamento
+    await devolverCupom(sql, pedido.id_mercado, pedido.cupom_codigo);
 
     // Sem pedido não há repasse a conciliar (se houver linha de split, o
     // Asaas cancela o próprio split ao excluir a cobrança)
@@ -1408,14 +1571,45 @@ const detalharPedido = async (req, res) => {
             WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
             RETURNING id
           `;
+          pedido.status = 'pendente';
           if (atualizado) {
-            pedido.status = 'pendente';
+            // Mesmos avisos do webhook: sem este e-mail o cliente que pagou
+            // pelo link direto nunca recebe a confirmação do pedido
+            montarDadosPedidoParaEmail(sql, pedido.id)
+              .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
+              .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
             avisarVendedorPedido(sql, pedido.id);
             avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
           }
+          // Mesmo sem webhook: a conciliação do split acompanha a cobrança
+          await sincronizarRepasses(sql, pedido.id, cobranca);
+        } else if (['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED',
+                    'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas)) {
+          // Cobrança caiu/expirou sem webhook → cancela aqui (mesmo caminho
+          // do webhook): estoque e cupom voltam e a tela mostra "cancelado"
+          const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
+            statusAsaas,
+            paymentId: pedido.asaas_payment_id,
+            origem: 'detalharPedido',
+          });
+          if (cancelado) {
+            pedido.status = 'cancelado';
+            // QR já morto no Asaas — a tela não deve continuar mostrando
+            pagamento = {
+              id: pedido.asaas_payment_id,
+              status: statusAsaas,
+              vencimento: cobranca?.dueDate || null,
+              qrCodeBase64: '',
+              copiaEcola: '',
+              urlPagamento: '',
+            };
+          } else {
+            await sincronizarRepasses(sql, pedido.id, cobranca);
+          }
+        } else {
+          // PENDING, IN_ANALYSIS etc. — concilia o split enquanto analisa
+          await sincronizarRepasses(sql, pedido.id, cobranca);
         }
-        // Mesmo sem webhook: a conciliação do split acompanha a cobrança
-        await sincronizarRepasses(sql, pedido.id, cobranca);
       } catch (err) {
         // Asaas fora do ar não quebra a tela: só sem o QR
         console.error('Falha ao buscar pagamento do pedido:', err.message);

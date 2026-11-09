@@ -297,6 +297,35 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
   });
 };
 
+// Pagamento confirmou DEPOIS de o pedido ser cancelado: o dinheiro entrou e
+// precisa voltar. Avisa o cliente com o desfecho do estorno (automático ou
+// pendente de ação manual da equipe).
+const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }) => {
+  const mensagem = estornado
+    ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
+    : 'O pagamento deste pedido foi confirmado depois do cancelamento. Nossa equipe vai estornar o valor e entrará em contato. Se tiver dúvidas, fale com a loja.';
+
+  await resend.emails.send({
+    from: EmailDominio,
+    to: email,
+    subject: `Pagamento confirmado após cancelamento — Pedido nº ${pedido.numero}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: 'Nunito', Arial, sans-serif; background: #f0f2f7; margin: 0; padding: 40px 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 36px 32px; text-align: center;">
+            <h1 style="color: white; font-size: 20px; margin: 0 0 4px;">Pagamento confirmado</h1>
+            <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 14px;">Pedido cancelado — estorno em andamento</p>
+          </div>
+          ${corpoPedido({ ...pedido, mensagem })}
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  B2 — Aviso de pedido novo para o VENDEDOR
 //  Dispara quando entra pedido pago (ou pedido "pagar na entrega"): a loja
@@ -366,5 +395,6 @@ module.exports = {
   enviarEmailPromocaoAdmin,
   enviarEmailPedidoConfirmado,
   enviarEmailStatusPedido,
+  enviarEmailPagamentoAposCancelamento,
   enviarEmailPedidoVendedor,
 };

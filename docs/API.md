@@ -226,7 +226,10 @@ Fluxo completo, estados, carência de 3 dias e como testar:
 Recebe os eventos de pagamento do Asaas (assinaturas **e** pedidos online).
 **Não usa JWT** — valida o cabeçalho `webhook-security-token` contra a variável
 `ASAAS_WEBHOOK_TOKEN`: token diferente → `401`; variável ausente em produção →
-`500` (em desenvolvimento sem a variável, processa mesmo assim).
+`500` (em desenvolvimento sem a variável, processa mesmo assim). Vários
+tokens? Separe por vírgula — assim as integrações de webhook do **sandbox** e
+da **produção** (contas Asaas diferentes) apontam para a mesma URL e as duas
+são aceitas.
 
 | Evento | Efeito |
 |---|---|
@@ -244,19 +247,25 @@ Recebe os eventos de pagamento do Asaas (assinaturas **e** pedidos online).
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
 | GET | `/api/health` | público | Responde `{ status: "ok" }` (healthcheck do Render) |
-| GET | `/api/saude/pagamentos` | público | Mostra o ambiente, o banco e a **presença** das variáveis do Asaas (nenhum segredo é exposto) |
+| GET | `/api/saude/pagamentos` | público | Mostra o ambiente, o banco e a configuração do Asaas — **sandbox × produção** e a presença das chaves (nenhum segredo é exposto) |
 
 Resposta de `/api/saude/pagamentos`:
 
 ```json
 { "ambiente": "producao",
   "banco": "auto",
-  "asaas": { "url_usada": "https://api.asaas.com/", "chave_api": true,
-             "url_producao": true, "url_sandbox": false, "webhook_token": true },
+  "asaas": { "ambiente": "producao",
+             "url_usada": "https://api.asaas.com", "chave_api": true,
+             "chave_fonte": "Assas_API_KEY_Producao",
+             "chave_sandbox": true, "chave_producao": true,
+             "url_producao": true, "url_sandbox": true,
+             "webhook_token": true, "webhook_tokens": 1 },
   "frontend_url": "https://mercadins.com.br" }
 ```
 
-`chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
+`asaas.ambiente` = ambiente que as chamadas estão usando (`sandbox` ou
+`producao`); `chave_api: false` ou `url_usada: null` = variável não
+cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 
 ---
 
@@ -407,23 +416,38 @@ CRUD completo (painel → aba "Catálogo"):
 
 ---
 
-## Notificações por telefone — `/api/notificacoes`
+## Notificações por e-mail — `/api/notificacoes`
 
-Avisos enviados (ou registrados) para o telefone do cadastro: conta criada,
-e-mail confirmado, loja criada e andamento de pedidos. Sem provedor de
-WhatsApp/SMS configurado, o aviso fica no histórico com o link "Abrir no
-WhatsApp" e status `sem_provedor`. Variáveis de configuração: ver
-`Backend/.env.example` (seção *Notificações por telefone*).
+Avisos enviados (ou registrados) por e-mail: conta criada, e-mail confirmado,
+loja criada e andamento de pedidos. O envio usa o mesmo serviço de e-mail do
+sistema (`RESEND_API_KEY`); sem chave configurada o aviso fica apenas no
+histórico com status `registrada`. Regra de ouro: **um evento = um e-mail**
+(quando o fluxo já dispara um e-mail próprio, a notificação é só histórico).
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/` | token | Últimos 50 avisos da conta e dos mercados que ela gerencia; devolve `naoLidas`, telefone, canal e `canalConfigurado` |
-| POST | `/teste` | token | Envia/registra um aviso de teste no telefone do próprio usuário (limite 5 a cada 15 min) |
+| GET | `/` | token | Últimos 50 avisos da conta e dos mercados que ela gerencia; devolve `naoLidas`, e-mail, canal e `canalConfigurado` |
+| POST | `/teste` | token | Envia/registra um aviso de teste para o e-mail do próprio usuário (limite 5 a cada 15 min) |
 | POST | `/:id/lida` | token | Marca um aviso como lido (só os da própria conta) |
 | POST | `/lidas` | token | Marca todos os avisos do usuário como lidos |
 
-Os avisos gravados têm `status`: `enviada`, `sem_provedor`, `registrada` ou
-`erro`. A listagem vem com `lida` (boolean) e não lidas primeiro.
+Os avisos gravados têm `status`: `enviada`, `registrada` ou `erro`. A listagem
+vem com `lida` (boolean) e não lidas primeiro.
+
+---
+
+## Upload de imagens — `/api/upload/:categoria`
+
+Recebe uma imagem em `multipart/form-data` (campo **`imagem`**), salva na
+pasta local `imagens/<categoria>/` (aceita **PNG, JPG e WEBP**, até 5 MB) e
+devolve a URL que deve ser gravada no banco. Categorias aceitas:
+`produtos`, `mercados`, `usuarios`, `avaliacoes`, `catalogo`.
+
+| Método | Rota | Acesso | O que faz |
+|---|---|---|---|
+| POST | `/:categoria` | token | Salva o arquivo e devolve `{ url, caminho }` |
+
+As imagens são servidas em `GET /imagens/<categoria>/<arquivo>`.
 
 ---
 

@@ -626,6 +626,9 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
         cor_texto: dados.corTexto ?? '',
         cor_icones: dados.corIcones ?? '',
         cor_texto_sec: dados.corTextoSec ?? '',
+        // Caminho da imagem na pasta imagens/ — é ele que fica no banco
+        ...(dados.logo ? { foto_perfil_url: dados.logo } : {}),
+        ...(dados.banner ? { banner_url: dados.banner } : {}),
       });
       setTemAlteracoes(false);
       showToast('sucesso', 'Vitrine salva com sucesso!');

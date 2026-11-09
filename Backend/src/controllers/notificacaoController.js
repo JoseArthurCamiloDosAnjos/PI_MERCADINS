@@ -1,10 +1,5 @@
 const { conectar } = require('../db/neon');
-const {
-  enviarNotificacaoTelefone,
-  provedorConfigurado,
-  nomeDoCanal,
-  linkWhatsApp,
-} = require('../utils/notificacoes');
+const { enviarNotificacao } = require('../utils/notificacoes');
 
 // GET /api/notificacoes — histórico do usuário logado.
 // Inclui os avisos da conta e os avisos dos mercados dos quais ele é dono.
@@ -13,7 +8,7 @@ const listar = async (req, res) => {
     const sql = await conectar();
 
     const [usuario] = await sql`
-      SELECT nome, telefone FROM usuarios WHERE id_usuario = ${req.usuarioId}
+      SELECT nome, email FROM usuarios WHERE id_usuario = ${req.usuarioId}
     `;
 
     const notificacoes = await sql`
@@ -30,14 +25,11 @@ const listar = async (req, res) => {
     const naoLidas = notificacoes.filter((item) => !item.lida).length;
 
     res.json({
-      notificacoes: notificacoes.map((item) => ({
-        ...item,
-        linkWhatsApp: linkWhatsApp(item.telefone, item.mensagem),
-      })),
+      notificacoes,
       naoLidas,
-      telefone: usuario?.telefone || '',
-      canal: nomeDoCanal(),
-      canalConfigurado: provedorConfigurado(),
+      email: usuario?.email || '',
+      canal: 'email',
+      canalConfigurado: Boolean(process.env.RESEND_API_KEY),
     });
   } catch (err) {
     console.error('ERRO listar notificações:', err);
@@ -79,7 +71,7 @@ const marcarComoLida = async (req, res) => {
   }
 };
 
-// POST /api/notificacoes/lidas — marca todas as do usuário como lidas.
+// POST /api/notificacoes/lidas — marca todas do usuário como lidas.
 const marcarTodasComoLidas = async (req, res) => {
   try {
     const sql = await conectar();
@@ -103,29 +95,29 @@ const marcarTodasComoLidas = async (req, res) => {
   }
 };
 
-// POST /api/notificacoes/teste — manda um aviso de teste para o telefone
-// cadastrado. Serve para a pessoa conferir o número e, no futuro, validar o
-// provedor de WhatsApp/SMS sem precisar fazer um pedido de verdade.
+// POST /api/notificacoes/teste — manda um aviso de teste para o e-mail
+// cadastrado. Serve para a pessoa conferir que as notificações chegam na
+// caixa de entrada.
 const enviarTeste = async (req, res) => {
   try {
     const sql = await conectar();
 
     const [usuario] = await sql`
-      SELECT nome, telefone FROM usuarios WHERE id_usuario = ${req.usuarioId}
+      SELECT nome, email FROM usuarios WHERE id_usuario = ${req.usuarioId}
     `;
 
-    if (!usuario?.telefone) {
+    if (!usuario?.email) {
       return res.status(400).json({
-        erro: 'Cadastre um telefone no seu perfil antes de enviar o teste.',
+        erro: 'Cadastre um e-mail no seu perfil antes de enviar o teste.',
       });
     }
 
     const primeiroNome = String(usuario.nome || '').split(' ')[0] || 'tudo bem';
-    const mensagem = `Olá, ${primeiroNome}! Este é um aviso de teste do Mercadins. Quando você fizer um cadastro, um pedido ou receber uma atualização de entrega, o aviso chega neste telefone.`;
+    const mensagem = `Olá, ${primeiroNome}! Este é um aviso de teste do Mercadins. Quando você fizer um cadastro, um pedido ou receber uma atualização de entrega, o aviso chega neste e-mail.`;
 
-    const registro = await enviarNotificacaoTelefone(sql, {
+    const registro = await enviarNotificacao(sql, {
       id_usuario: req.usuarioId,
-      telefone: usuario.telefone,
+      email: usuario.email,
       tipo: 'teste',
       titulo: 'Notificação de teste',
       mensagem,
@@ -138,12 +130,13 @@ const enviarTeste = async (req, res) => {
     }
 
     res.status(201).json({
-      mensagem: provedorConfigurado()
-        ? 'Notificação de teste enviada para o seu telefone.'
-        : 'Teste registrado. O envio automático ainda não está configurado no servidor.',
+      mensagem:
+        registro.status === 'enviada'
+          ? 'Notificação de teste enviada para o seu e-mail.'
+          : 'Teste registrado no histórico. O envio automático de e-mail não está configurado no servidor.',
       notificacao: registro,
-      canal: nomeDoCanal(),
-      canalConfigurado: provedorConfigurado(),
+      canal: 'email',
+      canalConfigurado: Boolean(process.env.RESEND_API_KEY),
     });
   } catch (err) {
     console.error('ERRO enviar teste de notificação:', err);

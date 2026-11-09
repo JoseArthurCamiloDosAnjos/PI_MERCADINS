@@ -67,17 +67,6 @@ body {
   background: var(--azul-claro);
 }
 
-/* Scrollbar — tema claro */
-.tema-claro * {
-  scrollbar-color: var(--azul-item) transparent;
-}
-.tema-claro *::-webkit-scrollbar-thumb {
-  background: var(--azul-item);
-}
-.tema-claro *::-webkit-scrollbar-thumb:hover {
-  background: var(--azul-claro);
-}
-
 :root {
   --azul-escuro:  #0d1b2a;
   --azul-sidebar: #112240;
@@ -117,40 +106,6 @@ body {
   --transicao:        200ms;
   --transicao-lenta:  280ms;
   --transicao-curva:  cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── TEMA CLARO ── */
-.tema-claro {
-  --azul-escuro:  #f0f2f7;
-  --azul-sidebar: #ffffff;
-  --azul-medio:   #1a3a7a;
-  --azul-card:    #ffffff;
-  --azul-item:    #dde3ef;
-  --azul-borda:   #dde3ef;
-  --azul-claro:   #1a3a7a;
-
-  --amarelo:      #d4a800;
-  --branco:       #0d2a5e;
-  --branco-suave: #3a5a8c;
-  --cinza-texto:  #3a5a8c;
-
-  --azul-bg:      #f0f2f7;
-
-  --verde-bg:       rgba(34,197,94,0.10);
-  --verde-texto:    #16a34a;
-  --verde-medio:    rgba(34,197,94,0.15);
-  --verde-claro:    #15803d;
-
-  --pendente-bg:    rgba(217,119,6,0.10);
-  --pendente-texto: #b45309;
-
-  --novo-bg:        rgba(99,102,241,0.10);
-  --novo-texto:     #4338ca;
-}
-
-.tema-claro body,
-.tema-claro #root {
-  background: var(--azul-bg);
 }
 
 @keyframes slideLeft {

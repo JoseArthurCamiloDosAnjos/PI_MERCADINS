@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
-import { supabase } from '../services/supabase';
+import { uploadImagem, ehImagemValida } from '../services/upload';
 import './EditarMercado.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ export default function EditarMercado({
 
   function handleLogo(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file || !ehImagemValida(file)) return;
     setLogoFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -51,7 +51,7 @@ export default function EditarMercado({
 
   function handleBanner(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file || !ehImagemValida(file)) return;
     setBannerFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -68,28 +68,10 @@ export default function EditarMercado({
     return Object.keys(e).length === 0;
   }
 
-  async function uploadParaSupabase(file: File, pasta: string): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png';
-    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const caminho = `${pasta}/${nomeArquivo}`;
-
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar imagem:', error);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('imagens')
-      .getPublicUrl(caminho);
-
-    return data.publicUrl;
+  // Salva na pasta imagens/mercados/ do backend (URL que vai para o banco)
+  // e mantém cópia de backup no Supabase.
+  async function uploadParaSupabase(file: File): Promise<string | null> {
+    return uploadImagem(file, 'mercados');
   }
 
   async function handleSalvar() {
@@ -99,11 +81,11 @@ export default function EditarMercado({
     let banner_url: string | undefined;
 
     if (logoFile) {
-      logo_url = await uploadParaSupabase(logoFile, 'mercados') ?? undefined;
+      logo_url = await uploadParaSupabase(logoFile) ?? undefined;
     }
 
     if (bannerFile) {
-      banner_url = await uploadParaSupabase(bannerFile, 'mercados') ?? undefined;
+      banner_url = await uploadParaSupabase(bannerFile) ?? undefined;
     }
 
     onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo_url, banner_url });
@@ -137,7 +119,7 @@ export default function EditarMercado({
             <input
               ref={inputLogoRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               className="em-input-file"
               onChange={handleLogo}
             />
@@ -165,7 +147,7 @@ export default function EditarMercado({
             <input
               ref={inputBannerRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               className="em-input-file"
               onChange={handleBanner}
             />

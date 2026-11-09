@@ -103,14 +103,6 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ── Tema claro ─────────────────────────────────────────────────────────── */
-.tema-claro .ct-modal { background: #ffffff; border-color: #dde3ef; }
-.tema-claro .ct-titulo { color: #0d2251; }
-.tema-claro .ct-descricao { color: rgba(13, 34, 81, 0.7); }
-.tema-claro .ct-close { color: rgba(13, 34, 81, 0.5); }
-.tema-claro .ct-close:hover { color: #0d2251; }
-.tema-claro .ct-nota { color: rgba(13, 34, 81, 0.5); }
-
 /* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .ct-modal { padding: 1.75rem 1.25rem 1.25rem; }

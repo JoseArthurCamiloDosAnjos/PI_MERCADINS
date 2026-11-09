@@ -658,10 +658,6 @@
   color-scheme: dark;
 }
 
-.tema-claro .pu-modal-input[type="date"] {
-  color-scheme: light;
-}
-
 .pu-input-hint {
   font-size: 11px;
   color: var(--cinza-texto);

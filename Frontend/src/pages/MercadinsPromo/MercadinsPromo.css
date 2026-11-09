@@ -1576,34 +1576,3 @@
      return () => io.disconnect();
    }, []);
 */
-
-/* ── TEMA CLARO ────────────────────────────────────────────── */
-.tema-claro .mp-root { background: #ffffff; color: #0D2251; }
-.tema-claro .mp-nav { background: #ffffff; box-shadow: 0 2px 16px rgba(13,34,81,0.08); }
-.tema-claro .mp-nav-links a { color: rgba(13,34,81,0.65); }
-.tema-claro .mp-nav-links a:hover { color: #F5C000; }
-.tema-claro .mp-about { background: #F4F6FB; }
-.tema-claro .mp-about-text h2 { color: #0D2251; }
-.tema-claro .mp-about-desc { color: #5A6478; }
-.tema-claro .mp-section-title { color: #0D2251; }
-.tema-claro .mp-eyebrow-dark { color: #5A6478; }
-.tema-claro .mp-plans { background: #ffffff; }
-.tema-claro .mp-plan-card { background: #F4F6FB; border-color: #dde3ef; }
-.tema-claro .mp-plan-name { color: #0D2251; }
-.tema-claro .mp-plan-price .mp-price-value { color: #0D2251; }
-.tema-claro .mp-plan-features li { color: #5A6478; }
-.tema-claro .mp-testimonials { background: #0D2251; }
-.tema-claro .mp-testi-card { background: #1A3A7A; }
-.tema-claro .mp-testi-text { color: rgba(255,255,255,0.85); }
-.tema-claro .mp-testi-author strong { color: #ffffff; }
-.tema-claro .mp-testi-author span { color: rgba(255,255,255,0.6); }
-.tema-claro .mp-cta-final { background: linear-gradient(135deg, #0D2251 0%, #1A3A7A 55%, #2B5FBF 100%); }
-.tema-claro .mp-footer { background: #0D2251; }
-.tema-claro .mp-footer-tagline { color: rgba(255,255,255,0.6); }
-.tema-claro .mp-footer-copy { color: rgba(255,255,255,0.4); }
-.tema-claro .mp-hamburger span { background: #0D2251; }
-.tema-claro .mp-nav-links { background: #ffffff; }
-.tema-claro .mp-nav-links a { color: rgba(13,34,81,0.75); border-bottom-color: rgba(13,34,81,0.08); }
-.tema-claro .mp-nav-links a:hover { color: #F5C000; }
-.tema-claro .mp-btn-login { color: #0D2251; border-color: rgba(13,34,81,0.3); }
-.tema-claro .mp-btn-login:hover { background: rgba(13,34,81,0.06); border-color: #F5C000; color: #0D2251; }

@@ -1,36 +1,23 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
+// O site é fixo no tema escuro — o tema claro foi removido.
 interface ThemeContextType {
-  tema: 'escuro' | 'claro';
-  toggleTema: () => void;
+  tema: 'escuro';
 }
 
-const ThemeContext = createContext<ThemeContextType>({} as ThemeContextType);
+const ThemeContext = createContext<ThemeContextType>({ tema: 'escuro' });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [tema, setTema] = useState<'escuro' | 'claro'>(() => {
-    return (localStorage.getItem('tema') as 'escuro' | 'claro') ?? 'escuro';
-  });
-
   useEffect(() => {
-    const root = document.getElementById('root');
-    const html = document.documentElement;
-    if (!root) return;
-    if (tema === 'claro') {
-      root.classList.add('tema-claro');
-      html.classList.add('tema-claro');
-    } else {
-      root.classList.remove('tema-claro');
-      html.classList.remove('tema-claro');
-    }
-    localStorage.setItem('tema', tema);
-  }, [tema]);
-
-  const toggleTema = () => setTema(t => t === 'escuro' ? 'claro' : 'escuro');
+    // Garante que ninguém fique preso no tema claro salvo no navegador
+    document.getElementById('root')?.classList.remove('tema-claro');
+    document.documentElement.classList.remove('tema-claro');
+    localStorage.removeItem('tema');
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ tema, toggleTema }}>
+    <ThemeContext.Provider value={{ tema: 'escuro' }}>
       {children}
     </ThemeContext.Provider>
   );

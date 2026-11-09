@@ -45,7 +45,6 @@ export const PLANOS: Plano[] = [
       "Até 500 pedidos por mês",
       "Cupons e promoções ativos",
       "Relatórios avançados e alertas de estoque",
-      "Integração com WhatsApp e suporte em 24h",
       "0% de comissão nas vendas",
     ],
     cta: "Escolher Plus",
@@ -61,8 +60,8 @@ export const PLANOS: Plano[] = [
     aPartirDe: "399",
     features: [
       "Tudo do Plus, com mais:",
-      "Até 5 lojas com painel consolidado",
-      "Até 5.000 produtos e 10.000 fotos",
+      "Possuir multiplos mercados",
+      "Possuir multiplos Produtos e Imagens",
       "0% de comissão nas vendas",
     ],
     cta: "Falar com um consultor",

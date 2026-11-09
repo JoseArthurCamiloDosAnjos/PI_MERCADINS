@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
-import { supabase } from '../../services/supabase'
+import { uploadImagem, ehImagemValida } from '../../services/upload'
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../../utils/tiposLoja'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ export default function Catalogo() {
     if (!files) return
     const lista = Array.from(files)
     const validas = lista.filter(
-      f => f.type.startsWith('image/') && f.size <= MAX_TAMANHO_MB * 1024 * 1024
+      f => ehImagemValida(f) && f.size <= MAX_TAMANHO_MB * 1024 * 1024
     )
     if (validas.length !== lista.length) {
       showToast('erro', `Só imagens de até ${MAX_TAMANHO_MB} MB foram aceitas.`)
@@ -163,18 +163,10 @@ export default function Catalogo() {
     setImagens(prev => prev.filter((_, i) => i !== idx))
   }
 
+  // Salva na pasta imagens/catalogo/ do backend (URL que vai para o banco)
+  // e mantém cópia de backup no Supabase.
   async function uploadParaSupabase(file: File): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png'
-    const caminho = `catalogo/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, { cacheControl: '3600', upsert: false })
-    if (error) {
-      console.error('Erro ao enviar imagem:', error)
-      return null
-    }
-    const { data } = supabase.storage.from('imagens').getPublicUrl(caminho)
-    return data.publicUrl
+    return uploadImagem(file, 'catalogo')
   }
 
   async function salvar() {
@@ -517,7 +509,7 @@ export default function Catalogo() {
                   <input
                     ref={inputFileRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/webp"
                     multiple
                     hidden
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {

@@ -531,11 +531,17 @@ const cancelarAssinatura = async (req, res) => {
 // Quando o pagamento confirma e a assinatura ainda não tem mercado, cria o
 // mercado a partir de dados_mercado (o cadastro só acontece após o pagamento).
 const webhookAsaas = async (req, res) => {
-  const tokenWebhook = process.env.ASAAS_WEBHOOK_TOKEN;
-  const tokenRecebido = req.headers['webhook-security-token'];
+  // Aceita um ou mais tokens separados por vírgula — assim a integração de
+  // webhook do SANDBOX e a de PRODUÇÃO (contas Asaas diferentes, tokens
+  // diferentes) apontam para a mesma URL e são aceitas as duas.
+  const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const tokenRecebido = String(req.headers['webhook-security-token'] || '').trim();
 
-  if (tokenWebhook) {
-    if (tokenRecebido !== tokenWebhook) {
+  if (tokensAceitos.length > 0) {
+    if (!tokensAceitos.includes(tokenRecebido)) {
       return res.status(401).json({ erro: 'Token de webhook inválido.' });
     }
   } else if (process.env.NODE_ENV === 'production' || process.env.RENDER) {

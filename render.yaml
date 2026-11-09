@@ -18,6 +18,12 @@ services:
         sync: false
       - key: Assas_API_KEY
         sync: false
+      # Ambiente do Asaas no build publicado: "sandbox" deixa o site no ar
+      # TESTANDO (chave e cobranças de teste). Quando for faturar de verdade,
+      # troque para "producao" no painel do Render (ou apague a variável —
+      # sem ela, NODE_ENV=production já cai em produção).
+      - key: ASAAS_AMBIENTE
+        value: sandbox
       - key: Assas_API_URL_Producao
         value: https://api.asaas.com/
       - key: Assas_API_URL_Sandbox

@@ -1,7 +1,7 @@
 import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
-import { supabase } from '../services/supabase';
+import { enviarImagem } from '../services/imagens';
 import { IconUpload } from './Icons';
 import './CadastroProduto.css'
 
@@ -98,28 +98,13 @@ export default function CadastroProduto({
 
   // ── Upload ──────────────────────────────────────────────────────────────────
 
-  async function uploadParaSupabase(file: File): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png';
-    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const caminho = `produtos/${nomeArquivo}`;
-
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar imagem:', error);
+  async function uploadImagem(file: File): Promise<string | null> {
+    try {
+      return await enviarImagem(file, { maxLado: 1400 });
+    } catch (erro) {
+      console.error('Erro ao enviar imagem:', erro);
       return null;
     }
-
-    const { data } = supabase.storage
-      .from('imagens')
-      .getPublicUrl(caminho);
-
-    return data.publicUrl;
   }
 
   function lerArquivos(files: FileList | null) {
@@ -243,7 +228,7 @@ export default function CadastroProduto({
             idx === i ? { ...item, uploading: true } : item
           ));
 
-          const url = await uploadParaSupabase(img.file);
+          const url = await uploadImagem(img.file);
           if (url) {
             urlsSupabase.push(url);
           } else {

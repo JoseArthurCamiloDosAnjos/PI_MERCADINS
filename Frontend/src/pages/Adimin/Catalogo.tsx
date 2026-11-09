@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
-import { supabase } from '../../services/supabase'
+import { enviarImagem } from '../../services/imagens'
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../../utils/tiposLoja'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,18 +163,13 @@ export default function Catalogo() {
     setImagens(prev => prev.filter((_, i) => i !== idx))
   }
 
-  async function uploadParaSupabase(file: File): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png'
-    const caminho = `catalogo/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, { cacheControl: '3600', upsert: false })
-    if (error) {
-      console.error('Erro ao enviar imagem:', error)
+  async function uploadImagem(file: File): Promise<string | null> {
+    try {
+      return await enviarImagem(file, { maxLado: 1200 })
+    } catch (erro) {
+      console.error('Erro ao enviar imagem:', erro)
       return null
     }
-    const { data } = supabase.storage.from('imagens').getPublicUrl(caminho)
-    return data.publicUrl
   }
 
   async function salvar() {
@@ -193,7 +188,7 @@ export default function Catalogo() {
       const urls: string[] = []
       for (const img of imagens) {
         if (img.file) {
-          const url = await uploadParaSupabase(img.file)
+          const url = await uploadImagem(img.file)
           if (!url) {
             setErroForm('Não foi possível enviar uma das imagens. Tente novamente.')
             return

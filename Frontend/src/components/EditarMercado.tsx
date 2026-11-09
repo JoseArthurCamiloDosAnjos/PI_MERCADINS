@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
-import { supabase } from '../services/supabase';
+import { enviarImagem } from '../services/imagens';
 import './EditarMercado.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,28 +68,13 @@ export default function EditarMercado({
     return Object.keys(e).length === 0;
   }
 
-  async function uploadParaSupabase(file: File, pasta: string): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png';
-    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const caminho = `${pasta}/${nomeArquivo}`;
-
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar imagem:', error);
+  async function uploadImagem(file: File, maxLado: number): Promise<string | null> {
+    try {
+      return await enviarImagem(file, { maxLado });
+    } catch (erro) {
+      console.error('Erro ao enviar imagem:', erro);
       return null;
     }
-
-    const { data } = supabase.storage
-      .from('imagens')
-      .getPublicUrl(caminho);
-
-    return data.publicUrl;
   }
 
   async function handleSalvar() {
@@ -99,11 +84,11 @@ export default function EditarMercado({
     let banner_url: string | undefined;
 
     if (logoFile) {
-      logo_url = await uploadParaSupabase(logoFile, 'mercados') ?? undefined;
+      logo_url = await uploadImagem(logoFile, 512) ?? undefined;
     }
 
     if (bannerFile) {
-      banner_url = await uploadParaSupabase(bannerFile, 'mercados') ?? undefined;
+      banner_url = await uploadImagem(bannerFile, 1600) ?? undefined;
     }
 
     onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo_url, banner_url });

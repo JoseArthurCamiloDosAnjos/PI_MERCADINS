@@ -103,6 +103,7 @@ app.use('/api/assinaturas',        assinaturaRoutes)
 app.use('/api/enderecos',          enderecoRoutes)
 app.use('/api/notificacoes',       notificacaoRoutes)
 app.use('/api/catalogo',           require('./routes/catalogoRoutes.js'))
+app.use('/api/imagens',            require('./routes/imagemRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────

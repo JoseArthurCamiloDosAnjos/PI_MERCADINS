@@ -18,7 +18,7 @@ import {
   IconArrowLeft,
   IconCamera,
 } from '../../components/Icons';
-import { supabase } from '../../services/supabase';
+import { enviarImagem } from '../../services/imagens';
 
 // ─── Ícones locais (mesmo padrão usado na VitrineCliente) ─────────────────────
 
@@ -237,17 +237,12 @@ export default function ProdutoTela({
   // para o mesmo armazenamento de imagens usado nas fotos de perfil e de
   // produto. O campo continua opcional.
   async function enviarFotoParaStorage(arquivo: File): Promise<string | null> {
-    const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
-    const caminho = `avaliacoes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, arquivo, { cacheControl: '3600', upsert: false });
-    if (error) {
-      console.error('Erro ao enviar a foto da avaliação:', error);
+    try {
+      return await enviarImagem(arquivo, { maxLado: 1200 });
+    } catch (erro) {
+      console.error('Erro ao enviar a foto da avaliação:', erro);
       return null;
     }
-    const { data } = supabase.storage.from('imagens').getPublicUrl(caminho);
-    return data.publicUrl;
   }
 
   async function handleEscolherFoto(e: ChangeEvent<HTMLInputElement>) {

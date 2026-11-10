@@ -799,6 +799,25 @@
 .vtc-vazio-titulo { font-size: 15px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; }
 .vtc-vazio-sub { font-size: 12.5px; color: var(--vt-cinza); margin: 0; }
 
+/* Sugestão "você quis dizer...?" abaixo do título da tela vazia */
+.vtc-sugestao {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0;
+  padding: 7px 16px;
+  border: 1.5px solid var(--vt-amarelo);
+  border-radius: 999px;
+  background: var(--vt-azul-medio);
+  color: var(--vt-cor-texto);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.vtc-sugestao strong { color: var(--vt-amarelo); font-weight: 800; }
+.vtc-sugestao:hover { transform: translateY(-1px); background: var(--vt-azul-item); }
+
 /* ─── Modal de produto ───────────────────────────────────────────────────── */
 .vtc-modal-overlay {
   position: fixed;

@@ -184,6 +184,8 @@ app.listen(PORT, () => {
     }
   })
 })
+      
+
 
 // ── Vigência das assinaturas ──────────────────────────────────────────────────
 // A cada hora (e já na subida do servidor) encerra assinaturas vencidas +

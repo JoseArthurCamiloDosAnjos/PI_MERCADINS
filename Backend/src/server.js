@@ -1,6 +1,5 @@
 const express = require('express')
 const cors    = require('cors')
-const path    = require('path')
 require('dotenv').config()
 
 const authRoutes             = require('./routes/authRoutes.js')
@@ -108,9 +107,11 @@ app.use('/api/upload',             require('./routes/uploadRoutes.js'))
 app.use('/api/catalogo',           require('./routes/catalogoRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
-// ── Imagens locais (pasta imagens/ na raiz do projeto) ────────────────────────
+// ── Imagens locais (pasta Backend/imagens/) ──────────────────────────────────
 // Servidas em /imagens/<categoria>/<arquivo> — o caminho gravado no banco.
-app.use('/imagens', express.static(path.join(__dirname, '../../imagens'), {
+// A mesma pasta do upload (middleware/upload.js, IMAGENS_DIR opcional).
+const { RAIZ_IMAGENS } = require('./middleware/upload.js')
+app.use('/imagens', express.static(RAIZ_IMAGENS, {
   maxAge: '7d',
   fallthrough: true,
 }))

@@ -18,7 +18,8 @@ clientes usam), e como manter essa separação sem segredo.
 | **Notificações por e-mail** | Enviadas com a `RESEND_API_KEY` (sem chave, ficam só no histórico) | Mesma `RESEND_API_KEY` no painel do Render |
 
 > **Imagens:** as fotos (PNG, JPG e WEBP) são salvas na pasta local
-> `imagens/<categoria>/` do projeto e só o **caminho** vai para o banco. No
+> `Backend/imagens/<categoria>/` (ou na pasta indicada em `IMAGENS_DIR`) e só
+> o **caminho** vai para o banco. No
 > Render o disco é efêmero (some a cada deploy), por isso o upload também
 > mantém uma cópia no Supabase Storage (bucket `imagens`) como backup.
 

@@ -439,9 +439,10 @@ vem com `lida` (boolean) e não lidas primeiro.
 ## Upload de imagens — `/api/upload/:categoria`
 
 Recebe uma imagem em `multipart/form-data` (campo **`imagem`**), salva na
-pasta local `imagens/<categoria>/` (aceita **PNG, JPG e WEBP**, até 5 MB) e
-devolve a URL que deve ser gravada no banco. Categorias aceitas:
-`produtos`, `mercados`, `usuarios`, `avaliacoes`, `catalogo`.
+pasta local `Backend/imagens/<categoria>/` (aceita **PNG, JPG e WEBP**, até
+5 MB) e devolve a URL que deve ser gravada no banco. Categorias aceitas:
+`produtos`, `mercados`, `usuarios`, `avaliacoes`, `catalogo`. A pasta pode ser
+mudada com a variável `IMAGENS_DIR`.
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|

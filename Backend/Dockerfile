@@ -11,7 +11,10 @@ COPY . .
 
 ENV NODE_ENV=production
 
-RUN chown -R node:node /app
+# Pasta das imagens enviadas (upload local): criada aqui para o volume do
+# Docker herdar a posse do usuário node na primeira subida
+RUN mkdir -p /app/imagens \
+  && chown -R node:node /app
 USER node
 
 EXPOSE 3001

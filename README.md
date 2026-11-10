@@ -305,10 +305,10 @@ docker compose down -v                            # para e apaga os dados
 PI_MERCADINS/
 ├── compose.yaml                     # stack Docker: Postgres + Backend + Frontend
 ├── render.yaml                      # blueprint de produção (API + site na Render)
-├── imagens/                         # fotos enviadas (produtos, mercados, usuários…)
 ├── Backend/
 │   ├── Dockerfile                   # imagem da API (Node 22)
 │   ├── .env.example                 # modelo de variáveis do backend
+│   ├── imagens/                     # fotos enviadas (produtos, mercados, usuários…)
 │   ├── scripts/                     # auditar-sql, dados demo
 │   └── src/
 │       ├── controllers/             # regras de negócio (auth, mercados, pedidos, cupons…)

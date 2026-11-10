@@ -10,3 +10,6 @@ docs
 *.md
 *.log
 .DS_Store
+# Imagens enviadas em desenvolvimento — a pasta vazia é criada na imagem
+# (o volume do compose aponta para /app/imagens)
+imagens

@@ -172,7 +172,8 @@ app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
   // Confere se a chave do Asaas do ambiente ativo funciona (só leitura).
-  // 403 = chave de outro ambiente; 401 = chave revogada/errada.
+  // 401 com code invalid_environment = chave de outro ambiente (sandbox ×
+  // produção); 401 sem esse code = chave revogada/errada; 403 = permissão.
   asaasService.verificarConexao().then((resultado) => {
     if (resultado.ok) {
       console.log(

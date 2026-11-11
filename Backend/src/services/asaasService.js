@@ -366,7 +366,8 @@ async function estornarPagamento(paymentId) {
 //
 //  Confere se a CHAVE do ambiente ativo funciona na URL do ambiente ativo.
 //  É o jeito mais rápido de descobrir em produção "a chave de sandbox está no
-//  Render" (403) ou "a chave foi revogada" (401) antes de alguém tentar pagar.
+//  Render" (401 com code invalid_environment) ou "a chave foi revogada" antes
+//  de alguém tentar pagar.
 // ─────────────────────────────────────────────────────────────────────────────
 async function verificarConexao() {
   try {

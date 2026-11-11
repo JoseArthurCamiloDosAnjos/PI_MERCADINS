@@ -296,7 +296,7 @@ Sintomas e causas:
 | `Dados do mercado inválidos` na ativação | payload de `dados_mercado` fora do formato normalizado (a validação é idempotente, veja `marketController.validarDadosMercado`) |
 | `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` (ou `Assas_API_KEY_Sandbox`/`_Producao`) no `.env` |
 | Pix do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
-| `403` do Asaas ao criar cobrança | chave do ambiente errado (sandbox na produção ou vice-versa) — confira no log a linha `Asaas: ambiente … [chave: …]` |
+| `401` com `invalid_environment` (ou `403`) do Asaas | chave do ambiente errado (sandbox na produção ou vice-versa) — confira no log a linha `Asaas: ambiente … [chave: …]` e o `GET /api/saude/pagamentos` |
 | `Não há nenhuma chave Pix disponível para receber cobranças` | a **conta Asaas daquele ambiente** não tem chave Pix cadastrada — cadastrar em *Chaves Pix* no painel (sandbox e produção são contas separadas); até lá o cliente pode pagar de **cartão** |
 
 ### Diagnóstico rápido
@@ -347,7 +347,9 @@ Asaas: ambiente producao → https://api.asaas.com [chave: Assas_API_KEY_Produca
 Asaas: conexão OK — ambiente producao (https://api.asaas.com) com Assas_API_KEY_Producao
 ```
 
-`conexão FALHOU … 403` = chave de outro ambiente; `401` = chave revogada.
+`conexão FALHOU … 401` com `invalid_environment` = chave de outro ambiente
+(sandbox na produção ou vice-versa — no Render, confira `ASAAS_AMBIENTE`);
+`401` sem esse código = chave revogada; `403` = permissão da chave.
 
 ### Checklist de sandbox (desenvolvimento)
 

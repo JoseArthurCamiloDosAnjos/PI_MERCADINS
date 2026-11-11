@@ -28,6 +28,8 @@ dist-ssr
 *.env.local
 *.env.*.local
 null
+# Imagens enviadas (pasta local servida pelo backend)
+imagens/
 # Documentação local
 REGISTRO_ALTERACOES.md
 ALTERACOES_IA.md

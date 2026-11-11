@@ -133,13 +133,6 @@
 .rm-textarea::placeholder { color: var(--text-muted); }
 .rm-textarea:focus { border-color: var(--navy); background: var(--gray); }
 
-.tema-claro .register-page .rm-textarea {
-  background: #ffffff;
-  border-color: #dde3ef;
-  color: #0d2a5e;
-}
-.tema-claro .register-page .rm-textarea:focus { background: #ffffff; }
-
 .rm-char-count {
   display: block;
   text-align: right;

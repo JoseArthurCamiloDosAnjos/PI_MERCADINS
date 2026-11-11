@@ -799,6 +799,25 @@
 .vtc-vazio-titulo { font-size: 15px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; }
 .vtc-vazio-sub { font-size: 12.5px; color: var(--vt-cinza); margin: 0; }
 
+/* Sugestão "você quis dizer...?" abaixo do título da tela vazia */
+.vtc-sugestao {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0;
+  padding: 7px 16px;
+  border: 1.5px solid var(--vt-amarelo);
+  border-radius: 999px;
+  background: var(--vt-azul-medio);
+  color: var(--vt-cor-texto);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.vtc-sugestao strong { color: var(--vt-amarelo); font-weight: 800; }
+.vtc-sugestao:hover { transform: translateY(-1px); background: var(--vt-azul-item); }
+
 /* ─── Modal de produto ───────────────────────────────────────────────────── */
 .vtc-modal-overlay {
   position: fixed;
@@ -1062,24 +1081,6 @@
   .vtc-produto-add { width: 30px; height: 30px; right: 6px; bottom: 6px; }
 }
 
-/* ─── Modo claro ─────────────────────────────────────────────────────────── */
-/* O cabeçalho/banner continuam com a cor da marca (paleta escolhida);        */
-/* só a área de conteúdo (produtos, modal, carrinho) muda para clara.        */
-.vtc-shell[data-tema="claro"] .vtc-main,
-.vtc-shell[data-tema="claro"] .vtc-modal {
-  --vt-azul-bg:      #f3f5fa;
-  --vt-azul-card:    #ffffff;
-  --vt-azul-borda:   #e3e7f0;
-  --vt-azul-item:    #e8ecf5;
-  --vt-cor-texto:    #10182b;
-  --vt-cor-texto-sec:#45516d;
-  --vt-cinza:        #6b7690;
-}
-.vtc-shell[data-tema="claro"] .vtc-produto-card,
-.vtc-shell[data-tema="claro"] .vtc-vazio,
-.vtc-shell[data-tema="claro"] .vtc-modal {
-  box-shadow: 0 2px 10px rgba(20, 30, 60, 0.08);
-}
 /* --- Status ao vivo no cabe�alho: Aberto agora / Fechado agora -------------- */
 .vtc-status {
   display: inline-flex;

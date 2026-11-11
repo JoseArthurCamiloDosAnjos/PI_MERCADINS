@@ -6,7 +6,7 @@ const {
   enviarEmailPedidoVendedor,
   enviarEmailPagamentoAposCancelamento,
 } = require('../utils/mailer');
-const { enviarNotificacaoTelefone } = require('../utils/notificacoes');
+const { enviarNotificacao } = require('../utils/notificacoes');
 const { limitesDoPlano } = require('../utils/planos');
 
 // ─────────────────────────────────────────────
@@ -58,25 +58,29 @@ function avisarVendedorPedido(sql, idPedido) {
     .then((dados) => {
       if (!dados) return;
       enviarEmailPedidoVendedor(dados.emailVendedor, dados);
-      if (dados.telefoneVendedor) {
-        enviarNotificacaoTelefone(sql, {
+      if (dados.emailVendedor) {
+        // O e-mail acima já cobre este evento — aqui é só o histórico.
+        enviarNotificacao(sql, {
           id_mercado: dados.idMercado,
-          telefone: dados.telefoneVendedor,
+          email: dados.emailVendedor,
           tipo: 'pedido_novo_vendedor',
           titulo: 'Novo pedido recebido',
           mensagem: `Olá! O ${dados.mercado} recebeu um novo pedido nº ${dados.numero}, de ${dados.cliente}, no valor de R$ ${dados.total.toFixed(2).replace('.', ',')}. Abra o painel do vendedor para acompanhar.`,
+          enviarEmail: false,
         });
       }
     })
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
 }
 
-// Avisa o CLIENTE no telefone cadastrado sobre o andamento do pedido.
+// Avisa o CLIENTE sobre o andamento do pedido. O e-mail transacional do
+// status já sai junto (enviarEmailPedidoConfirmado/StatusPedido), então aqui
+// a notificação vai apenas para o histórico — um evento, um e-mail.
 // Dispara sem segurar a resposta; qualquer falha fica só no log.
-function avisarClientePedidoTelefone(sql, idPedido, status) {
+function avisarClientePedido(sql, idPedido, status) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
-      if (!dados?.telefoneCliente) return;
+      if (!dados?.email) return;
       const primeiroNome = String(dados.cliente || '').split(' ')[0];
       const textos = {
         pendente: [
@@ -89,30 +93,31 @@ function avisarClientePedidoTelefone(sql, idPedido, status) {
         ],
         caminho: [
           'Pedido saiu para entrega',
-          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
+          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
         ],
         entregue: [
           'Pedido entregue',
-          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
+          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
         ],
         cancelado: [
           'Pedido cancelado',
-          `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`,
+          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`,
         ],
       };
       const [titulo, mensagem] = textos[status] || [
         'Atualização do pedido',
-        `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi atualizado para: ${status}.`,
+        `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi atualizado para: ${status}.`,
       ];
-      return enviarNotificacaoTelefone(sql, {
+      return enviarNotificacao(sql, {
         id_usuario: dados.idUsuario,
-        telefone: dados.telefoneCliente,
+        email: dados.email,
         tipo: `pedido_${status}`,
         titulo,
         mensagem,
+        enviarEmail: false,
       });
     })
-    .catch((err) => console.error('Falha na notificação de telefone do pedido:', err.message));
+    .catch((err) => console.error('Falha na notificação do pedido:', err.message));
 }
 
 // ─────────────────────────────────────────────
@@ -654,6 +659,9 @@ const criarPedido = async (req, res) => {
           aviso = 'Falta o CPF/CNPJ na sua conta para pagar online. Cadastre-o no perfil ou escolha pagar na entrega.';
         } else if (/menor que|R\$\s*5/i.test(motivo)) {
           aviso = 'O Pix tem valor mínimo de R$ 5,00. Adicione itens ao carrinho ou escolha pagar na entrega.';
+        } else if (/nenhuma chave pix|chave pix indispon|invalid_billingType/i.test(motivo)) {
+          // Conta do Asaas (sandbox ou produção) sem chave Pix cadastrada
+          aviso = 'Pagamento por Pix indisponível agora. Escolha cartão ou pagar na entrega.';
         } else if (/acesso|access_token|api key|chave|401|403/i.test(motivo)) {
           aviso = 'Pagamento online indisponível no momento. Escolha pagar na entrega.';
         }
@@ -667,7 +675,7 @@ const criarPedido = async (req, res) => {
       .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
       .catch((err) => console.error('Falha no e-mail de confirmação do pedido:', err.message));
     avisarVendedorPedido(sql, pedido.id);
-    avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+    avisarClientePedido(sql, pedido.id, 'pendente');
 
     res.status(201).json({
       mensagem: 'Pedido criado com sucesso.',
@@ -801,7 +809,7 @@ const atualizarStatusPedido = async (req, res) => {
     montarDadosPedidoParaEmail(sql, pedidoId)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, status))
       .catch((err) => console.error('Falha no e-mail de status do pedido:', err.message));
-    avisarClientePedidoTelefone(sql, pedidoId, status);
+    avisarClientePedido(sql, pedidoId, status);
 
     res.status(200).json({ mensagem: 'Status atualizado com sucesso.', pedido: atualizado });
   } catch (err) {
@@ -1016,7 +1024,7 @@ async function cancelarPedidoPorFalha(sql, pedido, { statusAsaas, paymentId, ori
   montarDadosPedidoParaEmail(sql, pedido.id)
     .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
     .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-  avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
+  avisarClientePedido(sql, pedido.id, 'cancelado');
   console.error(`Pedido ${pedido.id} cancelado [${origem}]: pagamento ${statusAsaas}.`);
   return true;
 }
@@ -1031,19 +1039,24 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
       const desfecho = estornado
         ? 'O estorno já foi solicitado no Asaas e o valor volta para o meio de pagamento do cliente.'
         : 'Atenção: o estorno automático falhou — faça o estorno manualmente no painel do Asaas.';
-      if (dados.telefoneCliente) {
-        enviarNotificacaoTelefone(sql, {
+      if (dados.email) {
+        // O e-mail de pagamento pós-cancelamento já foi enviado ao cliente —
+        // aqui é só o histórico da conta.
+        enviarNotificacao(sql, {
           id_usuario: dados.idUsuario,
-          telefone: dados.telefoneCliente,
+          email: dados.email,
           tipo: 'pedido_pagamento_estorno',
           titulo: 'Pagamento confirmado após cancelamento',
           mensagem: `Olá, ${String(dados.cliente || '').split(' ')[0]}! O pagamento do pedido nº ${dados.numero} foi confirmado depois do cancelamento. ${desfecho}`,
+          enviarEmail: false,
         });
       }
-      if (dados.telefoneVendedor) {
-        enviarNotificacaoTelefone(sql, {
+      if (dados.emailVendedor) {
+        // O vendedor não tem e-mail próprio para este evento: notificação
+        // enviada por e-mail + histórico.
+        enviarNotificacao(sql, {
           id_mercado: dados.idMercado,
-          telefone: dados.telefoneVendedor,
+          email: dados.emailVendedor,
           tipo: 'pedido_pagamento_estorno_vendedor',
           titulo: 'Pagamento após cancelamento',
           mensagem: `O pedido nº ${dados.numero} do ${dados.mercado} teve o pagamento confirmado DEPOIS de cancelado. ${desfecho}`,
@@ -1128,7 +1141,7 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
         .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
         .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
       avisarVendedorPedido(sql, pedido.id);
-      avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+      avisarClientePedido(sql, pedido.id, 'pendente');
       return { recebido: true, pago: true };
     }
 
@@ -1207,7 +1220,7 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
         montarDadosPedidoParaEmail(sql, pedido.id)
           .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
           .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-        avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
+        avisarClientePedido(sql, pedido.id, 'cancelado');
         console.error(
           `Pedido ${pedido.id} cancelado: ${statusAsaas} em pedido já confirmado (status anterior: ${atual.status}, ${evento}).`
         );
@@ -1317,7 +1330,7 @@ const cancelarPedido = async (req, res) => {
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-    avisarClientePedidoTelefone(sql, pedido.id, 'cancelado');
+    avisarClientePedido(sql, pedido.id, 'cancelado');
 
     res.status(200).json({
       mensagem: 'Pedido cancelado. O estoque dos produtos voltou para a loja.',
@@ -1579,7 +1592,7 @@ const detalharPedido = async (req, res) => {
               .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
               .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
             avisarVendedorPedido(sql, pedido.id);
-            avisarClientePedidoTelefone(sql, pedido.id, 'pendente');
+            avisarClientePedido(sql, pedido.id, 'pendente');
           }
           // Mesmo sem webhook: a conciliação do split acompanha a cobrança
           await sincronizarRepasses(sql, pedido.id, cobranca);

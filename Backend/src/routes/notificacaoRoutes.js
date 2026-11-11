@@ -10,8 +10,8 @@ const {
 } = require('../controllers/notificacaoController');
 
 router.get('/', autenticar, listar);
-// Limite rígido: o teste dispara mensagem para o telefone — evita abuso
-// (usuário logado martelando o próprio ou número de terceiros).
+// Limite rígido: o teste dispara um e-mail — evita abuso
+// (usuário logado martelando o próprio e-mail).
 router.post('/teste', autenticar, limiter(5, 15 * 60 * 1000), enviarTeste);
 router.post('/lidas', autenticar, marcarTodasComoLidas);
 router.post('/:id/lida', autenticar, marcarComoLida);

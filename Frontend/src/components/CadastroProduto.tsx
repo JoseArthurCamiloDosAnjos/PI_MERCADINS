@@ -1,7 +1,7 @@
 import { useState, useRef} from 'react';
 import type{DragEvent, ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
-import { supabase } from '../services/supabase';
+import { uploadImagem, ehImagemValida } from '../services/upload';
 import { IconUpload } from './Icons';
 import './CadastroProduto.css'
 
@@ -98,28 +98,10 @@ export default function CadastroProduto({
 
   // ── Upload ──────────────────────────────────────────────────────────────────
 
-  async function uploadParaSupabase(file: File): Promise<string | null> {
-    const ext = file.name.split('.').pop() || 'png';
-    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const caminho = `produtos/${nomeArquivo}`;
-
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar imagem:', error);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('imagens')
-      .getPublicUrl(caminho);
-
-    return data.publicUrl;
+  // Salva na pasta imagens/produtos/ do backend (URL que vai para o banco)
+  // e mantém cópia de backup no Supabase.
+  function uploadParaSupabase(file: File): Promise<string | null> {
+    return uploadImagem(file, 'produtos');
   }
 
   function lerArquivos(files: FileList | null) {
@@ -128,7 +110,7 @@ export default function CadastroProduto({
 
     const lista = Array.from(files);
     const validas = lista.filter(f =>
-      f.type.startsWith('image/') && f.size <= MAX_TAMANHO_MB * 1024 * 1024
+      ehImagemValida(f) && f.size <= MAX_TAMANHO_MB * 1024 * 1024
     );
     const rejeitadas = lista.length - validas.length;
 
@@ -314,7 +296,7 @@ export default function CadastroProduto({
               <input
                 ref={inputFileRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp"
                 multiple
                 className="cp-input-file"
                 onChange={(e: ChangeEvent<HTMLInputElement>) => lerArquivos(e.target.files)}

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../hooks/useBlockEmojis';
 import { api } from '../services/api';
-import { supabase } from '../services/supabase';
+import { uploadImagem } from '../services/upload';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';
@@ -128,29 +128,16 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
       let foto_perfil_url: string | undefined;
 
       if (fotoFile) {
-        const ext = fotoFile.name.split('.').pop() || 'webp';
-        const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const caminho = `usuarios/${nomeArquivo}`;
+        // Salva na pasta imagens/usuarios/ do backend (URL que vai para o
+        // banco) e mantém cópia de backup no Supabase.
+        foto_perfil_url = (await uploadImagem(fotoFile, 'usuarios')) ?? undefined;
 
-        const { error } = await supabase.storage
-          .from('imagens')
-          .upload(caminho, fotoFile, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-
-        if (error) {
-          console.error('Erro ao enviar foto:', error);
+        if (!foto_perfil_url) {
+          console.error('Erro ao enviar foto de perfil.');
           showToast('erro', 'Erro ao enviar foto de perfil.');
           setSalvando(false);
           return;
         }
-
-        const { data } = supabase.storage
-          .from('imagens')
-          .getPublicUrl(caminho);
-
-        foto_perfil_url = data.publicUrl;
       }
 
       await api.atualizar({
@@ -199,7 +186,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
             <input
               ref={inputFotoRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               style={{ display: 'none' }}
               onChange={handleFoto}
             />

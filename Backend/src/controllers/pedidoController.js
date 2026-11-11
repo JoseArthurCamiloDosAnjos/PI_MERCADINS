@@ -558,6 +558,11 @@ const criarPedido = async (req, res) => {
         let motivoSplit = '';
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
+        // Volta automática para o acompanhamento do pedido quando a pessoa
+        // paga na fatura do Asaas (Pix e cartão — os dois têm confirmação
+        // imediata, então o autoRedirect vale nos dois)
+        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+        const redirectUrl = frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined;
         let pagamento;
         try {
           if (formaPagamento === 'pix') {
@@ -566,10 +571,10 @@ const criarPedido = async (req, res) => {
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
+              redirectUrl,
               splits: splits || undefined,
             });
           } else {
-            const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
             pagamento = await asaas.criarPagamentoPedidoCartao({
               customerId: customer.id,
               valor: totalPedido,
@@ -577,7 +582,7 @@ const criarPedido = async (req, res) => {
               externalReference: refPedido,
               splits: splits || undefined,
               // Depois de pagar, o cliente volta para a página de acompanhamento
-              redirectUrl: frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined,
+              redirectUrl,
             });
           }
         } catch (erroSplit) {
@@ -596,15 +601,15 @@ const criarPedido = async (req, res) => {
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
+              redirectUrl,
             });
           } else {
-            const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
             pagamento = await asaas.criarPagamentoPedidoCartao({
               customerId: customer.id,
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
-              redirectUrl: frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined,
+              redirectUrl,
             });
           }
         }
@@ -639,6 +644,9 @@ const criarPedido = async (req, res) => {
             qrCodeBase64: pagamento.qrCodeBase64 || '',
             copiaEcola: pagamento.copiaEcola || '',
             urlPagamento: pagamento.urlPagamento || '',
+            // true = Asaas recusou o retorno automático (domínio não
+            // cadastrado) → o frontend avisa para voltar ao site manualmente
+            semRedirect: pagamento.semRedirect === true,
           },
         });
       } catch (erroPagamento) {

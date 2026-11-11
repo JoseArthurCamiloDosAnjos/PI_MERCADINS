@@ -5,6 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "migrate": "node src/db/migrate.js",
+    "limpar": "node scripts/limpar-dados.js",
+    "dados-demo": "node scripts/dados-demo.js",
+    "teste:segunda-loja": "node scripts/teste-segunda-loja.js --db=local",
     "auditar-sql": "node scripts/auditar-sql.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",

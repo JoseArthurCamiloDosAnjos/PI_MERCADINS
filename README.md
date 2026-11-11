@@ -278,6 +278,10 @@ docker compose down -v                            # para e apaga os dados
 | Script | O que faz |
 |---|---|
 | `npm run dev` | Sobe Backend e Frontend juntos (via `concurrently`) |
+| `npm run dev:local` | Sobe os dois apontando para o **banco local** (`--db=local`) |
+| `npm run migrate:local` | Aplica as migrações pendentes no banco local |
+| `npm run limpar:local` | Apaga os dados do banco local (mantém administradores) |
+| `npm run demo:local` | Popula o banco local com lojas, produtos e contas de demonstração |
 | `npm run install:all` | Instala dependências da raiz, do Backend e do Frontend |
 
 **Backend (`cd Backend`):**
@@ -287,6 +291,9 @@ docker compose down -v                            # para e apaga os dados
 | `npm run dev` / `dev:neon` / `dev:local` | Sobe a API com o banco escolhido (nodemon) |
 | `npm start` / `start:neon` / `start:local` | Sobe a API em produção (sem hot-reload) |
 | `npm run migrate` | Aplica as migrações pendentes do banco |
+| `npm run limpar` | Limpa dados (`--db=local` ou `--db=neon --confirmar=neon`) — só admins sobrevivem |
+| `npm run dados-demo` | Cadastro de demonstração (contas, lojas, produtos, avaliações) |
+| `npm run teste:segunda-loja` | Teste do fluxo de segunda loja/assinatura (Asaas mockado, só local) |
 | `npm run auditar-sql` | Confere se alguma consulta SQL deixou de usar parâmetros (proteção contra SQL Injection) |
 
 **Frontend (`cd Frontend`):**
@@ -309,7 +316,7 @@ PI_MERCADINS/
 │   ├── Dockerfile                   # imagem da API (Node 22)
 │   ├── .env.example                 # modelo de variáveis do backend
 │   ├── imagens/                     # fotos enviadas (produtos, mercados, usuários…)
-│   ├── scripts/                     # auditar-sql, dados demo
+│   ├── scripts/                     # auditar-sql, dados demo, limpar dados, teste 2ª loja
 │   └── src/
 │       ├── controllers/             # regras de negócio (auth, mercados, pedidos, cupons…)
 │       ├── db/                      # conexão + migrações versionadas

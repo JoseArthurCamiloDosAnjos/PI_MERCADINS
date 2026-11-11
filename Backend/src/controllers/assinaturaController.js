@@ -201,7 +201,10 @@ const criarCheckout = async (req, res) => {
       return res.status(400).json({ erro: validacao.erro });
     }
 
-    // Assinatura pendente/ativa/inadimplente → retoma em vez de bloquear
+    // Cada loja tem a própria assinatura (uma cobrança por loja). Por isso
+    // uma assinatura existente só "retoma" quando ela ainda NÃO virou loja —
+    // aí é o mesmo cadastro em andamento. Se a loja já existe, o usuário está
+    // criando OUTRA: não bloqueia, segue e cria uma assinatura nova em cima.
     const [assinaturaExistente] = await sql`
       SELECT * FROM assinaturas
       WHERE id_usuario = ${id_usuario}
@@ -210,51 +213,83 @@ const criarCheckout = async (req, res) => {
       LIMIT 1
     `;
     if (assinaturaExistente) {
-      // Se já tem mercado (criado antes do fluxo novo ou já pago), devolve
-      if (assinaturaExistente.status === 'ativa' && assinaturaExistente.id_mercado) {
+      let jaTemLoja = false;
+      if (assinaturaExistente.id_mercado) {
         const [mercadoJaExiste] = await sql`
           SELECT * FROM mercados WHERE id_mercado = ${assinaturaExistente.id_mercado}
         `;
-        if (mercadoJaExiste) {
-          return res.json({
-            mensagem: 'Você já possui uma assinatura ativa.',
-            status: assinaturaExistente.status,
-            mercado: mercadoJaExiste,
-          });
-        }
+        jaTemLoja = !!mercadoJaExiste;
       }
-      // Pendente/inadimplente → tenta retomar o link de pagamento existente
-      if (assinaturaExistente.asaas_subscription_id) {
-        let urlCheckout = null;
-        try {
-          urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
-        } catch { /* assinatura morta no Asaas — cancela e refaz abaixo */ }
 
-        if (urlCheckout) {
-          return res.json({
-            mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
+      if (!jaTemLoja) {
+        // Cadastro em andamento: a loja ainda não existe
+        if (assinaturaExistente.status !== 'pendente') {
+          // Pagamento já confirmou mas a loja não nasceu (webhook falhou) →
+          // cria agora: não tem nada novo para o usuário pagar.
+          try {
+            const mercadoRecuperado = await criarMercadoDaAssinatura(sql, assinaturaExistente);
+            if (mercadoRecuperado) {
+              return res.json({
+                mensagem: 'Pagamento já confirmado: sua loja foi criada.',
+                status: 'ativa',
+                mercado: mercadoRecuperado,
+              });
+            }
+          } catch (eRec) {
+            console.error(`ERRO criarCheckout (recuperar loja da assinatura ${assinaturaExistente.id}):`, eRec.message);
+          }
+          return res.status(409).json({
+            erro: 'Seu pagamento já foi confirmado, mas a loja ainda não pôde ser criada. Abra a tela de Assinaturas e tente novamente.',
             status: assinaturaExistente.status,
-            idAssinatura: assinaturaExistente.id,
-            urlCheckout,
           });
         }
 
-        // Assinatura pendente sem cobrança válida (restou de um fluxo antigo
-        // ou o Asaas expirou) → cancela e cria uma nova
-        try {
-          await asaas.cancelarAssinatura(assinaturaExistente.asaas_subscription_id);
-        } catch { /* pode já estar cancelada no Asaas */ }
+        // Pendente: retoma o MESMO link só quando o formulário enviado é igual
+        // (assim não gera cobrança em dobro). Formulário diferente → a
+        // pendente antiga é substituída pela nova.
+        let mesmoFormulario = false;
+        if (assinaturaExistente.asaas_subscription_id) {
+          const [igual] = await sql`
+            SELECT 1 FROM assinaturas
+            WHERE id = ${assinaturaExistente.id}
+              AND codigo_plano = ${plano.codigo}
+              AND ciclo = ${cicloDb}
+              AND dados_mercado = ${JSON.stringify(validacao.dados)}::jsonb
+          `;
+          mesmoFormulario = !!igual;
+        }
+
+        if (mesmoFormulario) {
+          let urlCheckout = null;
+          try {
+            urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
+          } catch { /* assinatura morta no Asaas — cancela e refaz abaixo */ }
+
+          if (urlCheckout) {
+            return res.json({
+              mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
+              status: assinaturaExistente.status,
+              idAssinatura: assinaturaExistente.id,
+              urlCheckout,
+            });
+          }
+        }
+
+        // Sem link utilizável (ou formulário novo) → cancela a pendente e
+        // refaz com o payload enviado agora
+        if (assinaturaExistente.asaas_subscription_id) {
+          try {
+            await asaas.cancelarAssinatura(assinaturaExistente.asaas_subscription_id);
+          } catch { /* pode já estar cancelada no Asaas */ }
+        }
         await sql`
           UPDATE assinaturas
           SET status = 'cancelada', atualizada_em = NOW()
           WHERE id = ${assinaturaExistente.id}
         `;
-      } else {
-        return res.status(409).json({
-          erro: 'Você já possui uma assinatura ativa ou pendente.',
-          status: assinaturaExistente.status,
-        });
       }
+      // jaTemLoja → cai fora do bloco e cria uma assinatura nova para a
+      // nova loja (é ela que vai aparecer na tela de Assinaturas)
     }
 
     // Dados do usuário para o customer
@@ -313,6 +348,8 @@ const criarCheckout = async (req, res) => {
       mensagem: 'Assinatura criada. Finalize o pagamento para ativar.',
       idAssinatura: assinatura.id,
       urlCheckout,
+      // true = Asaas recusou o retorno automático (domínio não cadastrado)
+      semRedirect: assinaturaAsaas.semRedirect === true,
     });
   } catch (err) {
     console.error('ERRO criarCheckout:', err);

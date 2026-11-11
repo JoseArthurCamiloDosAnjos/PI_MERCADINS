@@ -192,12 +192,34 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
   } catch (erro) {
     // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
     // (o frontend oferece o botão manual "Ir para o pagamento" como alternativa)
-    if (corpo.callback && /dom[ií]nio/i.test(erro.message)) {
+    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+      avisarCallbackDescartado('assinatura', redirectUrl, erro.message)
       delete corpo.callback
-      return chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+      const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+      // semRedirect: o frontend avisa a pessoa de que terá de voltar sozinha
+      return { ...assinatura, semRedirect: true }
     }
     throw erro
   }
+}
+
+// O Asaas recusa o callback de formas diferentes: "domínio não cadastrado",
+// "URL informada no campo 'successUrl' ... inválida", "configurações de
+// callback..." — todas significam a mesma coisa para nós: não haverá volta
+// automática, então recriamos a cobrança sem o callback.
+function erroDeCallbackRecusado(msg) {
+  return /successUrl|callback|dom[ií]nio/i.test(String(msg || ''));
+}
+
+// O Asaas só redireciona para URL de domínio cadastrado na conta
+// (painel → Configurações da conta → Informações). Sem isso, recusa o
+// callback — avisamos no log em vez de descartar em silêncio.
+function avisarCallbackDescartado(origem, redirectUrl, motivo) {
+  console.warn(
+    `Asaas: retorno automático NÃO configurado na ${origem} — cobrança criada SEM redirecionamento. ` +
+    `URL: ${redirectUrl} | motivo: ${motivo} | ` +
+    'Corrigir: painel Asaas → Configurações da conta → Informações → cadastrar o domínio.'
+  )
 }
 
 // GET /v3/payments?subscription=... — retorna o link da primeira cobrança (checkout)
@@ -253,7 +275,9 @@ function montarSplitVendedor(walletId, externalReference) {
 }
 
 // POST /v3/payments (billingType PIX) — devolve QR code + código copia e cola
-async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference, splits }) {
+// redirectUrl: se a pessoa abrir a fatura do Asaas e pagar por lá, volta para
+// o pedido assim que o Pix confirmar (confirmação imediata → autoRedirect vale)
+async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference, redirectUrl, splits }) {
   const corpo = {
     customer: customerId,
     billingType: 'PIX',
@@ -265,11 +289,25 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
   // Split: o Asaas transfere o valor líquido para a carteira do vendedor
   // assim que o Pix cai (docs.asaas.com/docs/split-de-pagamentos)
   if (Array.isArray(splits) && splits.length > 0) corpo.splits = splits;
+  if (redirectUrl) {
+    corpo.callback = { successUrl: redirectUrl, autoRedirect: true }
+  }
 
-  const pagamento = await chamarApi('/v3/payments', {
-    method: 'POST',
-    body: corpo,
-  })
+  let pagamento
+  let semRedirect = false
+  try {
+    pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+  } catch (erro) {
+    // Domínio não cadastrado na conta → cria sem callback (com aviso no log)
+    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+      avisarCallbackDescartado('cobrança Pix', redirectUrl, erro.message)
+      delete corpo.callback
+      pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+      semRedirect = true
+    } else {
+      throw erro
+    }
+  }
   // QR não vem junto na criação: o Asaas só entrega em /pixQrCode
   let qr = null
   try {
@@ -289,6 +327,8 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
     urlPagamento: pagamento.invoiceUrl || '',
     // Splits criados junto da cobrança (ids p/ conciliar o repasse)
     split: Array.isArray(pagamento.split) ? pagamento.split : [],
+    // true quando o Asaas recusou o callback (domínio) e não há volta automática
+    semRedirect,
   }
 }
 
@@ -318,10 +358,12 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
       vencimento: pagamento.dueDate || null,
       urlPagamento: pagamento.invoiceUrl || '',
       split: Array.isArray(pagamento.split) ? pagamento.split : [],
+      semRedirect: false,
     }
   } catch (erro) {
     // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
-    if (corpo.callback && /dom[ií]nio/i.test(erro.message)) {
+    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+      avisarCallbackDescartado('cobrança de cartão', redirectUrl, erro.message)
       delete corpo.callback
       const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
       return {
@@ -330,6 +372,7 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
         vencimento: pagamento.dueDate || null,
         urlPagamento: pagamento.invoiceUrl || '',
         split: Array.isArray(pagamento.split) ? pagamento.split : [],
+        semRedirect: true,
       }
     }
     throw erro

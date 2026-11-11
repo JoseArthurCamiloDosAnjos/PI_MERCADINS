@@ -370,6 +370,42 @@
   50% { opacity: 1; }
 }
 
+/* ── LOGO FIXA + ROLAGEM SÓ NO FORMULÁRIO ───────────────────────────────────
+   A página (`.rmc-page`) fica com altura travada na viewport e não rola.
+   O painel da esquerda (logo) permanece fixo; só o `.right` (formulário ou
+   tela de status) rola por dentro.
+
+   O `align-items: center` puro do Register cortava o topo do cartão quando
+   ele era mais alto que a tela e impedia de rolar até lá. Aqui o cartão usa
+   `margin: auto`: centraliza quando cabe e, quando não cabe, as margens
+   viram 0 e o topo do formulário fica acessível. */
+.register-page.rmc-page {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.register-page.rmc-page .left {
+  height: 100%;
+}
+
+.register-page.rmc-page .right {
+  height: 100%;
+  max-height: 100dvh;
+  /* min-height: 0 é obrigatório: sem ele o flex item não encolhe e o
+     overflow-y: auto do painel nunca entra em ação */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.register-page.rmc-page .form-card {
+  margin: auto;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .rm-grid {
@@ -377,29 +413,84 @@
   }
 }
 
-/* ── CADASTRO DE MERCADO MAIS COMPACTO NO CELULAR ───────────────────────────
-   O topo ocupava 274px (logo de 148px com 66px de respiro) e empurrava o
-   formulário para fora da primeira tela. A classe `.rmc-page` marca só as
-   telas de cadastro de mercado, deixando a página de cadastro de conta com
-   o visual de sempre. */
+/* ── CELULAR: LOGO COMO CABEÇALHO FIXO, FORMULÁRIO ROLA POR BAIXO ───────────
+   A classe `.rmc-page` marca só as telas de cadastro de mercado (a página
+   de cadastro de conta mantém o visual de sempre). Em coluna, a logo vira
+   um cabeçalho compacto que não sai da tela e o `.right` ocupa o resto da
+   viewport com rolagem própria. */
 @media (max-width: 768px) {
+  .register-page.rmc-page {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
   .register-page.rmc-page .left {
-    padding: 52px 20px 24px;
+    width: 100%;
+    height: auto;
+    flex: 0 0 auto;
+    padding: 44px 20px 14px;
+    z-index: 5;
   }
 
   .register-page.rmc-page .left .logo-img {
-    width: 122px;
-    height: 122px;
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+  }
+
+  .register-page.rmc-page .left .logo-wrap {
+    gap: 8px;
+  }
+
+  .register-page.rmc-page .left .logo-tagline {
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  /* O cartão branco flutuante do Register não cabe aqui: o formulário
+     ocupa a área restante abaixo do cabeçalho e rola sozinho. */
+  .register-page.rmc-page .right {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 24px 16px 40px;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--white);
+    overflow-y: auto;
+    align-items: flex-start;
+  }
+
+  .register-page.rmc-page .form-card {
+    margin: 0 auto;
+    max-width: 560px;
+    width: 100%;
   }
 
   .register-page.rmc-page .form-header h1 {
     margin-bottom: 6px;
   }
+
+  /* Status de pagamento: cartão curto, sem o padding-top sobrando */
+  .register-page.rmc-page .rm-status-card {
+    padding-top: 12px;
+  }
 }
 
 @media (max-width: 480px) {
+  .register-page.rmc-page .left {
+    padding: 40px 16px 12px;
+  }
+
   .register-page.rmc-page .right {
-    padding-top: 24px;
+    padding: 20px 14px 36px;
   }
 }
 /* ── ENTREGA E RETIRADA ── */

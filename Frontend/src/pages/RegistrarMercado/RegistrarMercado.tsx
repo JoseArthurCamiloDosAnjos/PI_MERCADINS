@@ -325,11 +325,31 @@ export default function RegistrarMercado() {
         asaas_wallet_id: wallet.trim() || null,
       },
     });
-    if (!checkout?.urlCheckout) throw new Error('Link de pagamento não recebido.');
+    if (!checkout?.urlCheckout) {
+      // Sem link para pagar: ou a loja já existe (pagamento anterior
+      // confirmado e o backend recuperou a criação) ou veio um aviso.
+      if (checkout?.mercado) {
+        localStorage.removeItem('aguardandoPagamento');
+        showToast('sucesso', checkout.mensagem || 'Sua loja já está ativa.');
+        await refreshMercados();
+        const idM = checkout.mercado.id_mercado;
+        setTimeout(() => navigate(idM ? `/vendedor/mercado/${idM}` : '/vendedor'), 1200);
+        return;
+      }
+      throw new Error(checkout?.mensagem || checkout?.erro || 'Link de pagamento não recebido.');
+    }
     localStorage.setItem('aguardandoPagamento', '1');
     setUrlPagamento(checkout.urlCheckout);
     setStatusAtual('pendente');
     setAguardandoPagamento(true);
+    // O Asaas só devolve o cliente automaticamente quando o domínio está
+    // cadastrado na conta (semRedirect = ele recusou o callback). Aí o aviso
+    // explica que a volta será manual e a tela de status já espera o retorno.
+    if (checkout.semRedirect) {
+      showToast('aviso', 'O retorno automático não está ativo: ao concluir o pagamento, use o botão voltar do navegador. Esta tela mostra a confirmação.');
+      setTimeout(() => { window.location.href = checkout.urlCheckout; }, 2600);
+      return;
+    }
     showToast('sucesso', 'Redirecionando para o pagamento...');
     // Redirect automático é conveniência; se não abrir, a tela de status
     // já exibe o botão manual "Ir para o pagamento"

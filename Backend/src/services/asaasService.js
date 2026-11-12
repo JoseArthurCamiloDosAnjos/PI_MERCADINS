@@ -116,16 +116,22 @@ async function chamarApi(path, { method = 'GET', body } = {}) {
     // Motivo real do Asaas: errors[] (padrão), message ou error. O 403 de
     // permissão de chave vem sem errors e virava "Erro na API do Asaas (403)"
     // sem dizer nada — loga o corpo bruto para diagnóstico também.
-    const detalhes = Array.isArray(dados?.errors)
-      ? dados.errors.map(e => e?.description || e?.message || e?.code).filter(Boolean).join('; ')
+    const lista = Array.isArray(dados?.errors) ? dados.errors : []
+    const detalhes = lista.length
+      ? lista.map(e => [e?.code, e?.description || e?.message].filter(Boolean).join(': ')).filter(Boolean).join('; ')
       : (typeof dados?.message === 'string' && dados.message) ||
         (typeof dados?.error === 'string' && dados.error) ||
         (typeof dados === 'string' ? dados : '')
+    // code/erroOriginal alimentam erroDeCallbackRecusado (precisa do código
+    // quando a description não cita successUrl/callback/domínio)
+    const erro = new Error(detalhes || `Erro na API do Asaas (${resposta.status}).`)
+    erro.code = lista.map(e => e?.code).filter(Boolean).join(' ') || null
+    erro.status = resposta.status
     console.error(
       `asaasService: ${resposta.status} ${method} ${path} →`,
       JSON.stringify(dados)?.slice(0, 800)
     )
-    throw new Error(detalhes || `Erro na API do Asaas (${resposta.status}).`)
+    throw erro
   }
 
   return dados
@@ -192,12 +198,18 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
   } catch (erro) {
     // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
     // (o frontend oferece o botão manual "Ir para o pagamento" como alternativa)
-    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('assinatura', redirectUrl, erro.message)
       delete corpo.callback
-      const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
-      // semRedirect: o frontend avisa a pessoa de que terá de voltar sozinha
-      return { ...assinatura, semRedirect: true }
+      try {
+        const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+        // semRedirect: o frontend avisa a pessoa de que terá de voltar sozinha
+        return { ...assinatura, semRedirect: true }
+      } catch (erroSemCallback) {
+        // Segunda tentativa (sem callback) também falhou: repassa o erro real
+        // em vez de mascarar com a mensagem original do callback
+        throw erroSemCallback
+      }
     }
     throw erro
   }
@@ -205,10 +217,16 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
 
 // O Asaas recusa o callback de formas diferentes: "domínio não cadastrado",
 // "URL informada no campo 'successUrl' ... inválida", "configurações de
-// callback..." — todas significam a mesma coisa para nós: não haverá volta
-// automática, então recriamos a cobrança sem o callback.
-function erroDeCallbackRecusado(msg) {
-  return /successUrl|callback|dom[ií]nio/i.test(String(msg || ''));
+// callback...", erros em inglês ("domain", "redirect url") — todas significam
+// a mesma coisa: não haverá volta automática, então recriamos a cobrança sem
+// o callback (o pagamento nunca falha por causa disso).
+//
+// A mensagem pode vir em português ou inglês (depende da conta/ambiente),
+// por isso os sinônimos nos dois idiomas. Também casa com o código do erro
+// (ex.: invalid_object quando o campo callback é o problemático).
+function erroDeCallbackRecusado(msg, code) {
+  const texto = `${String(msg || '')} ${String(code || '')}`;
+  return /successUrl|callback|dom[ií]nio|domain|redirect[\s_-]?url|return[\s_-]?url|autoRedirect/i.test(texto);
 }
 
 // O Asaas só redireciona para URL de domínio cadastrado na conta
@@ -299,11 +317,15 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
     pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
   } catch (erro) {
     // Domínio não cadastrado na conta → cria sem callback (com aviso no log)
-    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('cobrança Pix', redirectUrl, erro.message)
       delete corpo.callback
-      pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
-      semRedirect = true
+      try {
+        pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+        semRedirect = true
+      } catch (erroSemCallback) {
+        throw erroSemCallback
+      }
     } else {
       throw erro
     }
@@ -362,17 +384,21 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
     }
   } catch (erro) {
     // Conta sem domínio cadastrado não aceita o callback — cria sem redirect
-    if (corpo.callback && erroDeCallbackRecusado(erro.message)) {
+    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('cobrança de cartão', redirectUrl, erro.message)
       delete corpo.callback
-      const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
-      return {
-        id: pagamento.id,
-        status: pagamento.status,
-        vencimento: pagamento.dueDate || null,
-        urlPagamento: pagamento.invoiceUrl || '',
-        split: Array.isArray(pagamento.split) ? pagamento.split : [],
-        semRedirect: true,
+      try {
+        const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+        return {
+          id: pagamento.id,
+          status: pagamento.status,
+          vencimento: pagamento.dueDate || null,
+          urlPagamento: pagamento.invoiceUrl || '',
+          split: Array.isArray(pagamento.split) ? pagamento.split : [],
+          semRedirect: true,
+        }
+      } catch (erroSemCallback) {
+        throw erroSemCallback
       }
     }
     throw erro

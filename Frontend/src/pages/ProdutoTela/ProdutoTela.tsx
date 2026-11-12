@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { CSSProperties, ChangeEvent } from 'react';
 import './ProdutoTela.css';
 import ToastContainer from '../../components/Toast';
+import Imagem from '../../components/Imagem';
 import { useToast } from '../../hooks/useToast';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -430,7 +431,7 @@ export default function ProdutoTela({
                   className={`pd-miniatura ${imagemAtiva === i ? 'active' : ''}`}
                   onClick={() => setImagemAtiva(i)}
                 >
-                  <img src={img} alt={`${produto.nome} ${i + 1}`} />
+                  <Imagem src={img} alt={`${produto.nome} ${i + 1}`} sizes="48px" />
                 </button>
               ))}
             </div>
@@ -438,7 +439,7 @@ export default function ProdutoTela({
 
           <div className="pd-imagem-principal">
             {imagens[imagemAtiva]
-              ? <img src={imagens[imagemAtiva]} alt={produto.nome} />
+              ? <Imagem src={imagens[imagemAtiva]} alt={produto.nome} thumb={false} loading="eager" />
               : <span className="pd-imagem-placeholder"><IconStore size={30} /></span>
             }
 
@@ -579,7 +580,7 @@ export default function ProdutoTela({
                   >
                     <span className="pd-reco-img">
                       {imagensReco.length > 0
-                        ? <img src={imagensReco[0]} alt={p.nome} loading="lazy" />
+                        ? <Imagem src={imagensReco[0]} alt={p.nome} sizes="(max-width: 600px) 50vw, 220px" />
                         : <span className="pd-reco-img-placeholder">Sem imagem</span>}
                     </span>
                     <span className="pd-reco-nome">{p.nome}</span>

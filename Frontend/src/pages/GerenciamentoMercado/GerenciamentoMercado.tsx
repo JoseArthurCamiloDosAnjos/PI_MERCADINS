@@ -7,6 +7,7 @@ import { removeEmojis } from '../../hooks/useBlockEmojis';
 import { parseHorario, estaAberto, type HorarioMercado } from '../../utils/horario';
 import { buscarCep } from '../../utils/cep';
 import ToastContainer from '../../components/Toast';
+import Imagem from '../../components/Imagem';
 import {
   IconBarChart,
   IconPackage,
@@ -623,7 +624,7 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
             return (
             <div key={p.id_produto} className="gm-prod-card">
               <div className="gm-prod-img">
-                {p.imagem ? <img src={p.imagem} alt={p.nome} /> : <IconPackage size={26} />}
+                {p.imagem ? <Imagem src={p.imagem} alt={p.nome} sizes="(max-width: 600px) 50vw, 160px" /> : <IconPackage size={26} />}
               </div>
               <div className="gm-prod-body">
                 <p className="gm-prod-nome">{p.nome}</p>

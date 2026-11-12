@@ -1,4 +1,5 @@
 import { IconShoppingCart, IconX, IconArrowRight } from '../Icons';
+import Imagem from '../Imagem';
 import { useCarrinho } from '../../hooks/useCarrinho';
 import QuantidadeStepper from '../QuantidadeStepper/QuantidadeStepper';
 import './CarrinhoSidebar.css';
@@ -89,7 +90,7 @@ export default function CarrinhoSidebar({
                 <div className="cs-item" key={item.produto.id_produto}>
                   <div className="cs-item-thumb">
                     {imagem
-                      ? <img src={imagem} alt={item.produto.nome} />
+                      ? <Imagem src={imagem} alt={item.produto.nome} sizes="54px" />
                       : <IconShoppingCart size={18} />
                     }
                   </div>

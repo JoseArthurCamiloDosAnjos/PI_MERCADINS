@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './VitrineCliente.css';
 import ToastContainer from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import Imagem from '../../components/Imagem';
 import DescricaoModal from '../../components/DescricaoModal';
 import AvaliacoesModal from '../../components/AvaliacoesModal';
 import { useToast } from '../../hooks/useToast';
@@ -235,7 +236,7 @@ function ProdutoCardCliente({
         {imagens.length > 0
           ? (
             <>
-              <img src={imagens[imgIdx]} alt={produto.nome} />
+              <Imagem src={imagens[imgIdx]} alt={produto.nome} sizes="(max-width: 600px) 50vw, 150px" />
               {imagens.length > 1 && (
                 <>
                   <button className="vtc-card-seta vtc-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} onKeyDown={(e) => e.stopPropagation()} aria-label="Imagem anterior">‹</button>
@@ -674,7 +675,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       {/* ── Banner + Header ───────────────────────────────────────────── */}
       <div className="vtc-banner">
         {dados.banner
-          ? <img src={dados.banner} alt="" className="vtc-banner-img" />
+          ? <Imagem src={dados.banner} alt="" className="vtc-banner-img" thumb={false} />
           : <div className="vtc-banner-fallback" />
         }
       </div>
@@ -683,7 +684,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
         <div className="vtc-header-identity">
           <div className="vtc-logo">
             {dados.logo
-              ? <img src={dados.logo} alt={dados.nome} className="vtc-logo-img" />
+              ? <Imagem src={dados.logo} alt={dados.nome} className="vtc-logo-img" sizes="76px" />
               : <div className="vtc-logo-placeholder"><IconStore size={26} /></div>
             }
           </div>

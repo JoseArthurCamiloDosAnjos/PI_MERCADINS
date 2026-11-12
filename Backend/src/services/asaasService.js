@@ -2,7 +2,26 @@ require('dotenv').config()
 
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER
 
-const BASE_URL = isProduction
+// ── Qual ambiente usar? ──────────────────────────────────────────────────────
+// A chave diz a verdade: `$aact_prod_` só vale em produção e `$aact_hmlg_`
+// (homologação) só no sandbox — usar a URL errada dá 401
+// "invalid_environment" ("a chave não pertence a este ambiente"). Por isso a
+// URL é escolhida PELA CHAVE, com duas exceções:
+//   • ASAAS_AMBIENTE=producao|sandbox força o ambiente (ex.: testar a API);
+//   • sem chave, cai no comportamento antigo (NODE_ENV/RENDER).
+const chaveApi = (process.env.Assas_API_KEY || '').trim()
+const forcarAmbiente = String(process.env.ASAAS_AMBIENTE || '').trim().toLowerCase()
+
+function escolherAmbiente() {
+  if (forcarAmbiente === 'producao' || forcarAmbiente === 'sandbox') return forcarAmbiente
+  if (chaveApi.startsWith('$aact_prod_')) return 'producao'
+  if (chaveApi.startsWith('$aact_hmlg_')) return 'sandbox'
+  return isProduction ? 'producao' : 'sandbox'
+}
+
+const AMBIENTE = escolherAmbiente()
+
+const BASE_URL = AMBIENTE === 'producao'
   ? process.env.Assas_API_URL_Producao
   : process.env.Assas_API_URL_Sandbox
 
@@ -10,9 +29,21 @@ const BASE_URL = isProduction
 // subida, nos logs, para não virar "502 genérico" depois
 if (!BASE_URL) {
   console.error(
-    `asaasService: URL da API não configurada (esperando ${isProduction ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'} no ambiente ${isProduction ? 'produção' : 'desenvolvimento'})`
+    `asaasService: URL da API não configurada (esperando ${AMBIENTE === 'producao' ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'})`
   )
 }
+
+if (chaveApi) {
+  const chaveEhProd = chaveApi.startsWith('$aact_prod_')
+  if (AMBIENTE === 'sandbox' && chaveEhProd) {
+    console.error('asaasService: chave de PRODUÇÃO com ambiente SANDBOX — as chamadas vão falhar com 401 (invalid_environment).')
+  }
+  if (AMBIENTE === 'producao' && chaveApi.startsWith('$aact_hmlg_')) {
+    console.error('asaasService: chave de SANDBOX com ambiente PRODUÇÃO — as chamadas vão falhar com 401 (invalid_environment).')
+  }
+}
+
+console.log(`asaasService: ambiente Asaas = ${AMBIENTE} (${BASE_URL || 'URL não configurada'})`) 
 
 // Catálogo de planos — o preço é SEMPRE definido aqui, nunca pelo cliente.
 // Anual = mensal com 20% de desconto (mesmo cálculo exibido no frontend: floor(mensal * 0.8) * 12).
@@ -197,6 +228,40 @@ function montarSplitVendedor(walletId, externalReference) {
   return [split];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  QR do Pix
+//  • logo após criar a cobrança o /pixQrCode ainda pode responder 404/vazio
+//    ("QR ainda não gerado") — tenta de novo antes de desistir;
+//  • erro de CHAVE (401/403) não adianta repetir — falha na hora;
+//  • o encodedImage às vezes volta com o prefixo "data:image/png;base64,";
+//    a tela monta esse prefixo sozinha, então aqui ele é removido.
+// ─────────────────────────────────────────────────────────────────────────────
+function normalizarQr(qr) {
+  const b64 = String(qr?.encodedImage || '')
+    .replace(/^data:image\/[a-z+]+;base64,/i, '')
+  return { qrCodeBase64: b64, copiaEcola: qr?.payload || '' }
+}
+
+function erroDeChave(erro) {
+  return /401|403|access_token|chave|api key|autoriza/i.test(String(erro?.message || ''))
+}
+
+async function buscarQrPixComRetry(paymentId, tentativas = 3) {
+  let ultimoErro = null
+  for (let t = 0; t < tentativas; t++) {
+    if (t > 0) await new Promise(r => setTimeout(r, 700))
+    try {
+      const qr = await chamarApi(`/v3/payments/${paymentId}/pixQrCode`)
+      if (qr?.encodedImage || qr?.payload) return qr
+      ultimoErro = new Error('QR code ainda não gerado pelo Asaas.')
+    } catch (erroQr) {
+      ultimoErro = erroQr
+      if (erroDeChave(erroQr)) break
+    }
+  }
+  throw ultimoErro
+}
+
 // POST /v3/payments (billingType PIX) — devolve QR code + código copia e cola
 async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference, splits }) {
   const corpo = {
@@ -215,22 +280,24 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
     method: 'POST',
     body: corpo,
   })
-  // QR não vem junto na criação: o Asaas só entrega em /pixQrCode
+  // QR não vem junto na criação: o Asaas só entrega em /pixQrCode (e pode
+  // demorar alguns ms — por isso a versão com retry)
   let qr = null
   try {
-    qr = await chamarApi(`/v3/payments/${pagamento.id}/pixQrCode`)
+    qr = await buscarQrPixComRetry(pagamento.id)
   } catch (erroQr) {
     console.error('asaasService: não foi possível buscar o QR do Pix:', erroQr.message)
   }
   // Compatibilidade: se algum dia voltar a vir embutido, usa o que vier
   const embutido = pagamento?.pixTransaction?.[0] || pagamento?.pirBank?.[0] || null
-  const fonte = qr?.encodedImage ? qr : embutido
+  const fonte = qr?.encodedImage || qr?.payload ? qr : embutido
+  const { qrCodeBase64, copiaEcola } = normalizarQr(fonte)
   return {
     id: pagamento.id,
     status: pagamento.status,
     vencimento: pagamento.dueDate || null,
-    qrCodeBase64: fonte?.encodedImage || '',
-    copiaEcola: fonte?.payload || '',
+    qrCodeBase64,
+    copiaEcola,
     urlPagamento: pagamento.invoiceUrl || '',
     // Splits criados junto da cobrança (ids p/ conciliar o repasse)
     split: Array.isArray(pagamento.split) ? pagamento.split : [],
@@ -288,9 +355,12 @@ async function buscarPagamento(paymentId) {
 }
 
 // GET /v3/payments/{id}/pixQrCode — recarrega o QR de um Pix já criado
-// (usado pela tela de acompanhamento quando o cliente recarrega a página)
+// (usado pela tela de acompanhamento quando o cliente recarga a página).
+// Mesmo retry do momento da criação: o QR pode ainda não estar pronto.
 async function buscarQrPix(paymentId) {
-  return chamarApi(`/v3/payments/${paymentId}/pixQrCode`)
+  const qr = await buscarQrPixComRetry(paymentId, 2)
+  const { qrCodeBase64, copiaEcola } = normalizarQr(qr)
+  return { encodedImage: qrCodeBase64, payload: copiaEcola }
 }
 
 // DELETE /v3/payments/{id} — cancela uma cobrança ainda não paga
@@ -304,6 +374,21 @@ async function cancelarPagamento(paymentId) {
 // pelo chamador e vira alerta para estorno manual no painel do Asaas).
 async function estornarPagamento(paymentId) {
   return chamarApi(`/v3/payments/${paymentId}/refund`, { method: 'POST', body: {} })
+}
+
+// GET /v3/payments?limit=1 — teste AO VIVO da credencial: prova que a URL e a
+// chave batem com o mesmo ambiente. Usado por GET /api/saude/pagamentos.
+async function verificarChave() {
+  try {
+    const dados = await chamarApi('/v3/payments?limit=1')
+    return { status: 'ok', total: dados?.totalCount ?? null }
+  } catch (erro) {
+    const msg = String(erro.message || '')
+    if (/fornecida é inválida|invalid_access_token/i.test(msg)) return { status: 'invalida', erro: msg }
+    if (/não pertence a este ambiente|invalid_environment/i.test(msg)) return { status: 'ambiente_errado', erro: msg }
+    if (/não configurada/i.test(msg)) return { status: 'sem_configuracao', erro: msg }
+    return { status: 'erro', erro: msg.slice(0, 200) }
+  }
 }
 
 module.exports = {
@@ -321,4 +406,7 @@ module.exports = {
   buscarQrPix,
   cancelarPagamento,
   estornarPagamento,
+  verificarChave,
+  AMBIENTE,
+  BASE_URL,
 }

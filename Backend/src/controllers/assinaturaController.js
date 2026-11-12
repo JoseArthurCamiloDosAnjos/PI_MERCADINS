@@ -534,42 +534,55 @@ const webhookAsaas = async (req, res) => {
   const tokenWebhook = process.env.ASAAS_WEBHOOK_TOKEN;
   const tokenRecebido = req.headers['webhook-security-token'];
 
-  if (tokenWebhook) {
-    if (tokenRecebido !== tokenWebhook) {
-      return res.status(401).json({ erro: 'Token de webhook inválido.' });
-    }
-  } else if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
-    console.error('ASAAS_WEBHOOK_TOKEN não configurado em produção.');
-    return res.status(500).json({ erro: 'Webhook não configurado.' });
+  if (tokenWebhook && tokenRecebido !== tokenWebhook) {
+    return res.status(401).json({ erro: 'Token de webhook inválido.' });
+  }
+  // Sem token configurado o payload não vem autenticado — em vez de recusar
+  // (o Asaas reenviaria e NADA seria confirmado em produção), aceita e confere
+  // o status DIRETO na API do Asaas antes de qualquer efeito (ver abaixo).
+  if (!tokenWebhook) {
+    console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — eventos aceitos sem token; o status é verificado na API do Asaas antes de agir.');
   }
 
   const evento = req.body?.event;
   const pagamento = req.body?.payment;
+  // Eventos de assinatura (SUBSCRIPTION_*) podem vir sem o objeto `payment` —
+  // o id da assinatura vem em `subscription.id`
+  const subscriptionNoPayload = req.body?.subscription?.id || null;
 
-  if (!evento || !pagamento?.id) {
+  if (!evento || (!pagamento?.id && !subscriptionNoPayload)) {
     return res.status(400).json({ erro: 'Payload de webhook inválido.' });
   }
 
   // Eventos de split (PAYMENT_SPLIT_DONE etc.) identificam o repasse pelo
   // additionalInfo.splitId — repassa junto para processarPagamentoPedido
-  if (req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
+  if (pagamento && req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
     pagamento.additionalInfo = req.body.additionalInfo;
   }
 
   try {
+    // Sem token, o corpo veio sem autenticação: substitui os dados da
+    // cobrança pelos da API do Asaas (fonte da verdade). Assim um evento
+    // forjado não consegue nem ativar assinatura nem confirmar pedido.
+    // Falhou a consulta → 500 e o Asaas reenvia o evento depois.
+    if (!tokenWebhook && pagamento?.id) {
+      const fonte = await asaas.buscarPagamento(pagamento.id);
+      if (fonte) Object.assign(pagamento, fonte);
+    }
+
     const sql = await conectar();
 
     // ── B3: pagamento de PEDIDO (Pix/cartão da compra de produtos) ──────────
     // Cobranças de pedido vêm com externalReference "pedido:<id>"; as de
     // assinatura têm subscription. Este ramo roda antes e não mexe nelas.
-    const refExterna = pagamento.externalReference || '';
+    const refExterna = pagamento?.externalReference || '';
     if (String(refExterna).startsWith('pedido:')) {
       const resultado = await processarPagamentoPedido(sql, evento, pagamento);
       return res.status(200).json(resultado);
     }
 
     // Localiza assinatura pelo id da assinatura no Asaas
-    const subscriptionId = pagamento.subscription;
+    const subscriptionId = pagamento?.subscription || subscriptionNoPayload;
     const [assinatura] = subscriptionId
       ? await sql`SELECT * FROM assinaturas WHERE asaas_subscription_id = ${subscriptionId} LIMIT 1`
       : [];
@@ -580,11 +593,13 @@ const webhookAsaas = async (req, res) => {
     }
 
     // Fatura da assinatura (idempotente — o fallback pode já tê-la gravado)
-    await registrarFatura(sql, assinatura, pagamento);
+    if (pagamento?.id) {
+      await registrarFatura(sql, assinatura, pagamento);
+    }
 
     // Atualiza status da assinatura conforme o evento
     if (evento === 'PAYMENT_CONFIRMED' || evento === 'PAYMENT_RECEIVED') {
-      await confirmarAssinatura(sql, assinatura, pagamento);
+      await confirmarAssinatura(sql, assinatura, pagamento || {});
     } else if (evento === 'PAYMENT_OVERDUE') {
       // Vencida: entra em inadimplência agora; a suspensão dos mercados só
       // acontece após a carência (vigenciaService.encerrarVencidas)

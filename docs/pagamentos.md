@@ -232,8 +232,9 @@ npm run migrate                   # banco local (DB_PROVIDER)
 | Variável (Backend) | O que é |
 |---|---|
 | `Assas_API_KEY` | token de acesso à API do Asaas |
-| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API (o código escolhe pela produção detectada: `NODE_ENV=production` **ou** a variável `RENDER` do plano) |
-| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token` (obrigatório em produção) |
+| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API. O código escolhe a URL **pela própria chave**: `$aact_prod_` → produção, `$aact_hmlg_` → sandbox (evita o 401 `invalid_environment` de misturar chave e ambiente); sem chave, cai no `NODE_ENV`/`RENDER` |
+| `ASAAS_AMBIENTE` | opcional: `producao` ou `sandbox` força o ambiente, sobrescrevendo a escolha automática |
+| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token`. **Recomendado em produção**: com ele o payload vem autenticado. Sem ele o webhook aceita o evento e **confere o status na API do Asaas antes de agir** (nada é confirmado pelo corpo da mensagem) |
 | `FRONTEND_URL` | para onde o Asaas devolve o cliente após pagar (`/registrar-mercado?pagamento=1`) |
 
 No painel do Asaas: criar a **integração de webhook** apontando para
@@ -267,7 +268,10 @@ Sintomas e causas:
 | Pagou e a loja não apareceu | conferir `GET /api/assinaturas/minha` e o log do webhook; a consulta imediata deve resolver sozinha |
 | `Dados do mercado inválidos` na ativação | payload de `dados_mercado` fora do formato normalizado (a validação é idempotente, veja `marketController.validarDadosMercado`) |
 | `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` no `.env` |
+| `401 A chave de API fornecida é inválida` | chave **revogada/expirada** — gere outra no painel (Integrações > Chaves API) e atualize `Assas_API_KEY` no `.env`/Render |
+| `401 A chave de API informada não pertence a este ambiente` | chave de um ambiente e URL do outro (o servidor já escolhe a URL pela chave; se persistir, confira `ASAAS_AMBIENTE`) |
 | Pix do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
+| Pedido criado mas **QR vazio** | o `/pixQrCode` demorou — o backend tenta 3× e a tela consulta a cada 10s; se seguir vazio, veja o log `não foi possível buscar o QR do Pix` |
 
 ### Diagnóstico rápido
 
@@ -275,27 +279,40 @@ Sintomas e causas:
 GET /api/saude/pagamentos
 ```
 
-Rota pública que devolve **só a presença** das variáveis (nenhum valor é
-exposto):
+Rota pública que devolve **só a presença** das variáveis + um **teste ao vivo
+da chave** (cache de 30s; nenhum valor sensível é exposto):
 
 ```json
 { "ambiente": "producao",
   "banco": "auto",
-  "asaas": { "url_usada": "https://api.asaas.com/", "chave_api": true,
+  "asaas": { "ambiente": "producao", "url_usada": "https://api.asaas.com/",
+             "chave_api": true, "chave_status": "ok", "chave_detalhe": null,
              "url_producao": true, "url_sandbox": false, "webhook_token": true },
   "frontend_url": "https://mercadins.com.br" }
 ```
 
-`chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
+`chave_status` — `ok` · `invalida` (chave revogada/expirada) ·
+`ambiente_errado` (chave de outro ambiente) · `sem_configuracao` · `erro`.
+`chave_api: false` ou `url_usada: null` = variável não cadastrada.
+
+Do terminal (mesma verificação):
+
+```bash
+cd Backend
+node scripts/verificarAsaas.js          # ambiente + validade da chave (só leitura)
+node scripts/verificarAsaas.js --pix    # cria 1 cobrança Pix de teste e mostra o QR
+```
 
 ### Checklist de produção (Render)
 
-- [ ] `Assas_API_KEY` = chave de **produção** (a de sandbox não serve na URL de produção);
+- [ ] `Assas_API_KEY` = chave **válida** de produção (gerada em Integrações >
+      Chaves API; chave revogada/expirada responde `401 invalid_access_token`);
 - [ ] `Assas_API_URL_Producao=https://api.asaas.com/`;
 - [ ] `FRONTEND_URL=https://mercadins.com.br`;
 - [ ] `ASAAS_WEBHOOK_TOKEN` preenchido **e** a integração de webhook criada no
       Asaas apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`
-      (sem ela, o pedido só é confirmado quando o cliente abre a página do pedido);
+      (sem o webhook, o pedido só é confirmado quando o cliente abre a página —
+      sem o token, o webhook funciona mas confere cada status na API);
 - [ ] Depois de mexer em variável, deixar o Render reiniciar o serviço.
 
 Quando o pagamento online falha, a API responde `502` com

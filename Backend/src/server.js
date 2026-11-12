@@ -19,6 +19,7 @@ const notificacaoRoutes      = require('./routes/notificacaoRoutes.js')
 const { webhookAsaas }       = require('./controllers/assinaturaController.js')
 const { conectar }           = require('./db/neon.js')
 const { encerrarVencidas }   = require('./services/vigenciaService.js')
+const asaas                  = require('./services/asaasService.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -107,17 +108,30 @@ app.use('/api/imagens',            require('./routes/imagemRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────
-// Devolve só a PRESENÇA das variáveis do Asaas — resolve em 10 segundos a
-// dúvida "o ambiente (Render x local) está configurado?". Nenhum valor é exposto.
-app.get('/api/saude/pagamentos', (_req, res) => {
+// Devolve a PRESENÇA das variáveis do Asaas + um teste AO VIVO da chave —
+// resolve em 10 segundos a dúvida "a credencial está valendo?". Nenhum valor
+// sensível é exposto; o teste fica em cache por 30s para não bater no Asaas
+// a cada refresh.
+let saudeCache = { em: 0, teste: null }
+
+app.get('/api/saude/pagamentos', async (_req, res) => {
+  const agora = Date.now()
+  if (!saudeCache.teste || agora - saudeCache.em > 30_000) {
+    saudeCache = { em: agora, teste: await asaas.verificarChave() }
+  }
   res.json({
     ambiente: isProduction ? 'producao' : 'desenvolvimento',
     banco: process.env.DB_PROVIDER || 'auto',
     asaas: {
-      url_usada: (isProduction ? process.env.Assas_API_URL_Producao : process.env.Assas_API_URL_Sandbox) || null,
+      ambiente: asaas.AMBIENTE,
+      url_usada: asaas.BASE_URL || null,
       url_producao: !!process.env.Assas_API_URL_Producao,
       url_sandbox: !!process.env.Assas_API_URL_Sandbox,
       chave_api: !!process.env.Assas_API_KEY,
+      // ok | invalida (chave revogada/expirada) | ambiente_errado (chave de
+      // outro ambiente) | sem_configuracao | erro
+      chave_status: saudeCache.teste.status,
+      chave_detalhe: saudeCache.teste.erro || null,
       webhook_token: !!process.env.ASAAS_WEBHOOK_TOKEN,
     },
     frontend_url: process.env.FRONTEND_URL || null,

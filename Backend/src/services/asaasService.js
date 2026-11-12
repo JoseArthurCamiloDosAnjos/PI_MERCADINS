@@ -1,49 +1,94 @@
 require('dotenv').config()
 
-const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ambiente do Asaas — sandbox × produção
+//
+//  O sistema precisa funcionar nos DOIS ambientes, com a chave certa em cada:
+//
+//    ASAAS_AMBIENTE=sandbox|producao   → força o ambiente (opcional)
+//    sem a variável                    → produção quando NODE_ENV=production
+//                                        (ou quando roda no Render), sandbox
+//                                        no desenvolvimento
+//
+//  Chave da API escolhida junto com o ambiente:
+//    produção  → Assas_API_KEY_Producao, senão Assas_API_KEY
+//    sandbox   → Assas_API_KEY_Sandbox,  senão Assas_API_KEY
+//
+//  Assim a mesma máquina pode ter as duas chaves cadastradas e nunca usa a
+//  chave errada na URL errada (a de sandbox não vale em produção e vice-versa).
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ── Qual ambiente usar? ──────────────────────────────────────────────────────
-// A chave diz a verdade: `$aact_prod_` só vale em produção e `$aact_hmlg_`
-// (homologação) só no sandbox — usar a URL errada dá 401
-// "invalid_environment" ("a chave não pertence a este ambiente"). Por isso a
-// URL é escolhida PELA CHAVE, com duas exceções:
-//   • ASAAS_AMBIENTE=producao|sandbox força o ambiente (ex.: testar a API);
-//   • sem chave, cai no comportamento antigo (NODE_ENV/RENDER).
-const chaveApi = (process.env.Assas_API_KEY || '').trim()
-const forcarAmbiente = String(process.env.ASAAS_AMBIENTE || '').trim().toLowerCase()
+function resolverAmbiente() {
+  const forcado = String(process.env.ASAAS_AMBIENTE || '').toLowerCase().trim()
+  if (forcado === 'sandbox' || forcado === 'producao') return forcado
 
-function escolherAmbiente() {
-  if (forcarAmbiente === 'producao' || forcarAmbiente === 'sandbox') return forcarAmbiente
-  if (chaveApi.startsWith('$aact_prod_')) return 'producao'
-  if (chaveApi.startsWith('$aact_hmlg_')) return 'sandbox'
-  return isProduction ? 'producao' : 'sandbox'
+  // Só a chave legada cadastrada (sem Assas_API_KEY_Sandbox/_Producao)?
+  // O prefixo da própria chave diz o ambiente: $aact_prod_ só vale em
+  // produção e $aact_hmlg_ só no sandbox — usar a URL errada dá 401
+  // "a chave não pertence a este ambiente".
+  const temChavePorAmbiente = !!(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY_Sandbox)
+  if (!temChavePorAmbiente) {
+    const legada = (process.env.Assas_API_KEY || '').trim()
+    if (legada.startsWith('$aact_prod_')) return 'producao'
+    if (legada.startsWith('$aact_hmlg_')) return 'sandbox'
+  }
+
+  const emProducao = process.env.NODE_ENV === 'production' || !!process.env.RENDER
+  return emProducao ? 'producao' : 'sandbox'
 }
 
-const AMBIENTE = escolherAmbiente()
+const AMBIENTE = resolverAmbiente()
 
-const BASE_URL = AMBIENTE === 'producao'
-  ? process.env.Assas_API_URL_Producao
-  : process.env.Assas_API_URL_Sandbox
+/** Chave da API do ambiente ativo (a específica, senão a legada). */
+function chaveApi() {
+  if (AMBIENTE === 'producao') {
+    return process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY || ''
+  }
+  return process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY || ''
+}
+
+/** Nome da variável de onde a chave ativa veio (para log/diagnóstico). */
+function fonteChave() {
+  if (AMBIENTE === 'producao') {
+    if (process.env.Assas_API_KEY_Producao) return 'Assas_API_KEY_Producao'
+  } else if (process.env.Assas_API_KEY_Sandbox) {
+    return 'Assas_API_KEY_Sandbox'
+  }
+  return process.env.Assas_API_KEY ? 'Assas_API_KEY' : null
+}
+
+// Barra final sem duplicar: o caminho das chamadas já começa com "/"
+const BASE_URL = (
+  (AMBIENTE === 'producao'
+    ? process.env.Assas_API_URL_Producao
+    : process.env.Assas_API_URL_Sandbox) || ''
+).replace(/\/+$/, '')
 
 // Falta de variável é o erro mais comum em produção (Render) — avisa já na
 // subida, nos logs, para não virar "502 genérico" depois
 if (!BASE_URL) {
   console.error(
-    `asaasService: URL da API não configurada (esperando ${AMBIENTE === 'producao' ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'})`
+    `asaasService: URL da API não configurada (esperando ${
+      AMBIENTE === 'producao' ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'
+    } para o ambiente "${AMBIENTE}")`
+  )
+} else {
+  console.log(
+    `Asaas: ambiente ${AMBIENTE} → ${BASE_URL} [chave: ${fonteChave() || 'AUSENTE'}]`
   )
 }
 
-if (chaveApi) {
-  const chaveEhProd = chaveApi.startsWith('$aact_prod_')
-  if (AMBIENTE === 'sandbox' && chaveEhProd) {
-    console.error('asaasService: chave de PRODUÇÃO com ambiente SANDBOX — as chamadas vão falhar com 401 (invalid_environment).')
+// Ambiente FORÇADO (ASAAS_AMBIENTE) que não bate com o prefixo da chave
+// legada — avisa, porque a chamada vai cair em 401 (invalid_environment)
+if (String(process.env.ASAAS_AMBIENTE || '').trim()) {
+  const legada = (process.env.Assas_API_KEY || '').trim()
+  if (AMBIENTE === 'sandbox' && legada.startsWith('$aact_prod_')) {
+    console.error('asaasService: ASAAS_AMBIENTE=sandbox com chave de PRODUÇÃO — as chamadas vão falhar com 401 (invalid_environment).')
   }
-  if (AMBIENTE === 'producao' && chaveApi.startsWith('$aact_hmlg_')) {
-    console.error('asaasService: chave de SANDBOX com ambiente PRODUÇÃO — as chamadas vão falhar com 401 (invalid_environment).')
+  if (AMBIENTE === 'producao' && legada.startsWith('$aact_hmlg_')) {
+    console.error('asaasService: ASAAS_AMBIENTE=producao com chave de SANDBOX — as chamadas vão falhar com 401 (invalid_environment).')
   }
 }
-
-console.log(`asaasService: ambiente Asaas = ${AMBIENTE} (${BASE_URL || 'URL não configurada'})`) 
 
 // Catálogo de planos — o preço é SEMPRE definido aqui, nunca pelo cliente.
 // Anual = mensal com 20% de desconto (mesmo cálculo exibido no frontend: floor(mensal * 0.8) * 12).
@@ -70,8 +115,11 @@ function obterPlano(codigoPlano, ciclo) {
 }
 
 async function chamarApi(path, { method = 'GET', body } = {}) {
-  if (!process.env.Assas_API_KEY) {
-    throw new Error('Chave da API do Asaas não configurada (Assas_API_KEY).')
+  const chave = chaveApi()
+  if (!chave) {
+    throw new Error(
+      `Chave da API do Asaas não configurada (esperando Assas_API_KEY_${AMBIENTE === 'producao' ? 'Producao' : 'Sandbox'} ou Assas_API_KEY).`
+    )
   }
   if (!BASE_URL) {
     throw new Error('URL da API do Asaas não configurada.')
@@ -81,7 +129,7 @@ async function chamarApi(path, { method = 'GET', body } = {}) {
     method,
     headers: {
       'Content-Type': 'application/json',
-      access_token: process.env.Assas_API_KEY,
+      access_token: chave,
     },
     ...(body !== undefined && { body: JSON.stringify(body) }),
   })
@@ -391,7 +439,37 @@ async function verificarChave() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Auto-verificação na subida do servidor (chamada leve, somente-leitura)
+//
+//  Confere se a CHAVE do ambiente ativo funciona na URL do ambiente ativo.
+//  É o jeito mais rápido de descobrir em produção "a chave de sandbox está no
+//  Render" (403) ou "a chave foi revogada" (401) antes de alguém tentar pagar.
+// ─────────────────────────────────────────────────────────────────────────────
+async function verificarConexao() {
+  try {
+    await chamarApi('/v3/payments?limit=1')
+    return { ok: true, ambiente: AMBIENTE, url: BASE_URL || null, fonte: fonteChave() }
+  } catch (erro) {
+    return {
+      ok: false,
+      ambiente: AMBIENTE,
+      url: BASE_URL || null,
+      fonte: fonteChave(),
+      erro: String(erro.message || erro),
+    }
+  }
+}
+
 module.exports = {
+  // Ambiente/chave ativos (usados pelo diagnóstico GET /api/saude/pagamentos)
+  ambienteAsaas: () => AMBIENTE,
+  baseUrlAsaas: () => BASE_URL || null,
+  chaveApi,
+  fonteChave,
+  resolverAmbiente,
+  verificarConexao,
+
   obterPlano,
   criarSubconta,
   criarCustomer,

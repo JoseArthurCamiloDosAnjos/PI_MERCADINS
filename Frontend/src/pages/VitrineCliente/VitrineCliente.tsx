@@ -71,6 +71,32 @@ function IconCart({ size = 20 }: { size?: number }) {
 }
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Tira acento e deixa minúsculo para a busca funcionar com ou sem acento
+const normalizar = (texto: string) =>
+  texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Distância de edição (Levenshtein): quantas letras é preciso mudar, tirar ou
+// acrescentar para uma palavra virar a outra — 0 = iguais, 1 = falta uma letra,
+// 2 = duas trocadas/embaralhadas
+function distanciaEdicao(a: string, b: string): number {
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let anterior = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const atual: number[] = [i];
+    for (let j = 1; j <= b.length; j++) {
+      atual[j] = Math.min(
+        anterior[j] + 1,
+        atual[j - 1] + 1,
+        anterior[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    anterior = atual;
+  }
+  return anterior[b.length];
+}
+
+
 interface Produto {
   id_produto: number;
   imagem?: string;
@@ -416,12 +442,12 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
   const categoriasFiltradas = useMemo(() => {
     if (!dados) return [];
-    const termo = busca.trim().toLowerCase();
+    const termo = normalizar(busca.trim());
     return dados.categorias
       .map(cat => ({
         ...cat,
         produtos: termo
-          ? cat.produtos.filter(p => p.nome.toLowerCase().includes(termo))
+          ? cat.produtos.filter(p => normalizar(p.nome).includes(termo))
           : cat.produtos,
       }))
       .filter(cat => cat.produtos.length > 0 || !termo)
@@ -433,10 +459,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const modoOrdenado = ordenacao !== 'categorias';
   const listaOrdenada = useMemo(() => {
     if (!dados || ordenacao === 'categorias') return [];
-    const termo = busca.trim().toLowerCase();
+    const termo = normalizar(busca.trim());
     const itens = dados.categorias.flatMap(cat =>
       cat.produtos
-        .filter(p => !termo || p.nome.toLowerCase().includes(termo))
+        .filter(p => !termo || normalizar(p.nome).includes(termo))
         .map(produto => ({ produto, catId: cat.id }))
     );
     const preco = (x: { produto: { preco?: unknown } }) => Number(x.produto.preco ?? 0);
@@ -448,6 +474,54 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       ? itens
       : itens.filter(x => x.catId === categoriaAtiva);
   }, [dados, busca, ordenacao, categoriaAtiva]);
+
+  // Palavras dos nomes dos produtos (base do "você quis dizer?"): cada entrada
+  // guarda a forma exibida (com acento) e a chave comparável (sem acento, só
+  // letras e números, mínimo de 3 caracteres para não pegar "de", "e", etc.)
+  const palavrasProdutos = useMemo(() => {
+    const vistas = new Map<string, string>();
+    dados?.categorias.forEach(cat =>
+      cat.produtos.forEach(p =>
+        p.nome.split(/\s+/).forEach(palavra => {
+          const chave = normalizar(palavra).replace(/[^a-z0-9]/g, '');
+          if (chave.length >= 3 && !vistas.has(chave)) vistas.set(chave, palavra);
+        })
+      )
+    );
+    return [...vistas.entries()];
+  }, [dados]);
+
+  // Quando a busca não acha nada, tenta adivinhar o termo correto comparando
+  // cada palavra digitada com as palavras dos produtos (tolera letra faltando,
+  // trocada ou embaralhada). Só sugere se o termo corrigido realmente
+  // encontra algum produto — evita palpite sem sentido.
+  const sugestaoBusca = useMemo(() => {
+    const termo = normalizar(busca.trim());
+    if (!termo || !dados || palavrasProdutos.length === 0) return null;
+    const achouAlgo = dados.categorias.some(cat =>
+      cat.produtos.some(p => normalizar(p.nome).includes(termo))
+    );
+    if (achouAlgo) return null;
+    const escritas = busca.trim().split(/\s+/).filter(Boolean);
+    const corrigidas = escritas.map(escrita => {
+      const limpa = normalizar(escrita).replace(/[^a-z0-9]/g, '');
+      let melhorDist = Infinity;
+      let melhorPalavra = '';
+      for (const [cand, exibicao] of palavrasProdutos) {
+        const dist = distanciaEdicao(limpa, cand);
+        if (dist < melhorDist) { melhorDist = dist; melhorPalavra = exibicao; }
+      }
+      // Tolerância maior para palavras longas, menor para curtas
+      const limite = limpa.length <= 3 ? 1 : limpa.length <= 5 ? 2 : 3;
+      return melhorPalavra && melhorDist <= limite ? melhorPalavra : escrita;
+    });
+    const corrigiu = corrigidas.some((p, i) => p !== escritas[i]);
+    if (!corrigiu) return null;
+    const corrigido = corrigidas.join(' ');
+    return dados.categorias.some(cat =>
+      cat.produtos.some(p => normalizar(p.nome).includes(normalizar(corrigido)))
+    ) ? corrigido : null;
+  }, [busca, dados, palavrasProdutos]);
 
   // Fecha o menu de categorias ao pressionar Esc (mesmo comportamento dos
   // demais painéis e modais do site).
@@ -819,6 +893,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           <div className="vtc-vazio">
             <span className="vtc-vazio-icone"><IconStore size={26} /></span>
             <p className="vtc-vazio-titulo">Nenhum produto encontrado</p>
+            {busca && sugestaoBusca && (
+              <button className="vtc-sugestao" onClick={() => setBusca(sugestaoBusca)}>
+                Você quis dizer <strong>“{sugestaoBusca}”</strong>?
+              </button>
+            )}
             <p className="vtc-vazio-sub">
               {busca ? 'Tente buscar por outro termo.' : 'Esta loja ainda não cadastrou produtos.'}
             </p>

@@ -15,7 +15,13 @@ clientes usam), e como manter essa separação sem segredo.
 | **Banco de dados** | PostgreSQL local (`DATABASE_URL_LOCAL`) | Neon (`DATABASE_URL_NEON`) |
 | **Variáveis** | Arquivos `Backend/.env`, `Frontend/.env` e `.env` da raiz (não versionados) | Cadastradas no painel do Render (backend e site) |
 | **E-mails** | Podem ficar desativados (sem chave) | Resend com chave de produção |
-| **Notificações por telefone** | Opcional — sem provedor, avisos ficam só no histórico (`sem_provedor`) | Mesmas variáveis `WHATSAPP_*`/`TWILIO_*` etc. no painel do Render (opcional) |
+| **Notificações por e-mail** | Enviadas com a `RESEND_API_KEY` (sem chave, ficam só no histórico) | Mesma `RESEND_API_KEY` no painel do Render |
+
+> **Imagens:** as fotos (PNG, JPG e WEBP) são salvas na pasta local
+> `Backend/imagens/<categoria>/` (ou na pasta indicada em `IMAGENS_DIR`) e só
+> o **caminho** vai para o banco. No
+> Render o disco é efêmero (some a cada deploy), por isso o upload também
+> mantém uma cópia no Supabase Storage (bucket `imagens`) como backup.
 
 O backend escolhe qual banco usar pela variável `DB_PROVIDER`:
 
@@ -76,23 +82,29 @@ no painel na primeira sincronização.
 
 1. Painel do serviço → **Environment** → **Add Environment Variable**;
 2. Cadastrar as que não vêm do blueprint (`sync: false`):
-   `DATABASE_URL_NEON`, `JWT_SECRET`, `RESEND_API_KEY`, `Assas_API_KEY`,
-   `ASAAS_WEBHOOK_TOKEN`;
+   `DATABASE_URL_NEON`, `JWT_SECRET`, `RESEND_API_KEY`,
+   `Assas_API_KEY_Producao` (chave de produção do Asaas — ou a legada
+   `Assas_API_KEY`, que vale para os dois ambientes), `ASAAS_WEBHOOK_TOKEN`;
 3. As demais já vêm do `render.yaml`: `FRONTEND_URL`, `ALLOWED_ORIGINS`,
    `Assas_API_URL_Producao`, `Assas_API_URL_Sandbox`;
-4. **Opcional — notificações por telefone:** se quiser envio automático de
-   WhatsApp/SMS (cadastro, pedidos etc.), cadastrar também
-   `WHATSAPP_PROVIDER` + as credenciais do provedor escolhido (ver seção
-   *Notificações por telefone* em `Backend/.env.example`). Sem isso, os avisos
-   continuam gravados no histórico com status `sem_provedor`;
-5. Salvar — o Render reinicia o serviço sozinho.
+4. **Notificações por e-mail:** são enviadas com a própria `RESEND_API_KEY`
+   já cadastrada no passo 2 — nenhuma variável extra é necessária. Sem a
+   chave, os avisos continuam gravados no histórico com status `registrada`;
+5. **Pagamentos (Asaas):** o `render.yaml` já publica o site com
+   `ASAAS_AMBIENTE=sandbox` — o build no ar usa a API de **teste** (cadastre
+   `Assas_API_KEY_Sandbox`, ou a chave de sandbox em `Assas_API_KEY`). Para
+   faturar de verdade, troque a variável para `producao` no painel e use a
+   chave de produção (detalhes em [pagamentos.md](pagamentos.md) §10). No
+   desenvolvimento o servidor já cai no sandbox por padrão;
+6. Salvar — o Render reinicia o serviço sozinho.
 
 ### Render — site (`mercadins-frontend`, static_site)
 
 1. Painel do serviço → **Environment**;
 2. `VITE_API_URL=https://pi-mercadins.onrender.com` já vem do `render.yaml`;
-3. Cadastrar também (obrigatórias em tempo de execução — o app aborta sem elas):
-   `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`;
+3. Cadastrar também (opcionais — backup das imagens no Supabase; sem elas o
+   app roda normal, só sem o backup): `VITE_SUPABASE_URL` e
+   `VITE_SUPABASE_ANON_KEY`;
 4. Fazer um novo deploy para as variáveis `VITE_*` valerem (elas entram no build).
 
 > O repositório não tem `vercel.json` — o deploy do site é o `static_site` do

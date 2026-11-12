@@ -18,7 +18,7 @@ import {
   IconArrowLeft,
   IconCamera,
 } from '../../components/Icons';
-import { enviarImagem } from '../../services/imagens';
+import { uploadImagem, ehImagemValida } from '../../services/upload';
 
 // ─── Ícones locais (mesmo padrão usado na VitrineCliente) ─────────────────────
 
@@ -233,16 +233,11 @@ export default function ProdutoTela({
 
   // ── Foto da avaliação ───────────────────────────────────────────────────────
   // Em vez de colar um link, a pessoa tira a foto ou escolhe da galeria (o
-  // accept="image/*" abre as duas opções no celular) e o arquivo vai direto
-  // para o mesmo armazenamento de imagens usado nas fotos de perfil e de
-  // produto. O campo continua opcional.
+  // accept="image/*" abre as duas opções no celular) e o arquivo vai para a
+  // pasta imagens/avaliacoes/ do backend (com cópia de backup no Supabase).
+  // O campo continua opcional.
   async function enviarFotoParaStorage(arquivo: File): Promise<string | null> {
-    try {
-      return await enviarImagem(arquivo, { maxLado: 1200 });
-    } catch (erro) {
-      console.error('Erro ao enviar a foto da avaliação:', erro);
-      return null;
-    }
+    return uploadImagem(arquivo, 'avaliacoes');
   }
 
   async function handleEscolherFoto(e: ChangeEvent<HTMLInputElement>) {
@@ -250,8 +245,8 @@ export default function ProdutoTela({
     // Zera o input: assim dá para escolher o mesmo arquivo outra vez
     e.target.value = '';
     if (!arquivo) return;
-    if (!arquivo.type.startsWith('image/')) {
-      showToast('erro', 'Escolha um arquivo de imagem.');
+    if (!ehImagemValida(arquivo)) {
+      showToast('erro', 'Escolha uma imagem PNG, JPG ou WEBP.');
       return;
     }
     if (arquivo.size > 5 * 1024 * 1024) {
@@ -665,7 +660,7 @@ export default function ProdutoTela({
                 id="pd-aval-foto"
                 className="pd-aval-foto-input"
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp"
                 onChange={handleEscolherFoto}
                 disabled={fotoEnviando}
               />

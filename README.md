@@ -52,7 +52,7 @@ O sistema tem **três papéis**:
    (quando a loja permite agendamento);
 6. Paga na entrega, por **Pix** ou **cartão** (Asaas) — ou fala direto com a
    loja pelo **WhatsApp**;
-7. Acompanha o status do pedido e recebe **avisos no telefone** (cadastro,
+7. Acompanha o status do pedido e recebe **avisos por e-mail** (cadastro,
    pagamento, saiu para entrega etc.).
 
 ### Vendedor
@@ -87,10 +87,9 @@ Navegador ──► Frontend (React + Vite)
         ┌────────┴────────┐
         ▼                 ▼
    PostgreSQL          Serviços externos
-   (local ou Neon)     • Resend      → e-mails
+   (local ou Neon)                            • Resend      → e-mails e notificações
                        • Asaas       → Pix/cartão, planos, Split
-                       • Supabase    → fotos de produtos/lojas
-                       • WhatsApp/SMS→ avisos no telefone (opcional)
+                       • Supabase    → backup das fotos (opcional)
 ```
 
 **Ambientes** (detalhes em [docs/ambientes.md](docs/ambientes.md)):
@@ -108,9 +107,9 @@ Navegador ──► Frontend (React + Vite)
 | Camada | Ferramentas |
 |---|---|
 | **Frontend** | React 19 + TypeScript, Vite, React Router, CSS puro por página |
-| **Backend** | Node.js 22, Express 5, JWT (autenticação), Resend (E-mails), Asaas (cobrança e Split), avisos por telefone (WhatsApp/SMS opcional) |
+| **Backend** | Node.js 22, Express 5, JWT (autenticação), Resend (E-mails e notificações), Asaas (cobrança e Split) |
 | **Banco** | PostgreSQL 16 — local em desenvolvimento, **Neon** em produção; migrações versionadas |
-| **Serviços** | Render (API **e** site, conforme `render.yaml`), Neon (banco), Supabase (fotos), Asaas (pagamentos), GitHub Actions (verificações e backup) |
+| **Serviços** | Render (API **e** site, conforme `render.yaml`), Neon (banco), Supabase (backup de fotos), Asaas (pagamentos), GitHub Actions (verificações e backup) |
 
 ---
 
@@ -161,11 +160,12 @@ cp Backend/.env.example  Backend/.env
 cp Frontend/.env.example Frontend/.env
 ```
 
-**Obrigatórias no `Frontend/.env`** (o site aborta sem elas):
+**Backup de imagens no `Frontend/.env`** (opcional — as fotos são salvas na
+pasta `imagens/` do backend; sem estas variáveis só o backup fica desativado):
 
 | Variável | O que é |
 |---|---|
-| `VITE_SUPABASE_URL` | URL do projeto Supabase (fotos) |
+| `VITE_SUPABASE_URL` | URL do projeto Supabase (backup das fotos) |
 | `VITE_SUPABASE_ANON_KEY` | chave pública do Supabase |
 
 **Obrigatórias no `Backend/.env`** para o básico rodar:
@@ -221,7 +221,7 @@ npm run dev            # http://localhost:5173
 | O quê | URL | Esperado |
 |---|---|---|
 | Health da API | http://localhost:3001/api/health | `{"status":"ok",...}` |
-| Site | http://localhost:5173 | home carrega (Supabase ok) |
+| Site | http://localhost:5173 | home carrega |
 
 Se a API responder mas o site não chamar a API, confira `VITE_API_URL` no
 `Frontend/.env` (deve ser `http://localhost:3001`) e reinicie o `npm run dev`.
@@ -244,7 +244,7 @@ O `compose.yaml` na raiz sobe **Postgres + API + site** em containers:
 ```bash
 # 1. variáveis do build do frontend (raiz)
 copy .env.example .env
-#    preencha VITE_SUPABASE_* (obrigatórias) e VITE_API_URL (opcional)
+#    preencha VITE_SUPABASE_* (opcionais — backup de imagens) e VITE_API_URL
 
 # 2. subir tudo
 docker compose up --build
@@ -308,6 +308,7 @@ PI_MERCADINS/
 ├── Backend/
 │   ├── Dockerfile                   # imagem da API (Node 22)
 │   ├── .env.example                 # modelo de variáveis do backend
+│   ├── imagens/                     # fotos enviadas (produtos, mercados, usuários…)
 │   ├── scripts/                     # auditar-sql, dados demo
 │   └── src/
 │       ├── controllers/             # regras de negócio (auth, mercados, pedidos, cupons…)
@@ -315,7 +316,7 @@ PI_MERCADINS/
 │       ├── middleware/              # autenticação, rate limit, CORS
 │       ├── routes/                  # rotas HTTP (inclui /sitemap.xml)
 │       ├── services/                # Asaas, Supabase, envio de E-mails
-│       ├── utils/                   # validações, planos, notificações por telefone
+│       ├── utils/                   # validações, planos, notificações por e-mail
 │       └── server.js                # entrada da API
 ├── Frontend/
 │   ├── Dockerfile                   # build Vite + nginx (proxy de /api)
@@ -341,7 +342,7 @@ PI_MERCADINS/
 
 ## Documentação
 
-- **[docs/API.md](docs/API.md)** — rotas da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, **notificações por telefone**, webhook, administração);
+- **[docs/API.md](docs/API.md)** — rotas da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, **notificações por e-mail**, **upload de imagens**, webhook, administração);
 - **[docs/pagamentos.md](docs/pagamentos.md)** — pagamento: planos, confirmação via webhook, vigência, suspensão, cancelamento e **Split com o vendedor**;
 - **[docs/backup.md](docs/backup.md)** — backup semanal da Neon e como restaurar;
 - **[docs/ambientes.md](docs/ambientes.md)** — desenvolvimento × produção, variáveis de ambiente e Docker.

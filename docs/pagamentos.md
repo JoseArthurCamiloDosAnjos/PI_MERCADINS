@@ -199,7 +199,8 @@ para a conta Asaas do vendedor — ver [§13](#13-split-de-pagamento-dinheiro-di
 A confirmação de um pedido é **idempotente**: webhook e o fallback do
 `GET /pedido` disputam a mesma transição `aguardando_pagamento → pendente`
 com `UPDATE ... WHERE status = 'aguardando_pagamento' RETURNING` — só quem
-atualiza a linha dispara e-mail e notificação por telefone (nunca em dobro).
+atualiza a linha dispara e-mail e registra a notificação no histórico (nunca
+em dobro).
 
 ---
 
@@ -231,17 +232,43 @@ npm run migrate                   # banco local (DB_PROVIDER)
 
 | Variável (Backend) | O que é |
 |---|---|
-| `Assas_API_KEY` | token de acesso à API do Asaas |
-| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API. O código escolhe a URL **pela própria chave**: `$aact_prod_` → produção, `$aact_hmlg_` → sandbox (evita o 401 `invalid_environment` de misturar chave e ambiente); sem chave, cai no `NODE_ENV`/`RENDER` |
-| `ASAAS_AMBIENTE` | opcional: `producao` ou `sandbox` força o ambiente, sobrescrevendo a escolha automática |
-| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token`. **Recomendado em produção**: com ele o payload vem autenticado. Sem ele o webhook aceita o evento e **confere o status na API do Asaas antes de agir** (nada é confirmado pelo corpo da mensagem) |
+| `ASAAS_AMBIENTE` | opcional: `sandbox` ou `producao` — força qual ambiente usar (em branco = produção quando `NODE_ENV=production`/Render, sandbox no desenvolvimento; se só existir a chave legada, o prefixo `$aact_prod_`/`$aact_hmlg_` dela também decide — evita o 401 `invalid_environment`) |
+| `Assas_API_KEY_Sandbox` | chave da API no ambiente de **sandbox** (testes) |
+| `Assas_API_KEY_Producao` | chave da API no ambiente de **produção** (vendas reais) |
+| `Assas_API_KEY` | chave única (legada) — vale para os dois ambientes quando as específicas não estão preenchidas |
+| `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API de cada ambiente (o código escolhe junto com o ambiente ativo) |
+| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token`. **Recomendado em produção**: com ele o payload vem autenticado. Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Sem token o webhook **ainda funciona**: o servidor confere o status de cada cobrança direto na API antes de agir |
 | `FRONTEND_URL` | para onde o Asaas devolve o cliente após pagar (`/registrar-mercado?pagamento=1`) |
+
+**Sandbox × produção:** a chave de sandbox **não** vale na URL de produção e
+vice-versa. Por isso cada ambiente tem a sua chave: a mesma máquina pode ter as
+duas cadastradas e o servidor sempre escolhe a par com a URL certa (não existe
+mais risco de mandar a chave errada para o ambiente errado).
+
+**Build publicado em sandbox (padrão atual):** o `render.yaml` traz
+`ASAAS_AMBIENTE=sandbox`, então o site no ar fala com a API de **teste**
+mesmo rodando com `NODE_ENV=production` — serve para colocar tudo no ar e
+testar pagamento sem movimentar dinheiro. Para isso funcionar no Render:
+
+- cadastrar `Assas_API_KEY_Sandbox` (ou deixar a chave de sandbox na
+  `Assas_API_KEY`) — o boot loga `Asaas: conexão OK — ambiente sandbox …`;
+- registrar o webhook também na **conta sandbox**, apontando para
+  `https://pi-mercadins.onrender.com/api/webhooks/asaas`, e cadastrar o token
+  em `ASAAS_WEBHOOK_TOKEN`.
+
+**Para faturar de verdade:** no painel do Render, troque `ASAAS_AMBIENTE` de
+`sandbox` para `producao` (ou apague a variável — sem ela, `NODE_ENV=production`
+já cai em produção), troque a chave pela de produção e use o webhook da conta
+de produção. Reinicie o serviço e confira no log as linhas
+`Asaas: ambiente producao …` + `Asaas: conexão OK …`.
 
 No painel do Asaas: criar a **integração de webhook** apontando para
 `https://pi-mercadins.onrender.com/api/webhooks/asaas` e marcar os eventos de
 pagamento (`PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`,
-`SUBSCRIPTION_DELETED`). Em desenvolvimento, basta usar o botão
-"Já paguei" — o caminho 2 do §3 substitui o webhook.
+`SUBSCRIPTION_DELETED`). Faça isso **nas duas contas** (sandbox e produção) —
+se os tokens de webhook forem diferentes, cadastre os dois em
+`ASAAS_WEBHOOK_TOKEN` separados por vírgula. Em desenvolvimento, basta usar o
+botão "Já paguei" — o caminho 2 do §3 substitui o webhook.
 
 Nunca versione chaves: só `.env.example` (sem valores) vai para o Git — ver
 [docs/ambientes.md](ambientes.md).
@@ -267,10 +294,11 @@ Sintomas e causas:
 | "aguardando confirmação do banco" | cobrança `PENDING` no Asaas — ainda não liquidou (normal em Pix de teste) |
 | Pagou e a loja não apareceu | conferir `GET /api/assinaturas/minha` e o log do webhook; a consulta imediata deve resolver sozinha |
 | `Dados do mercado inválidos` na ativação | payload de `dados_mercado` fora do formato normalizado (a validação é idempotente, veja `marketController.validarDadosMercado`) |
-| `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` no `.env` |
-| `401 A chave de API fornecida é inválida` | chave **revogada/expirada** — gere outra no painel (Integrações > Chaves API) e atualize `Assas_API_KEY` no `.env`/Render |
-| `401 A chave de API informada não pertence a este ambiente` | chave de um ambiente e URL do outro (o servidor já escolhe a URL pela chave; se persistir, confira `ASAAS_AMBIENTE`) |
+| `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` (ou `Assas_API_KEY_Sandbox`/`_Producao`) no `.env` |
 | Pix do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
+| `401 A chave de API fornecida é inválida` (`invalid_access_token`) | chave **revogada/expirada** — gere outra no painel (Integrações > Chaves API) e atualize no `.env`/Render |
+| `401 A chave de API informada não pertence a este ambiente` / `403` do Asaas ao criar cobrança | chave do ambiente errado (sandbox na produção ou vice-versa) — confira no log a linha `Asaas: ambiente … [chave: …]` |
+| `Não há nenhuma chave Pix disponível para receber cobranças` | a **conta Asaas daquele ambiente** não tem chave Pix cadastrada — cadastrar em *Chaves Pix* no painel (sandbox e produção são contas separadas); até lá o cliente pode pagar de **cartão** |
 | Pedido criado mas **QR vazio** | o `/pixQrCode` demorou — o backend tenta 3× e a tela consulta a cada 10s; se seguir vazio, veja o log `não foi possível buscar o QR do Pix` |
 
 ### Diagnóstico rápido
@@ -285,15 +313,25 @@ da chave** (cache de 30s; nenhum valor sensível é exposto):
 ```json
 { "ambiente": "producao",
   "banco": "auto",
-  "asaas": { "ambiente": "producao", "url_usada": "https://api.asaas.com/",
-             "chave_api": true, "chave_status": "ok", "chave_detalhe": null,
-             "url_producao": true, "url_sandbox": false, "webhook_token": true },
+  "asaas": { "ambiente": "producao",
+             "url_usada": "https://api.asaas.com", "chave_api": true,
+             "chave_fonte": "Assas_API_KEY_Producao",
+             "chave_sandbox": true, "chave_producao": true,
+             "url_producao": true, "url_sandbox": true,
+             "chave_status": "ok", "chave_detalhe": null,
+             "webhook_token": true, "webhook_tokens": 1 },
   "frontend_url": "https://mercadins.com.br" }
 ```
 
-`chave_status` — `ok` · `invalida` (chave revogada/expirada) ·
-`ambiente_errado` (chave de outro ambiente) · `sem_configuracao` · `erro`.
-`chave_api: false` ou `url_usada: null` = variável não cadastrada.
+`asaas.ambiente` diz qual ambiente as chamadas estão usando agora;
+`chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
+`chave_sandbox`/`chave_producao` mostram se cada ambiente tem chave pronta
+(legada `Assas_API_KEY` conta para os dois). Ao subir o servidor, o log mostra
+também a linha `Asaas: ambiente sandbox → https://api-sandbox.asaas.com [chave: Assas_API_KEY_Sandbox]`.
+
+`chave_status` é um **teste ao vivo** da credencial (cache de 30s): `ok` ·
+`invalida` (chave revogada/expirada) · `ambiente_errado` (chave de outro
+ambiente) · `sem_configuracao` · `erro` — `chave_detalhe` traz o motivo exato.
 
 Do terminal (mesma verificação):
 
@@ -305,15 +343,43 @@ node scripts/verificarAsaas.js --pix    # cria 1 cobrança Pix de teste e mostra
 
 ### Checklist de produção (Render)
 
-- [ ] `Assas_API_KEY` = chave **válida** de produção (gerada em Integrações >
-      Chaves API; chave revogada/expirada responde `401 invalid_access_token`);
+- [ ] `ASAAS_AMBIENTE` = `producao` (ou removida) — enquanto valer `sandbox`,
+      o build publicado só testa e **não cobra de verdade**;
+- [ ] `Assas_API_KEY_Producao` = chave de **produção** **válida** (a de sandbox não
+      serve na URL de produção; chave revogada/expirada responde `401 invalid_access_token`);
 - [ ] `Assas_API_URL_Producao=https://api.asaas.com/`;
+- [ ] **Chave Pix** cadastrada e ativa na conta de produção do Asaas (sem ela
+      o Pix do pedido falha com *"Não há nenhuma chave Pix disponível"*);
 - [ ] `FRONTEND_URL=https://mercadins.com.br`;
 - [ ] `ASAAS_WEBHOOK_TOKEN` preenchido **e** a integração de webhook criada no
-      Asaas apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`
-      (sem o webhook, o pedido só é confirmado quando o cliente abre a página —
-      sem o token, o webhook funciona mas confere cada status na API);
+      Asaas (conta de produção) apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`
+      (sem o webhook, o pedido só é confirmado quando o cliente abre a página;
+      sem o token, o webhook funciona mas o servidor confere cada status na API);
 - [ ] Depois de mexer em variável, deixar o Render reiniciar o serviço.
+
+No log do Render, depois de subir, confira as duas linhas de confirmação:
+
+```
+Asaas: ambiente producao → https://api.asaas.com [chave: Assas_API_KEY_Producao]
+Asaas: conexão OK — ambiente producao (https://api.asaas.com) com Assas_API_KEY_Producao
+```
+
+`conexão FALHOU … 403` = chave de outro ambiente; `401` = chave revogada.
+
+### Checklist de sandbox (desenvolvimento)
+
+- [ ] `Assas_API_KEY_Sandbox` = chave de **teste** do sandbox;
+- [ ] `Assas_API_URL_Sandbox=https://api-sandbox.asaas.com/`;
+- [ ] **Chave Pix** criada na conta sandbox (painel → Chaves Pix) — sem ela o
+      Pix de teste falha; cartão e assinatura continuam funcionando;
+- [ ] Split habilitado na conta sandbox (se for testar repasse ao vendedor);
+- [ ] webhook criado também na conta sandbox (ou usar o botão "Já paguei");
+- [ ] em `Backend/.env`: `ASAAS_AMBIENTE=sandbox` (opcional — sem ela o
+      desenvolvimento já cai no sandbox por padrão);
+- [ ] **build publicado (Render):** `ASAAS_AMBIENTE=sandbox` já vem no
+      `render.yaml` — cadastrar `Assas_API_KEY_Sandbox` (ou a chave de sandbox
+      em `Assas_API_KEY`) e registrar o webhook também na conta sandbox;
+- [ ] subir e conferir no log do Render: `Asaas: conexão OK — ambiente sandbox …`.
 
 Quando o pagamento online falha, a API responde `502` com
 `{ "erro": "<mensagem traduzida>", "detalhe": "<motivo exato do Asaas>" }` — o
@@ -332,7 +398,7 @@ Quando o pagamento online falha, a API responde `502` com
 | `Backend/src/utils/planos.js` | limites por plano |
 | `Backend/src/routes/assinaturaRoutes.js` | rotas de assinatura |
 | `Backend/src/controllers/pedidoController.js` | webhook/fallback de pagamento de pedido (idempotência + avisos) |
-| `Backend/src/utils/notificacoes.js` | envio dos avisos por telefone no fluxo de pedido |
+| `Backend/src/utils/notificacoes.js` | registro das notificações (histórico por e-mail) no fluxo de pedido |
 | `Backend/src/server.js` | montagem das rotas + job horário de vigência |
 | `Backend/src/db/migrations/009_*.js`, `010_*.js` | tabelas de pagamento e `suspenso_em` |
 | `Frontend/src/pages/RegistrarMercado/` | checkout, tela de aguardando pagamento e botão "Já paguei" |

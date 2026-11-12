@@ -34,16 +34,6 @@
   }
 }
 
-/* ── TEMA CLARO ── */
-.tema-claro .register-page { background: #f0f2f7; --text-muted: #5c6a84; }
-.tema-claro .register-page .right { background: #f0f2f7; }
-.tema-claro .register-page .form-header h1 { color: #0d2a5e; }
-.tema-claro .register-page .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
-.tema-claro .register-page .field input:focus { background: #ffffff; }
-.tema-claro .register-page .btn-primary { background: #0d2a5e; color: #ffffff; }
-.tema-claro .register-page .login-link { color: #8892a4; }
-.tema-claro .register-page .login-link a { color: #1a3a7a; }
-
 /* ── LEFT PANEL ── */
 .register-page .left {
   width: 46%;
@@ -768,11 +758,3 @@
   .register-page .badge { margin-top: 10px; font-size: 10px; }
 }
 
-/* No celular o formulário fica sobre o fundo com gradiente: no tema claro
-   o cartão passa a ser branco para manter o contraste */
-@media (max-width: 768px) {
-  .tema-claro .register-page .right {
-    background: #ffffff;
-    box-shadow: 0 20px 46px rgba(13, 42, 94, 0.16);
-  }
-}

@@ -32,18 +32,6 @@
   }
 }
 
-/* ── TEMA CLARO ── */
-.tema-claro .login-page { background: #f0f2f7; --text-muted: #5c6a84; }
-.tema-claro .login-page .right { background: #f0f2f7; }
-.tema-claro .login-page .form-header h1 { color: #0d2a5e; }
-.tema-claro .login-page .field input { background: #ffffff; border-color: #dde3ef; color: #0d2a5e; }
-.tema-claro .login-page .field input:focus { background: #ffffff; }
-.tema-claro .login-page .btn-primary { background: #0d2a5e; color: #ffffff; }
-.tema-claro .login-page .btn-secondary { background: #ffffff; color: #0d2a5e; border-color: #dde3ef; }
-.tema-claro .login-page .forgot { color: #1a3a7a; }
-.tema-claro .login-page .login-link { color: #8892a4; }
-.tema-claro .login-page .login-link a { color: #1a3a7a; }
-
 /* ── LEFT PANEL ── */
 .login-page .left {
   width: 46%;
@@ -447,31 +435,3 @@
   .login-page .forgot { margin-bottom: 16px; }
 }
 
-/* ── TEMA CLARO ── */
-.tema-claro .login-page { background: var(--gray); }
-.tema-claro .login-page .right { background: var(--gray); }
-.tema-claro .login-page .right::before {
-  background-image:
-    linear-gradient(rgba(13,42,94,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(13,42,94,0.06) 1px, transparent 1px);
-}
-.tema-claro .login-page .form-header h1 { color: var(--navy); }
-.tema-claro .login-page .form-header p { color: var(--text-muted); }
-.tema-claro .login-page .field input { background: var(--white); border-color: var(--input-border); color: var(--navy); }
-.tema-claro .login-page .field input:focus { background: var(--white); }
-.tema-claro .login-page .btn-primary { background: var(--navy); color: var(--white); }
-.tema-claro .login-page .btn-secondary { background: var(--white); color: var(--navy); border-color: var(--input-border); }
-.tema-claro .login-page .forgot { color: var(--navy-mid); }
-.tema-claro .login-page .divider { color: var(--text-muted); }
-.tema-claro .login-page .badge { color: var(--text-muted); }
-.tema-claro .login-page .login-link { color: var(--text-muted); }
-.tema-claro .login-page .login-link a { color: var(--navy-mid); }
-
-/* No celular o formulário fica sobre o fundo com gradiente: no tema claro
-   o cartão passa a ser branco para manter o contraste */
-@media (max-width: 768px) {
-  .tema-claro .login-page .right {
-    background: var(--white);
-    box-shadow: 0 20px 46px rgba(13, 42, 94, 0.16);
-  }
-}

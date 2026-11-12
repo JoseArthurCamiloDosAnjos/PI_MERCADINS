@@ -531,18 +531,26 @@ const cancelarAssinatura = async (req, res) => {
 // Quando o pagamento confirma e a assinatura ainda não tem mercado, cria o
 // mercado a partir de dados_mercado (o cadastro só acontece após o pagamento).
 const webhookAsaas = async (req, res) => {
-  const tokenWebhook = process.env.ASAAS_WEBHOOK_TOKEN;
-  const tokenRecebido = req.headers['webhook-security-token'];
+  // Aceita um ou mais tokens separados por vírgula — assim a integração de
+  // webhook do SANDBOX e a de PRODUÇÃO (contas Asaas diferentes, tokens
+  // diferentes) apontam para a mesma URL e são aceitas as duas.
+  const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const tokenRecebido = String(req.headers['webhook-security-token'] || '').trim();
 
-  if (tokenWebhook && tokenRecebido !== tokenWebhook) {
-    return res.status(401).json({ erro: 'Token de webhook inválido.' });
-  }
-  // Sem token configurado o payload não vem autenticado — em vez de recusar
-  // (o Asaas reenviaria e NADA seria confirmado em produção), aceita e confere
-  // o status DIRETO na API do Asaas antes de qualquer efeito (ver abaixo).
-  if (!tokenWebhook) {
+  if (tokensAceitos.length > 0) {
+    if (!tokensAceitos.includes(tokenRecebido)) {
+      return res.status(401).json({ erro: 'Token de webhook inválido.' });
+    }
+  } else {
+    // Sem token configurado o payload não vem autenticado — em vez de recusar
+    // (o Asaas reenviaria e NADA seria confirmado em produção), aceita e confere
+    // o status DIRETO na API do Asaas antes de qualquer efeito (ver abaixo).
     console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — eventos aceitos sem token; o status é verificado na API do Asaas antes de agir.');
   }
+  const temToken = tokensAceitos.length > 0;
 
   const evento = req.body?.event;
   const pagamento = req.body?.payment;
@@ -565,7 +573,7 @@ const webhookAsaas = async (req, res) => {
     // cobrança pelos da API do Asaas (fonte da verdade). Assim um evento
     // forjado não consegue nem ativar assinatura nem confirmar pedido.
     // Falhou a consulta → 500 e o Asaas reenvia o evento depois.
-    if (!tokenWebhook && pagamento?.id) {
+    if (!temToken && pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);
       if (fonte) Object.assign(pagamento, fonte);
     }

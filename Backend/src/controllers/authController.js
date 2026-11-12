@@ -10,7 +10,7 @@ const {
 } = require("../utils/validators");
 const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } = require("../utils/mailer");
 const { VERSAO_TERMOS, MENSAGEM_ACEITE_OBRIGATORIO } = require("../utils/termos");
-const { enviarNotificacaoTelefone } = require("../utils/notificacoes");
+const { enviarNotificacao } = require("../utils/notificacoes");
 
 // Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
@@ -74,15 +74,15 @@ const signUp = async (req, res) => {
       RETURNING id_usuario
     `;
 
-    // Aviso no telefone cadastrado. Sem provedor configurado ele fica no
-    // histórico da conta e pode ser aberto no WhatsApp. Fire-and-forget:
-    // o cadastro não espera o envio (timeout de 8 s no provedor).
-    enviarNotificacaoTelefone(sql, {
+    // Histórico da conta (aba Notificações). O e-mail de verificação já foi
+    // enviado acima, então aqui é só registro — fire-and-forget.
+    enviarNotificacao(sql, {
       id_usuario: novoUsuario?.id_usuario ?? null,
-      telefone,
+      email,
       tipo: 'cadastro',
       titulo: 'Cadastro realizado',
       mensagem: `Olá, ${nome.split(' ')[0]}! Seu cadastro no Mercadins foi realizado com sucesso. Confirme seu e-mail para ativar a conta e começar a comprar.`,
+      enviarEmail: false,
     }).catch((err) => console.error('Falha na notificação de cadastro:', err.message));
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
@@ -106,7 +106,7 @@ const verificarEmail = async (req, res) => {
     const sql = await conectar();
 
     const [usuario] = await sql`
-      SELECT id_usuario, nome, telefone, token_expiracao FROM usuarios
+      SELECT id_usuario, nome, email, telefone, token_expiracao FROM usuarios
       WHERE token_verificacao = ${codigo} AND email_verificado = FALSE
     `;
 
@@ -126,9 +126,9 @@ const verificarEmail = async (req, res) => {
     `;
 
     // Fire-and-forget: não bloqueia a resposta de e-mail confirmado.
-    enviarNotificacaoTelefone(sql, {
+    enviarNotificacao(sql, {
       id_usuario: usuario.id_usuario,
-      telefone: usuario.telefone,
+      email: usuario.email,
       tipo: 'email_confirmado',
       titulo: 'E-mail confirmado',
       mensagem: `Olá, ${String(usuario.nome || '').split(' ')[0]}! Seu e-mail foi confirmado com sucesso. Sua conta no Mercadins está ativa.`,

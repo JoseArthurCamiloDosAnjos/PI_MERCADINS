@@ -33,15 +33,6 @@
   animation: cs-slide 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.cs-overlay[data-tema="claro"] .cs-painel {
-  --cs-bg: #ffffff;
-  --cs-bg-topo: #f7f9fd;
-  --cs-borda: #e3e7f0;
-  --cs-texto: #10182b;
-  --cs-texto-sec: #6b7690;
-  --cs-item-bg: #f3f5fa;
-}
-
 @keyframes cs-fade {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -182,7 +173,6 @@
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.cs-overlay[data-tema="claro"] .cs-stepper button { background: #e8ecf5; }
 .cs-stepper button:hover:not(:disabled) { background: var(--vt-amarelo, #f5c518); color: #0a1628; }
 .cs-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
 

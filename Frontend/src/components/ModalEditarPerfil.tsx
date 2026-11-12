@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../hooks/useBlockEmojis';
 import { api } from '../services/api';
-import { enviarImagem } from '../services/imagens';
+import { uploadImagem } from '../services/upload';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';
@@ -128,10 +128,12 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
       let foto_perfil_url: string | undefined;
 
       if (fotoFile) {
-        try {
-          foto_perfil_url = await enviarImagem(fotoFile, { maxLado: 512 });
-        } catch (erro) {
-          console.error('Erro ao enviar foto:', erro);
+        // Salva na pasta imagens/usuarios/ do backend (URL que vai para o
+        // banco) e mantém cópia de backup no Supabase.
+        foto_perfil_url = (await uploadImagem(fotoFile, 'usuarios')) ?? undefined;
+
+        if (!foto_perfil_url) {
+          console.error('Erro ao enviar foto de perfil.');
           showToast('erro', 'Erro ao enviar foto de perfil.');
           setSalvando(false);
           return;
@@ -184,7 +186,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
             <input
               ref={inputFotoRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               style={{ display: 'none' }}
               onChange={handleFoto}
             />

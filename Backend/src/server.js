@@ -17,9 +17,9 @@ const assinaturaRoutes       = require('./routes/assinaturaRoutes.js')
 const enderecoRoutes         = require('./routes/enderecoRoutes.js')
 const notificacaoRoutes      = require('./routes/notificacaoRoutes.js')
 const { webhookAsaas }       = require('./controllers/assinaturaController.js')
+const asaasService           = require('./services/asaasService.js')
 const { conectar }           = require('./db/neon.js')
 const { encerrarVencidas }   = require('./services/vigenciaService.js')
-const asaas                  = require('./services/asaasService.js')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -103,36 +103,56 @@ app.use('/api/mercados/:mercadoId/categorias/:categoriaId/produtos',    produtoR
 app.use('/api/assinaturas',        assinaturaRoutes)
 app.use('/api/enderecos',          enderecoRoutes)
 app.use('/api/notificacoes',       notificacaoRoutes)
+app.use('/api/upload',             require('./routes/uploadRoutes.js'))
 app.use('/api/catalogo',           require('./routes/catalogoRoutes.js'))
 app.use('/api/imagens',            require('./routes/imagemRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
+// ── Imagens locais (pasta Backend/imagens/) ──────────────────────────────────
+// Servidas em /imagens/<categoria>/<arquivo> — o caminho gravado no banco.
+// A mesma pasta do upload (middleware/upload.js, IMAGENS_DIR opcional).
+const { RAIZ_IMAGENS } = require('./middleware/upload.js')
+app.use('/imagens', express.static(RAIZ_IMAGENS, {
+  maxAge: '7d',
+  fallthrough: true,
+}))
+
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────
-// Devolve a PRESENÇA das variáveis do Asaas + um teste AO VIVO da chave —
-// resolve em 10 segundos a dúvida "a credencial está valendo?". Nenhum valor
-// sensível é exposto; o teste fica em cache por 30s para não bater no Asaas
-// a cada refresh.
+// Devolve a PRESENÇA das variáveis do Asaas + um teste AO VIVO da chave
+// (cache de 30s) — resolve em 10 segundos a dúvida "a credencial está valendo?".
+// Nenhum valor sensível é exposto.
 let saudeCache = { em: 0, teste: null }
 
 app.get('/api/saude/pagamentos', async (_req, res) => {
   const agora = Date.now()
   if (!saudeCache.teste || agora - saudeCache.em > 30_000) {
-    saudeCache = { em: agora, teste: await asaas.verificarChave() }
+    saudeCache = { em: agora, teste: await asaasService.verificarChave() }
   }
+  const tokensWebhook = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+
   res.json({
     ambiente: isProduction ? 'producao' : 'desenvolvimento',
     banco: process.env.DB_PROVIDER || 'auto',
     asaas: {
-      ambiente: asaas.AMBIENTE,
-      url_usada: asaas.BASE_URL || null,
+      // Ambiente que as chamadas ao Asaas estão usando agora (sandbox × produção)
+      ambiente: asaasService.ambienteAsaas(),
+      url_usada: asaasService.baseUrlAsaas(),
       url_producao: !!process.env.Assas_API_URL_Producao,
       url_sandbox: !!process.env.Assas_API_URL_Sandbox,
-      chave_api: !!process.env.Assas_API_KEY,
+      // Chave presente em cada ambiente (a legada Assas_API_KEY vale para os dois)
+      chave_api: Boolean(asaasService.chaveApi()),
+      chave_fonte: asaasService.fonteChave(),
+      chave_sandbox: Boolean(process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY),
+      chave_producao: Boolean(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY),
       // ok | invalida (chave revogada/expirada) | ambiente_errado (chave de
-      // outro ambiente) | sem_configuracao | erro
+      // outro ambiente) | sem_configuracao | erro — teste ao vivo da credencial
       chave_status: saudeCache.teste.status,
       chave_detalhe: saudeCache.teste.erro || null,
-      webhook_token: !!process.env.ASAAS_WEBHOOK_TOKEN,
+      webhook_token: tokensWebhook.length > 0,
+      webhook_tokens: tokensWebhook.length,
     },
     frontend_url: process.env.FRONTEND_URL || null,
   })
@@ -163,6 +183,19 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
+  // Confere se a chave do Asaas do ambiente ativo funciona (só leitura).
+  // 403 = chave de outro ambiente; 401 = chave revogada/errada.
+  asaasService.verificarConexao().then((resultado) => {
+    if (resultado.ok) {
+      console.log(
+        `Asaas: conexão OK — ambiente ${resultado.ambiente} (${resultado.url}) com ${resultado.fonte}`
+      )
+    } else {
+      console.error(
+        `Asaas: conexão FALHOU — ambiente ${resultado.ambiente} (${resultado.url}) com ${resultado.fonte || 'nenhuma chave'}: ${resultado.erro}`
+      )
+    }
+  })
 })
 
 // ── Vigência das assinaturas ──────────────────────────────────────────────────

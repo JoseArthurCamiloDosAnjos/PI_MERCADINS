@@ -1,23 +1,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Notificações por telefone
+//  Notificações por e-mail
 //
-//  Mostra o histórico dos avisos que o Mercadins mandou (ou registrou) para o
-//  telefone cadastrado: cadastro concluído, e-mail confirmado, mercado criado,
-//  pedido recebido, saiu para entrega, entregue, cancelado...
+//  Mostra o histórico dos avisos que o Mercadins enviou (ou registrou) por
+//  e-mail: cadastro concluído, e-mail confirmado, mercado criado, pedido
+//  recebido, saiu para entrega, entregue, cancelado...
 //
-//  Enquanto o serviço de WhatsApp/SMS não estiver contratado, cada aviso fica
-//  com o botão "Abrir no WhatsApp": a mensagem já vai escrita e a pessoa só
-//  escolhe o contato. Nada se perde.
+//  O envio automático usa o mesmo serviço de e-mail do sistema (Resend) e o
+//  histórico fica guardado na conta — nada se perde.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { IconBell, IconPhone } from '../Icons';
+import { IconBell, IconMail } from '../Icons';
 import './TelaNotificacoes.css';
 
 interface Notificacao {
   id: number;
-  telefone: string;
+  telefone?: string;
   canal: string;
   tipo: string;
   titulo: string;
@@ -27,7 +26,6 @@ interface Notificacao {
   lida: boolean;
   criado_em: string;
   enviado_em?: string | null;
-  linkWhatsApp?: string;
 }
 
 const ROTULOS_STATUS: Record<string, string> = {
@@ -52,9 +50,8 @@ function formatarData(valor: string) {
 
 export default function TelaNotificacoes() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
-  const [telefone, setTelefone] = useState('');
+  const [email, setEmail] = useState('');
   const [canalConfigurado, setCanalConfigurado] = useState(false);
-  const [canal, setCanal] = useState('whatsapp');
   const [naoLidas, setNaoLidas] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [enviandoTeste, setEnviandoTeste] = useState(false);
@@ -69,9 +66,8 @@ export default function TelaNotificacoes() {
       const dados = await api.listarNotificacoes();
       setNotificacoes(dados.notificacoes ?? []);
       setNaoLidas(Number(dados.naoLidas ?? 0));
-      setTelefone(dados.telefone ?? '');
+      setEmail(dados.email ?? '');
       setCanalConfigurado(Boolean(dados.canalConfigurado));
-      setCanal(dados.canal ?? 'whatsapp');
     } catch (falha) {
       setErro(
         falha instanceof Error
@@ -159,9 +155,9 @@ export default function TelaNotificacoes() {
           <IconBell size={22} />
         </div>
         <div>
-          <h2 className="notificacoes__titulo">Avisos no seu telefone</h2>
+          <h2 className="notificacoes__titulo">Avisos por e-mail</h2>
           <p className="notificacoes__texto">
-            O Mercadins usa o telefone do seu cadastro para avisar quando algo
+            O Mercadins usa o e-mail do seu cadastro para avisar quando algo
             importante acontece: conta criada, e-mail confirmado, loja criada e
             andamento dos pedidos.
           </p>
@@ -170,16 +166,14 @@ export default function TelaNotificacoes() {
 
       <div className="notificacoes__resumo">
         <div>
-          <span className="notificacoes__rotulo">Telefone cadastrado</span>
+          <span className="notificacoes__rotulo">E-mail cadastrado</span>
           <strong className="notificacoes__telefone">
-            {telefone || 'Nenhum telefone cadastrado'}
+            {email || 'Nenhum e-mail cadastrado'}
           </strong>
         </div>
         <div>
           <span className="notificacoes__rotulo">Canal</span>
-          <strong className="notificacoes__telefone">
-            {canal === 'sms' ? 'SMS' : 'WhatsApp'}
-          </strong>
+          <strong className="notificacoes__telefone">E-mail</strong>
         </div>
         <div>
           <span className="notificacoes__rotulo">Envio automático</span>
@@ -195,9 +189,8 @@ export default function TelaNotificacoes() {
 
       {!canalConfigurado && (
         <p className="notificacoes__explicacao">
-          O envio automático depende de um serviço de WhatsApp ou SMS
-          contratado. Até lá, cada aviso fica guardado aqui e pode ser aberto no
-          WhatsApp com a mensagem pronta — nada é perdido.
+          O envio automático de e-mail depende da chave do serviço configurada
+          no servidor. Até lá, cada aviso fica guardado aqui no histórico.
         </p>
       )}
 
@@ -206,9 +199,9 @@ export default function TelaNotificacoes() {
           type="button"
           className="notificacoes__btn-teste"
           onClick={enviarTeste}
-          disabled={enviandoTeste || !telefone}
+          disabled={enviandoTeste || !email}
         >
-          <IconPhone size={15} />
+          <IconMail size={15} />
           {enviandoTeste ? 'Registrando teste...' : 'Enviar aviso de teste'}
         </button>
         <button
@@ -277,16 +270,6 @@ export default function TelaNotificacoes() {
             <div className="notificacoes__item-rodape">
               <span>{formatarData(item.criado_em)}</span>
               <div className="notificacoes__item-acoes">
-                {item.linkWhatsApp && (
-                  <a
-                    className="notificacoes__link"
-                    href={item.linkWhatsApp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Abrir no WhatsApp
-                  </a>
-                )}
                 {!item.lida && (
                   <button
                     type="button"

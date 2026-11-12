@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
-import { enviarImagem } from '../../services/imagens'
+import { uploadImagem, ehImagemValida } from '../../services/upload'
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../../utils/tiposLoja'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ export default function Catalogo() {
     if (!files) return
     const lista = Array.from(files)
     const validas = lista.filter(
-      f => f.type.startsWith('image/') && f.size <= MAX_TAMANHO_MB * 1024 * 1024
+      f => ehImagemValida(f) && f.size <= MAX_TAMANHO_MB * 1024 * 1024
     )
     if (validas.length !== lista.length) {
       showToast('erro', `Só imagens de até ${MAX_TAMANHO_MB} MB foram aceitas.`)
@@ -163,13 +163,10 @@ export default function Catalogo() {
     setImagens(prev => prev.filter((_, i) => i !== idx))
   }
 
-  async function uploadImagem(file: File): Promise<string | null> {
-    try {
-      return await enviarImagem(file, { maxLado: 1200 })
-    } catch (erro) {
-      console.error('Erro ao enviar imagem:', erro)
-      return null
-    }
+  // Salva na pasta imagens/catalogo/ do backend (URL que vai para o banco)
+  // e mantém cópia de backup no Supabase.
+  async function uploadParaSupabase(file: File): Promise<string | null> {
+    return uploadImagem(file, 'catalogo')
   }
 
   async function salvar() {
@@ -188,7 +185,7 @@ export default function Catalogo() {
       const urls: string[] = []
       for (const img of imagens) {
         if (img.file) {
-          const url = await uploadImagem(img.file)
+          const url = await uploadParaSupabase(img.file)
           if (!url) {
             setErroForm('Não foi possível enviar uma das imagens. Tente novamente.')
             return
@@ -512,7 +509,7 @@ export default function Catalogo() {
                   <input
                     ref={inputFileRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/webp"
                     multiple
                     hidden
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {

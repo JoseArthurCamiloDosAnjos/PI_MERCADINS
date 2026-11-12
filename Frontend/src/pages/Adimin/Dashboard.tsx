@@ -115,7 +115,8 @@ export default function Dashboard() {
           <div key={key} className="adm-stat-card" style={{ borderTopColor: color }}>
             <div className="adm-stat-icon" style={{ color }}>{icon}</div>
             <div className="adm-stat-info">
-              <span className="adm-stat-val">{dados.metricas[key]}</span>
+              {/* Contagem sempre em inteiro: "12", nunca "12,00" */}
+              <span className="adm-stat-val">{Math.round(Number(dados.metricas[key]) || 0).toLocaleString('pt-BR')}</span>
               <span className="adm-stat-lbl">{label}</span>
             </div>
           </div>

@@ -128,53 +128,6 @@ export default function Sobre() {
         </div>
       </section>
 
-      <section className="inst-section inst-legal">
-        <h2>Agradecimento especial</h2>
-        <p>
-          A quem contribuiu de forma decisiva para a construção deste projeto,
-          nosso sincero agradecimento:
-        </p>
-
-        <div className="inst-team">
-          <div className="inst-team-card">
-            <span className="inst-team-avatar" aria-hidden="true">GD</span>
-            <div>
-              <h3>Professor Gustavo Del Vechio</h3>
-              <p>Orientador da PI</p>
-              <p className="inst-team-desc">
-                Nosso orientador no Projeto Integrador: pela paciência,
-                orientação e apoio do início ao fim deste projeto.
-              </p>
-            </div>
-          </div>
-
-          <div className="inst-team-card">
-            <span className="inst-team-avatar" aria-hidden="true">RC</span>
-            <div>
-              <h3>Raiane de Oliveira Cecilio</h3>
-              <p>Agradecimento especial</p>
-              <p className="inst-team-desc">
-                Nosso agradecimento especial pelo apoio, incentivo e
-                contribuição que foram essenciais para a construção deste
-                projeto.
-              </p>
-            </div>
-          </div>
-
-          <div className="inst-team-card">
-            <span className="inst-team-avatar" aria-hidden="true">CC</span>
-            <div>
-              <h3>Professor Carlos Pereira De Castro Filho</h3>
-              <p>Professor de IoT e Programação Mobile</p>
-              <p className="inst-team-desc">
-                Nosso agradecimento especial pelas ótimas ideias e possíveis
-                melhorias que trouxe para o projeto.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="inst-ctas">
         <Link className="inst-cta" to="/mercados-parceiros">
           Conhecer mercados parceiros

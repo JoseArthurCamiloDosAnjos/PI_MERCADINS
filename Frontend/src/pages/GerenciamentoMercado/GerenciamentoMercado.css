@@ -194,6 +194,33 @@
 }
 .gm-btn-sec:hover { border-color: var(--branco-suave); color: var(--branco); }
 
+/* Foco visível para quem navega pelo teclado (não aparece para o mouse,
+   então o desenho pronto da barra não muda) */
+.gm-btn-back:focus-visible,
+.gm-btn-sec:focus-visible {
+  outline: 3px solid var(--amarelo);
+  outline-offset: 2px;
+}
+
+/* "Ver vitrine" é a ação principal da barra do vendedor: ganha o destaque
+   da marca para não passar despercebida ao lado de "Meus mercados".
+   Só este botão recebe o realce — os outros .gm-btn-sec da tela seguem
+   exatamente como estavam. */
+.gm-btn-vitrine {
+  background: var(--amarelo);
+  border-color: var(--amarelo);
+  color: var(--azul-escuro);
+  padding: 9px 20px;
+  font-size: 13px;
+}
+.gm-btn-vitrine:hover {
+  background: var(--amarelo);
+  border-color: var(--amarelo);
+  color: var(--azul-escuro);
+  opacity: 0.88;
+}
+.gm-btn-vitrine:focus-visible { outline-color: var(--azul-claro); }
+
 .gm-content {
   flex: 1;
   overflow-y: auto;

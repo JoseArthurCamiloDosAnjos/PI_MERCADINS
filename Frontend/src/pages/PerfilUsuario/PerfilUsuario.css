@@ -69,6 +69,13 @@
   gap: 1.6rem;
 }
 
+/* Âncora do histórico de compras: ao chegar por atalho (#historico-compras,
+   ex.: botão "Perfil" da tela de acompanhar pedido) a seção precisa parar
+   ABAIXO da barra fixa do topo, senão o título fica escondido atrás dela */
+#historico-compras {
+  scroll-margin-top: 5rem;
+}
+
 .pu-sec-title {
   font-size: 15px;
   font-weight: 800;

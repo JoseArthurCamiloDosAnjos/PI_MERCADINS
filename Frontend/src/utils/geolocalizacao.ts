@@ -3,9 +3,11 @@
 //
 //  Quando a pessoa toca em "Usar minha localização", o navegador pede
 //  autorização e devolve as coordenadas. Aí:
-//    1) BigDataCloud (serviço gratuito) transforma as coordenadas em CEP,
-//       rua, bairro, cidade e estado;
-//    2) ViaCEP confirma e completa os dados do CEP no padrão brasileiro.
+//    1) Photon (dados do OpenStreetMap) transforma as coordenadas em CEP,
+//       rua, bairro e cidade. É a única fonte gratuita que devolve CEP no
+//       Brasil e que aceita chamada direta do navegador (CORS liberado);
+//    2) BigDataCloud entra como reserva, quando o Photon não achar nada;
+//    3) ViaCEP confirma e completa os dados do CEP no padrão brasileiro.
 //
 //  Se qualquer etapa falhar, quem chamou recebe uma mensagem clara e o
 //  preenchimento manual do CEP continua funcionando normalmente. Nada é
@@ -25,12 +27,78 @@ export interface EnderecoLocalizado {
 /** Erro com mensagem pronta para mostrar na tela. */
 export class ErroLocalizacao extends Error {}
 
+/** Fonte 1 — Photon/OSM. Aceita chamada do navegador e tem CEP no Brasil. */
+interface PhotonProps {
+  postcode?: string;
+  street?: string;
+  district?: string;
+  suburb?: string;
+  locality?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  county?: string;
+  state?: string;
+}
+
+interface RespostaPhoton {
+  features?: Array<{ properties?: PhotonProps }>;
+}
+
+/** Fonte 2 — BigDataCloud (reserva). No Brasil o CEP costuma vir vazio. */
 interface RespostaBigDataCloud {
   postcode?: string;
   street?: string;
   locality?: string;
   city?: string;
   principalSubdivisionCode?: string;
+}
+
+/** Estado por extenso (como o OpenStreetMap devolve) → sigla de 2 letras */
+const SIGLAS_UF: Record<string, string> = {
+  acre: "AC",
+  alagoas: "AL",
+  amapa: "AP",
+  amazonas: "AM",
+  bahia: "BA",
+  ceara: "CE",
+  "distrito federal": "DF",
+  "espirito santo": "ES",
+  goias: "GO",
+  maranhao: "MA",
+  "mato grosso": "MT",
+  "mato grosso do sul": "MS",
+  "minas gerais": "MG",
+  para: "PA",
+  paraiba: "PB",
+  parana: "PR",
+  pernambuco: "PE",
+  piaui: "PI",
+  "rio de janeiro": "RJ",
+  "rio grande do norte": "RN",
+  "rio grande do sul": "RS",
+  rondonia: "RO",
+  roraima: "RR",
+  "santa catarina": "SC",
+  "sao paulo": "SP",
+  sergipe: "SE",
+  tocantins: "TO",
+};
+
+/** Só os dígitos, do jeito que o ViaCEP e as máscaras de tela esperam */
+function digitos(valor: unknown): string {
+  return String(valor ?? "").replace(/\D/g, "").slice(0, 8);
+}
+
+/** "SP" → "SP"; "São Paulo" → "SP"; qualquer outra coisa → "" */
+function ufDe(valor: unknown): string {
+  const texto = String(valor ?? "").trim();
+  if (/^[A-Za-z]{2}$/.test(texto)) return texto.toUpperCase();
+  const normalizado = texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return SIGLAS_UF[normalizado] ?? "";
 }
 
 /** O navegador da pessoa oferece localização? */
@@ -58,6 +126,52 @@ function pegarPosicao(): Promise<GeolocationPosition> {
   });
 }
 
+/** Photon/OSM: a fonte que devolve o CEP de verdade por aqui */
+async function buscarPhoton(latitude: number, longitude: number): Promise<Partial<EnderecoLocalizado> | null> {
+  try {
+    const resposta = await fetch(
+      `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&limit=1`
+    );
+    if (!resposta.ok) return null;
+    const dados = (await resposta.json()) as RespostaPhoton;
+    const p = dados.features?.[0]?.properties;
+    if (!p) return null;
+    return {
+      cep: digitos(p.postcode),
+      rua: String(p.street ?? "").trim(),
+      bairro: String(p.district ?? p.suburb ?? p.locality ?? "").trim(),
+      cidade: String(p.city ?? p.town ?? p.village ?? p.county ?? "").trim(),
+      estado: String(p.state ?? "").trim(),
+    };
+  } catch {
+    // Sem internet ou serviço fora do ar: quem chama tenta a reserva.
+    return null;
+  }
+}
+
+/** BigDataCloud: reserva quando o Photon não devolve endereço nenhum */
+async function buscarBigDataCloud(
+  latitude: number,
+  longitude: number
+): Promise<Partial<EnderecoLocalizado> | null> {
+  try {
+    const resposta = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`
+    );
+    if (!resposta.ok) return null;
+    const dados = (await resposta.json()) as RespostaBigDataCloud;
+    return {
+      cep: digitos(dados.postcode),
+      rua: String(dados.street ?? "").trim(),
+      bairro: String(dados.locality ?? "").trim(),
+      cidade: String(dados.city ?? dados.locality ?? "").trim(),
+      estado: String(dados.principalSubdivisionCode ?? "").split("-")[1]?.trim() ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Pede autorização ao navegador e devolve o endereço aproximado.
  * Lança ErroLocalizacao com uma frase amigável quando não dá certo.
@@ -80,26 +194,20 @@ export async function obterEnderecoPorLocalizacao(): Promise<EnderecoLocalizado>
 
   const { latitude, longitude } = posicao.coords;
 
-  let dados: RespostaBigDataCloud | null = null;
-  try {
-    const resposta = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`
-    );
-    if (resposta.ok) {
-      dados = (await resposta.json()) as RespostaBigDataCloud;
-    }
-  } catch {
-    // Sem internet ou serviço fora do ar: seguimos com o que o navegador deu.
-  }
+  // Photon primeiro: é ele que tem o CEP. Só quando ele não achar nada é que
+  // o BigDataCloud é chamado (assim não gasta a cota dele à toa).
+  const photon = await buscarPhoton(latitude, longitude);
+  const temEndereco = !!(photon && (photon.cep || photon.rua || photon.cidade));
+  const reserva = temEndereco ? null : await buscarBigDataCloud(latitude, longitude);
 
-  const cep = String(dados?.postcode ?? "").replace(/\D/g, "").slice(0, 8);
-  let rua = String(dados?.street ?? "").trim();
-  let bairro = String(dados?.locality ?? "").trim();
-  let cidade = String(dados?.city ?? dados?.locality ?? "").trim();
-  let estado =
-    String(dados?.principalSubdivisionCode ?? "").split("-")[1]?.trim() ?? "";
+  const fonte: Partial<EnderecoLocalizado> | null = temEndereco ? photon : reserva;
+  const cep = digitos(fonte?.cep);
+  let rua = String(fonte?.rua ?? "").trim();
+  let bairro = String(fonte?.bairro ?? "").trim();
+  let cidade = String(fonte?.cidade ?? "").trim();
+  let estado = ufDe(fonte?.estado);
 
-  // O ViaCEP é a fonte brasileira mais confiável para rua/bairro/cidade.
+  // O ViaCEP é a fonte brasileira mais confiável para rua/bairro/cidade/UF.
   if (cep.length === 8) {
     const viaCep = await buscarCep(cep);
     if (viaCep) {

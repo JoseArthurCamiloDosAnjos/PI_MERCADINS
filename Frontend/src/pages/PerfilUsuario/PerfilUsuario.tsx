@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -510,7 +510,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
 
       <div className="pu-divider" />
 
-      <section>
+      <section id="historico-compras">
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconShoppingBag size={14} /></span>Histórico de Compras</h2>
           <button className="pu-btn-link">Ver todos</button>
@@ -942,10 +942,22 @@ export default function PerfilUsuario() {
   const anteriorNav = useRef(0);
   const [modalAberto, setModalAberto] = useState(false);
   const { usuario } = useAuth();
+  const { hash } = useLocation();
 
   const [favoritos, setFavoritos] = useState<Favorito[]>([]);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+
+  // Quem chega pelo atalho #historico-compras (botão "Perfil" do
+  // acompanhamento de pedido) é levado até a seção do histórico de compras.
+  // A espera cobre a troca de tela com fade que acontece na abertura.
+  useEffect(() => {
+    if (hash !== '#historico-compras') return;
+    const alvo = document.getElementById('historico-compras');
+    if (!alvo) return;
+    const t = setTimeout(() => alvo.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   useEffect(() => {
     async function carregarDados() {

@@ -2,6 +2,7 @@ import { Suspense, lazy, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import AdminSidebar from './AdminSidebar'
+import { IconEye } from '../../components/Icons'
 import './Admin.css'
 
 // Cada aba carrega em seu próprio arquivo: os gráficos (recharts, ~350 KB)
@@ -13,7 +14,17 @@ const Catalogo = lazy(() => import('./Catalogo'))
 const Relatorios = lazy(() => import('./Relatorios'))
 const Configuracoes = lazy(() => import('./Configuracoes'))
 
-const ABAS = ['Dashboard', 'Usuários', 'Mercados', 'Catálogo', 'Relatórios', 'Configurações']
+// Título + descrição de cada aba: o título é o que a barra superior mostra,
+// a descrição explica o que a pessoa encontra na tela (mesmo padrão das
+// outras áreas do Mercadins, que sempre situam quem está navegando).
+const ABAS = [
+  { nome: 'Dashboard', desc: 'Visão geral da plataforma em tempo real' },
+  { nome: 'Usuários', desc: 'Contas cadastradas e permissões de acesso' },
+  { nome: 'Mercados', desc: 'Lojas parceiras e a situação de cada uma' },
+  { nome: 'Catálogo', desc: 'Produtos e categorias cadastrados nas lojas' },
+  { nome: 'Relatórios', desc: 'Pedidos, entregas e faturamento por período' },
+  { nome: 'Configurações', desc: 'Perfil do administrador e segurança da conta' },
+]
 
 export default function Adiministrador() {
   const { usuario } = useAuth()
@@ -35,7 +46,13 @@ export default function Adiministrador() {
       <AdminSidebar navAtivo={abaAtiva} onNav={setAbaAtiva} />
       <main className="adm-main">
         <header className="adm-header">
-          <h1>{ABAS[abaAtiva]}</h1>
+          <div className="adm-header-texto">
+            <h1>{ABAS[abaAtiva].nome}</h1>
+            <p>{ABAS[abaAtiva].desc}</p>
+          </div>
+          <a className="adm-header-site" href="/" target="_blank" rel="noreferrer">
+            <IconEye size={15} /> Ver site
+          </a>
         </header>
         <section className="adm-content">
           <Suspense fallback={<p className="adm-carregando">Carregando…</p>}>

@@ -18,23 +18,79 @@
      o que passa da largura da janela, sem barra de rolagem para alcançar. */
   min-width: 0;
   margin-left: 240px;
-  padding: 24px 32px;
   min-height: 100vh;
+  /* Coluna para a barra superior poder grudar no topo da janela */
+  display: flex;
+  flex-direction: column;
 }
 
+/* ── Barra superior ────────────────────────────────────────────────────────
+   Mesmo padrão das outras telas do Mercadins (perfil e gerenciamento de
+   loja): fundo da barra, borda embaixo e o título sempre à vista — em
+   relatórios e tabelas longas não precisa rolar até o topo para saber em
+   que aba se está. */
+
 .adm-header {
-  margin-bottom: 28px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 1rem 1.8rem;
+  background: var(--azul-sidebar);
+  border-bottom: 1px solid var(--azul-borda);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.adm-header-texto {
+  min-width: 0;
 }
 
 .adm-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--branco);
   font-family: var(--font);
+  line-height: 1.2;
+}
+
+.adm-header p {
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: var(--cinza-texto);
+}
+
+/* Atalho para conferir a loja do jeito que o cliente vê (abre em outra aba,
+   para o painel continuar aberto) */
+.adm-header-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.adm-header-site:hover { opacity: 0.85; }
+
+.adm-header-site:focus-visible {
+  outline: 3px solid var(--azul-claro);
+  outline-offset: 2px;
 }
 
 .adm-content {
   width: 100%;
+  padding: 24px 32px;
 }
 
 /* ── Acesso negado ────────────────────────────────────────────────────────── */
@@ -780,8 +836,16 @@
 @media (max-width: 1024px) {
   .adm-main {
     margin-left: 0;
-    padding: 24px 16px;
-    padding-top: 56px;
+  }
+
+  /* O hambúrguer do menu mora fixo no canto superior esquerdo: a barra
+     abre espaço à esquerda para o título não ficar embaixo dele */
+  .adm-header {
+    padding-left: 60px;
+  }
+
+  .adm-content {
+    padding: 20px 16px;
   }
 
   .adm-hamburger {
@@ -824,6 +888,17 @@
   .adm-stats-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Barra compacta no celular: título e ação, sem a descrição (que só
+     atrapalharia a largura da barra) */
+  .adm-header {
+    padding: 0.8rem 1rem 0.8rem 56px;
+    gap: 10px;
+  }
+
+  .adm-header h1 { font-size: 1.05rem; }
+  .adm-header p { display: none; }
+  .adm-header-site { padding: 7px 14px; font-size: 0.72rem; }
 }
 
 /* ── Toolbar filtros ─────────────────────────────────────────────────────── */
@@ -1851,4 +1926,60 @@ label.adm-form-check input[type="checkbox"] {
 @media (max-width: 560px) {
   .adm-form-campos-linha { grid-template-columns: 1fr; }
   label.adm-form-check { margin-top: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACESSIBILIDADE E DESEMPENHO
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Foco visível para quem navega pelo teclado. Só aparece no teclado (o mouse
+   não dispara :focus-visible), então o desenho pronto das telas não muda.
+   O campo de busca já saía com outline:none, o que deixava a pessoa sem
+   saber onde o foco estava. */
+
+.adm-nav-btn:focus-visible,
+.adm-logout-btn:focus-visible,
+.adm-Menu-btn:focus-visible,
+.adm-search button:focus-visible,
+.adm-filtro-btn:focus-visible,
+.adm-btn-aplicar:focus-visible,
+.adm-pagination button:focus-visible,
+.adm-btn-detalhes:focus-visible,
+.adm-btn-editar:focus-visible,
+.adm-btn-bloquear:focus-visible,
+.adm-btn-desbloquear:focus-visible,
+.adm-btn-excluir:focus-visible,
+.adm-btn-cancelar:focus-visible,
+.adm-btn-salvar:focus-visible,
+.adm-btn-promover:focus-visible,
+.adm-btn-remover-admin:focus-visible,
+.adm-modal-close:focus-visible,
+.adm-select:focus-visible {
+  outline: 3px solid var(--amarelo);
+  outline-offset: 2px;
+}
+
+.adm-search input:focus-visible,
+.adm-filtro-data:focus-visible,
+.adm-form-group input:focus-visible {
+  outline: 2px solid var(--amarelo);
+  outline-offset: 1px;
+}
+
+/* Quem pediu menos animação no sistema recebe as telas estáticas: as
+   entradas animadas e o pulsar dos skeletons saem de cena, e o conteúdo
+   continua aparecendo normalmente. Também corta trabalho de composição
+   desnecessário na hora da rolagem. */
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-stat-card,
+  .adm-chart-box,
+  .adm-box,
+  .adm-modal,
+  .adm-skeleton-card,
+  .adm-skeleton-row {
+    animation: none;
+  }
+
+  .adm-stat-card:hover { transform: none; }
 }

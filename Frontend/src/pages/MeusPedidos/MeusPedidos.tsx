@@ -455,6 +455,14 @@ function DetalhePedido({
               </p>
             )}
 
+            {/* Nem QR nem link: o Asaas ainda está gerando — a página consulta
+                o servidor a cada 10s, então ele costuma aparecer sozinho */}
+            {!pagamento.qrCodeBase64 && !pagamento.copiaEcola && !pagamento.urlPagamento && (
+              <p className="mp-pix__aviso">
+                Gerando o código Pix… a página se atualiza sozinha em alguns segundos.
+              </p>
+            )}
+
             {pagamento.vencimento && (
               <p className="mp-pix__vencimento">
                 Pagamento até {new Date(`${pagamento.vencimento}T12:00:00`).toLocaleDateString('pt-BR')}
@@ -573,8 +581,14 @@ export default function MeusPedidos() {
   return (
     <div className="meuspedidos-page">
       <div className="meuspedidos-topbar">
-        <button className="meuspedidos-voltar" onClick={() => navigate('/')} type="button">
-          <IconArrowLeft /> Início
+        {/* No acompanhamento o atalho é para a conta, caindo direto no
+            histórico de compras; na lista ele segue levando para o início */}
+        <button
+          className="meuspedidos-voltar"
+          onClick={() => navigate(id ? '/perfil#historico-compras' : '/')}
+          type="button"
+        >
+          <IconArrowLeft /> {id ? 'Perfil' : 'Início'}
         </button>
         <div className="meuspedidos-titulo">
           <h1>{id ? 'Acompanhar pedido' : 'Meus pedidos'}</h1>

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { api } from '../../services/api'
+import { IconStore, IconShoppingCart, IconReceipt, IconTruck, IconCreditCard } from '../../components/Icons'
 
 interface MetricasRelatorio {
   totalMercados: number
@@ -47,12 +48,12 @@ const STATUS_COR: Record<string, string> = {
   cancelado: '#ef4444',
 }
 
-const METRICAS_CONFIG: { key: keyof MetricasRelatorio; label: string; color: string; prefix?: string }[] = [
-  { key: 'totalMercados', label: 'Total de mercados', color: '#4a7fd4' },
-  { key: 'pedidosConcluidos', label: 'Pedidos concluídos', color: '#22c55e' },
-  { key: 'pedidosMes', label: 'Pedidos no mês', color: '#f59e0b' },
-  { key: 'entregasConcluidas', label: 'Entregas concluídas', color: '#06b6d4' },
-  { key: 'receitaTotal', label: 'Receita total', color: '#8b5cf6', prefix: 'R$ ' },
+const METRICAS_CONFIG: { key: keyof MetricasRelatorio; label: string; color: string; icon: ReactNode; moeda?: boolean }[] = [
+  { key: 'totalMercados', label: 'Total de mercados', color: '#4a7fd4', icon: <IconStore size={22} /> },
+  { key: 'pedidosConcluidos', label: 'Pedidos concluídos', color: '#22c55e', icon: <IconShoppingCart size={22} /> },
+  { key: 'pedidosMes', label: 'Pedidos no mês', color: '#f59e0b', icon: <IconReceipt size={22} /> },
+  { key: 'entregasConcluidas', label: 'Entregas concluídas', color: '#06b6d4', icon: <IconTruck size={22} /> },
+  { key: 'receitaTotal', label: 'Receita total', color: '#8b5cf6', icon: <IconCreditCard size={22} />, moeda: true },
 ]
 
 export default function Relatorios() {
@@ -85,8 +86,17 @@ export default function Relatorios() {
     carregar()
   }
 
-  function formatarValor(v: number) {
-    return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  // Quantidade (mercados, pedidos, entregas) é contagem: inteiro, sem casa
+  // decimal. Só o dinheiro é que tem centavos.
+  function formatarContagem(v: number | string) {
+    return Math.round(Number(v) || 0).toLocaleString('pt-BR')
+  }
+
+  function formatarMoeda(v: number | string) {
+    return (Number(v) || 0).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
   }
 
   if (loading && !dados) {
@@ -129,10 +139,14 @@ export default function Relatorios() {
       </form>
 
       <div className="adm-stats-grid">
-        {METRICAS_CONFIG.map(({ key, label, color, prefix }) => (
+        {METRICAS_CONFIG.map(({ key, label, color, icon, moeda }) => (
           <div key={key} className="adm-stat-card" style={{ borderTopColor: color }}>
+            <div className="adm-stat-icon" style={{ color }}>{icon}</div>
             <div className="adm-stat-info">
-              <span className="adm-stat-val">{prefix ?? ''}{typeof dados.metricas[key] === 'number' ? formatarValor(dados.metricas[key]) : dados.metricas[key]}</span>
+              {/* Contagem sai em inteiro; só a receita leva centavos */}
+              <span className="adm-stat-val">
+                {moeda ? `R$ ${formatarMoeda(dados.metricas[key])}` : formatarContagem(dados.metricas[key])}
+              </span>
               <span className="adm-stat-lbl">{label}</span>
             </div>
           </div>

@@ -290,6 +290,10 @@ function CartWrapper() {
     }
     if (!localStorage.getItem('token')) {
       showToast('erro', 'Faça login para finalizar o pedido. Seus itens ficam salvos no carrinho.')
+      // Guarda o endereço deste carrinho (ele carrega o slug do mercado) para
+      // que a pessoa volte para ele e termine a compra logo após entrar na
+      // conta — o mesmo caminho vale para qualquer mercado.
+      sessionStorage.setItem('posLoginDestino', window.location.pathname)
       // Pausa curta para o cliente ler o aviso antes de mudar de tela
       setTimeout(() => navigate('/auth'), 1600)
       return

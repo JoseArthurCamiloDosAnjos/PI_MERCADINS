@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
@@ -238,6 +238,83 @@ function LoadingRow() {
   );
 }
 
+// ─── Máscara de moeda ─────────────────────────────────────────────────────────
+// Formata o valor a cada tecla (não só no blur): aceita a vírgula como
+// decimal — digitar "7,50" mostra 7,50 na hora — separa os milhares com
+// ponto e limita a 2 casas decimais. Devolve também onde o cursor deve
+// ficar, para a formatação não puxar o ponteiro para o fim do campo.
+function formatarMoedaDigitando(entrada: string, cursor: number): { texto: string; cursor: number } {
+  // O que é decimal? A vírgula manda; o ponto só é decimal quando não é
+  // padrão de milhar ("1.500") nem está seguido de nada ("1500.")
+  let inteiro: string;
+  let decimal: string | null = null;
+  let sepIdx = -1; // índice do separador decimal em `entrada`
+
+  const virgula = entrada.indexOf(',');
+  if (virgula !== -1) {
+    sepIdx = virgula;
+    inteiro = entrada.slice(0, virgula).replace(/\D/g, '');
+    decimal = entrada.slice(virgula + 1).replace(/\D/g, '').slice(0, 2);
+  } else {
+    const ponto = entrada.lastIndexOf('.');
+    const depois = ponto === -1 ? '' : entrada.slice(ponto + 1);
+    const ehMilhar = /^\d{1,3}(\.\d{3})+$/.test(entrada);
+    if (ponto !== -1 && !ehMilhar && depois.replace(/\D/g, '').length <= 2) {
+      sepIdx = ponto;
+      inteiro = entrada.slice(0, ponto).replace(/\D/g, '');
+      decimal = depois.replace(/\D/g, '').slice(0, 2);
+    } else {
+      inteiro = entrada.replace(/\D/g, '');
+    }
+  }
+
+  // Zero à esquerda só atrapalha ("07" → "7"), mas o zero sozinho fica
+  if (inteiro.length > 1) inteiro = inteiro.replace(/^0+(?=\d)/, '');
+  if (inteiro.length > 9) inteiro = inteiro.slice(0, 9);
+
+  const inteiroFmt = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // Sem reais ainda, a vírgula ganha um "0" para se apoiar (",5" → "0,5")
+  const sintetizouZero = decimal !== null && inteiro === '';
+  const texto = decimal === null ? inteiroFmt : `${inteiroFmt || '0'},${decimal}`;
+
+  // Caracteres com peso antes do cursor: dígitos + o separador decimal.
+  // Os pontos de milhar não contam, senão o cursor anda errado por eles.
+  let alvo = 0;
+  for (let i = 0; i < cursor && i < entrada.length; i++) {
+    const c = entrada[i];
+    if (c >= '0' && c <= '9') alvo++;
+    else if (i === sepIdx) alvo++;
+  }
+  if (sintetizouZero && alvo > 0) alvo++; // o "0" inventado desloca tudo
+
+  // Anda pelo texto formatado até achar a mesma quantidade de pesos
+  let pos = texto.length;
+  if (alvo === 0) {
+    pos = 0;
+  } else {
+    let vistos = 0;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if ((c >= '0' && c <= '9') || c === ',') {
+        vistos++;
+        if (vistos === alvo) { pos = i + 1; break; }
+      }
+    }
+  }
+
+  return { texto, cursor: pos };
+}
+
+// No blur o valor ganha as casas que faltam: "7" → "7,00" e "7,5" → "7,50"
+function completarMoeda(valor: string): string {
+  if (!valor) return '';
+  const { texto } = formatarMoedaDigitando(valor, valor.length);
+  if (!texto) return '';
+  if (!texto.includes(',')) return `${texto},00`;
+  const [inteiro, decimal = ''] = texto.split(',');
+  return `${inteiro},${decimal.padEnd(2, '0')}`;
+}
+
 // ─── Modal de edição de produto ──────────────────────────────────────────────
 
 function EditarProdutoModal({
@@ -271,38 +348,49 @@ function EditarProdutoModal({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
-  function handleChangePreco(valor: string) {
-    const apenasDigitos = valor.replace(/\D/g, '');
-    if (!apenasDigitos) { setPreco(''); return; }
-    setPreco(apenasDigitos);
+  // Campos de preço/custo: a máscara formata a cada tecla e o cursor volta
+  // para onde a pessoa estava digitando (o React reescreve o valor ao
+  // renderizar e, sem este passo, ele pularia para o fim do campo).
+  const precoRef = useRef<HTMLInputElement>(null);
+  const custoRef = useRef<HTMLInputElement>(null);
+  const cursorPreco = useRef<number | null>(null);
+  const cursorCusto = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (cursorPreco.current !== null && precoRef.current) {
+      precoRef.current.setSelectionRange(cursorPreco.current, cursorPreco.current);
+      cursorPreco.current = null;
+    }
+  }, [preco]);
+
+  useLayoutEffect(() => {
+    if (cursorCusto.current !== null && custoRef.current) {
+      custoRef.current.setSelectionRange(cursorCusto.current, cursorCusto.current);
+      cursorCusto.current = null;
+    }
+  }, [custo]);
+
+  function handleChangePreco(e: ChangeEvent<HTMLInputElement>) {
+    const alvo = e.target;
+    const { texto, cursor } = formatarMoedaDigitando(alvo.value, alvo.selectionStart ?? alvo.value.length);
+    cursorPreco.current = cursor;
+    setPreco(texto);
   }
 
+  // Saiu do campo: completa as casas decimais que faltam ("7" → "7,00")
   function handleBlurPreco() {
-    if (!preco) return;
-    const apenasDigitos = preco.replace(/\D/g, '');
-    if (!apenasDigitos) { setPreco(''); return; }
-    const centavos = apenasDigitos.padStart(3, '0');
-    const reais = centavos.slice(0, -2);
-    const centavosFinal = centavos.slice(-2);
-    const reaisFormatado = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    setPreco(`${reaisFormatado},${centavosFinal}`);
+    setPreco(atual => completarMoeda(atual));
   }
 
-  function handleChangeCusto(valor: string) {
-    const apenasDigitos = valor.replace(/\D/g, '');
-    if (!apenasDigitos) { setCusto(''); return; }
-    setCusto(apenasDigitos);
+  function handleChangeCusto(e: ChangeEvent<HTMLInputElement>) {
+    const alvo = e.target;
+    const { texto, cursor } = formatarMoedaDigitando(alvo.value, alvo.selectionStart ?? alvo.value.length);
+    cursorCusto.current = cursor;
+    setCusto(texto);
   }
 
   function handleBlurCusto() {
-    if (!custo) return;
-    const apenasDigitos = custo.replace(/\D/g, '');
-    if (!apenasDigitos) { setCusto(''); return; }
-    const centavos = apenasDigitos.padStart(3, '0');
-    const reais = centavos.slice(0, -2);
-    const centavosFinal = centavos.slice(-2);
-    const reaisFormatado = reais.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    setCusto(`${reaisFormatado},${centavosFinal}`);
+    setCusto(atual => completarMoeda(atual));
   }
 
   async function handleSalvar() {
@@ -310,7 +398,9 @@ function EditarProdutoModal({
       setErro('O nome é obrigatório.');
       return;
     }
-    if (!preco || preco === '0,00') {
+    // Valida pelo número (não pela string): cobre "0", "0,00" e "0,0"
+    const precoNum = Number(preco.replace(/\./g, '').replace(',', '.'));
+    if (!preco || !Number.isFinite(precoNum) || precoNum <= 0) {
       setErro('O preço é obrigatório.');
       return;
     }
@@ -321,7 +411,7 @@ function EditarProdutoModal({
       const dados = {
         nome: nome.trim(),
         descricao: descricao.trim() || undefined,
-        preco: Number(preco.replace(/\./g, '').replace(',', '.')),
+        preco: precoNum,
         // Custo vazio = 0 (produto ainda sem custo cadastrado)
         custo: custo ? Number(custo.replace(/\./g, '').replace(',', '.')) : 0,
         estoque,
@@ -373,10 +463,12 @@ function EditarProdutoModal({
           <label className="gm-modal-label">
             Preço (R$)
             <input
+              ref={precoRef}
               className="gm-modal-input"
               value={preco}
-              onChange={e => handleChangePreco(e.target.value)}
+              onChange={handleChangePreco}
               onBlur={handleBlurPreco}
+              inputMode="decimal"
               placeholder="0,00"
             />
           </label>
@@ -384,10 +476,12 @@ function EditarProdutoModal({
           <label className="gm-modal-label">
             Custo (R$)
             <input
+              ref={custoRef}
               className="gm-modal-input"
               value={custo}
-              onChange={e => handleChangeCusto(e.target.value)}
+              onChange={handleChangeCusto}
               onBlur={handleBlurCusto}
+              inputMode="decimal"
               placeholder="0,00"
             />
             <small className="gm-modal-dica">
@@ -892,6 +986,25 @@ function SecFinanceiro({
   onIrRecebimento: () => void;
   onExportar: () => void;
 }) {
+  // Mesma máscara do modal de produto: formata a cada tecla e devolve o
+  // cursor para onde a pessoa estava digitando
+  const fixosRef = useRef<HTMLInputElement>(null);
+  const cursorFixos = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (cursorFixos.current !== null && fixosRef.current) {
+      fixosRef.current.setSelectionRange(cursorFixos.current, cursorFixos.current);
+      cursorFixos.current = null;
+    }
+  }, [custosFixosInput]);
+
+  function handleChangeFixos(e: ChangeEvent<HTMLInputElement>) {
+    const alvo = e.target;
+    const { texto, cursor } = formatarMoedaDigitando(alvo.value, alvo.selectionStart ?? alvo.value.length);
+    cursorFixos.current = cursor;
+    onCustosFixosInput(texto);
+  }
+
   const carregando = loading || !fin;
   const pedidos = fin?.pedidos ?? 0;
   const lucro = fin?.lucro ?? 0;
@@ -952,10 +1065,11 @@ function SecFinanceiro({
         </div>
         <div className="gm-fixos-acoes">
           <input
+            ref={fixosRef}
             className="gm-fixos-input"
             value={custosFixosInput}
-            onChange={e => onCustosFixosInput(e.target.value.replace(/\D/g, ''))}
-            onBlur={() => onCustosFixosInput(formatarCampoMoeda(custosFixosInput))}
+            onChange={handleChangeFixos}
+            onBlur={() => onCustosFixosInput(completarMoeda(custosFixosInput))}
             inputMode="decimal"
             placeholder="0,00"
             aria-label="Custos fixos mensais em reais"
@@ -2554,7 +2668,11 @@ export default function GerenciamentoMercado({
             </span>
           </div>
           <div className="gm-topbar-actions">
-            <button className="gm-btn-sec" onClick={onAbrirVitrine}>
+            <button
+              className="gm-btn-sec gm-btn-vitrine"
+              onClick={onAbrirVitrine}
+              title="Abrir a loja do jeito que o cliente vê"
+            >
               <IconEye size={14} /> Ver vitrine
             </button>
           </div>

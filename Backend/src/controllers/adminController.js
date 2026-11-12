@@ -234,9 +234,21 @@ async function relatorios(req, res) {
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE data_compra >= DATE_TRUNC('month', NOW())
     `
+    // Pedido concluído = pedido entregue (é o status final de qualquer pedido,
+    // tanto para quem recebe em casa quanto para quem retira no balcão)
+    const [pedidosConcluidos] = await sql`
+      SELECT COUNT(*)::int AS total FROM historico_compras
+      WHERE status = 'entregue'
+        AND (${inicio}::text IS NULL
+             OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
+    `
+    // Entrega concluída = pedido entregue FEITO PELA LOJA: quem retirou no
+    // balcão não conta como entrega (antes os dois cartões repetiam o mesmo
+    // número e "Pedidos concluídos" não acompanhava o período escolhido)
     const [entregasConcluidas] = await sql`
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE status = 'entregue'
+        AND tipo_entrega = 'entrega'
         AND (${inicio}::text IS NULL
              OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
     `
@@ -281,11 +293,11 @@ async function relatorios(req, res) {
 
     res.json({
       metricas: {
-        totalMercados: totalMercados.total,
-        pedidosConcluidos: entregasConcluidas.total,
-        pedidosMes: pedidosMes.total,
-        entregasConcluidas: entregasConcluidas.total,
-        receitaTotal: Number(receitaTotal.total),
+        totalMercados: Number(totalMercados.total) || 0,
+        pedidosConcluidos: Number(pedidosConcluidos.total) || 0,
+        pedidosMes: Number(pedidosMes.total) || 0,
+        entregasConcluidas: Number(entregasConcluidas.total) || 0,
+        receitaTotal: Number(receitaTotal.total) || 0,
       },
       pedidosPorPeriodo: formatarMeses(pedidosPorPeriodo),
       mercadosPorTipo,

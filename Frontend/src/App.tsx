@@ -321,7 +321,15 @@ function CartWrapper() {
         setCupom(null)
         setAgendamento('')
         if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
-        window.location.href = resposta.pagamento.urlPagamento
+        // semRedirect = o Asaas recusou a volta automática (domínio não
+        // cadastrado na conta). Avisamos antes de sair, porque depois de
+        // pagar não haverá devolução automática para este site.
+        if (resposta.pagamento.semRedirect) {
+          showToast('aviso', 'O retorno automático não está ativo: ao finalizar o pagamento, volte para o site usando o botão voltar do navegador. Seu pedido já está salvo.')
+          setTimeout(() => { window.location.href = resposta.pagamento.urlPagamento }, 2600)
+        } else {
+          window.location.href = resposta.pagamento.urlPagamento
+        }
         return
       }
 

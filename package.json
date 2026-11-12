@@ -5,6 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix Backend\" \"npm run dev --prefix Frontend\"",
+    "dev:local": "concurrently -n back,front -c blue,yellow \"npm --prefix Backend run dev -- --db=local\" \"npm --prefix Frontend run dev\"",
+    "migrate:local": "npm --prefix Backend run migrate -- --db=local",
+    "limpar:local": "npm --prefix Backend run limpar -- --db=local",
+    "demo:local": "npm --prefix Backend run dados-demo -- --db=local",
     "build": "npm install --prefix Backend",
     "start": "npm start --prefix Backend",
     "install:all": "npm install && npm install --prefix Backend && npm install --prefix Frontend"

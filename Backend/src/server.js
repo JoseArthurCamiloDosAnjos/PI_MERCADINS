@@ -111,7 +111,11 @@ app.post('/api/webhooks/asaas',    webhookAsaas)
 // ── Imagens locais (pasta Backend/imagens/) ──────────────────────────────────
 // Servidas em /imagens/<categoria>/<arquivo> — o caminho gravado no banco.
 // A mesma pasta do upload (middleware/upload.js, IMAGENS_DIR opcional).
-const { RAIZ_IMAGENS } = require('./middleware/upload.js')
+// Miniaturas: /imagens/<categoria>/thumbs/<arquivo> é gerada sob demanda
+// (imagens antigas) antes do static servir — ver utils/thumbs.js.
+const { RAIZ_IMAGENS, CATEGORIAS } = require('./middleware/upload.js')
+const { middlewareThumbSobDemanda } = require('./utils/thumbs.js')
+app.use('/imagens', middlewareThumbSobDemanda(RAIZ_IMAGENS, CATEGORIAS))
 app.use('/imagens', express.static(RAIZ_IMAGENS, {
   maxAge: '7d',
   fallthrough: true,
@@ -184,7 +188,8 @@ app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
   // Confere se a chave do Asaas do ambiente ativo funciona (só leitura).
-  // 403 = chave de outro ambiente; 401 = chave revogada/errada.
+  // 401 com code invalid_environment = chave de outro ambiente (sandbox ×
+  // produção); 401 sem esse code = chave revogada/errada; 403 = permissão.
   asaasService.verificarConexao().then((resultado) => {
     if (resultado.ok) {
       console.log(

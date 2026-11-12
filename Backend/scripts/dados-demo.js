@@ -306,7 +306,7 @@ function cardImagem(largura, altura, fundo, texto, corTexto = 'ffffff') {
 
 async function registrarConta(conta) {
   const r = await rota('POST', '/api/auth/register', {
-    body: { nome: conta.nome, email: conta.email, senha: SENHA_DEMO, confirmarSenha: SENHA_DEMO, telefone: conta.tel, cpf: conta.cpf },
+    body: { nome: conta.nome, email: conta.email, senha: SENHA_DEMO, confirmarSenha: SENHA_DEMO, telefone: conta.tel, cpf: conta.cpf, aceite_termos: true },
   });
   if (![200, 201].includes(r.status)) throw new Error(`registro ${conta.email}: ${r.status} ${r.body.erro || ''}`);
 }
@@ -360,6 +360,12 @@ async function logar(email) {
   const tokensClientes = {};
   for (const c of CLIENTES) tokensClientes[c.email] = await logar(c.email);
   console.log('Contas prontas (email já verificado).');
+
+  // O POST /api/mercados só aceita administrador (o usuário comum espera a
+  // confirmação do pagamento da assinatura). Na demo promovemos o vendedor
+  // só enquanto as lojas são criadas e devolvemos o cargo no final, para a
+  // conta ficar igual à de um lojista de verdade.
+  await sql`UPDATE usuarios SET is_admin = TRUE WHERE email = ${VENDEDOR.email}`;
 
   // 3. Mercados + produtos (com imagens quando o Supabase aceitar)
   const idsProdutos = {}; // nomeDoMercado → { nomeDoProduto: id }
@@ -422,6 +428,9 @@ async function logar(email) {
     }
     console.log(`  ✓ ${m.nome} (${m.cats.join(' + ')}) — ${m.grupos.reduce((n, g) => n + g.produtos.length, 0)} produtos`);
   }
+
+  // Lojas prontas: o vendedor volta a ser um lojista comum
+  await sql`UPDATE usuarios SET is_admin = FALSE WHERE email = ${VENDEDOR.email}`;
 
   // 4. Avaliações
   let totalAvaliacoes = 0;

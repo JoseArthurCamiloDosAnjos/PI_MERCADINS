@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 import ProfileMenu from "../../components/ProfileMenu";
+import Imagem from "../../components/Imagem";
 import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
@@ -558,7 +559,7 @@ export default function Mercadins() {
                         }}
                       >
                         {p.imagem ? (
-                          <img className="search-dd-img" src={p.imagem} alt="" loading="lazy" />
+                          <Imagem className="search-dd-img" src={p.imagem} alt="" sizes="38px" />
                         ) : (
                           <span className="search-dd-img search-dd-img--vazio" aria-hidden="true" />
                         )}
@@ -803,10 +804,11 @@ export default function Mercadins() {
                         }
                       >
                         {store.foto_perfil ? (
-                          <img
+                          <Imagem
                             src={store.foto_perfil}
                             alt={store.nome}
                             className="store-cover-img"
+                            thumb={false}
                           />
                         ) : (
                           <span className="store-cover-icon" aria-hidden="true">
@@ -941,11 +943,11 @@ export default function Mercadins() {
                   >
                     <span className="home-rank-pos">{indice + 1}</span>
                     {store.foto_perfil ? (
-                      <img
+                      <Imagem
                         src={store.foto_perfil}
                         alt=""
                         className="home-rank-img"
-                        loading="lazy"
+                        sizes="52px"
                       />
                     ) : (
                       <span className="home-rank-img home-rank-img--vazio" aria-hidden="true">
@@ -987,11 +989,11 @@ export default function Mercadins() {
                     onClick={() => irParaMercado(store.slug)}
                   >
                     {store.foto_perfil ? (
-                      <img
+                      <Imagem
                         src={store.foto_perfil}
                         alt=""
                         className="home-visto-img"
-                        loading="lazy"
+                        sizes="52px"
                       />
                     ) : (
                       <span className="home-visto-img home-visto-img--vazio" aria-hidden="true">
@@ -1138,7 +1140,7 @@ function PreviewItem({
     <button type="button" className="preview-item" onClick={onClick}>
       <span className="preview-icon">
         {image ? (
-          <img src={image} alt={title} className="preview-img" />
+          <Imagem src={image} alt={title} className="preview-img" sizes="42px" />
         ) : (
           <IconShoppingCart size={18} />
         )}

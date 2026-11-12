@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { removeEmojis } from "../../hooks/useBlockEmojis";
 import { IconShoppingCart } from "../../components/Icons";
+import Imagem from "../../components/Imagem";
 import { useAuth } from "../../context/AuthContext";
 import { useEnderecos } from "../../hooks/useEnderecos";
 import EnderecoPopup from "../../components/EnderecoPopup/EnderecoPopup";
@@ -570,9 +571,10 @@ export default function CartScreen({
               <div className="cart-item" key={item.id}>
                 <div className="cart-item__thumb">
                   {item.imageUrl ? (
-                    <img
+                    <Imagem
                       src={item.imageUrl}
                       alt={item.name}
+                      sizes="76px"
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (

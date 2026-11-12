@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api';
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../utils/tiposLoja';
+import Imagem from './Imagem';
 import './CatalogoModal.css';
 
 // Ícone local (mesmo desenho usado na busca da home/vitrine)
@@ -154,7 +155,7 @@ export default function CatalogoModal({
                   >
                     <div className="cm-card-img">
                       {img
-                        ? <img src={img} alt={item.nome} />
+                        ? <Imagem src={img} alt={item.nome} sizes="(max-width: 600px) 50vw, 240px" />
                         : <span className="cm-card-placeholder">Sem imagem</span>
                       }
                       <span className="cm-card-tipo">

@@ -10,6 +10,7 @@ import EscolhaProduto   from '../../components/EscolhaProduto';
 import CatalogoModal, { type ItemCatalogo } from '../../components/CatalogoModal';
 import ToastContainer   from '../../components/Toast';
 import LoadingOverlay   from '../../components/LoadingOverlay';
+import Imagem           from '../../components/Imagem';
 import EscolherPaleta, { resolverPaleta, encontrarPaleta, IconPaleta } from '../../components/EscolherPaleta';
 import { useToast }     from '../../hooks/useToast';
 import { removeEmojis } from '../../hooks/useBlockEmojis';
@@ -191,7 +192,7 @@ function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
         {imagens.length > 0
           ? (
             <>
-              <img src={imagens[imgIdx]} alt={produto.nome} />
+              <Imagem src={imagens[imgIdx]} alt={produto.nome} sizes="(max-width: 600px) 50vw, 150px" />
               {imagens.length > 1 && (
                 <>
                   <button className="vt-card-seta vt-card-seta--prev" onClick={(e) => { e.stopPropagation(); slide('prev'); }} aria-label="Imagem anterior">‹</button>
@@ -775,7 +776,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       {/* ── Banner ────────────────────────────────────────────────────── */}
       <div className="vt-banner">
         {dados.banner
-          ? <img src={dados.banner} alt="" className="vt-banner-img" />
+          ? <Imagem src={dados.banner} alt="" className="vt-banner-img" thumb={false} />
           : <div className="vt-banner-fallback" />
         }
       </div>
@@ -785,7 +786,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
         <div className="vt-header-identity">
           <button className="vt-logo-btn" onClick={() => setModalEditar(true)} title="Alterar logo">
             {dados.logo
-              ? <img src={dados.logo} alt={dados.nome} className="vt-logo-img" />
+              ? <Imagem src={dados.logo} alt={dados.nome} className="vt-logo-img" sizes="76px" />
               : <div className="vt-logo-placeholder"><IconPlus size={22} /></div>
             }
             <span className="vt-logo-edit-overlay"><IconPencil size={12} /></span>

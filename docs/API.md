@@ -197,7 +197,7 @@ Validação no carrinho (`POST /validar`):
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| POST | `/checkout` | token | Cria *customer* + assinatura no Asaas e devolve `{ idAssinatura, urlCheckout }` (o mercado só nasce depois, quando o pagamento confirma) |
+| POST | `/checkout` | token | Cria *customer* + assinatura no Asaas e devolve `{ idAssinatura, urlCheckout }` (o mercado só nasce depois, quando o pagamento confirma). Aceita várias vezes: **uma assinatura por loja** — quem já tem loja paga cria outra sem bloquear |
 | GET | `/minha` | token | **Todas** as assinaturas do usuário: plano, validade, dias restantes, **mercado vinculado**, faturas e link de pagamento |
 | POST | `/:id/cancelar` | token | Cancela no Asaas e localmente (a loja segue no ar até o fim da vigência) |
 
@@ -215,6 +215,15 @@ Corpo do checkout:
 - `ciclo`: `mensal` ou `anual`;
 - `mercado`: o mesmo payload do cadastro de loja (validado no servidor e
   guardado em `assinaturas.dados_mercado`).
+
+Comportamento com assinatura já existente (detalhes em
+[pagamentos.md §7](pagamentos.md#criar-outra-loja-segunda-assinatura)):
+loja já criada → nova assinatura sem bloquear; pendência com o **mesmo**
+formulário → retoma o mesmo link; formulário **diferente** → substitui a
+pendência; pagamento confirmado mas a loja não nasceu → cria a loja na hora e
+devolve `mercado` (sem cobrar de novo). A resposta também pode trazer
+`mensagem` e `semRedirect: true` quando o Asaas recusou o retorno automático
+([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
 
 Fluxo completo, estados, carência de 3 dias e como testar:
 **[docs/pagamentos.md](pagamentos.md)**.
@@ -308,6 +317,10 @@ Corpo de um pedido:
   "pedido:<id>"`; se a loja tem `asaas_wallet_id`, a cobrança sai com
   **Split de 100%** e o valor líquido vai direto para a conta do vendedor
   (ver [pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor)).
+  A resposta traz `pagamento` (QR, copia-e-cola e link) e pode incluir
+  `pagamento.semRedirect: true` quando o Asaas recusou o retorno automático —
+  nesse caso o cliente é avisado para voltar ao site pelo navegador
+  ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
 
 Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
 `pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda

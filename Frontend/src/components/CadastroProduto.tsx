@@ -3,6 +3,7 @@ import type{DragEvent, ChangeEvent } from 'react';
 import { removeEmojis, removeSpecialChars } from '../hooks/useBlockEmojis';
 import { uploadImagem, ehImagemValida } from '../services/upload';
 import { IconUpload } from './Icons';
+import Imagem from './Imagem';
 import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -311,10 +312,11 @@ export default function CadastroProduto({
             {imagens.length > 0 && (
               <div className="cp-carrocel">
                 <div className="cp-carrocel-tela">
-                  <img
+                  <Imagem
                     src={imagens[slideAtual].url}
                     alt={`Imagem ${slideAtual + 1}`}
                     className="cp-carrocel-img"
+                    thumb={false}
                   />
 
                   <button
@@ -348,7 +350,7 @@ export default function CadastroProduto({
                         onClick={() => setSlideAtual(i)}
                         aria-label={`Imagem ${i + 1}`}
                       >
-                        <img src={img.url} alt="" className="cp-dot-thumb" />
+                        <Imagem src={img.url} alt="" className="cp-dot-thumb" sizes="48px" />
                       </button>
                     ))}
                   </div>

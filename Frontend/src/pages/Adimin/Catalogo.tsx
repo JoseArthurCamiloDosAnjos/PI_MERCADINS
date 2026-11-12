@@ -4,6 +4,7 @@ import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import { uploadImagem, ehImagemValida } from '../../services/upload'
+import Imagem from '../../components/Imagem'
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../../utils/tiposLoja'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -344,7 +345,7 @@ export default function Catalogo() {
                   <td>
                     <div className="adm-catalogo-celula">
                       {item.imagens?.[0] ? (
-                        <img src={item.imagens[0]} alt="" className="adm-catalogo-thumb" />
+                        <Imagem src={item.imagens[0]} alt="" className="adm-catalogo-thumb" sizes="42px" />
                       ) : (
                         <span className="adm-catalogo-thumb adm-catalogo-thumb--vazio">S/F</span>
                       )}
@@ -523,7 +524,7 @@ export default function Catalogo() {
                   <div className="adm-catalogo-miniaturas">
                     {imagens.map((img, i) => (
                       <div key={i} className="adm-catalogo-miniatura">
-                        <img src={img.url} alt={`Imagem ${i + 1}`} />
+                        <Imagem src={img.url} alt={`Imagem ${i + 1}`} sizes="64px" />
                         <button
                           type="button"
                           onClick={() => removerImagem(i)}

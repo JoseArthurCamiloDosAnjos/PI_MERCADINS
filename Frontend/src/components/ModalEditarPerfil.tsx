@@ -128,8 +128,6 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
       let foto_perfil_url: string | undefined;
 
       if (fotoFile) {
-        // Salva na pasta imagens/usuarios/ do backend (URL que vai para o
-        // banco) e mantém cópia de backup no Supabase.
         foto_perfil_url = (await uploadImagem(fotoFile, 'usuarios')) ?? undefined;
 
         if (!foto_perfil_url) {

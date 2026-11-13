@@ -38,7 +38,6 @@ export default function SiteFooter() {
       <div className="sf-container">
         <div className="sf-grid">
           <div className="sf-brand">
-            {/* Símbolo do Mercadins: link simples recarrega a página e volta pra home */}
             <a href="/" title="Voltar ao início">
               <img src={logo} alt="Mercadins" className="sf-logo" />
             </a>

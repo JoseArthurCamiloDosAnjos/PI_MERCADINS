@@ -1,4 +1,3 @@
-// AuthContext.tsx
 import {
   createContext,
   useContext,
@@ -38,13 +37,11 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  // Fix 1: inicializa como true só se há token — evita setState síncrono no effect
   const [carregando, setCarregando] = useState(
     () => !!localStorage.getItem("token")
   );
   const [temMercado, setTemMercado] = useState(false);
 
-  // Fix 2: useCallback para estabilizar a referência e poder incluir no dep array
   const verificarMercados = useCallback(async () => {
   const token = localStorage.getItem("token");
   if (!token) { setTemMercado(false); return; }
@@ -62,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return; // carregando já é false, nada a fazer
+    if (!token) return;
 
     api
       .perfil()
@@ -93,8 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("is_admin_login");
-    // Limpa o destino pendente do login: sem isso, o próximo login seria
-    // levado para a tela que a pessoa havia pedido antes de sair.
     sessionStorage.removeItem("posLoginDestino");
     setUsuario(null);
     setTemMercado(false);
@@ -108,13 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       setUsuario(u);
-    } catch { /* ignore */ }
+    } catch { /* falha ignorada */ }
   }
 
   return (
-   // Fix 3: expõe refreshMercados para que RegistrarMercado possa atualizar
-    //    temMercado após cadastrar o primeiro mercado (App.tsx usa temMercado
-    //    para decidir rota /vendedor vs /perfil)
     <AuthContext.Provider
       value={{ usuario, carregando, temMercado, login, logout, refreshMercados: verificarMercados, refreshUsuario }}
     >

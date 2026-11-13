@@ -12,8 +12,6 @@ import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito'
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import TelaNotificacoes from '../../components/TelaNotificacoes/TelaNotificacoes';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
-// As abas de Endereços e Depoimentos são as mesmas do perfil do usuário: o
-// vendedor também é uma conta comum, então reaproveitamos as telas inteiras.
 import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
@@ -89,10 +87,8 @@ const NOMES_PAGAMENTO: Record<string, string> = {
   presencial: 'Presencial',
 };
 
-// ícones que giram nos cards de mercado (na falta de uma imagem real da loja)
 const MKT_ICONS = [IconShoppingCart, IconStore, IconShoppingBag, IconPackage];
 
-// Escolher o plano é sempre o primeiro passo antes de criar um mercado
 const ROTA_CRIAR_MERCADO = '/planos';
 
 const NAV_ITEMS = [
@@ -134,9 +130,6 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 }
 
 // ─── Detalhe da compra no histórico ──────────────────────────────────────────
-// Abre em modal com o mesmo resumo da tela "Acompanhar pedido" (status,
-// linha do tempo e valores), mas sem acompanhamento ao vivo nem ações de
-// pagamento/cancelamento: aqui é só a consulta do registro no histórico.
 function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFechar: () => void }) {
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null);
   const [carregado, setCarregado] = useState(false);
@@ -291,9 +284,6 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
   const [pedidoAberto, setPedidoAberto] = useState<number | null>(null);
-  // Painel limpo: mostra só os 6 primeiros mercados. O botão ao lado do
-  // título abre a lista completa quando existem mais do que isso (e some
-  // quando já não há nada a expandir, para não ficar um botão sem função).
   const LIMITE_MERCADOS = 6;
   const [mostrandoTodos, setMostrandoTodos] = useState(false);
   const mercadosVisiveis = mostrandoTodos ? mercados : mercados.slice(0, LIMITE_MERCADOS);
@@ -713,7 +703,6 @@ export default function PerfilVendedor() {
     carregarDados();
   }, []);
 
-  // Troca de tela com animação — igual ao PerfilUsuario
   useEffect(() => {
     if (anteriorNav.current === nav) return;
     setVisivel(false);

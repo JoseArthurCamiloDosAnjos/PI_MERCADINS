@@ -1,24 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  009 — Corrige a tabela "pagamentos"
-//
-//  Em algumas bases já existia uma tabela "pagamentos" de esquema antigo
-//  (id_pagamento, id_pedido, data_pagamento), criada fora do versionamento.
-//  Como a 004 usa CREATE TABLE IF NOT EXISTS, ela foi ignorada e a tabela
-//  real das faturas de assinatura nunca chegou a ser criada — daí o erro
-//  'column "id" does not exist' em /api/assinaturas/minha e no webhook.
-//
-//  Esta migração:
-//    1) renomeia a tabela legada (se houver) para pagamentos_legado,
-//       preservando qualquer dado que ela tenha;
-//    2) cria a tabela "pagamentos" com o schema correto das assinaturas.
-// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   id: '009_corrigir_tabela_pagamentos',
   descricao: 'Cria a tabela pagamentos correta das assinaturas (esquema legado renomeado)',
 
   async up(sql) {
-    // Tabela existe mas não tem id_assinatura (esquema legado) → renomeia
     const [errada] = await sql`
       SELECT 1 FROM information_schema.tables t
       WHERE t.table_name = 'pagamentos'

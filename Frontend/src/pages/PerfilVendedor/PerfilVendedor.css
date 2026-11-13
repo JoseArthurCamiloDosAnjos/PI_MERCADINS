@@ -11,8 +11,6 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 1.8rem; background: var(--azul-sidebar); border-bottom: 1px solid var(--azul-borda);
   gap: 12px;
-  /* Igual à barra da página inicial: fica presa no topo e o hambúrguer
-     mora dentro dela — nada flutua sobre o conteúdo enquanto a pessoa rola */
   position: sticky;
   top: 0;
   z-index: 40;
@@ -45,7 +43,6 @@
 }
 .pv-btn-link:hover { color: var(--amarelo); border-color: var(--amarelo); background: rgba(245,200,74,0.07); }
 
-/* STATS — cartão com badge de ícone */
 .pv-stats-row { display: flex; gap: 14px; flex-wrap: wrap; }
 .pv-stat {
   flex: 1;
@@ -72,7 +69,6 @@
 .pv-stat-val { font-size: 22px; font-weight: 900; color: var(--amarelo); line-height: 1; }
 .pv-stat-lbl { font-size: 10.5px; color: var(--branco-suave); font-weight: 700; margin-top: 5px; }
 
-/* MERCADOS GERENCIADOS */
 .pv-mkt-row { display: flex; gap: 24px; flex-wrap: wrap; }
 .pv-mkt-loading { color: var(--cinza-texto); font-size: 13px; }
 
@@ -117,7 +113,6 @@
 .pv-mkt-add:hover .pv-mkt-plus,
 .pv-mkt-add:hover .pv-mkt-add-label { color: var(--amarelo); }
 
-/* Animação de troca de tela */
 .pv-tela-fade {
   display: flex;
   flex-direction: column;
@@ -150,7 +145,6 @@
   .pv-btn-new { padding: 7px 16px; font-size: 11.5px; }
 }
 
-/* Favoritos clicáveis (abrem a vitrine da loja) */
 .pu-circ-item--link { cursor: pointer; }
 .pu-circ-item--link:focus-visible {
   outline: 2px solid var(--amarelo);
@@ -159,7 +153,6 @@
 }
 .pu-circ-item--link:hover .pu-circ-label { color: var(--amarelo); }
 
-/* Atalho de detalhes no card do histórico */
 .pv-hcard-ver {
   display: inline-flex;
   align-items: center;
@@ -172,7 +165,6 @@
 }
 .pu-hcard:hover .pv-hcard-ver { gap: 7px; }
 
-/* Modal com o resumo da compra (mesmo estilo do acompanhamento) */
 .pv-modal-overlay {
   position: fixed;
   inset: 0;

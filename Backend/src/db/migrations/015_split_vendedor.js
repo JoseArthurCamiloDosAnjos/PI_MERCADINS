@@ -1,20 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  015 — Recebimento direto ao vendedor (Asaas Split)
-//
-//  O pagamento online de um pedido (Pix/cartão) pode ser dividido no momento
-//  da cobrança: o valor líquido é transferido automaticamente para a conta
-//  Asaas do lojista (walletId), em vez de ficar retido na conta da
-//  plataforma. O vendedor cadastra o próprio walletId na edição do mercado.
-//
-//  • mercados.asaas_wallet_id — carteira Asaas do lojista (opcional; sem
-//    wallet, o comportamento continua o antigo: dinheiro na plataforma).
-//  • repasses — conciliação de cada repasse: uma linha por split do Asaas
-//    (com asaas_split_id) ou uma linha "RETIDO_PLATAFORMA" quando o pedido
-//    é online mas não houve split (sem wallet ou split recusado).
-//
-//  Status possíveis: PENDENTE, DONE (liquidado), CANCELLED, REFUSED,
-//  DIVERGENCE_BLOCK e RETIDO_PLATAFORMA.
-// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   id: '015_split_vendedor',

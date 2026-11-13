@@ -207,7 +207,6 @@
 }
 .login-page .field input:focus ~ .field-icon-login { color: var(--navy-mid); }
 
-/* Botão olho senha */
 .login-page .toggle-senha {
   position: absolute;
   right: 14px;
@@ -360,8 +359,6 @@
     overflow-y: auto;
     background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
   }
-  /* O painel da esquerda NÃO some: vira um cabeçalho com o mesmo fundo do
-     desktop (gradiente + logo ilustrada + assinatura) e o botão voltar */
   .login-page .left {
     display: flex;
     width: 100%;
@@ -379,8 +376,6 @@
   .login-page .left .logo-tagline { font-size: 12px; letter-spacing: 2.4px; }
   .login-page .btn-back { top: 18px; left: 18px; }
 
-  /* O formulário vira um cartão branco flutuando sobre o gradiente,
-     deixando o fundo visível em volta (como na versão ampla) */
   .login-page .right {
     flex: 0 0 auto;
     align-self: center;
@@ -395,7 +390,6 @@
     box-shadow: 0 26px 60px rgba(4, 16, 44, 0.35);
   }
 
-  /* A logo já está no cabeçalho — evita logo repetida dentro do cartão */
   .login-page .mobile-logo { display: none; }
 
   .login-page .form-card { animation: none; }

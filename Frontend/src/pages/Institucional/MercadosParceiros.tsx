@@ -27,7 +27,6 @@ export default function MercadosParceiros() {
   useEffect(() => {
     let ativo = true;
     api
-      // limit=100: a API padrão traz só 20 mercados (padrão da paginação)
       .listarMercados(undefined, 100)
       .then((data) => {
         if (ativo) setMercados(data.mercados ?? []);

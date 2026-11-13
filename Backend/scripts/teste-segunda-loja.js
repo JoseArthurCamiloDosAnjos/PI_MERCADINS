@@ -1,22 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  TESTE — "criar OUTRA loja gera outra assinatura e ela aparece em Assinaturas"
-//
-//  Simula o cenário de quem já tem loja paga e tenta cadastrar uma segunda:
-//    A) checkout de uma loja nova com assinatura ATIVA existente → cria uma
-//       assinatura nova (antes era bloqueado com "Link de pagamento não recebido")
-//    B) reenvio do MESMO formulário com pendência aberta → retoma o MESMO
-//       link (não duplica cobrança)
-//    C) formulário DIFERENTE com pendência aberta → substitui a pendente
-//    D) GET /assinaturas/minha lista todas as assinaturas do usuário
-//
-//  O Asaas é MOCKADO (as funções do asaasService são trocadas por retornos
-//  falsos) — o teste roda sem internet e sem criar cobrança nenhuma.
-//
-//  SEGURANÇA: só roda com --db=local e só mexe nas assinaturas do vendedor
-//  demo (mercadins.demo.loja@gmail.com); no fim ele apaga o que criou.
-//
-//  Uso: node scripts/teste-segunda-loja.js --db=local
-// ─────────────────────────────────────────────────────────────────────────────
 require('dotenv').config();
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -92,7 +74,6 @@ function check(nome, ok, detalhe = '') {
 (async () => {
   const sql = await conectar();
 
-  // Cenário: vendedor demo que JÁ tem loja e assinatura ativa
   const [vendedor] = await sql`
     SELECT id_usuario FROM usuarios WHERE email = 'mercadins.demo.loja@gmail.com'
   `;
@@ -163,7 +144,6 @@ function check(nome, ok, detalhe = '') {
   `;
   check('a pendência antiga foi cancelada', antiga[0]?.status === 'cancelada', antiga[0]?.status);
 
-  // Limpeza: banco volta ao estado de antes do teste
   await sql`DELETE FROM assinaturas WHERE id_usuario = ${vendedor.id_usuario}`;
   console.log('\n(limpeza: assinaturas de teste apagadas)');
 

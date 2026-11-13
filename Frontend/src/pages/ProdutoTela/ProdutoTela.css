@@ -1,4 +1,3 @@
-/* Usa os mesmos design tokens (--vt-*) já definidos globalmente em Vitrine.css / VitrineCliente.css */
 
 @keyframes pdFadeUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -150,7 +149,6 @@
   animation: pdFadeUp 0.4s ease both;
 }
 
-/* Galeria */
 .pd-galeria {
   display: flex;
   gap: 12px;
@@ -193,7 +191,6 @@
 .pd-imagem-principal img { width: 100%; height: 100%; object-fit: cover; }
 .pd-imagem-placeholder { color: var(--vt-cinza); }
 
-/* Setas do carrocel */
 .pd-carrocel-seta {
   position: absolute;
   top: 50%;
@@ -218,7 +215,6 @@
 .pd-carrocel-seta--prev { left: 10px; }
 .pd-carrocel-seta--next { right: 10px; }
 
-/* Dots indicadores */
 .pd-dots {
   display: flex;
   justify-content: center;
@@ -243,7 +239,6 @@
   background: var(--vt-azul-medio);
 }
 
-/* Info do produto */
 .pd-info { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 .pd-nome { font-size: 22px; font-weight: 800; color: var(--vt-branco); margin: 0; line-height: 1.3; }
@@ -346,14 +341,12 @@
 .pd-btn-adicionar:hover:not(:disabled) { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
 .pd-btn-adicionar:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Aviso quando a quantidade chegou ao máximo do estoque */
 .pd-estoque-max {
   font-size: 11.5px;
   font-weight: 700;
   color: var(--vt-amarelo);
 }
 
-/* Caixa de informações (vendedor / serviços / pagamento) */
 .pd-caixa-info {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -383,7 +376,7 @@
 
 /* ─── Produtos recomendados ──────────────────────────────────────────────── */
 .pd-recomendados {
-  grid-column: 1 / -1; /* largura inteira, acima das avaliações */
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -487,7 +480,7 @@
 
 /* ─── Avaliações do produto ──────────────────────────────────────────────── */
 .pd-avaliacoes {
-  grid-column: 1 / -1; /* largura inteira, abaixo da galeria + info */
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -520,7 +513,6 @@
 .pd-aval-estrelas { display: flex; gap: 2px; color: var(--vt-amarelo); }
 .pd-aval-total { font-size: 12.5px; color: var(--vt-cinza); font-weight: 600; }
 
-/* Formulário de avaliação */
 .pd-aval-form,
 .pd-aval-login {
   display: flex;
@@ -590,7 +582,6 @@
 .pd-aval-btn:hover:not(:disabled) { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
 .pd-aval-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Lista de avaliações */
 .pd-aval-lista { display: flex; flex-direction: column; gap: 12px; }
 .pd-aval-vazio {
   margin: 0;
@@ -639,7 +630,6 @@
 .pd-aval-estrelas-item { display: flex; gap: 2px; color: var(--vt-amarelo); flex-shrink: 0; }
 .pd-aval-texto-item { margin: 0; font-size: 13px; color: var(--vt-branco-suave); line-height: 1.55; }
 
-/* Selo "compra verificada": quem avaliou comprou o produto (B8) */
 .pd-aval-verificada {
   background: rgba(52, 211, 153, 0.18);
   color: #34d399;
@@ -652,7 +642,6 @@
   white-space: nowrap;
 }
 
-/* Foto anexada à avaliação (B8) */
 .pd-aval-foto { display: inline-block; margin-top: 8px; line-height: 0; }
 .pd-aval-foto img {
   max-width: 180px;
@@ -664,8 +653,6 @@
 }
 .pd-aval-foto img:hover { transform: scale(1.03); }
 
-/* Foto da avaliação: em vez de colar um link, a pessoa tira a foto ou escolhe
-   da galeria — o mesmo armazenamento usado nas fotos de perfil e de produto */
 .pd-aval-foto-lbl {
   display: block;
   font-size: 12px;
@@ -693,8 +680,6 @@
   color: var(--vt-amarelo);
 }
 
-/* Input de arquivo escondido: quem dispara a câmera/galeria é o rótulo acima,
-   mas o campo continua acessível pelo teclado e por leitores de tela */
 .pd-aval-foto-input {
   position: absolute;
   width: 1px;
@@ -741,8 +726,6 @@
 
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  /* minmax(0, 1fr): a coluna precisa poder encolher (min-width: 0) senão o
-     conteúdo empurra a página e o que está na direita some (tela de 360px). */
   .pd-main { grid-template-columns: minmax(0, 1fr); }
   .pd-galeria { position: static; min-width: 0; }
   .pd-caixa-info { grid-template-columns: minmax(0, 1fr); }
@@ -754,8 +737,6 @@
   .pd-breadcrumb { padding: 0.8rem 1.2rem 0; }
   .pd-main { padding: 1.2rem 1.2rem 2rem; gap: 1.6rem; }
   .pd-galeria { flex-direction: column-reverse; min-width: 0; }
-  /* Largura vem da coluna; a altura sai do aspect-ratio (evita o ciclo em que
-     a imagem puxa a coluna para 347px dentro de uma tela de 352px). */
   .pd-imagem-principal { width: 100%; height: auto; flex: none; min-width: 0; }
   .pd-miniaturas { flex-direction: row; overflow-x: auto; max-width: 100%; }
   .pd-nome { font-size: 19px; }

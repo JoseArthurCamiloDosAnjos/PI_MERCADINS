@@ -62,10 +62,6 @@ export default function Relatorios() {
   const [dataInicio, setDataInicio] = useState('')
   const [loading, setLoading] = useState(true)
 
-  // useCallback com periodo/dataInicio nas dependências: o efeito abaixo
-  // recarrega os dados quando o período muda, sem reexecutar a cada render.
-  // O "loading" já começa true no useState; o setLoading(true) do botão
-  // "Aplicar" fica no handler do formulário (contexto de evento), não aqui.
   const carregar = useCallback(() => {
     const params = new URLSearchParams()
     params.set('periodo', periodo)
@@ -86,8 +82,6 @@ export default function Relatorios() {
     carregar()
   }
 
-  // Quantidade (mercados, pedidos, entregas) é contagem: inteiro, sem casa
-  // decimal. Só o dinheiro é que tem centavos.
   function formatarContagem(v: number | string) {
     return Math.round(Number(v) || 0).toLocaleString('pt-BR')
   }
@@ -143,7 +137,6 @@ export default function Relatorios() {
           <div key={key} className="adm-stat-card" style={{ borderTopColor: color }}>
             <div className="adm-stat-icon" style={{ color }}>{icon}</div>
             <div className="adm-stat-info">
-              {/* Contagem sai em inteiro; só a receita leva centavos */}
               <span className="adm-stat-val">
                 {moeda ? `R$ ${formatarMoeda(dados.metricas[key])}` : formatarContagem(dados.metricas[key])}
               </span>

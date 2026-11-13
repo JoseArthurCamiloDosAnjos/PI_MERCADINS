@@ -1,17 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // DADOS DE DEMONSTRAÇÃO (um mercado por chip da página inicial)
-//
-// Cria 7 mercados de vitrine — Hortifruti, Açougue, Padaria, Bebidas,
-// Orgânicos, Conveniência e um Supermercado — todos de Taquaritinga, com
-// produtos, fotos, avaliações de clientes e pedidos entregues.
-//
-// Requisitos: backend rodando em http://localhost:3001 (npm run dev no Backend).
-// Idempotente: apaga os dados demo anteriores antes de criar de novo.
-// Cuidado: o registro de contas tem limite de 5 a cada 15 min — execute no
-// máximo 1 vez nesse intervalo.
-//
-// Uso: node scripts/dados-demo.js
-// ─────────────────────────────────────────────────────────────────────────────
 
 const fs = require('fs');
 const path = require('path');
@@ -244,17 +231,11 @@ async function rota(metodo, caminho, { token, body } = {}) {
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
 
-// Upload de imagens pro bucket do Supabase (mesmo caminho que o site usa).
-// ATENÇÃO: o bucket "imagens" está com política que recusa uploads anônimos —
-// nem o site consegue enviar foto agora. Enquanto o time não corrigir a
-// política no painel do Supabase, a demo usa as imagens por URL direta
-// (placehold.co), que o site renderiza normalmente.
 let supaUrl = null;
 let supaKey = null;
 let semBucket = false;
 
 function carregarEnvSupabase() {
-  // Vite une .env e .env.local (o .env.local tem precedência) — lemos os dois
   for (const arquivo of ['.env.local', '.env']) {
     try {
       const env = fs.readFileSync(path.join(__dirname, '../../Frontend', arquivo), 'utf8');
@@ -266,7 +247,7 @@ function carregarEnvSupabase() {
           supaKey = valor.trim();
         }
       }
-    } catch { /* arquivo sem .env → ignora */ }
+    } catch { /* falha ignorada */ }
   }
   if (!supaUrl || !supaKey) semBucket = true;
 }
@@ -285,7 +266,7 @@ async function imagemDemo(fonte, caminho) {
           apikey: supaKey,
           Authorization: `Bearer ${supaKey}`,
           'Content-Type': tipo,
-          'x-upsert': 'true', // re-execuções sobrescrevem em vez de falhar
+          'x-upsert': 'true',
         },
         body: bytes,
       });
@@ -296,10 +277,9 @@ async function imagemDemo(fonte, caminho) {
       semBucket = true;
     }
   }
-  return fonte; // URL direta: o site renderiza normalmente
+  return fonte;
 }
 
-// Card de imagem com texto (placehold.co) — confiável e com cara de demonstração
 function cardImagem(largura, altura, fundo, texto, corTexto = 'ffffff') {
   return `https://placehold.co/${largura}x${altura}/${fundo}/${corTexto}/png?text=${encodeURIComponent(texto)}`;
 }
@@ -322,10 +302,7 @@ async function logar(email) {
   const sql = await conectar();
   carregarEnvSupabase();
 
-  // 1. Apaga dados demo anteriores (cascata: favoritos/avaliações/histórico)
   console.log('Limpando dados demo anteriores (se existirem)...');
-  // Primeiro descobre os ids dos mercados demo, depois apaga na ordem das
-  // dependências: produtos → categorias → vínculos → mercados.
   const slugsDemo = MERCADOS.map(m => m.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
   const mercadosDemo = await sql`
     SELECT DISTINCT m.id_mercado FROM mercados m
@@ -340,10 +317,7 @@ async function logar(email) {
     await sql`DELETE FROM usuarios_mercados WHERE id_mercado = ANY(${idsDemo})`;
     await sql`DELETE FROM mercados WHERE id_mercado = ANY(${idsDemo})`;
   }
-  // As contas demo ficam no banco (reaproveitadas) — recriar toda vez estouraria
-  // o limite de 5 registros a cada 15 minutos da API.
 
-  // 2. Contas (cria só as que faltam)
   const jaExistentes = new Set(
     (await sql`SELECT email FROM usuarios WHERE email LIKE 'mercadins.demo.%'`).map(u => u.email)
   );
@@ -361,14 +335,9 @@ async function logar(email) {
   for (const c of CLIENTES) tokensClientes[c.email] = await logar(c.email);
   console.log('Contas prontas (email já verificado).');
 
-  // O POST /api/mercados só aceita administrador (o usuário comum espera a
-  // confirmação do pagamento da assinatura). Na demo promovemos o vendedor
-  // só enquanto as lojas são criadas e devolvemos o cargo no final, para a
-  // conta ficar igual à de um lojista de verdade.
   await sql`UPDATE usuarios SET is_admin = TRUE WHERE email = ${VENDEDOR.email}`;
 
-  // 3. Mercados + produtos (com imagens quando o Supabase aceitar)
-  const idsProdutos = {}; // nomeDoMercado → { nomeDoProduto: id }
+  const idsProdutos = {};
   let totalProdutos = 0;
 
   for (const m of MERCADOS) {
@@ -393,7 +362,6 @@ async function logar(email) {
     const idMercado = criado.body.mercado.id_mercado;
     const slug = criado.body.mercado.slug;
 
-    // Banner e logo (cards coloridos com o nome da loja)
     const bannerUrl = await imagemDemo(cardImagem(1200, 320, m.cor, `${m.nome} · Taquaritinga`, m.corTexto), `mercados/${slug}-banner.png`);
     const logoUrl = await imagemDemo(cardImagem(400, 400, m.cor, m.nome.split(' ')[0], m.corTexto), `mercados/${slug}-logo.png`);
     if (bannerUrl || logoUrl) {
@@ -429,10 +397,8 @@ async function logar(email) {
     console.log(`  ✓ ${m.nome} (${m.cats.join(' + ')}) — ${m.grupos.reduce((n, g) => n + g.produtos.length, 0)} produtos`);
   }
 
-  // Lojas prontas: o vendedor volta a ser um lojista comum
   await sql`UPDATE usuarios SET is_admin = FALSE WHERE email = ${VENDEDOR.email}`;
 
-  // 4. Avaliações
   let totalAvaliacoes = 0;
   for (const [email, mercado, nota, texto] of AVALIACOES) {
     const mercadoMeta = MERCADOS.find(m => m.nome === mercado);
@@ -445,7 +411,6 @@ async function logar(email) {
   }
   console.log(`  ✓ ${totalAvaliacoes} avaliações de clientes`);
 
-  // 4b. Avaliações de produtos (estrelas por item da vitrine)
   let totalAvaliacoesProdutos = 0;
   for (const [email, mercado, produto, nota, texto] of AVALIACOES_PRODUTOS) {
     const mercadoMeta = MERCADOS.find(m => m.nome === mercado);
@@ -469,8 +434,6 @@ async function logar(email) {
   }
   console.log(`  ✓ ${totalAvaliacoesProdutos} avaliações de produtos`);
 
-  // 5. Pedidos (contam nos "pedidos entregues" da home; a cada outro fica
-  //    "entregue" pra mostrar os dois estados no histórico e no painel)
   let totalPedidos = 0;
   const idsPedidos = [];
   for (const [email, mercado, itens] of PEDIDOS) {
@@ -491,7 +454,6 @@ async function logar(email) {
   }
   console.log(`  ✓ ${totalPedidos} pedidos criados (${idsEntregues.length} já entregues)`);
 
-  // 6. Resumo
   console.log('\n================ DEMO PRONTA ================');
   console.log(`Mercados: ${MERCADOS.length} | Produtos: ${totalProdutos} | Avaliações: ${totalAvaliacoes} + ${totalAvaliacoesProdutos} de produtos | Pedidos: ${totalPedidos}`);
   console.log(`Imagens: ${semBucket ? 'diretas (placehold.co) — bucket do Supabase recusa upload anônimo; corrigir política no painel' : 'enviadas pro bucket'}`);

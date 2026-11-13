@@ -1,14 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/upload/:categoria — recebe uma imagem (multipart/form-data,
-//  campo "imagem"), salva na pasta imagens/<categoria>/ e devolve a URL.
-//
-//  Categorias: produtos | mercados | usuarios | avaliacoes | catalogo
-//  Formatos: PNG, JPG, WEBP — até 5 MB.
-//
-//  Junto do original é gerada a miniatura (300×300, imagens/<cat>/thumbs/),
-//  devolvida no campo "thumb" — o front usa srcset para servir a miniatura
-//  nas caixas pequenas e o original nas grandes.
-// ─────────────────────────────────────────────────────────────────────────────
 const path = require('path');
 const express = require('express');
 const router = express.Router();
@@ -35,8 +25,6 @@ router.post('/:categoria', autenticar, (req, res) => {
         .json({ erro: 'Nenhuma imagem enviada. Use o campo "imagem" (PNG, JPG ou WEBP).' });
     }
 
-    // URL absoluta derivada do próprio request: o mesmo host usado para
-    // chamar a API serve as imagens (GET /imagens/...).
     const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http')
       .split(',')[0]
       .trim();
@@ -44,8 +32,6 @@ router.post('/:categoria', autenticar, (req, res) => {
     const caminho = `/imagens/${categoria}/${req.file.filename}`;
     const base = `${proto}://${host}`;
 
-    // Miniatura é best effort: se falhar, a URL do original continua válida
-    // e o front faz fallback sozinho.
     const thumb = await gerarThumb(path.join(RAIZ_IMAGENS, categoria, req.file.filename));
 
     res.status(201).json({

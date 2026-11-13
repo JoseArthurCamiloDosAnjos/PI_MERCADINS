@@ -8,7 +8,6 @@ function parsePreco(valor) {
   return Number.isFinite(num) ? num : 0;
 }
 
-// Uso atual do mercado: quantos produtos cadastrados e quantas fotos usadas
 async function usoDoMercado(sql, mercadoId) {
   const produtos = await sql`
     SELECT COALESCE(array_length(p.imagens, 1), 0) AS fotos
@@ -22,10 +21,7 @@ async function usoDoMercado(sql, mercadoId) {
   }
 }
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:mercadoId/categorias/:categoriaId/produtos
-// Público — carrega produtos de uma categoria
-// ─────────────────────────────────────────────
 
 const listarProdutos = async (req, res) => {
   const { mercadoId, categoriaId } = req.params
@@ -58,10 +54,7 @@ const listarProdutos = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // POST /api/mercados/:mercadoId/categorias/:categoriaId/produtos
-// Requer autenticação — só dono/admin do mercado
-// ─────────────────────────────────────────────
 
 const criarProduto = async (req, res) => {
   const id_usuario = req.usuarioId
@@ -94,7 +87,6 @@ const criarProduto = async (req, res) => {
     const imagensUrls = Array.isArray(imagens) ? imagens : []
     const imagem = imagensUrls[0] || null
 
-    // Limites do plano: produtos e fotos
     const [mercado] = await sql`
       SELECT plano FROM mercados WHERE id_mercado = ${Number(mercadoId)}
     `
@@ -112,7 +104,6 @@ const criarProduto = async (req, res) => {
       })
     }
 
-    // Custo = quanto o mercado paga pelo produto (base do lucro no painel financeiro)
     const [novoProduto] = await sql`
       INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque, custo)
       VALUES (
@@ -135,9 +126,7 @@ const criarProduto = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // PUT /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId
-// ─────────────────────────────────────────────
 
 const atualizarProduto = async (req, res) => {
   const id_usuario = req.usuarioId
@@ -170,7 +159,6 @@ const atualizarProduto = async (req, res) => {
     const imagensUrls = Array.isArray(imagens) ? imagens : []
     const imagem = imagensUrls.length > 0 ? imagensUrls[0] : undefined
 
-    // Limites do plano na edição: só valida fotos se o cliente enviou novas
     if (imagensUrls.length > 0) {
       const [mercado] = await sql`
         SELECT plano FROM mercados WHERE id_mercado = ${Number(mercadoId)}
@@ -192,7 +180,6 @@ const atualizarProduto = async (req, res) => {
       }
     }
 
-    // Custo: null = não enviou (mantém o banco); 0 ou valor = grava
     const custoNovo = custo === undefined || custo === null
       ? null
       : Math.max(0, Math.min(99999999, parsePreco(custo)))
@@ -221,9 +208,7 @@ const atualizarProduto = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // DELETE /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId
-// ─────────────────────────────────────────────
 
 const deletarProduto = async (req, res) => {
   const id_usuario = req.usuarioId

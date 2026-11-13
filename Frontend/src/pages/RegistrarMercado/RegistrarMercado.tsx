@@ -38,8 +38,6 @@ interface Form {
   rua: string;
 }
 
-// Tipos de loja que o mercado pode declarar (os mesmos atalhos da home).
-// O lojista pode marcar quantos quiser — ex.: Hortifruti E Padaria.
 const TIPOS_LOJA = [
   { id: 'mercado', nome: 'Mercado', icone: IconShoppingCart },
   { id: 'hortifruti', nome: 'Hortifruti', icone: IconLeaf },
@@ -50,7 +48,6 @@ const TIPOS_LOJA = [
   { id: 'conveniencia', nome: 'Conveniência', icone: IconStore },
 ];
 
-// Dias da semana do formulário de horário (id = valor do Date: 0 = domingo)
 const DIAS = [
   { id: '1', nome: 'Segunda' }, { id: '2', nome: 'Terça' }, { id: '3', nome: 'Quarta' },
   { id: '4', nome: 'Quinta' }, { id: '5', nome: 'Sexta' }, { id: '6', nome: 'Sábado' },
@@ -69,7 +66,6 @@ export default function RegistrarMercado() {
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [localizando, setLocalizando] = useState(false);
   const [categorias, setCategorias] = useState<string[]>([]);
-  // Flag persistida no localStorage OU vinda do redirect do Asaas (?pagamento=1)
   const [aguardandoPagamento, setAguardandoPagamento] = useState(() => {
     if (new URLSearchParams(window.location.search).get('pagamento') === '1') {
       localStorage.setItem('aguardandoPagamento', '1');
@@ -86,8 +82,6 @@ export default function RegistrarMercado() {
     );
   }
 
-  // Horário de funcionamento: dia 0..6 (0 = domingo); null = fechado no dia.
-  // Começa com a semana comercial preenchida (o lojista ajusta como quiser).
   const [horario, setHorario] = useState<Record<string, [string, string] | null>>({
     '1': ['08:00', '18:00'], '2': ['08:00', '18:00'], '3': ['08:00', '18:00'],
     '4': ['08:00', '18:00'], '5': ['08:00', '18:00'],
@@ -115,8 +109,6 @@ export default function RegistrarMercado() {
     }
   });
 
-  // Plano que será salvo no banco: o escolhido na tela de planos
-  // (ids conhecidos pelo servidor); sem escolha, começa no Essencial
   const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
     ? planoSelecionado!.id!
     : 'basico';
@@ -125,12 +117,8 @@ export default function RegistrarMercado() {
     nome: '', email: '', telefone: '', cnpj: '', descricao: '',
     cep: '', estado: '', cidade: '', bairro: '', rua: '',
   });
-  // Wallet Asaas do lojista (opcional): pedidos pagos online caem direto
-  // na conta dele via Asaas Split (100%, sem comissão da plataforma)
   const [wallet, setWallet] = useState('');
 
-  // Como o mercado entrega os pedidos. A taxa e o pedido mínimo só valem
-  // quando a entrega está marcada; a retirada é sempre grátis.
   const [formEntrega, setFormEntrega] = useState({
     entrega: true,
     retirada: true,
@@ -138,7 +126,6 @@ export default function RegistrarMercado() {
     minimo: '',
   });
 
-  // Aceite obrigatório dos Termos de Uso e da Política de Privacidade.
   const [aceite, setAceite] = useState(false);
   const [erroAceite, setErroAceite] = useState('');
 
@@ -181,10 +168,8 @@ export default function RegistrarMercado() {
       .slice(0, 9);
   }
 
-  // Guarda se o endereço veio do ViaCEP (aí apagar o CEP apaga ele junto)
   const enderecoPeloCep = useRef(false);
 
-  // auto = true: chamado sozinho pelo CEP completo (não avisa erro de digitação)
   const buscarCEP = useCallback(async (auto = false) => {
     const cep = form.cep.replace(/\D/g, '');
     if (cep.length !== 8) {
@@ -212,8 +197,6 @@ export default function RegistrarMercado() {
     }
   }, [form.cep, showToast]);
 
-  // Com os 8 dígitos do CEP completos ele consulta sozinho — o botão "Buscar"
-  // continua servindo para repetir a busca. Cada CEP é consultado uma vez só.
   const cepJaBuscado = useRef<string | null>(form.cep.replace(/\D/g, '') || null);
   useEffect(() => {
     const digitos = form.cep.replace(/\D/g, '');
@@ -222,8 +205,6 @@ export default function RegistrarMercado() {
     void buscarCEP(true);
   }, [form.cep, buscarCEP]);
 
-  // Preenche o endereço pelo GPS do celular/notebook. O navegador pede
-  // autorização; se a pessoa negar, nada muda e o CEP manual continua valendo.
   async function usarLocalizacao() {
     if (localizando) return;
     setLocalizando(true);
@@ -258,7 +239,6 @@ export default function RegistrarMercado() {
     }
   }
 
-  // Admin sem plano: cria direto (paga de volta pelo webhook, mas não precisa)
   async function criarDireto() {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('Sessão expirada. Faça login novamente.');
@@ -301,7 +281,6 @@ export default function RegistrarMercado() {
     );
   }
 
-  // Usuário comum: cria assinatura + retorna link de pagamento (mercado vem depois)
   async function criarCheckout() {
     const checkout = await api.criarCheckout({
       codigo_plano: planoId,
@@ -326,8 +305,6 @@ export default function RegistrarMercado() {
       },
     });
     if (!checkout?.urlCheckout) {
-      // Sem link para pagar: ou a loja já existe (pagamento anterior
-      // confirmado e o backend recuperou a criação) ou veio um aviso.
       if (checkout?.mercado) {
         localStorage.removeItem('aguardandoPagamento');
         showToast('sucesso', checkout.mensagem || 'Sua loja já está ativa.');
@@ -342,17 +319,12 @@ export default function RegistrarMercado() {
     setUrlPagamento(checkout.urlCheckout);
     setStatusAtual('pendente');
     setAguardandoPagamento(true);
-    // O Asaas só devolve o cliente automaticamente quando o domínio está
-    // cadastrado na conta (semRedirect = ele recusou o callback). Aí o aviso
-    // explica que a volta será manual e a tela de status já espera o retorno.
     if (checkout.semRedirect) {
       showToast('aviso', 'O retorno automático não está ativo: ao concluir o pagamento, use o botão voltar do navegador. Esta tela mostra a confirmação.');
       setTimeout(() => { window.location.href = checkout.urlCheckout; }, 2600);
       return;
     }
     showToast('sucesso', 'Redirecionando para o pagamento...');
-    // Redirect automático é conveniência; se não abrir, a tela de status
-    // já exibe o botão manual "Ir para o pagamento"
     setTimeout(() => { window.location.href = checkout.urlCheckout; }, 1200);
   }
 
@@ -383,7 +355,6 @@ export default function RegistrarMercado() {
     if (diaRuim)
       return showToast('erro', 'Confira o horário: abertura e fechamento precisam ser diferentes.');
 
-    // Wallet Asaas é opcional, mas se vier precisa ter o formato certo
     if (wallet.trim() && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet.trim()))
       return showToast('erro', 'Wallet ID do Asaas inválido (confira o valor no painel do Asaas).');
 
@@ -392,13 +363,11 @@ export default function RegistrarMercado() {
 
     setSalvando(true);
     try {
-      // Admin sem plano escolhido: cria direto sem pagamento
       if (usuario?.is_admin && !planoSelecionado) {
         await criarDireto();
         return;
       }
 
-      // Usuário comum (ou admin com plano): só cria após o pagamento
       await criarCheckout();
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao cadastrar.');
@@ -407,8 +376,6 @@ export default function RegistrarMercado() {
     }
   }
 
-  // Ao abrir com a flag de pagamento pendente (ou voltando do Asaas com
-  // ?pagamento=1), verifica o status da assinatura
   useEffect(() => {
     if (!aguardandoPagamento) return;
 
@@ -419,12 +386,10 @@ export default function RegistrarMercado() {
         const r = await api.minhaAssinatura();
         if (cancelado) return;
         if (r?.assinatura?.status === 'ativa') {
-          // Pagamento confirmou → mercado já criado pelo webhook
           localStorage.removeItem('aguardandoPagamento');
           setStatusAtual('ativa');
           showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
           await refreshMercados();
-          // Vai direto para o gerenciador do mercado criado
           const idMercado = r.assinatura.id_mercado ?? r.mercado?.id_mercado;
           setTimeout(() => {
             navigate(idMercado ? `/vendedor/mercado/${idMercado}` : '/vendedor');
@@ -433,7 +398,6 @@ export default function RegistrarMercado() {
           setStatusAtual('pendente');
           setUrlPagamento(r.urlPagamento || null);
         } else {
-          // Sem assinatura ou outro status → volta ao formulário
           localStorage.removeItem('aguardandoPagamento');
           setAguardandoPagamento(false);
         }
@@ -471,8 +435,6 @@ export default function RegistrarMercado() {
               Seu mercado será criado automaticamente assim que o pagamento for confirmado.
             </p>
 
-            {/* Link do pagamento — sempre visível enquanto não confirmado,
-                caso o redirect automático não abra o Asaas */}
             {urlPagamento && statusAtual !== 'ativa' && (
               <div className="rm-status-acoes">
                 <a href={urlPagamento} className="btn btn-primary">
@@ -498,8 +460,6 @@ export default function RegistrarMercado() {
                         const idM = r.assinatura.id_mercado ?? r.mercado?.id_mercado;
                         setTimeout(() => navigate(idM ? `/vendedor/mercado/${idM}` : '/vendedor'), 1200);
                       } else if (r?.assinatura?.status === 'pendente') {
-                        // O backend consulta o Asaas na hora (fallback do
-                        // webhook): dá o estado real da cobrança
                         const cobranca = r.pagamento_asaas?.status;
                         showToast(
                           'info',
@@ -747,7 +707,6 @@ export default function RegistrarMercado() {
                   onChange={e => {
                     const cep = formatarCEP(e.target.value);
                     set('cep', cep);
-                    // Apagou o CEP: o endereço que ele preencheu sai junto
                     if (cep === '' && enderecoPeloCep.current) {
                       enderecoPeloCep.current = false;
                       setForm(f => ({ ...f, estado: '', cidade: '', bairro: '', rua: '' }));

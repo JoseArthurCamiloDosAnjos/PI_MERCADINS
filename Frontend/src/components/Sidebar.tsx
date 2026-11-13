@@ -34,10 +34,6 @@ interface SidebarProps {
   showCriarMercado?: boolean;
 }
 
-// Só abas com funcionalidade real: dados do perfil, segurança da conta,
-// endereços de entrega (cadastro, edição e principal), depoimento sobre a
-// plataforma e a assinatura (plano + prazo de validade).
-// (O histórico de compras e os favoritos ficam dentro da aba "Meu perfil".)
 const NAV_ITEMS_PADRAO: NavItem[] = [
   { icon: <IconUser size={18} />, label: "Meu perfil" },
   { icon: <IconBell size={18} />, label: "Notificações" },
@@ -63,7 +59,6 @@ export default function Sidebar({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Usa os itens passados ou o padrão do usuário
   const itens = navItems ?? NAV_ITEMS_PADRAO;
 
   function handleLogout() {
@@ -76,8 +71,6 @@ export default function Sidebar({
     setOpen(false);
   }
 
-  // Usuário escolhe o plano antes de criar (admin inclusive); se já tem
-  // pagamento pendente, volta para a tela de status do cadastro.
   function irCriarMercado() {
     if (localStorage.getItem('aguardandoPagamento') === '1') {
       navigate("/registrar-mercado");
@@ -87,7 +80,6 @@ export default function Sidebar({
     setOpen(false);
   }
 
-  // Sai do perfil e volta para a página anterior (ou para o início)
   function sairDoPerfil() {
     const returnUrl = getReturnUrl();
     navigate(returnUrl);

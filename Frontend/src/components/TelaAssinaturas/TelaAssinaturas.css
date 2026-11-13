@@ -393,8 +393,6 @@
 
 /* ── Modal de confirmação de cancelamento ────────────────────────────────── */
 
-/* O pop-up é montado no <body>: fica centralizado na tela inteira, não no
-   meio da lista. z-index alto e sem clique fora fechando — só os botões. */
 .sa-overlay {
   position: fixed;
   inset: 0;
@@ -451,7 +449,6 @@
 
 .sa-modal-texto b { color: var(--branco); }
 
-/* Motivo da falha no cancelamento — aparece dentro do próprio pop-up */
 .sa-modal-erro {
   margin: 0;
   padding: 8px 12px;

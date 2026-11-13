@@ -12,8 +12,6 @@ interface EscolhaProdutoProps {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-// Modal de escolha aberto pelo card "＋" da vitrine: "produto pronto"
-// (catálogo com fotos/descrição) ou "criar do zero" (CadastroProduto).
 
 export default function EscolhaProduto({
   onPronto,

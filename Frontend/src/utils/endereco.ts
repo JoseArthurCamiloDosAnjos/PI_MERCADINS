@@ -1,12 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Endereço de entrega — informado pelo cliente no carrinho (item 1)
-//
-//  • Aparece só quando a compra será ENTREGUE (na retirada no balcão não faz
-//    sentido);
-//  • Fica guardado no navegador para o cliente não digitar toda vez;
-//  • Vai para o banco como um texto único ("Rua X, nº 123 - Bairro - CEP ..."),
-//    assim a loja vê o endereço na tela de pedidos e no e-mail.
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface EnderecoEntrega {
   cep: string;
@@ -55,18 +47,14 @@ export function carregarEndereco(): EnderecoEntrega {
 export function salvarEndereco(endereco: EnderecoEntrega): void {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(endereco));
-  } catch {
-    /* navegador sem espaço: o endereço apenas não fica salvo */
-  }
+  } catch { /* falha ignorada */ }
 }
 
 /** Apaga o endereço guardado — quem está deslogado não deixa dado no aparelho */
 export function limparEnderecoSalvo(): void {
   try {
     localStorage.removeItem(CHAVE);
-  } catch {
-    /* navegador sem espaço: não há o que apagar */
-  }
+  } catch { /* falha ignorada */ }
 }
 
 /** Máscara de CEP: 12345678 → 12345-678 */
@@ -101,17 +89,10 @@ export function formatarEndereco(endereco: EnderecoEntrega): string {
   return partes.join(' - ').slice(0, 300);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Carteira de endereços (vários endereços salvos)
-//
-//  O cliente pode guardar mais de um endereço e escolher qual recebe a entrega
-//  (rádio "Onde você quer receber?"). A lista fica no navegador; o endereço
-//  escolhido continua sendo o que vai para o pedido.
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface EnderecoSalvo extends EnderecoEntrega {
   id: string;
-  /** Endereço principal da conta — o que já vem marcado no carrinho */
   principal?: boolean;
 }
 
@@ -144,7 +125,5 @@ export function carregarEnderecos(): EnderecoSalvo[] {
 export function guardarEnderecos(lista: EnderecoSalvo[]): void {
   try {
     localStorage.setItem(CHAVE_LISTA, JSON.stringify(lista));
-  } catch {
-    /* navegador sem espaço: a lista apenas não fica salva */
-  }
+  } catch { /* falha ignorada */ }
 }

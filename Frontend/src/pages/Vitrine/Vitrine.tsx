@@ -70,14 +70,11 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
-  /** Horário de funcionamento da semana (JSON do banco) */
   horario?: unknown;
-  /** Endereço da loja (aparece na header da vitrine) */
   rua?: string | null;
   bairro?: string | null;
   cidade?: string | null;
   estado?: string | null;
-  /** Tipos de loja (mercados.categorias) — usado para pré-filtrar o catálogo */
   tiposLoja?: string[];
   categorias: Categoria[];
 }
@@ -113,17 +110,11 @@ function useProdutos(mercadoId: number, categoriaId: number, inicial: Produto[])
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro]             = useState<string | null>(null);
   const abortRef                    = useRef(false);
-  // O componente pai (Vitrine) já carrega os produtos de todas as categorias
-  // antes de montar o CategoriaSection. Se recebemos um `inicial` com dados,
-  // não há motivo para buscar de novo — e essa rebusca redundante era o que
-  // causava o "flicker" (grid de produtos -> texto "Carregando produtos…" ->
-  // grid de novo) que empurrava o scroll pra baixo depois da tela já ter
-  // sido resetada pro topo, cortando a logo/nome atrás da topbar.
   const jaTinhaDadosIniciais        = useRef(inicial.length > 0);
 
   useEffect(() => {
     if (mercadoId === 0) return;
-    if (jaTinhaDadosIniciais.current) return; // já veio pronto do pai, não rebusca
+    if (jaTinhaDadosIniciais.current) return;
     abortRef.current = false;
 
     const carregar = async () => {
@@ -152,7 +143,6 @@ function formatarPreco(valor?: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Corta o texto no limite indicado sem partir palavras no meio
 function cortarEmPalavra(texto: string, max: number) {
   if (texto.length <= max) return texto;
   const corte = texto.slice(0, max);
@@ -361,14 +351,12 @@ function CategoriaSection({
     ? produtos.filter(p => p.nome.toLowerCase().includes(termo))
     : produtos;
 
-  // Esconde a categoria inteira se estiver buscando e nada bater
   if (termo && !carregando && produtosFiltrados.length === 0) return null;
 
   return (
     <>
       <section className="vt-categoria" ref={sectionRef}>
 
-        {/* Título com botão de editar */}
         <div className="vt-categoria-header">
           {editandoNome
             ? (
@@ -512,7 +500,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           api.listarCategorias(mercadoId!),
         ]);
 
-        // Carregar produtos de cada categoria
         const categoriasComProdutos = await Promise.all(
           categoriasData.map(async (cat: { id: number; nome: string }) => {
             try {
@@ -555,7 +542,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     carregarDados();
   }, [mercadoId, showToast]);
 
-  
+
   useEffect(() => {
     if (carregando) return;
     let raf2 = 0;
@@ -627,7 +614,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
         cor_texto: dados.corTexto ?? '',
         cor_icones: dados.corIcones ?? '',
         cor_texto_sec: dados.corTextoSec ?? '',
-        // Caminho da imagem na pasta imagens/ — é ele que fica no banco
         ...(dados.logo ? { foto_perfil_url: dados.logo } : {}),
         ...(dados.banner ? { banner_url: dados.banner } : {}),
       });
@@ -806,14 +792,12 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
               }
             </p>
 
-            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
             <p className="vt-local">
               <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
           </div>
         </div>
 
-        {/* Busca */}
         <div className="vt-busca-wrap">
           <IconSearch size={15} />
           <input
@@ -824,7 +808,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
           />
         </div>
 
-        {/* Tags de categoria — navegação rápida */}
         {dados.categorias.length > 0 && (
           <div className="vt-tags-row">
             {dados.categorias.map(cat => (

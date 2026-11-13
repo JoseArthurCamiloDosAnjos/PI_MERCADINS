@@ -26,8 +26,6 @@ const PORT = process.env.PORT || 3001
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER
 
 // ── HTTPS redirect ───────────────────────────────────────────────────────────
-// Render, Heroku, Vercel etc. usam proxy reverso — o header x-forwarded-proto
-// indica o protocolo original. Em produção, redireciona HTTP → HTTPS.
 app.use((req, res, next) => {
   if (isProduction && req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(301, `https://${req.headers.host}${req.url}`)
@@ -56,7 +54,6 @@ const allowedOrigins = [
     frontendUrl,
     'https://mercadins.com.br',
     'https://www.mercadins.com.br',
-    // localhost só em desenvolvimento
     ...(!isProduction ? ['http://localhost:5173', 'http://localhost:3001'] : []),
   ].filter(Boolean)),
 ]
@@ -109,10 +106,6 @@ app.use('/api/imagens',            require('./routes/imagemRoutes.js'))
 app.post('/api/webhooks/asaas',    webhookAsaas)
 
 // ── Imagens locais (pasta Backend/imagens/) ──────────────────────────────────
-// Servidas em /imagens/<categoria>/<arquivo> — o caminho gravado no banco.
-// A mesma pasta do upload (middleware/upload.js, IMAGENS_DIR opcional).
-// Miniaturas: /imagens/<categoria>/thumbs/<arquivo> é gerada sob demanda
-// (imagens antigas) antes do static servir — ver utils/thumbs.js.
 const { RAIZ_IMAGENS, CATEGORIAS } = require('./middleware/upload.js')
 const { middlewareThumbSobDemanda } = require('./utils/thumbs.js')
 app.use('/imagens', middlewareThumbSobDemanda(RAIZ_IMAGENS, CATEGORIAS))
@@ -122,9 +115,6 @@ app.use('/imagens', express.static(RAIZ_IMAGENS, {
 }))
 
 // ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────
-// Devolve a PRESENÇA das variáveis do Asaas + um teste AO VIVO da chave
-// (cache de 30s) — resolve em 10 segundos a dúvida "a credencial está valendo?".
-// Nenhum valor sensível é exposto.
 let saudeCache = { em: 0, teste: null }
 
 app.get('/api/saude/pagamentos', async (_req, res) => {
@@ -141,18 +131,14 @@ app.get('/api/saude/pagamentos', async (_req, res) => {
     ambiente: isProduction ? 'producao' : 'desenvolvimento',
     banco: process.env.DB_PROVIDER || 'auto',
     asaas: {
-      // Ambiente que as chamadas ao Asaas estão usando agora (sandbox × produção)
       ambiente: asaasService.ambienteAsaas(),
       url_usada: asaasService.baseUrlAsaas(),
       url_producao: !!process.env.Assas_API_URL_Producao,
       url_sandbox: !!process.env.Assas_API_URL_Sandbox,
-      // Chave presente em cada ambiente (a legada Assas_API_KEY vale para os dois)
       chave_api: Boolean(asaasService.chaveApi()),
       chave_fonte: asaasService.fonteChave(),
       chave_sandbox: Boolean(process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY),
       chave_producao: Boolean(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY),
-      // ok | invalida (chave revogada/expirada) | ambiente_errado (chave de
-      // outro ambiente) | sem_configuracao | erro — teste ao vivo da credencial
       chave_status: saudeCache.teste.status,
       chave_detalhe: saudeCache.teste.erro || null,
       webhook_token: tokensWebhook.length > 0,
@@ -187,9 +173,6 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
-  // Confere se a chave do Asaas do ambiente ativo funciona (só leitura).
-  // 401 com code invalid_environment = chave de outro ambiente (sandbox ×
-  // produção); 401 sem esse code = chave revogada/errada; 403 = permissão.
   asaasService.verificarConexao().then((resultado) => {
     if (resultado.ok) {
       console.log(
@@ -204,9 +187,6 @@ app.listen(PORT, () => {
 })
 
 // ── Vigência das assinaturas ──────────────────────────────────────────────────
-// A cada hora (e já na subida do servidor) encerra assinaturas vencidas +
-// carência e suspende os mercados vinculados até o pagamento ser regularizado.
-// Idempotente: rodar mais de uma vez não causa efeito colateral.
 async function checarVigencia() {
   try {
     const sql = await conectar()

@@ -1,33 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Notificações por e-mail
-//
-//  Toda notificação do sistema é gravada na tabela "notificacoes" (canal
-//  'email') e, quando faz sentido, um e-mail é disparado na hora via Resend
-//  (mesmo serviço dos e-mails de verificação/pedido).
-//
-//  Regra de ouro: **um evento = um e-mail**. Quando o fluxo já dispara um
-//  e-mail próprio (verificação de cadastro, pedido confirmado, status do
-//  pedido...), a notificação é registrada apenas no histórico com
-//  `enviarEmail: false` — assim a pessoa não recebe duas mensagens para a
-//  mesma coisa.
-//
-//  O envio é fire-and-forget: uma falha de e-mail nunca derruba o cadastro,
-//  o pedido ou a criação do mercado. A falha fica registrada na própria
-//  notificação (status 'erro') e no log do servidor.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const { enviarEmailNotificacao } = require('./mailer');
 
-/**
- * Grava a notificação no histórico e, opcionalmente, dispara o e-mail.
- *
- * @param {Function} sql   conexão do banco (retorno de conectar())
- * @param {Object}   dados {
- *   id_usuario, id_mercado, email, tipo, titulo, mensagem,
- *   enviarEmail = true   // false quando o evento já tem e-mail próprio
- * }
- * @returns {Promise<Object|null>} registro salvo
- */
 async function enviarNotificacao(sql, dados = {}) {
   const {
     id_usuario = null,
@@ -79,8 +53,6 @@ async function enviarNotificacao(sql, dados = {}) {
     `;
     return registro;
   } catch (falha) {
-    // Nunca deixa uma falha de aviso derrubar a ação principal (cadastro,
-    // pedido etc.). Só registra no log do servidor.
     console.error('Não foi possível gravar a notificação:', falha.message);
     return null;
   }

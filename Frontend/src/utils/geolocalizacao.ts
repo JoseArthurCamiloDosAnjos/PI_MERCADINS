@@ -1,18 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Localização automática — do GPS do celular para o endereço
-//
-//  Quando a pessoa toca em "Usar minha localização", o navegador pede
-//  autorização e devolve as coordenadas. Aí:
-//    1) Photon (dados do OpenStreetMap) transforma as coordenadas em CEP,
-//       rua, bairro e cidade. É a única fonte gratuita que devolve CEP no
-//       Brasil e que aceita chamada direta do navegador (CORS liberado);
-//    2) BigDataCloud entra como reserva, quando o Photon não achar nada;
-//    3) ViaCEP confirma e completa os dados do CEP no padrão brasileiro.
-//
-//  Se qualquer etapa falhar, quem chamou recebe uma mensagem clara e o
-//  preenchimento manual do CEP continua funcionando normalmente. Nada é
-//  enviado para os serviços sem a pessoa autorizar.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { buscarCep } from "./cep";
 
@@ -54,7 +40,6 @@ interface RespostaBigDataCloud {
   principalSubdivisionCode?: string;
 }
 
-/** Estado por extenso (como o OpenStreetMap devolve) → sigla de 2 letras */
 const SIGLAS_UF: Record<string, string> = {
   acre: "AC",
   alagoas: "AL",
@@ -144,7 +129,6 @@ async function buscarPhoton(latitude: number, longitude: number): Promise<Partia
       estado: String(p.state ?? "").trim(),
     };
   } catch {
-    // Sem internet ou serviço fora do ar: quem chama tenta a reserva.
     return null;
   }
 }
@@ -172,10 +156,6 @@ async function buscarBigDataCloud(
   }
 }
 
-/**
- * Pede autorização ao navegador e devolve o endereço aproximado.
- * Lança ErroLocalizacao com uma frase amigável quando não dá certo.
- */
 export async function obterEnderecoPorLocalizacao(): Promise<EnderecoLocalizado> {
   if (!localizacaoDisponivel()) {
     throw new ErroLocalizacao(
@@ -194,8 +174,6 @@ export async function obterEnderecoPorLocalizacao(): Promise<EnderecoLocalizado>
 
   const { latitude, longitude } = posicao.coords;
 
-  // Photon primeiro: é ele que tem o CEP. Só quando ele não achar nada é que
-  // o BigDataCloud é chamado (assim não gasta a cota dele à toa).
   const photon = await buscarPhoton(latitude, longitude);
   const temEndereco = !!(photon && (photon.cep || photon.rua || photon.cidade));
   const reserva = temEndereco ? null : await buscarBigDataCloud(latitude, longitude);
@@ -207,7 +185,6 @@ export async function obterEnderecoPorLocalizacao(): Promise<EnderecoLocalizado>
   let cidade = String(fonte?.cidade ?? "").trim();
   let estado = ufDe(fonte?.estado);
 
-  // O ViaCEP é a fonte brasileira mais confiável para rua/bairro/cidade/UF.
   if (cep.length === 8) {
     const viaCep = await buscarCep(cep);
     if (viaCep) {

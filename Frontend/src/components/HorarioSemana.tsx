@@ -2,11 +2,6 @@ import { parseHorario, gruposDaSemana, rotuloDias } from '../utils/horario';
 import { IconClock, IconX } from './Icons';
 import './HorarioSemana.css';
 
-/**
- * Horário da semana em campo VISÍVEL (não escondido em tooltip).
- * Agrupa dias iguais ("Seg a Sex 08:00 – 18:00") e lista os fechados
- * explicitamente ("Dom Fechado"). Loja sem horário configurado não renderiza.
- */
 export default function HorarioSemana({
   horario,
   className = '',
@@ -14,8 +9,6 @@ export default function HorarioSemana({
 }: {
   horario: unknown;
   className?: string;
-  /** Quando o título já aparece fora (ex.: dentro de um <details>), esconde
-      a linha "Horário da semana" para não repetir a informação. */
   semTitulo?: boolean;
 }) {
   const grupos = gruposDaSemana(parseHorario(horario));

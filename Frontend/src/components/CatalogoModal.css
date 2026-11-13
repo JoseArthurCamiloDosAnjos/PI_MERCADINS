@@ -1,6 +1,4 @@
 /* ─── CatalogoModal — seleção de produto pronto ────────────────────────────── */
-/* Usa os tokens --vt-* da paleta personalizada da vitrine do vendedor         */
-/* (definidos em Vitrine.tsx via style={estiloPaleta}).                        */
 
 .cm-overlay {
   position: fixed;

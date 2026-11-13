@@ -1,21 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Vigência das assinaturas (planos)
-//
-//  • proximaVigencia   — calcula o fim do período pago (mensal +1 mês,
-//                        anual +1 ano) no servidor, nunca pelo cliente.
-//  • encerrarVencidas  — assinaturas cuja vigência passou da carência viram
-//                        'inadimplente' e seus mercados ficam 'suspenso'
-//                        (saiem de busca/vitrine/sitemap, que filtram 'ativo').
-//  • reativarMercados  — pagamento confirmado devolve 'suspenso' → 'ativo'.
-//
-//  Escopo dos mercados suspensos/reativados:
-//    • plano personalizado → todos os mercados onde o usuário é dono;
-//    • demais planos       → apenas assinaturas.id_mercado.
-//
-//  Loja 'bloqueada' (bloqueio manual do admin) nunca é tocada aqui.
-// ─────────────────────────────────────────────────────────────────────────────
 
-// Dias que o cliente tem após o vencimento para regularizar antes da suspensão
 const CARENCIA_DIAS = 3;
 
 function dataUtc(valor) {
@@ -24,7 +8,6 @@ function dataUtc(valor) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Soma meses sem estourar o dia (31/01 + 1 mês → 28/02 em ano bissexto)
 function somarMeses(data, meses) {
   const dia = data.getUTCDate();
   const alvo = new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth() + meses, 1));
@@ -35,21 +18,17 @@ function somarMeses(data, meses) {
   return alvo;
 }
 
-// Fim da vigência do próximo ciclo, a partir da data base recebida.
-// Sem data base → usa hoje. Retorna 'YYYY-MM-DD' ou null.
 function proximaVigencia(ciclo, dataBase) {
   const base = dataUtc(dataBase) || new Date();
   const alvo = ciclo === 'ANUAL' ? somarMeses(base, 12) : somarMeses(base, 1);
   return alvo.toISOString().slice(0, 10);
 }
 
-// Data-limite de corte: vencimento há mais de CARENCIA_DIAS dias
 function corteVencimento() {
   const corte = new Date(Date.now() - CARENCIA_DIAS * 24 * 60 * 60 * 1000);
   return corte.toISOString().slice(0, 10);
 }
 
-// Quais mercados esta assinatura cobre (ver cabeçalho do arquivo)
 async function escopoMercados(sql, assinatura) {
   if (assinatura.codigo_plano === 'personalizado') {
     return sql`
@@ -62,7 +41,6 @@ async function escopoMercados(sql, assinatura) {
   return assinatura.id_mercado ? [{ id_mercado: assinatura.id_mercado }] : [];
 }
 
-// Tira as lojas do ar (status 'suspenso'); não mexe em 'bloqueado'
 async function suspenderMercados(sql, assinatura) {
   const alvos = await escopoMercados(sql, assinatura);
   const ids = alvos.map((m) => m.id_mercado);
@@ -79,7 +57,6 @@ async function suspenderMercados(sql, assinatura) {
   return suspensos.length;
 }
 
-// Devolve as lojas suspensas por cobrança para o ar
 async function reativarMercados(sql, assinatura) {
   const alvos = await escopoMercados(sql, assinatura);
   const ids = alvos.map((m) => m.id_mercado);
@@ -94,7 +71,6 @@ async function reativarMercados(sql, assinatura) {
   return reativados.length;
 }
 
-// Varredura principal: vigência vencida + carência → inadimplente e suspensão
 async function encerrarVencidas(sql) {
   const vencidas = await sql`
     SELECT id, id_usuario, id_mercado, codigo_plano, status, proximo_pagamento
@@ -107,7 +83,6 @@ async function encerrarVencidas(sql) {
 
   const resultado = [];
   for (const assinatura of vencidas) {
-    // Quem estava ativo e não pagou a renovação entra em inadimplência
     if (assinatura.status === 'ativa') {
       await sql`
         UPDATE assinaturas
@@ -122,7 +97,6 @@ async function encerrarVencidas(sql) {
   return resultado;
 }
 
-// Resumo exibido na tela "Assinaturas" (fim da vigência + dias restantes)
 function resumoVigencia(assinatura) {
   const fim = dataUtc(assinatura?.proximo_pagamento);
   if (!fim) return { validade_ate: null, dias_restantes: null };

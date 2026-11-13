@@ -214,11 +214,6 @@
 }
 
 /* ── INPUTS ── */
-/* `position: relative` é obrigatório aqui: `.field-icon-register` é
-   `position: absolute` e precisa de um bloco contentor. No Register o ícone
-   fica dentro de `.field-input-wrap` (que tem relative), mas o
-   RegistrarMercado põe o ícone direto em `.field`. Sem isto aqui, os 9 ícones
-   sobem a árvore e ancoram todos no `.form-card`, empilhados em top:50%. */
 .register-page .field {
   position: relative;
   margin-bottom: 4px;
@@ -243,7 +238,6 @@
 
 .register-page .field input::placeholder { color: var(--text-muted); }
 
-/* Date input */
 .register-page .date-input {
   width: 100%;
   padding: 7px 35px 7px 35px;
@@ -279,7 +273,6 @@
   box-shadow: 0 0 0 4px rgba(46,204,113,0.1);
 }
 
-/* Botão que abre o calendário */
 .register-page .date-picker-trigger {
   position: absolute;
   left: 6px;
@@ -307,15 +300,10 @@
 }
 .register-page .date-input-wrap .field-icon-register { display: none; }
 
-/* Calendar dropdown */
 .register-page .date-calendar {
   font-family: inherit;
 }
 
-/* O react-datepicker renderiza o próprio <input>, que ficaria visível ao lado
-   do campo estilizado do formulário. Escondemos só o input: o popper do
-   calendário é irmão do wrapper (não filho), então continua visível e ancorado
-   em dateInputRef via popperTargetRef. */
 .register-page .react-datepicker-wrapper { display: none; }
 
 .register-page .react-datepicker-popper {
@@ -414,7 +402,6 @@
   background: var(--white);
 }
 
-/* Estado de erro no campo */
 .register-page .field.has-error input {
   border-color: var(--danger);
   background: rgba(224,82,82,0.04);
@@ -423,7 +410,6 @@
   box-shadow: 0 0 0 4px rgba(224,82,82,0.1);
 }
 
-/* Estado de sucesso no campo */
 .register-page .field.has-success input {
   border-color: var(--success);
 }
@@ -442,7 +428,6 @@
 }
 .register-page .field input:focus ~ .field-icon-register { color: var(--navy-mid); }
 
-/* Mensagem de validação */
 .register-page .field-msg {
   display: block;
   font-size: 10px;
@@ -455,7 +440,6 @@
 .register-page .field.has-error .field-msg  { color: var(--danger); }
 .register-page .field.has-success .field-msg { color: var(--success); }
 
-/* Rodapé do campo: mensagem de validação + contador de caracteres */
 .register-page .field-foot {
   display: flex;
   align-items: center;
@@ -480,7 +464,6 @@
 }
 .register-page .field-counter.is-clear:hover { color: var(--danger); }
 
-/* Botão olho senha */
 .register-page .toggle-senha {
   position: absolute;
   right: 10px;
@@ -596,7 +579,6 @@
   transform: translateY(-1px);
 }
 
-/* Loader girando */
 .register-page .register-spinner {
   width: 20px;
   height: 20px;
@@ -672,8 +654,6 @@
     overflow-y: auto;
     background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%);
   }
-  /* O painel da esquerda NÃO some: vira um cabeçalho com o mesmo fundo do
-     desktop (gradiente + logo ilustrada + assinatura) e o botão voltar */
   .register-page .left {
     display: flex;
     width: 100%;
@@ -691,8 +671,6 @@
   .register-page .left .logo-tagline { font-size: 12px; letter-spacing: 2.4px; }
   .register-page .btn-back { top: 18px; left: 18px; }
 
-  /* O formulário vira um cartão branco flutuando sobre o gradiente,
-     deixando o fundo visível em volta (como na versão ampla) */
   .register-page .right {
     flex: 0 0 auto;
     align-self: center;
@@ -707,7 +685,6 @@
     box-shadow: 0 26px 60px rgba(4, 16, 44, 0.35);
   }
 
-  /* A logo já está no cabeçalho — evita logo repetida dentro do cartão */
   .register-page .mobile-logo { display: none; }
   .register-page .form-card { animation: none; padding: 0; }
   .register-page .form-header { margin-bottom: 12px; }

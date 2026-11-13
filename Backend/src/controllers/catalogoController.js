@@ -1,8 +1,6 @@
 const { conectar } = require('../db/neon')
 
 // ── Tipos de loja ────────────────────────────────────────────────────────────
-// Mesmos valores de CATEGORIAS_VALIDAS do marketController + 'geral'
-// (item que aparece para qualquer tipo de loja).
 const TIPOS_LOJA = [
   'geral',
   'mercado', 'hortifruti', 'acougue', 'padaria', 'bebidas', 'organicos', 'conveniencia',
@@ -19,7 +17,6 @@ function parsePreco(valor) {
   return Number.isFinite(num) ? num : 0
 }
 
-// Valida o corpo de criação/edição. `parcial` (edição) permite campos ausentes.
 function validarCorpo(body, { parcial = false } = {}) {
   const erros = []
 
@@ -65,11 +62,7 @@ function validarCorpo(body, { parcial = false } = {}) {
   return erros
 }
 
-// ─────────────────────────────────────────────
 // GET /api/catalogo?p=tipo
-// Público — itens ATIVOS do catálogo para o vendedor escolher.
-// Com ?tipo=x, devolve os itens daquele tipo + os 'geral'.
-// ─────────────────────────────────────────────
 
 const listarCatalogo = async (req, res) => {
   try {
@@ -95,10 +88,7 @@ const listarCatalogo = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // GET /api/admin/catalogo
-// Admin — TODOS os itens (inclusive inativos) para o painel.
-// ─────────────────────────────────────────────
 
 const listarCatalogoAdmin = async (_req, res) => {
   try {
@@ -118,9 +108,7 @@ const listarCatalogoAdmin = async (_req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // POST /api/admin/catalogo
-// ─────────────────────────────────────────────
 
 const criarItemCatalogo = async (req, res) => {
   try {
@@ -148,9 +136,7 @@ const criarItemCatalogo = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // PUT /api/admin/catalogo/:id
-// ─────────────────────────────────────────────
 
 const atualizarItemCatalogo = async (req, res) => {
   try {
@@ -204,9 +190,7 @@ const atualizarItemCatalogo = async (req, res) => {
   }
 }
 
-// ─────────────────────────────────────────────
 // DELETE /api/admin/catalogo/:id
-// ─────────────────────────────────────────────
 
 const deletarItemCatalogo = async (req, res) => {
   try {

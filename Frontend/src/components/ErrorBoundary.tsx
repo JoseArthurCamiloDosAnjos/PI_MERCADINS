@@ -1,12 +1,6 @@
 import { Component, type ReactNode } from 'react';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  A4 — Proteção contra erro inesperado (Error Boundary)
-//
-//  Se algum componente da tela falhar (bug, rede, versão nova do site ainda
-//  carregando), o cliente vê esta tela amigável com botão para recarregar —
-//  em vez de uma página branca sem explicação.
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   children: ReactNode;

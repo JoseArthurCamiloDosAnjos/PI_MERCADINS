@@ -3,15 +3,7 @@ import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Aba "Mercados" do painel do administrador
-//
-//  Antes só dava para ver loja por loja dentro do cadastro de um usuário, e a
-//  lista pública do site traz só 20 por vez — quando uma loja "não aparecia"
-//  ninguém conseguia descobrir o motivo. Aqui o administrador enxerga TODAS
-//  as lojas da plataforma (inclusive as bloqueadas), com busca, filtro de
-//  status, contagens e o botão de bloquear/desbloquear.
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface Mercado {
   id_mercado: number
@@ -151,8 +143,6 @@ export default function Mercados() {
   }, [busca, filtroStatus])
 
   useEffect(() => {
-    // Adia um instante: assim o carregamento não dispara setState de forma
-    // síncrona dentro do efeito (mesmo comportamento, sem o alerta do React)
     Promise.resolve().then(carregar)
   }, [carregar])
 
@@ -173,7 +163,6 @@ export default function Mercados() {
     }
   }
 
-  // Bloqueia/desbloqueia a loja: some do site do público quando bloqueada
   async function alternarBloqueio(id: number) {
     setBloqueandoId(id)
     try {

@@ -1,21 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  SEO por página (C6)
-//
-//  O site é uma SPA: o navegador recebe sempre o mesmo index.html e as telas
-//  trocam por JavaScript. Os robôs do Google leem o index.html — então, quando
-//  o cliente abre uma tela específica (vitrine de uma loja, produto), este
-//  utilitário atualiza título, descrição, canonical e as etiquetas de
-//  compartilhamento (Open Graph / Twitter) na hora.
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface SeoOpcoes {
-  /** Título da aba (aparece também no compartilhamento) */
   titulo: string;
-  /** Resumo da página (meta description e prévia do compartilhamento) */
   descricao?: string;
-  /** Imagem de prévia ao compartilhar (banner ou foto do produto) */
   imagem?: string;
-  /** Endereço canônico da página (padrão: endereço atual) */
   url?: string;
 }
 

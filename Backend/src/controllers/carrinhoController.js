@@ -1,6 +1,5 @@
 const { conectar } = require('../db/neon');
 
-// GET /api/carrinho/:mercadoId — busca carrinho do usuário logado
 const buscarCarrinho = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -24,7 +23,6 @@ const buscarCarrinho = async (req, res) => {
   }
 };
 
-// PUT /api/carrinho/:mercadoId — salva carrinho completo (substitui tudo)
 const salvarCarrinho = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -38,12 +36,8 @@ const salvarCarrinho = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // O driver HTTP do Neon recebe a transação como UMA LISTA de consultas
-    // (array ou função que devolve array). Uma função async que só espera as
-    // consultas devolve undefined e derruba a requisição com 500.
     await sql.transaction((tx) => {
       const consultas = [
-        // Remove todos os itens atuais deste usuário/mercado
         tx`
           DELETE FROM carrinho
           WHERE id_usuario = ${id_usuario}
@@ -51,7 +45,6 @@ const salvarCarrinho = async (req, res) => {
         `,
       ];
 
-      // Insere os novos itens (se houver)
       for (const item of itens) {
         if (item.quantidade > 0) {
           consultas.push(tx`
@@ -71,7 +64,6 @@ const salvarCarrinho = async (req, res) => {
   }
 };
 
-// DELETE /api/carrinho/:mercadoId — limpa carrinho do usuário
 const limparCarrinho = async (req, res) => {
   const id_usuario = req.usuarioId;
 

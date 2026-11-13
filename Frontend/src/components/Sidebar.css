@@ -14,7 +14,6 @@
   border-radius: 0 20px 20px 0;
 }
 
-/* PERFIL */
 .sb-profile {
   padding: 1.2rem 1.2rem 1rem;
   border-bottom: 1px solid var(--azul-borda);
@@ -83,7 +82,6 @@
   color: var(--amarelo);
 }
 
-/* NAV */
 .sb-nav {
   padding: 0.8rem 0.8rem;
   display: flex;
@@ -235,14 +233,11 @@
 }
 
 /* ── HAMBÚRGUER (mobile) ─────────────────────────────────────────── */
-/* Fixo, porém assentado dentro da barra do topo (que é sticky): ele
-   acompanha a barra em vez de pairar sobre o texto da página */
 .sb-hamburger {
   display: none;
   position: fixed;
   top: 8px;
   left: 14px;
-  /* acima da barra (z-index 40), abaixo do overlay do menu (65) */
   z-index: 50;
   width: 40px;
   height: 40px;
@@ -293,8 +288,6 @@
     width: 260px;
     z-index: 200;
     transform: translateX(-100%);
-    /* Fechado, o menu lateral fica fora da tela e também fora da navegação
-       por teclado. A visibilidade muda ao fim da animação de saída. */
     visibility: hidden;
     transition: visibility 0.25s;
     box-shadow: 10px 0 30px rgba(0,0,0,0.4);

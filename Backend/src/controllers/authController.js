@@ -12,7 +12,6 @@ const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } 
 const { VERSAO_TERMOS, MENSAGEM_ACEITE_OBRIGATORIO } = require("../utils/termos");
 const { enviarNotificacao } = require("../utils/notificacoes");
 
-// Armazena temporariamente os cadastros pendentes
 const cadastrosPendentes = new Map();
 
 const normalizarFrontendUrl = (url) => {
@@ -74,8 +73,6 @@ const signUp = async (req, res) => {
       RETURNING id_usuario
     `;
 
-    // Histórico da conta (aba Notificações). O e-mail de verificação já foi
-    // enviado acima, então aqui é só registro — fire-and-forget.
     enviarNotificacao(sql, {
       id_usuario: novoUsuario?.id_usuario ?? null,
       email,
@@ -97,7 +94,6 @@ const signUp = async (req, res) => {
   }
 };
 
-// verificarEmail — busca no banco por código
 const verificarEmail = async (req, res) => {
   const { codigo } = req.body;
   if (!codigo) return res.status(400).json({ erro: "Código não informado" });
@@ -125,7 +121,6 @@ const verificarEmail = async (req, res) => {
       WHERE id_usuario = ${usuario.id_usuario}
     `;
 
-    // Fire-and-forget: não bloqueia a resposta de e-mail confirmado.
     enviarNotificacao(sql, {
       id_usuario: usuario.id_usuario,
       email: usuario.email,
@@ -142,7 +137,6 @@ const verificarEmail = async (req, res) => {
     res.status(500).json({ erro: "Erro ao confirmar cadastro" });
   }
 };
-// reenviarCodigoVerificacao — gera um novo código e reenvia o email de verificação
 const reenviarCodigoVerificacao = async (req, res) => {
   const { email } = req.body;
 
@@ -190,7 +184,6 @@ const signIn = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Busca por email normal OU email_admin
     const resultado = await sql`
       SELECT id_usuario, nome, email, cpf, telefone, data_nascimento, senha, email_verificado, foto_perfil, is_admin, status, email_admin
       FROM usuarios WHERE email = ${email} OR email_admin = ${email}
@@ -201,7 +194,6 @@ const signIn = async (req, res) => {
 
     const usuario = resultado[0];
 
-    // Verifica se o login foi feito com o email admin
     const is_admin_login = usuario.email_admin && email.toLowerCase() === usuario.email_admin.toLowerCase();
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
@@ -219,7 +211,6 @@ const signIn = async (req, res) => {
     if (usuario.status === 'inativo')
       return res.status(403).json({ erro: "Sua conta está desativada. Faça login novamente para reativar." });
 
-    // Se login com email_admin mas não é admin, negar acesso
     if (is_admin_login && !usuario.is_admin)
       return res.status(403).json({ erro: "Este email é de administrador. Faça login com seu email normal." });
 
@@ -229,7 +220,6 @@ const signIn = async (req, res) => {
       { expiresIn: "7d" },
     );
 
-    // Atualiza ultimo_acesso
     await sql`UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_usuario = ${usuario.id_usuario}`;
 
     res.json({
@@ -260,7 +250,6 @@ const confirmarTrocaSenha = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // busca pelo código (que está concatenado com a hash)
     const [usuario] = await sql`
       SELECT id_usuario, token_verificacao, token_expiracao
       FROM usuarios
@@ -315,15 +304,12 @@ const esqueciSenha = async (req, res) => {
       });
     }
 
-    // gera código numérico de 6 dígitos
     const codigo =
       Math.floor(100000 + Math.random() * 900000).toString();
 
-    // expira em 15 minutos
     const expiracao =
       new Date(Date.now() + 15 * 60 * 1000);
 
-    // salva código
     await sql`
       UPDATE usuarios
       SET token_verificacao = ${codigo},
@@ -331,7 +317,6 @@ const esqueciSenha = async (req, res) => {
       WHERE email = ${email}
     `;
 
-    // envia email com código
     await enviarEmailRecuperacao(
       email,
       codigo
@@ -352,7 +337,6 @@ const esqueciSenha = async (req, res) => {
     });
   }
 };
-// reenviarRecuperacao — gera um novo código de recuperação e reenvia o email
 const reenviarRecuperacao = async (req, res) => {
   const { email } = req.body;
 
@@ -465,7 +449,6 @@ const redefinirSenha =
 
       const user = usuario[0];
 
-      // código expirado
       if (
         new Date() >
         new Date(user.token_expiracao)
@@ -476,14 +459,12 @@ const redefinirSenha =
         });
       }
 
-      // hash senha
       const senhaHash =
         await bcrypt.hash(
           novaSenha,
           10
         );
 
-      // atualiza senha
       await sql`
         UPDATE usuarios
         SET senha = ${senhaHash},
@@ -563,12 +544,10 @@ const solicitarTrocaSenha = async (req, res) => {
       return res.status(400).json({ erro: 'Senha atual incorreta.' });
     }
 
-    // gera código numérico de 6 dígitos
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
     const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
     const expiracao = new Date(Date.now() + 15 * 60 * 1000);
 
-    // salva código + hash concatenados separados por "|"
     await sql`
       UPDATE usuarios SET
         token_verificacao = ${codigo + '|' + novaSenhaHash},

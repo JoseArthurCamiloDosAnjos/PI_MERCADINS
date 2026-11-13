@@ -32,7 +32,6 @@ export default function ConfirmarSaida({
 
         <div className="cfs-acoes">
 
-          {/* 1º — Continuar editando (ação segura, destaque neutro) */}
           <button
             className="cfs-btn cfs-btn--cancelar"
             onClick={onCancelar}
@@ -41,7 +40,6 @@ export default function ConfirmarSaida({
             Continuar editando
           </button>
 
-          {/* 2º — Salvar e sair (ação recomendada, destaque amarelo) */}
           <button
             className={`cfs-btn cfs-btn--salvar ${salvando ? 'cfs-btn--carregando' : ''}`}
             onClick={onSalvarESair}
@@ -53,7 +51,6 @@ export default function ConfirmarSaida({
             }
           </button>
 
-          {/* 3º — Sair sem salvar (ação destrutiva, vermelho) */}
           <button
             className="cfs-btn cfs-btn--sair"
             onClick={onSairSemSalvar}

@@ -27,7 +27,6 @@ export default function SelecionarPlano() {
 
   function escolherPlano(plano: Plano) {
     if (usuario?.is_admin) {
-      // Admin não assina: não grava o plano para não ir para o pagamento
       localStorage.removeItem('planoSelecionado');
     } else {
       localStorage.setItem('planoSelecionado', JSON.stringify({

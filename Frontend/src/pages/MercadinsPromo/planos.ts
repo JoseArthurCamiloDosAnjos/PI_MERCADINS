@@ -7,9 +7,7 @@ export interface Plano {
   badge: string | null;
   features: string[];
   cta: string;
-  /** Plano sem preço fixo: valor cotado caso a caso pelo consultor. */
   sobConsulta?: boolean;
-  /** Preço mínimo exibido como "a partir de R$ X/mês". */
   aPartirDe?: string;
 }
 

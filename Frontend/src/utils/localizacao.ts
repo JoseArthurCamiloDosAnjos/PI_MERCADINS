@@ -1,6 +1,3 @@
-// Formatação padrão da localização de um mercado — fonte única usada nos
-// cards da home, na página de parceiros e nas duas vitrines, para o site
-// inteiro mostrar o endereço do mesmo jeito.
 
 export interface LocalMercado {
   rua?: string | null;

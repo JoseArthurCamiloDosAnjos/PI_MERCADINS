@@ -1,13 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Notificações por e-mail
-//
-//  Mostra o histórico dos avisos que o Mercadins enviou (ou registrou) por
-//  e-mail: cadastro concluído, e-mail confirmado, mercado criado, pedido
-//  recebido, saiu para entrega, entregue, cancelado...
-//
-//  O envio automático usa o mesmo serviço de e-mail do sistema (Resend) e o
-//  histórico fica guardado na conta — nada se perde.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
@@ -80,8 +71,6 @@ export default function TelaNotificacoes() {
   }, []);
 
   useEffect(() => {
-    // Adia um tique para o carregamento não disparar setState no corpo do
-    // efeito (evita renderização em cascata).
     let vivo = true;
     Promise.resolve().then(() => {
       if (vivo) void carregar();

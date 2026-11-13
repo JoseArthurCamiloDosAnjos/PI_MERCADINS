@@ -94,11 +94,7 @@ const enviarEmailRecuperacao = async (email, codigo) => {
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Administração — avisa no e-mail PESSOAL da pessoa que a conta dela foi
-//  habilitada como administradora, com o login (email_admin) e a senha
-//  (a mesma da conta normal — nunca enviamos a senha em texto).
-// ─────────────────────────────────────────────────────────────────────────────
 const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
   await resend.emails.send({
     from: EmailDominio,
@@ -190,12 +186,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Pedidos — e-mails disparados quando o cliente finaliza e a cada mudança de
-//  status. O backend envia sem travar a resposta (fire-and-forget com try/catch
-//  em quem chama), porque um provedor de e-mail lento ou fora do ar não pode
-//  impedir que um pedido seja registrado.
-// ─────────────────────────────────────────────────────────────────────────────
 const formatarBRL = (v) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -297,9 +288,6 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
   });
 };
 
-// Pagamento confirmou DEPOIS de o pedido ser cancelado: o dinheiro entrou e
-// precisa voltar. Avisa o cliente com o desfecho do estorno (automático ou
-// pendente de ação manual da equipe).
 const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }) => {
   const mensagem = estornado
     ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
@@ -326,11 +314,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  B2 — Aviso de pedido novo para o VENDEDOR
-//  Dispara quando entra pedido pago (ou pedido "pagar na entrega"): a loja
-//  vê os itens, o total e como o cliente quer receber, tudo no e-mail.
-// ─────────────────────────────────────────────────────────────────────────────
 const NOMES_PAGAMENTO = {
   presencial: 'Pagar na entrega',
   pix: 'Pix (pago online)',
@@ -388,8 +372,6 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
   });
 };
 
-// Notificação genérica do sistema (cadastro confirmado, loja criada, teste...).
-// Usada pelo módulo de notificações — o histórico fica na tabela "notificacoes".
 const enviarEmailNotificacao = async (email, titulo, mensagem) => {
   const { error } = await resend.emails.send({
     from: EmailDominio,

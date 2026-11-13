@@ -9,10 +9,7 @@ const {
 const { enviarNotificacao } = require('../utils/notificacoes');
 const { limitesDoPlano } = require('../utils/planos');
 
-// ─────────────────────────────────────────────
 // E-mails do pedido — busca os dados prontos e dispara sem travar a resposta
-// (quem chama usa .catch(...); provedor fora do ar não derruba o pedido).
-// ─────────────────────────────────────────────
 async function montarDadosPedidoParaEmail(sql, idPedido) {
   const [dados] = await sql`
     SELECT h.id, h.produtos, h.valor_total, h.taxa_entrega, h.desconto, h.cupom_codigo,
@@ -51,15 +48,12 @@ async function montarDadosPedidoParaEmail(sql, idPedido) {
   };
 }
 
-// Avisa o vendedor por e-mail que entrou pedido novo (B2)
-// (dispara sem segurar a resposta; falha de e-mail não afeta o pedido)
 function avisarVendedorPedido(sql, idPedido) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
       if (!dados) return;
       enviarEmailPedidoVendedor(dados.emailVendedor, dados);
       if (dados.emailVendedor) {
-        // O e-mail acima já cobre este evento — aqui é só o histórico.
         enviarNotificacao(sql, {
           id_mercado: dados.idMercado,
           email: dados.emailVendedor,
@@ -73,10 +67,6 @@ function avisarVendedorPedido(sql, idPedido) {
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
 }
 
-// Avisa o CLIENTE sobre o andamento do pedido. O e-mail transacional do
-// status já sai junto (enviarEmailPedidoConfirmado/StatusPedido), então aqui
-// a notificação vai apenas para o histórico — um evento, um e-mail.
-// Dispara sem segurar a resposta; qualquer falha fica só no log.
 function avisarClientePedido(sql, idPedido, status) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
@@ -120,12 +110,7 @@ function avisarClientePedido(sql, idPedido, status) {
     .catch((err) => console.error('Falha na notificação do pedido:', err.message));
 }
 
-// ─────────────────────────────────────────────
 // A3 — Baixa automática de estoque
-// Baixa unidade por unidade com trava no banco (WHERE estoque >= quantidade):
-// se dois clientes disputarem o último item, só um consegue. Se algo falhar
-// no meio, o que já foi baixado é devolvido antes de responder o erro.
-// ─────────────────────────────────────────────
 async function baixarEstoque(sql, itens) {
   const baixados = [];
   for (const item of itens) {
@@ -137,7 +122,6 @@ async function baixarEstoque(sql, itens) {
       RETURNING id_produto
     `;
     if (atualizado.length === 0) {
-      // Estoque acabou entre a validação e a baixa → devolve o que já saiu
       await devolverEstoque(sql, baixados);
       const nome = await sql`SELECT nome FROM produtos WHERE id_produto = ${idProduto}`;
       throw new Error(
@@ -149,7 +133,6 @@ async function baixarEstoque(sql, itens) {
   return baixados;
 }
 
-// Devolve estoque (usado quando o pedido é cancelado ou a baixa falha no meio)
 async function devolverEstoque(sql, itens) {
   for (const item of itens || []) {
     await sql`
@@ -159,8 +142,6 @@ async function devolverEstoque(sql, itens) {
   }
 }
 
-// Devolve 1 uso de cupom (cancelamento ou falha de pagamento) — espelho do +1
-// feito na criação do pedido. Usa o código gravado no próprio pedido.
 async function devolverCupom(sql, idMercado, cupomCodigo) {
   const codigo = String(cupomCodigo || '').trim().toUpperCase();
   if (!codigo) return;
@@ -173,13 +154,8 @@ async function devolverCupom(sql, idMercado, cupomCodigo) {
   }
 }
 
-// ─────────────────────────────────────────────
 // Split do pedido — o dinheiro do Pix/cartão cai DIRETO na conta Asaas do
-// vendedor (100% do líquido, sem comissão da plataforma). Sem wallet
-// cadastrado, o comportamento é o antigo: valor na conta da plataforma.
-// ─────────────────────────────────────────────
 
-// Valor liquidado de um item de split: fixo ou % do líquido (netValue)
 function valorSplitCalculado(split, netValue) {
   if (split?.fixedValue != null) return Number(split.fixedValue) || 0;
   const pct = split?.percentualValue != null ? Number(split.percentualValue) : null;
@@ -188,15 +164,10 @@ function valorSplitCalculado(split, netValue) {
   return 0;
 }
 
-// Grava/atualiza as linhas de repasse a partir do array `split` que o Asaas
-// devolve na cobrança (ids, status e valores). Idempotente: o webhook pode
-// chegar várias vezes com o mesmo payload.
 async function sincronizarRepasses(sql, pedidoId, pagamento) {
   const lista = Array.isArray(pagamento?.split) ? pagamento.split : [];
   if (lista.length === 0) return;
 
-  // A cobrança TEM split → qualquer linha provisória sem split id é lixo
-  // (evita somar o mesmo valor duas vezes no financeiro)
   await sql`
     DELETE FROM repasses
     WHERE id_pedido = ${pedidoId} AND asaas_split_id IS NULL
@@ -221,11 +192,6 @@ async function sincronizarRepasses(sql, pedidoId, pagamento) {
   }
 }
 
-// Linha criada junto da cobrança, quando a resposta do Asaas ainda não
-// trouxe o array de split (a sincronização do webhook completa depois).
-// Sem split no pedido → registra como retido na plataforma (visível no
-// financeiro do vendedor, para conciliação manual). Quando o split foi
-// recusado, o motivo real vindo do Asaas é guardado junto.
 async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, splitEnviado, motivoSplit, valorTotal }) {
   const temSplit = Array.isArray(pagamento?.split) && pagamento.split.length > 0;
   if (temSplit) {
@@ -233,8 +199,6 @@ async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, sp
     return;
   }
   if (splitEnviado) {
-    // Split enviado mas a resposta não veio com ele: o webhook sincroniza
-    // depois (processarPagamentoPedido). Não grava linha provisória.
     return;
   }
   const motivo = walletId
@@ -251,8 +215,6 @@ async function registrarRepassesCriacao(sql, pedidoId, pagamento, { walletId, sp
   `;
 }
 
-// POST /api/mercados/:id/pedidos — cria um pedido a partir do carrinho do usuário
-// forma_pagamento: 'presencial' (padrão, paga na entrega), 'pix' ou 'cartao'
 const criarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const mercadoId  = Number(req.params.id);
@@ -262,7 +224,6 @@ const criarPedido = async (req, res) => {
     return res.status(400).json({ erro: 'Informe os itens do pedido.' });
   }
 
-  // Validação básica de cada item (id inteiro > 0 e quantidade inteira > 0)
   for (const item of itens) {
     const idProduto  = Number(item && item.id_produto);
     const quantidade = Number(item && item.quantidade);
@@ -276,27 +237,19 @@ const criarPedido = async (req, res) => {
     return res.status(400).json({ erro: 'Mercado inválido.' });
   }
 
-  // Forma de pagamento: paga na entrega (padrão), Pix ou cartão online
   const formaPagamento = ['pix', 'cartao'].includes(forma_pagamento) ? forma_pagamento : 'presencial';
-  // Pagamento online começa "aguardando"; só vira "pendente" quando o Asaas confirmar
   const statusInicial = formaPagamento === 'presencial' ? 'pendente' : 'aguardando_pagamento';
 
-  // Entrega pelo cliente ou retirada no balcão (padrão: entrega)
   const tipoEntrega = tipo_entrega === 'retirada' ? 'retirada' : 'entrega';
 
-  // Observação é opcional: máx. 300 caracteres, sem caracteres de controle
   const observacaoLimpa = typeof observacao === 'string'
     ? observacao.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
     : '';
 
-  // Agendamento é opcional: quando o cliente quer receber/retirar
-  // (ex.: "Hoje à tarde", "Amanhã de manhã") — máx. 60 caracteres
   const agendamentoLimpo = typeof agendamento === 'string'
     ? agendamento.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 60)
     : '';
 
-  // Endereço de entrega (item 1): só existe quando a compra será entregue
-  // (na retirada no balcão não faz sentido) — máx. 300 caracteres
   const enderecoLimpo = tipoEntrega === 'entrega' && typeof endereco_entrega === 'string'
     ? endereco_entrega.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
     : '';
@@ -306,8 +259,6 @@ const criarPedido = async (req, res) => {
 
     const idsProdutos = [...new Set(itens.map(i => Number(i.id_produto)))];
 
-    // Só aceita produtos que pertencem a este mercado
-    // (produtos não têm id_mercado direto: a ligação é pela categoria)
     const produtos = await sql`
       SELECT p.id_produto, p.nome, p.preco, p.estoque, p.id_categoria
       FROM produtos p
@@ -320,8 +271,6 @@ const criarPedido = async (req, res) => {
       return res.status(400).json({ erro: 'Alguns produtos não pertencem a este mercado.' });
     }
 
-    // Regras de entrega do mercado (taxa, mínimo e quais formas aceita)
-    // + wallet Asaas do vendedor (split: dinheiro do pedido cai na conta dele)
     const [mercado] = await sql`
       SELECT nome, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, asaas_wallet_id, plano, status
       FROM mercados
@@ -330,13 +279,10 @@ const criarPedido = async (req, res) => {
     if (!mercado) {
       return res.status(404).json({ erro: 'Mercado não encontrado.' });
     }
-    // Só lojas ativas recebem pedidos (bloqueada pelo admin ou suspensa por
-    // assinatura não podem ser contornadas chamando a API direto)
     if (mercado.status !== 'ativo') {
       return res.status(403).json({ erro: 'Este mercado não está aceitando pedidos no momento.' });
     }
 
-    // Limite de pedidos/mês do plano (Essencial 100, Plus 500, Personalizado 5000)
     const limites = limitesDoPlano(mercado.plano);
     const [pedidosMes] = await sql`
       SELECT COUNT(*)::int AS total
@@ -360,17 +306,13 @@ const criarPedido = async (req, res) => {
 
     const mapaProdutos = new Map(produtos.map(p => [Number(p.id_produto), p]));
 
-    // O valor total é calculado SEMPRE pelo preço do banco, nunca pelo cliente
     let valorTotal = 0;
     const resumo = [];
-    // Itens do pedido (produto + categoria + total) — base do escopo do cupom
     const itensPedido = [];
     for (const item of itens) {
       const produto    = mapaProdutos.get(Number(item.id_produto));
       const quantidade = Number(item.quantidade);
 
-      // Estoque: a quantidade pedida nunca pode passar do disponível
-      // (a baixa de verdade acontece depois, com trava — função baixarEstoque)
       const disponivel = Number(produto.estoque) || 0;
       if (quantidade > disponivel) {
         const motivo = disponivel <= 0
@@ -388,7 +330,6 @@ const criarPedido = async (req, res) => {
       resumo.push(`${quantidade}x ${produto.nome}`);
     }
 
-    // Pedido mínimo só vale para entrega (na retirada o cliente pega no balcão)
     const pedidoMinimo = Number(mercado.pedido_minimo) || 0;
     if (tipoEntrega === 'entrega' && pedidoMinimo > 0 && valorTotal < pedidoMinimo) {
       return res.status(400).json({
@@ -396,7 +337,6 @@ const criarPedido = async (req, res) => {
       });
     }
 
-    // Cupom de desconto (opcional) — conferido no banco, nunca no navegador
     let desconto = 0;
     let cupomRegistro = null;
     if (typeof cupom === 'string' && cupom.trim()) {
@@ -411,7 +351,6 @@ const criarPedido = async (req, res) => {
         return res.status(400).json({ erro: 'Cupom inválido ou desativado.' });
       }
       if (registro.validade) {
-        // validade chega como meia-noite (fuso do banco): compara até o fim do dia
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
         const validade = new Date(registro.validade);
@@ -430,10 +369,6 @@ const criarPedido = async (req, res) => {
         });
       }
 
-      // Escopo (B10): o cupom pode valer só para algumas categorias e/ou para
-      // produtos específicos — nesse caso o desconto sai de cima do subtotal
-      // dos itens que estiverem nas categorias escolhidas OU forem um dos
-      // produtos escolhidos (união dos dois).
       const categoriasCupom = await sql`
         SELECT cc.id_categoria, c.nome
         FROM cupom_categorias cc
@@ -479,15 +414,10 @@ const criarPedido = async (req, res) => {
       cupomRegistro = registro;
     }
 
-    // Taxa: cobrada só na entrega; no balcão é grátis
     const taxaEntrega = tipoEntrega === 'entrega' ? Number(mercado.taxa_entrega) || 0 : 0;
 
-    // Ids dos produtos comprados — usados pelo selo "compra verificada" da
-    // avaliação de produto (quem já comprou pode receber o selo)
     const produtoIds = idsProdutos.join(',');
 
-    // Foto dos itens no momento do pedido — permite devolver o estoque
-    // certinho se o pagamento falhar ou o pedido for cancelado
     const itensJson = itens.map(i => ({
       id_produto: Number(i.id_produto),
       quantidade: Number(i.quantidade),
@@ -509,8 +439,6 @@ const criarPedido = async (req, res) => {
                 endereco_entrega
     `;
 
-    // A3 — Baixa automática de estoque (com trava no banco).
-    // Se algo faltar no meio, apaga o pedido recém-criado e responde o motivo.
     try {
       await baixarEstoque(sql, itensJson);
     } catch (erroEstoque) {
@@ -518,12 +446,10 @@ const criarPedido = async (req, res) => {
       return res.status(400).json({ erro: erroEstoque.message });
     }
 
-    // Cupom usado: soma 1 no contador de usos
     if (cupomRegistro) {
       await sql`UPDATE cupons SET usos = usos + 1 WHERE id = ${cupomRegistro.id}`;
     }
 
-    // Remove do carrinho apenas os produtos que foram comprados
     await sql`
       DELETE FROM carrinho
       WHERE id_usuario = ${id_usuario}
@@ -531,8 +457,6 @@ const criarPedido = async (req, res) => {
         AND id_produto = ANY(${idsProdutos})
     `;
 
-    // Arredondamento obrigatório: a soma em JS pode gerar fração
-    // (ex.: 1.15 * 3 = 3.4499...) e o Asaas rejeita valor com mais de 2 casas
     const totalPedido = round2(valorTotal - desconto + taxaEntrega);
 
     // ── Pagamento online (Pix ou cartão) — B3 ────────────────────────────────
@@ -548,9 +472,6 @@ const criarPedido = async (req, res) => {
           mobilePhone: usuario?.telefone || undefined,
         });
 
-        // Split: com wallet cadastrado, o valor líquido vai direto para a
-        // conta Asaas do vendedor. Sem wallet, cai na conta da plataforma
-        // (comportamento antigo) — registrado em "repasses" p/ conciliação.
         const walletId = String(mercado.asaas_wallet_id || '').trim() || null;
         const refPedido = `pedido:${pedido.id}`;
         const splits = asaas.montarSplitVendedor(walletId, refPedido);
@@ -558,9 +479,6 @@ const criarPedido = async (req, res) => {
         let motivoSplit = '';
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
-        // Volta automática para o acompanhamento do pedido quando a pessoa
-        // paga na fatura do Asaas (Pix e cartão — os dois têm confirmação
-        // imediata, então o autoRedirect vale nos dois)
         const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
         const redirectUrl = frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined;
         let pagamento;
@@ -581,14 +499,10 @@ const criarPedido = async (req, res) => {
               descricao,
               externalReference: refPedido,
               splits: splits || undefined,
-              // Depois de pagar, o cliente volta para a página de acompanhamento
               redirectUrl,
             });
           }
         } catch (erroSplit) {
-          // Conta da plataforma sem Split habilitado (ou wallet inválido):
-          // a cobrança não pode falhar por isso — refaz SEM split e o valor
-          // fica na plataforma (linha RETIDO_PLATAFORMA no conciliamento).
           motivoSplit = String(erroSplit.message || '');
           if (!splits || !/split|wallet|carteira|invalid_action/i.test(motivoSplit)) {
             throw erroSplit;
@@ -619,7 +533,6 @@ const criarPedido = async (req, res) => {
           WHERE id = ${pedido.id}
         `;
 
-        // Conciliação do repasse ao vendedor (split ou retido na plataforma)
         await registrarRepassesCriacao(sql, pedido.id, pagamento, {
           walletId,
           splitEnviado,
@@ -627,8 +540,6 @@ const criarPedido = async (req, res) => {
           valorTotal: totalPedido,
         });
 
-        // O cliente não recebe e-mail agora: o QR/link está na tela dele.
-        // O e-mail de confirmação + aviso à loja sai quando o Asaas confirmar (webhook).
         return res.status(201).json({
           mensagem: formaPagamento === 'pix'
             ? 'Pedido criado. Pague com o Pix para a loja iniciar o preparo.'
@@ -644,14 +555,10 @@ const criarPedido = async (req, res) => {
             qrCodeBase64: pagamento.qrCodeBase64 || '',
             copiaEcola: pagamento.copiaEcola || '',
             urlPagamento: pagamento.urlPagamento || '',
-            // true = Asaas recusou o retorno automático (domínio não
-            // cadastrado) → o frontend avisa para voltar ao site manualmente
             semRedirect: pagamento.semRedirect === true,
           },
         });
       } catch (erroPagamento) {
-        // Pagamento não conseguiu ser criado → desfaz TUDO: para o cliente este
-        // pedido nunca chegou a existir (estoque e cupom voltam ao normal)
         await sql`DELETE FROM historico_compras WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'`;
         await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
         await devolverEstoque(sql, itensJson);
@@ -660,15 +567,12 @@ const criarPedido = async (req, res) => {
         }
         const motivo = String(erroPagamento.message || '');
         console.error(`Pedido ${pedido.id} desfeito: pagamento não iniciado (${motivo}).`);
-        // Traduz os erros mais comuns do Asaas; o "detalhe" volta na resposta
-        // para a pessoa conseguir se ajudar (o frontend mostra junto do aviso)
         let aviso = 'Não foi possível iniciar o pagamento online. Tente novamente ou escolha pagar na entrega.';
         if (/CPF|CNPJ/i.test(motivo)) {
           aviso = 'Falta o CPF/CNPJ na sua conta para pagar online. Cadastre-o no perfil ou escolha pagar na entrega.';
         } else if (/menor que|R\$\s*5/i.test(motivo)) {
           aviso = 'O Pix tem valor mínimo de R$ 5,00. Adicione itens ao carrinho ou escolha pagar na entrega.';
         } else if (/nenhuma chave pix|chave pix indispon|invalid_billingType/i.test(motivo)) {
-          // Conta do Asaas (sandbox ou produção) sem chave Pix cadastrada
           aviso = 'Pagamento por Pix indisponível agora. Escolha cartão ou pagar na entrega.';
         } else if (/acesso|access_token|api key|chave|401|403/i.test(motivo)) {
           aviso = 'Pagamento online indisponível no momento. Escolha pagar na entrega.';
@@ -678,7 +582,6 @@ const criarPedido = async (req, res) => {
     }
 
     // ── Pagar na entrega: pedido já entra em andamento ───────────────────────
-    // E-mail de confirmação para o cliente + aviso de pedido novo para a loja (B2)
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
       .catch((err) => console.error('Falha no e-mail de confirmação do pedido:', err.message));
@@ -699,7 +602,6 @@ const criarPedido = async (req, res) => {
   }
 };
 
-// GET /api/mercados/:id/pedidos — lista os pedidos recebidos pelo mercado (vendedor)
 const listarPedidosMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
   const mercadoId  = Number(req.params.id);
@@ -711,7 +613,6 @@ const listarPedidosMercado = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Só quem gerencia o mercado pode ver os pedidos dele
     const [permissao] = await sql`
       SELECT 1 FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario} AND id_mercado = ${mercadoId}
@@ -756,10 +657,7 @@ const listarPedidosMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // PUT /api/pedidos/:id/status — vendedor atualiza o status do pedido
-// Ordem: pendente → preparo → caminho → entregue (só avança, nunca volta)
-// ─────────────────────────────────────────────
 const ORDEM_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'];
 
 const atualizarStatusPedido = async (req, res) => {
@@ -784,7 +682,6 @@ const atualizarStatusPedido = async (req, res) => {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
     }
 
-    // Só quem gerencia o mercado do pedido pode alterá-lo
     const [permissao] = await sql`
       SELECT 1 FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario} AND id_mercado = ${pedido.id_mercado}
@@ -793,8 +690,6 @@ const atualizarStatusPedido = async (req, res) => {
       return res.status(403).json({ erro: 'Você não tem acesso a este pedido.' });
     }
 
-    // Pedidos que ainda aguardam pagamento ou foram cancelados não avançam:
-    // o fluxo deles é pago (vira "pendente" pelo webhook) ou desistido
     if (pedido.status === 'aguardando_pagamento') {
       return res.status(400).json({ erro: 'Este pedido ainda está aguardando o pagamento do cliente.' });
     }
@@ -813,7 +708,6 @@ const atualizarStatusPedido = async (req, res) => {
       RETURNING id, status
     `;
 
-    // Avisa o cliente por e-mail (fire-and-forget: falha de e-mail não afeta o pedido)
     montarDadosPedidoParaEmail(sql, pedidoId)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, status))
       .catch((err) => console.error('Falha no e-mail de status do pedido:', err.message));
@@ -826,18 +720,9 @@ const atualizarStatusPedido = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:id/financeiro?ano=2026&mes=10
-// Painel financeiro do mês escolhido: faturamento, custos, lucro e demanda.
-// Feito para o pequeno comércio que "não sabe quanto ganha e quanto gasta":
-//   - Faturamento = soma dos pedidos do mês
-//   - Custo da mercadoria = quantidade vendida x custo cadastrado no produto
-//   - Custo fixo = valor mensal informado pelo vendedor (aluguel, luz, salários)
-//   - Lucro = faturamento − custo da mercadoria − custo fixo (pode dar negativo)
-// ─────────────────────────────────────────────
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Resumo gravado no pedido ("2x Arroz, 1x Feijão") → [{ qtd, nome }]
 function parseItensPedido(txt) {
   const out = [];
   for (const parte of String(txt || '').split(', ')) {
@@ -868,7 +753,6 @@ const financeiroMercado = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Só quem gerencia o mercado vê o financeiro dele
     const [permissao] = await sql`
       SELECT 1 FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario} AND id_mercado = ${mercadoId}
@@ -877,10 +761,6 @@ const financeiroMercado = async (req, res) => {
       return res.status(403).json({ erro: 'Você não tem acesso ao financeiro deste mercado.' });
     }
 
-    // Busca com folga de 1 dia em cada lado (cobre diferença de fuso na
-    // comparação) e filtra o mês exato no JavaScript, com o relógio local.
-    // data_local: a coluna é "timestamp" sem fuso; a conversão devolve o
-    // horário de Taquaritinga (America/Sao_Paulo) para dia e mês certos
     const folgaInicio = new Date(ano, mes - 1, 0);
     const folgaFim    = new Date(ano, mes, 2);
 
@@ -906,8 +786,6 @@ const financeiroMercado = async (req, res) => {
       SELECT custos_fixos, asaas_wallet_id FROM mercados WHERE id_mercado = ${mercadoId}
     `;
 
-    // Repasses do mês (Asaas Split): o que já caiu na conta do vendedor,
-    // o que está em análise e o que ficou retido na plataforma
     const repassesMes = await sql`
       SELECT r.status, COALESCE(r.valor, 0) AS valor
       FROM repasses r
@@ -939,12 +817,8 @@ const financeiroMercado = async (req, res) => {
       const st = p.status || 'pendente';
       porStatus[st] = (porStatus[st] || 0) + 1;
 
-      // Cancelado e ainda não pagado NÃO são receita (o painel já filtra
-      // esses status na lista de pedidos — GerenciamentoMercado)
       if (st === 'cancelado' || st === 'aguardando_pagamento') continue;
 
-      // Total real do pedido: valor − desconto + entrega (mesma fórmula
-      // usada no detalhe do pedido) — nunca só o valor_total bruto
       const valor = round2(
         (Number(p.valor_total) || 0) - (Number(p.desconto) || 0) + (Number(p.taxa_entrega) || 0)
       );
@@ -957,11 +831,9 @@ const financeiroMercado = async (req, res) => {
       reg.receita += valor;
       porDia.set(dia, reg);
 
-      // Itens do pedido casados com o cadastro atual (preço e custo)
       for (const item of parseItensPedido(p.produtos)) {
         const ref = mapaProdutos.get(item.nome);
         const custo = ref ? Number(ref.custo) || 0 : 0;
-        // Sem custo cadastrado (ou produto renomeado/removido): avisa o vendedor
         if (!ref || custo <= 0) itensSemCusto += item.qtd;
         custoMercadoria += custo * item.qtd;
 
@@ -1008,13 +880,7 @@ const financeiroMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // Cancela um pedido que ainda estava "aguardando_pagamento" porque a cobrança
-// caiu (EXPIRED/FAILED/DELETED). Atômico: o WHERE + RETURNING garante que
-// webhook e fallback de conciliação não desfaçam duas vezes. Devolve estoque e
-// cupom, apaga repasses e avisa o cliente. Retorna true só se este chamado
-// foi quem cancelou.
-// ─────────────────────────────────────────────
 async function cancelarPedidoPorFalha(sql, pedido, { statusAsaas, paymentId, origem }) {
   const [cancelado] = await sql`
     UPDATE historico_compras
@@ -1037,9 +903,6 @@ async function cancelarPedidoPorFalha(sql, pedido, { statusAsaas, paymentId, ori
   return true;
 }
 
-// Avisa cliente e loja que o pagamento de um pedido JÁ CANCELADO confirmou.
-// estornado=true → estorno automático pedido no Asaas; false → falhou e fica
-// para ação manual (o log crítico já saiu em processarPagamentoPedido).
 function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
@@ -1048,8 +911,6 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
         ? 'O estorno já foi solicitado no Asaas e o valor volta para o meio de pagamento do cliente.'
         : 'Atenção: o estorno automático falhou — faça o estorno manualmente no painel do Asaas.';
       if (dados.email) {
-        // O e-mail de pagamento pós-cancelamento já foi enviado ao cliente —
-        // aqui é só o histórico da conta.
         enviarNotificacao(sql, {
           id_usuario: dados.idUsuario,
           email: dados.email,
@@ -1060,8 +921,6 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
         });
       }
       if (dados.emailVendedor) {
-        // O vendedor não tem e-mail próprio para este evento: notificação
-        // enviada por e-mail + histórico.
         enviarNotificacao(sql, {
           id_mercado: dados.idMercado,
           email: dados.emailVendedor,
@@ -1074,37 +933,27 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
     .catch((err) => console.error('Falha ao avisar pagamento pós-cancelamento:', err.message));
 }
 
-// ─────────────────────────────────────────────
 // B3 — Webhook do Asaas para PAGAMENTO DE PEDIDO
-// Chamado pelo webhookAsaas quando o evento for de uma cobrança de pedido
-// (externalReference "pedido:<id>"). Confere o status direto no Asaas antes
-// de agir, para nunca marcar como pago por engano.
-// ─────────────────────────────────────────────
 async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
   const ref = pagamentoAsaas?.externalReference || '';
   const [, idStr] = String(ref).split(':');
   const pedidoId = Number(idStr);
 
-  // O pedido pode ser achar pelo id local; o id do Asaas é gravado em seguida
   const [pedido] = Number.isInteger(pedidoId) && pedidoId > 0
     ? await sql`SELECT * FROM historico_compras WHERE id = ${pedidoId}`
     : [];
   if (!pedido) return { ignorado: true };
 
-  // Confirmação na fonte: o status vem do Asaas, não do corpo da mensagem
   let statusAsaas = pagamentoAsaas?.status || '';
   let confirmado = pagamentoAsaas;
   try {
     confirmado = await asaas.buscarPagamento(pagamentoAsaas.id);
     statusAsaas = confirmado?.status || statusAsaas;
   } catch (erro) {
-    // Sem confirmação não agimos; o Asaas reenvia o evento depois
     throw erro;
   }
 
   // ── Split: liquidação/cancelamento de UM repasse ao vendedor ──────────────
-  // PAYMENT_SPLIT_DONE chega por split (additionalInfo.splitId); o array
-  // payment.split também é sincronizado abaixo, quando existe.
   if (String(evento).startsWith('PAYMENT_SPLIT_')) {
     const splitId = pagamentoAsaas?.additionalInfo?.splitId || null;
     const statusPorEvento = {
@@ -1121,13 +970,9 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     }
   }
 
-  // Conciliação: grava/atualiza as linhas de repasse com o estado real
-  // (ids, status e valores) que o Asaas devolve na cobrança
   try {
     await sincronizarRepasses(sql, pedido.id, confirmado);
   } catch (erroRepasses) {
-    // Falha na conciliação não pode impedir a baixa do pedido:
-    // o próximo evento de webhook tenta de novo
     console.error(`Pedido ${pedido.id}: falha ao sincronizar repasses (${erroRepasses.message}).`);
   }
 
@@ -1135,16 +980,12 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
   const falhou = ['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
 
   if (pago) {
-    // Idempotente: webhook pode chegar mais de uma vez (e o GET /pedido tem
-    // fallback de conciliação). O WHERE com status trava a transição — só
-    // quem realmente atualizou a linha dispara e-mail e avisos.
     const [atualizado] = await sql`
       UPDATE historico_compras SET status = 'pendente', asaas_payment_id = ${pagamentoAsaas.id}
       WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
       RETURNING id
     `;
     if (atualizado) {
-      // Confirmação para o cliente + aviso de pedido novo para a loja (B2)
       montarDadosPedidoParaEmail(sql, pedido.id)
         .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
         .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
@@ -1153,15 +994,10 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
       return { recebido: true, pago: true };
     }
 
-    // O UPDATE não achou "aguardando_pagamento": ou o webhook já confirmou
-    // antes (idempotência normal — nada a fazer) ou o cliente CANCELOU o
-    // pedido antes da confirmação: o dinheiro entrou para um pedido desfeito
-    // e precisa ser estornado.
     const [atual] = await sql`
       SELECT status FROM historico_compras WHERE id = ${pedido.id}
     `;
     if (atual?.status === 'cancelado') {
-      // Rastreia o pagamento no pedido cancelado (auditoria + estorno)
       await sql`
         UPDATE historico_compras SET asaas_payment_id = ${pagamentoAsaas.id}
         WHERE id = ${pedido.id}
@@ -1174,8 +1010,6 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
           `Pedido ${pedido.id}: pagamento ${pagamentoAsaas.id} confirmado APÓS cancelamento — estorno automático solicitado.`
         );
       } catch (erroEstorno) {
-        // Pix não é estornável pela API (e falhas de rede acontecem): alerta
-        // para a equipe estornar manualmente no painel do Asaas
         console.error(
           `CRÍTICO — Pedido ${pedido.id}: pagamento ${pagamentoAsaas.id} confirmado após cancelamento e o estorno FALHOU (${erroEstorno.message}). Estornar manualmente no painel do Asaas.`
         );
@@ -1193,8 +1027,6 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
   const estornoPago = ['REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
 
   if (falhou && !estornoPago) {
-    // Cobrança caiu/expirou: cancela o pedido (se ainda aguarda pagamento),
-    // devolve estoque e cupom. Atômico — o helper é no-op se o status mudou.
     const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
       statusAsaas,
       paymentId: pagamentoAsaas.id,
@@ -1204,9 +1036,6 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
   }
 
   // ── Estorno/chargeback de pedido JÁ CONFIRMADO ─────────────────────────────
-  // O dinheiro voltou (REFUNDED) ou está em disputa (CHARGBACK_*) depois que
-  // o pedido já estava ativo: cancela, apaga repasses e devolve os recursos.
-  // Estoque só volta se a mercadoria não saiu (entregue).
   if (falhou && estornoPago) {
     const [atual] = await sql`
       SELECT status FROM historico_compras WHERE id = ${pedido.id}
@@ -1238,22 +1067,10 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     return { recebido: true };
   }
 
-  // PENDING, IN_ANALYSIS etc. — ainda em análise, nada a fazer agora
   return { recebido: true };
 }
 
-// ─────────────────────────────────────────────
 // Item 4 — Cancelar pedido pelo CLIENTE
-// POST /api/pedidos/:id/cancelar
-//
-// O cliente desiste de um pedido que ainda não foi preparado. Só pode cancelar
-// quem é dono do pedido (o vendedor NÃO cancela pelo cliente). Regras:
-//   • Pendente (paga na entrega) ou aguardando pagamento → pode cancelar
-//   • Em preparo / a caminho / entregue → tarde demais (loja já começou)
-//   • Cancelado → não faz nada (idempotente)
-// Ao cancelar: devolve o estoque (itens_json), cancela a cobrança Pix/cartão
-// no Asaas (se houver) e avisa o cliente por e-mail.
-// ─────────────────────────────────────────────
 const cancelarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const pedidoId   = Number(req.params.id);
@@ -1274,33 +1091,26 @@ const cancelarPedido = async (req, res) => {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
     }
 
-    // Só o dono do pedido pode cancelá-lo
     if (Number(pedido.id_usuario) !== Number(id_usuario)) {
       return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
     }
 
-    // Já cancelado: nada a fazer (responde ok para a tela não quebrar)
     if (pedido.status === 'cancelado') {
       return res.status(200).json({ mensagem: 'Este pedido já estava cancelado.', pedido: { id: pedido.id, status: 'cancelado' } });
     }
 
-    // Só dá para cancelar antes da loja começar o preparo
     if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
       return res.status(400).json({
         erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
       });
     }
 
-    // Pedido pago por Pix/cartão (ele nasce "aguardando_pagamento" e vira
-    // "pendente" quando o pagamento é confirmado) não pode ser cancelado pela
-    // tela: o dinheiro já saiu do cliente e só a loja resolve o estorno.
     if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
       return res.status(400).json({
         erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
       });
     }
 
-    // Cancela o pedido (o WHERE protege contra corrida com o webhook do Asaas)
     const [cancelado] = await sql`
       UPDATE historico_compras
       SET status = 'cancelado', motivo_cancelamento = 'Cancelado pelo cliente'
@@ -1308,33 +1118,23 @@ const cancelarPedido = async (req, res) => {
       RETURNING id, status
     `;
     if (!cancelado) {
-      // O status mudou nesse meio-tempo (ex.: webhook confirmou o pagamento)
       return res.status(409).json({ erro: 'Este pedido não pode mais ser cancelado.' });
     }
 
-    // Devolve o estoque que foi baixado na compra
     await devolverEstoque(sql, pedido.itens_json);
 
-    // Devolve 1 uso do cupom (se houver) — senão campanhas perdem usos a
-    // cada cancelamento
     await devolverCupom(sql, pedido.id_mercado, pedido.cupom_codigo);
 
-    // Sem pedido não há repasse a conciliar (se houver linha de split, o
-    // Asaas cancela o próprio split ao excluir a cobrança)
     await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
 
-    // Se havia uma cobrança Pix/cartão pendente, cancela no Asaas para não
-    // deixar um QR "vivo" que o cliente poderia pagar depois
     if (pedido.asaas_payment_id) {
       try {
         await asaas.cancelarPagamento(pedido.asaas_payment_id);
       } catch (err) {
-        // Asaas fora do ar ou cobrança já paga: o pedido local já está cancelado
         console.error(`Falha ao cancelar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
       }
     }
 
-    // Avisa o cliente por e-mail (fire-and-forget: falha de e-mail não quebra)
     montarDadosPedidoParaEmail(sql, pedido.id)
       .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
@@ -1350,21 +1150,8 @@ const cancelarPedido = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // Item 3 — Recomprar: devolve os produtos de um pedido com os dados ATUAIS
-// GET /api/pedidos/:id/itens-recompra
-//
-// O histórico guarda apenas "id + quantidade" (itens_json). Para a tela
-// reconstruir o carrinho ela precisa do nome, preço, foto e estoque de hoje —
-// é isso que este endpoint devolve. O que saiu de linha ou ficou sem estoque
-// é descartado aqui (a tela não recebe item que não dá para comprar).
-// Só o dono do pedido pode consultar.
-// ─────────────────────────────────────────────
 
-// Pedidos antigos (anteriores à migração 005) não têm a foto dos itens. O
-// resumo deles foi gravado como texto no formato "2x Banana prata (kg)" — daí
-// recuperamos o nome e a quantidade e procuramos o produto ATUAL da mesma loja
-// (se o item sumiu do cardápio ou ficou sem estoque, ele simplesmente sai).
 async function reconstruirItensAntigos(sql, pedido) {
   const resumo = String(pedido.produtos || '');
   const linhas = resumo
@@ -1434,7 +1221,6 @@ const itensParaRecompra = async (req, res) => {
     let itens = [];
 
     if (Array.isArray(bruto) && bruto.length > 0) {
-      // Caminho normal: foto dos itens gravada na hora da compra
       const ids = bruto
         .map(i => Number(i?.id_produto))
         .filter(n => Number.isInteger(n) && n > 0);
@@ -1466,8 +1252,6 @@ const itensParaRecompra = async (req, res) => {
         })
         .filter(Boolean);
     } else {
-      // Pedido antigo (feito antes da foto dos itens existir): reconstrói a
-      // partir do resumo gravado, no formato "2x Banana prata (kg)"
       itens = await reconstruirItensAntigos(sql, pedido);
     }
 
@@ -1482,10 +1266,7 @@ const itensParaRecompra = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // B4 — Acompanhamento do pedido (visão do CLIENTE)
-// GET /api/pedidos/meus — lista dos pedidos que o cliente fez
-// ─────────────────────────────────────────────
 const meusPedidos = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -1528,11 +1309,7 @@ const meusPedidos = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // B4 — GET /api/pedidos/:id — detalhe de um pedido para a tela de acompanhamento
-// O cliente vê o próprio pedido; o vendedor do mercado também pode ver.
-// Quando o pedido ainda aguarda Pix, recarrega o QR code do Asaas.
-// ─────────────────────────────────────────────
 const detalharPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const pedidoId   = Number(req.params.id);
@@ -1555,7 +1332,6 @@ const detalharPedido = async (req, res) => {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
     }
 
-    // Cliente dono do pedido ou quem gerencia o mercado pode ver
     const dono = Number(pedido.id_usuario) === Number(id_usuario);
     let gerencia = false;
     if (!dono) {
@@ -1569,7 +1345,6 @@ const detalharPedido = async (req, res) => {
       return res.status(403).json({ erro: 'Você não tem acesso a este pedido.' });
     }
 
-    // Pedido aguardando Pix: devolve o QR atualizado para a tela
     let pagamento = null;
     if (pedido.status === 'aguardando_pagamento' && pedido.asaas_payment_id) {
       try {
@@ -1584,8 +1359,6 @@ const detalharPedido = async (req, res) => {
           copiaEcola: pix?.payload || '',
           urlPagamento: cobranca?.invoiceUrl || '',
         };
-        // Pagamento já confirmou mas o webhook atrasou → confirma agora.
-        // WHERE com status: se o webhook já confirmou, não reavisa.
         if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas)) {
           const [atualizado] = await sql`
             UPDATE historico_compras SET status = 'pendente'
@@ -1594,20 +1367,15 @@ const detalharPedido = async (req, res) => {
           `;
           pedido.status = 'pendente';
           if (atualizado) {
-            // Mesmos avisos do webhook: sem este e-mail o cliente que pagou
-            // pelo link direto nunca recebe a confirmação do pedido
             montarDadosPedidoParaEmail(sql, pedido.id)
               .then((dados) => dados && enviarEmailPedidoConfirmado(dados.email, dados))
               .catch((err) => console.error('Falha no e-mail de pagamento do pedido:', err.message));
             avisarVendedorPedido(sql, pedido.id);
             avisarClientePedido(sql, pedido.id, 'pendente');
           }
-          // Mesmo sem webhook: a conciliação do split acompanha a cobrança
           await sincronizarRepasses(sql, pedido.id, cobranca);
         } else if (['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED',
                     'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas)) {
-          // Cobrança caiu/expirou sem webhook → cancela aqui (mesmo caminho
-          // do webhook): estoque e cupom voltam e a tela mostra "cancelado"
           const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
             statusAsaas,
             paymentId: pedido.asaas_payment_id,
@@ -1615,7 +1383,6 @@ const detalharPedido = async (req, res) => {
           });
           if (cancelado) {
             pedido.status = 'cancelado';
-            // QR já morto no Asaas — a tela não deve continuar mostrando
             pagamento = {
               id: pedido.asaas_payment_id,
               status: statusAsaas,
@@ -1628,11 +1395,9 @@ const detalharPedido = async (req, res) => {
             await sincronizarRepasses(sql, pedido.id, cobranca);
           }
         } else {
-          // PENDING, IN_ANALYSIS etc. — concilia o split enquanto analisa
           await sincronizarRepasses(sql, pedido.id, cobranca);
         }
       } catch (err) {
-        // Asaas fora do ar não quebra a tela: só sem o QR
         console.error('Falha ao buscar pagamento do pedido:', err.message);
         pagamento = { id: pedido.asaas_payment_id, status: '', qrCodeBase64: '', copiaEcola: '', urlPagamento: '' };
       }
@@ -1671,11 +1436,7 @@ const detalharPedido = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // Cliente remove um pedido da própria lista "Meus pedidos".
-// É uma exclusão APARÊNCIA: o pedido sai da tela do cliente, mas continua
-// gravado no banco e aparece normalmente no painel da loja.
-// ─────────────────────────────────────────────
 const removerDoHistorico = async (req, res) => {
   const id_usuario = req.usuarioId;
   const pedidoId   = Number(req.params.id);

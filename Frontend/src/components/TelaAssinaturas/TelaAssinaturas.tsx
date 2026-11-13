@@ -12,15 +12,7 @@ import {
 } from '../Icons';
 import './TelaAssinaturas.css';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Aba "Assinaturas" da sidebar (perfil do cliente e painel do vendedor):
-//  1 cartão por assinatura, cada um com o plano, a validade da vigência
-//  atual e o MERCADO VINCULADO (importante quando o usuário tem mais de uma
-//  loja, já que cada uma pode ter um plano diferente). Oferece também o
-//  cancelamento do plano — cancela as cobranças futuras no Asaas, mas a loja
-//  fica no ar até acabar o período já pago.
-//  Os dados vêm de GET /api/assinaturas/minha.
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface Plano {
   codigo: string;
@@ -46,7 +38,6 @@ interface Pagamento {
   pago_em?: string | null;
 }
 
-// Item devolvido pelo backend em `assinaturas` (um por loja/plan)
 interface AssinaturaResumo {
   id: number;
   status: string;
@@ -104,7 +95,6 @@ const ROTULOS_PAGAMENTO: Record<string, string> = {
   FAILED:    'Falhou',
 };
 
-// Data 'YYYY-MM-DD' sem deslocar o dia (new Date('...') vira meia-noite UTC)
 function dataLocal(valor?: string | null) {
   if (!valor) return '—';
   return new Date(`${valor.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR');
@@ -115,7 +105,6 @@ function dinheiro(valor?: string | number | null) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Fallback defensivo caso o backend ainda devolva só a assinatura principal
 function paraResposta(r: RespostaAssinatura): AssinaturaResumo | null {
   const p = r.assinatura;
   if (!p) return null;
@@ -148,11 +137,8 @@ export default function TelaAssinaturas() {
   const [recado, setRecado] = useState<{ texto: string; ok: boolean } | null>(null);
   const [confirmando, setConfirmando] = useState<number | null>(null);
   const [cancelando, setCancelando] = useState(false);
-  // Resultado do cancelamento: fica DENTRO do pop-up até a pessoa fechar
   const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
 
-  // O loading já começa true no useState; nada de setState síncrono aqui
-  // dentro do efeito (regra react-hooks/set-state-in-effect)
   const carregar = useCallback(() => {
     api.minhaAssinatura()
       .then((r: RespostaAssinatura) => {
@@ -163,7 +149,6 @@ export default function TelaAssinaturas() {
       .finally(() => setCarregando(false));
   }, []);
 
-  // Botão "tentar novamente": volta para o skeleton enquanto busca
   function recarregar() {
     setCarregando(true);
     carregar();
@@ -173,8 +158,6 @@ export default function TelaAssinaturas() {
     carregar();
   }, [carregar]);
 
-  // Cancela a assinatura selecionada. O pop-up NÃO fecha sozinho: o resultado
-  // (sucesso ou erro) fica dentro dele até a pessoa fechar com o botão.
   function confirmarCancelamento() {
     if (confirmando == null) return;
     setCancelando(true);
@@ -183,8 +166,6 @@ export default function TelaAssinaturas() {
         const texto = 'Assinatura cancelada. Nada mais será cobrado e a loja permanece no ar até o fim do período já pago.';
         setResultado({ ok: true, texto });
         setRecado({ texto, ok: true });
-        // Recarrega a lista em segundo plano: ligar o "carregando" trocaria a
-        // tela inteira por esqueleto e o pop-up sumiria junto.
         carregar();
       })
       .catch((e: Error) => {
@@ -199,8 +180,6 @@ export default function TelaAssinaturas() {
     setResultado(null);
   }
 
-  // Com o pop-up aberto a página de trás não rola: o cancelamento fica sempre
-  // na frente, sem precisar scrollar para achar o botão.
   useEffect(() => {
     if (confirmando == null) return;
     const anterior = document.body.style.overflow;
@@ -225,9 +204,6 @@ export default function TelaAssinaturas() {
   const sucesso = resultado?.ok === true;
   const erroCancelamento = resultado && !resultado.ok ? resultado.texto : null;
 
-  // O pop-up é montado direto no <body>: assim ele fica centralizado na tela
-  // mesmo quando a página está meio carregada, em erro ou sem assinaturas — e
-  // ele não some quando a lista muda em segundo plano.
   const modalCancelamento = confirmando == null
     ? null
     : createPortal(

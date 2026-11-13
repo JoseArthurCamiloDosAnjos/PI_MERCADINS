@@ -1,33 +1,17 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  QuantidadeStepper — controle de quantidade (−  N  +) que também aceita
-//  digitação.
-//
-//  O desenho continua sendo o de cada tela (a classe do bloco vem de fora);
-//  o que muda é que o número vira campo:
-//    • entram só números;
-//    • o valor é limitado na hora ao estoque disponível;
-//    • apagando tudo, o campo volta ao valor válido ao sair dele.
-// ─────────────────────────────────────────────────────────────────────────────
 import { useState, type ReactNode } from 'react';
 import './QuantidadeStepper.css';
 
 const MINIMO = 1;
 
 type QuantidadeStepperProps = {
-  /** Quantidade atual */
   valor: number;
-  /** Estoque disponível; null/undefined = sem limite */
   maximo?: number | null;
   onMudar: (novo: number) => void;
-  /** Classe do bloco (define o visual de cada tela) */
   className: string;
-  /** Classe extra dos botões, quando a tela tem a sua própria */
   classeBotao?: string;
-  /** Classe extra do campo, quando a tela tem a sua própria */
   classeCampo?: string;
-  /** Produto sem estoque: desliga o controle inteiro */
   desabilitado?: boolean;
-  /** Sobrescreve a regra padrão de travar o "−" no mínimo */
   desabilitarMenos?: boolean;
   iconeMenos: ReactNode;
   iconeMais: ReactNode;
@@ -45,7 +29,6 @@ export default function QuantidadeStepper({
   iconeMenos,
   iconeMais,
 }: QuantidadeStepperProps) {
-  // Texto enquanto a pessoa digita; null = mostrando a quantidade do pedido
   const [texto, setTexto] = useState<string | null>(null);
 
   const limitar = (n: number) => {
@@ -59,7 +42,6 @@ export default function QuantidadeStepper({
 
   const mostrar = texto ?? String(valor);
 
-  // Botão sempre mostra a quantidade nova (mesmo que o campo estivesse em branco)
   const clicar = (novo: number) => {
     setTexto(null);
     onMudar(novo);
@@ -68,7 +50,7 @@ export default function QuantidadeStepper({
   const digitar = (bruto: string) => {
     const digitos = bruto.replace(/\D/g, '').slice(0, 7);
     if (digitos === '') {
-      setTexto(''); // deixa em branco e valida ao sair do campo
+      setTexto('');
       return;
     }
     const novo = limitar(parseInt(digitos, 10));

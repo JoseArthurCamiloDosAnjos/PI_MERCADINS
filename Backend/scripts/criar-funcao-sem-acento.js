@@ -1,5 +1,3 @@
-// Cria a função sem_acento() no banco — usada pela busca de produtos
-// para encontrar "agua" quando o produto é "Água mineral", etc.
 require('dotenv').config();
 const { conectar } = require('../src/db/neon');
 

@@ -10,7 +10,6 @@ import {
 } from '../../components/Icons';
 import './Favoritos.css';
 
-// Estrela preenchida (mesmo desenho das vitrines)
 function IconStar({ size = 14, filled = true }: { size?: number; filled?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5}>
@@ -19,7 +18,6 @@ function IconStar({ size = 14, filled = true }: { size?: number; filled?: boolea
   );
 }
 
-// Coração cheio (mesmo desenho das vitrines)
 function IconHeart({ size = 16, filled = false }: { size?: number; filled?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -28,10 +26,7 @@ function IconHeart({ size = 16, filled = false }: { size?: number; filled?: bool
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Página "Meus favoritos" (B5): lista as lojas que o cliente favoritou,
-//  com foto, cidade e nota — e permite remover direto daqui.
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface Favorito {
   id: number;

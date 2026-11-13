@@ -211,7 +211,6 @@
 .vtc-header {
   background: var(--vt-azul-escuro);
   border-bottom: 1px solid var(--vt-azul-borda);
-  /* Espaço no topo: a identidade fica inteira dentro do header, sem invadir o banner */
   padding: 1.5rem 2.5rem 1.4rem;
   display: flex;
   flex-direction: column;
@@ -224,20 +223,17 @@
   overflow: visible;
 }
 
-/* Identidade (logo + nome + informações) inteira dentro do header, abaixo do banner */
 .vtc-header-identity {
   display: flex;
   align-items: flex-start;
   gap: 1.2rem;
 }
 
-/* Coluna da direita: horário de funcionamento da semana inteira */
 .vtc-header-identity > .vtc-horario-semana {
   flex: 0 0 auto;
   width: 250px;
   margin: 0 0 0 auto;
   box-sizing: border-box;
-  /* Cores adaptadas ao fundo escuro do header */
   --hs-borda: rgba(245, 200, 74, 0.35);
   --hs-fundo: rgba(255, 255, 255, 0.05);
   --hs-titulo: var(--vt-amarelo);
@@ -266,7 +262,6 @@
 
 .vtc-header-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; padding-bottom: 4px; }
 .vtc-header-nome-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-/* Limitador de nome: no máximo 2 linhas, o resto vira reticências */
 .vtc-nome-mercado {
   font-size: 21px;
   font-weight: 800;
@@ -387,7 +382,6 @@
 }
 .vtc-avaliacao span { color: var(--vt-cor-texto-sec); margin-left: 5px; }
 
-/* Nota vira botão: abre o modal de avaliações */
 .vtc-avaliacao-btn {
   background: none;
   border: none;
@@ -408,7 +402,6 @@
 }
 .vtc-avaliacao-btn:hover .vtc-avaliacao-cta { color: var(--vt-amarelo); }
 
-/* Busca */
 .vtc-busca-wrap {
   display: flex;
   align-items: center;
@@ -422,7 +415,6 @@
 }
 .vtc-busca-wrap:focus-within { border-color: var(--vt-amarelo); }
 
-/* Busca + seletor de ordenação na mesma linha */
 .vtc-busca-linha {
   display: flex;
   align-items: center;
@@ -458,7 +450,6 @@
 }
 .vtc-busca-input::placeholder { color: var(--vt-cinza); }
 
-/* Tags de categoria (rolam na horizontal, como no iFood, em vez de quebrar) */
 .vtc-tags-row {
   display: flex;
   gap: 10px;
@@ -552,11 +543,9 @@
 }
 
 /* ─── Filtros fixos (busca + categorias) ─────────────────────────────────── */
-/* Ficam logo abaixo da topbar e permanecem visíveis enquanto a página rola,
-   no mesmo estilo de mercados como iFood e Rappi.                            */
 .vtc-filtros {
   position: sticky;
-  top: 65px; /* altura da .vtc-topbar */
+  top: 65px;
   z-index: 15;
   width: 100%;
   box-sizing: border-box;
@@ -672,9 +661,6 @@
 }
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
-/* A página inteira rola pelo .vtc-shell (rolagem única). O main não pode ter
-   overflow próprio: com flex:1 + overflow:auto ele esmagava o conteúdo para a
-   altura restante e os cards de produto ficavam cortados/sem rolagem.         */
 .vtc-main {
   flex: 1;
   padding: 2rem 2.5rem 5rem;
@@ -732,7 +718,6 @@
 .vtc-produto-nome { font-size: 12.5px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; line-height: 1.3; }
 .vtc-produto-preco { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo); margin: 0; }
 
-/* Botão "+" do card: adiciona 1 unidade sem abrir a página do produto */
 .vtc-produto-add {
   position: absolute;
   right: 8px;
@@ -757,7 +742,6 @@
 .vtc-produto-add--ativo { font-weight: 800; font-size: 13px; }
 .vtc-produto-add-qtd { line-height: 1; }
 
-/* Horário recolhido do celular (o quadro completo fica no computador) */
 .vtc-horarios-mobile { display: none; }
 
 .vtc-produto-add-icon {
@@ -799,7 +783,6 @@
 .vtc-vazio-titulo { font-size: 15px; font-weight: 800; color: var(--vt-cor-texto); margin: 0; }
 .vtc-vazio-sub { font-size: 12.5px; color: var(--vt-cinza); margin: 0; }
 
-/* Sugestão "você quis dizer...?" abaixo do título da tela vazia */
 .vtc-sugestao {
   display: inline-flex;
   align-items: center;
@@ -955,7 +938,6 @@
 /* ─── Responsivo ─────────────────────────────────────────────────────────── */
 @media (max-width: 780px) {
   .vtc-header { padding: 1.1rem 1.4rem 1.2rem; }
-  /* Horário desce para baixo das informações em tela estreita */
   .vtc-header-identity { flex-wrap: wrap; }
   .vtc-header-identity > .vtc-horario-semana {
     display: none;
@@ -1006,8 +988,6 @@
   .vtc-topbar-mercado-nome { display: none; }
   .vtc-topbar-mercado { padding: 4px; }
 
-  /* Logo e nome lado a lado (como nas lojas de aplicativo), em vez de o logo
-     ocupar uma linha inteira e empurrar todo o conteúdo para baixo */
   .vtc-header-identity {
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr);
@@ -1017,8 +997,6 @@
   }
   .vtc-logo { grid-column: 1; grid-row: 1; }
   .vtc-logo-img, .vtc-logo-placeholder { width: 48px; height: 48px; }
-  /* O bloco de texto vira parte da grade: o nome fica ao lado do logo e as
-     demais informações usam a largura inteira, quebrando menos linhas */
   .vtc-header-text { display: contents; }
   .vtc-header-nome-wrap { grid-column: 2; grid-row: 1; }
   .vtc-desc-mercado,
@@ -1037,13 +1015,10 @@
     line-height: 1.4;
   }
   .vtc-local, .vtc-entrega-info { font-size: 12.5px; margin-top: 7px; }
-  /* Os tipos de loja já aparecem nas categorias de produtos logo abaixo;
-     no celular saem para os produtos chegarem mais cedo à tela */
   .vtc-tipos { display: none; }
   .vtc-btn-whatsapp { margin-top: 8px; padding: 8px 12px; font-size: 12.5px; }
   .vtc-horarios-mobile { grid-column: 1 / -1; }
 
-  /* Duas colunas no celular, como no Mercado Livre — inclusive em 320px */
   .vtc-produtos-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1072,8 +1047,6 @@
 }
 
 @media (max-width: 400px) {
-  /* Mantém duas colunas também nas telas menores; o card só fica mais
-     estreito, sem virar uma lista de uma coluna */
   .vtc-produto-card { width: auto; }
   .vtc-header { padding: 1rem; }
   .vtc-filtros { padding: 0.8rem 1rem; }

@@ -105,7 +105,6 @@ const deletarCategoria = async (req, res) => {
     if (!permissao)
       return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
 
-    // Deleta produtos da categoria primeiro
     await sql`DELETE FROM produtos WHERE id_categoria = ${Number(categoriaId)}`
 
     const [deletada] = await sql`

@@ -1,17 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Endereços de entrega do cliente (carteira de endereços)
-//
-//  O cliente cadastra no perfil e escolhe no carrinho qual endereço recebe
-//  a entrega. Tudo ligado ao usuário logado (req.usuarioId).
-//
-//  Um dos endereços pode ser o PRINCIPAL: é ele que já vem marcado no
-//  carrinho e no checkout. Só existe um principal por conta — trocar o
-//  principal desmarca os outros.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const { conectar } = require("../db/neon");
 
-// Teto de segurança: evita que alguém encha a conta com endereços
 const LIMITE_POR_USUARIO = 10;
 
 const LIMITES = {
@@ -31,9 +21,6 @@ const CAMPOS_OBRIGATORIOS = [
   ["cidade", "cidade"],
 ];
 
-// Colunas devolvidas para a tela. A camada de banco só aceita valor como
-// parâmetro (não texto de coluna), então o nome das colunas é escrito em
-// cada consulta — todas devolvem o mesmo formato.
 
 /** Corta espaços sobrando e derruba acentos de emoji que venham no texto */
 function limpar(valor) {
@@ -59,7 +46,6 @@ function conferir(corpo) {
     return { erro: `Preencha: ${faltando.join(", ")}.` };
   }
 
-  // CEP sempre no formato 12345-678 (a tela já máscara, aqui garantimos)
   if (!/^\d{5}-\d{3}$/.test(dados.cep)) {
     return { erro: "CEP inválido. Use o formato 00000-000." };
   }
@@ -76,8 +62,6 @@ async function tornarUnicoPrincipal(sql, usuarioId, id) {
   `;
 }
 
-// GET /api/enderecos
-// O principal vem primeiro: é ele que a tela marca por padrão.
 const listarEnderecos = async (req, res) => {
   try {
     const sql = await conectar();
@@ -96,7 +80,6 @@ const listarEnderecos = async (req, res) => {
   }
 };
 
-// POST /api/enderecos
 const criarEndereco = async (req, res) => {
   try {
     const conferido = conferir(req.body);
@@ -114,7 +97,6 @@ const criarEndereco = async (req, res) => {
       });
     }
 
-    // Primeiro endereço da conta já nasce como principal
     const criados = await sql`
       INSERT INTO enderecos_usuario
         (id_usuario, cep, rua, numero, bairro, cidade, complemento, principal)
@@ -134,7 +116,6 @@ const criarEndereco = async (req, res) => {
   }
 };
 
-// PUT /api/enderecos/:id — edita os dados (e, se pedir, também o principal)
 const atualizarEndereco = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -178,7 +159,6 @@ const atualizarEndereco = async (req, res) => {
   }
 };
 
-// PUT /api/enderecos/:id/principal — define como endereço principal da conta
 const definirPrincipal = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -210,7 +190,6 @@ const definirPrincipal = async (req, res) => {
   }
 };
 
-// DELETE /api/enderecos/:id
 const removerEndereco = async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -220,7 +199,6 @@ const removerEndereco = async (req, res) => {
 
     const sql = await conectar();
 
-    // O WHERE com id_usuario garante que ninguém apague o endereço de outro
     const removidos = await sql`
       DELETE FROM enderecos_usuario
       WHERE id_endereco = ${id} AND id_usuario = ${req.usuarioId}
@@ -231,7 +209,6 @@ const removerEndereco = async (req, res) => {
       return res.status(404).json({ erro: "Endereço não encontrado." });
     }
 
-    // Apagou o principal? O mais antigo que sobrou assume o lugar
     if (removidos[0].principal) {
       const [proximo] = await sql`
         SELECT id_endereco FROM enderecos_usuario

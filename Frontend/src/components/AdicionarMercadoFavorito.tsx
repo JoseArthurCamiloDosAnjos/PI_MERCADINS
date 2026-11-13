@@ -45,10 +45,6 @@ export default function AdicionarMercadoFavorito({
 
   const idsFavoritados = new Set(favoritosAtuais.map(f => f.id_mercado));
 
-  // useCallback mantém a referência estável; assim o efeito de carregamento
-  // inicial abaixo executa apenas uma vez, sem reexecutar a cada renderização.
-  // Os setState ficam sempre dentro de callbacks de promessa (contexto
-  // assíncrono), nunca no corpo síncrono do efeito.
   const carregarMercados = useCallback((termo: string) => {
     api.listarMercados(termo, 100)
       .then(dados => setMercados(dados.mercados ?? []))

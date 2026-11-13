@@ -1,10 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Termos de Uso e Política de Privacidade — versão vigente
-//
-//  Sempre que os textos mudarem de forma relevante, atualize a data abaixo.
-//  Ela fica gravada no cadastro do usuário e do mercado (com a data/hora e o
-//  IP), formando o histórico de aceite exigido pela LGPD.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const VERSAO_TERMOS = '2026-11-04';
 

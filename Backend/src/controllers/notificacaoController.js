@@ -1,8 +1,6 @@
 const { conectar } = require('../db/neon');
 const { enviarNotificacao } = require('../utils/notificacoes');
 
-// GET /api/notificacoes — histórico do usuário logado.
-// Inclui os avisos da conta e os avisos dos mercados dos quais ele é dono.
 const listar = async (req, res) => {
   try {
     const sql = await conectar();
@@ -37,8 +35,6 @@ const listar = async (req, res) => {
   }
 };
 
-// POST /api/notificacoes/:id/lida — marca um aviso como lido.
-// Só afeta notificações da própria conta (ou dos mercados que ela gerencia).
 const marcarComoLida = async (req, res) => {
   try {
     const sql = await conectar();
@@ -71,7 +67,6 @@ const marcarComoLida = async (req, res) => {
   }
 };
 
-// POST /api/notificacoes/lidas — marca todas do usuário como lidas.
 const marcarTodasComoLidas = async (req, res) => {
   try {
     const sql = await conectar();
@@ -95,9 +90,6 @@ const marcarTodasComoLidas = async (req, res) => {
   }
 };
 
-// POST /api/notificacoes/teste — manda um aviso de teste para o e-mail
-// cadastrado. Serve para a pessoa conferir que as notificações chegam na
-// caixa de entrada.
 const enviarTeste = async (req, res) => {
   try {
     const sql = await conectar();

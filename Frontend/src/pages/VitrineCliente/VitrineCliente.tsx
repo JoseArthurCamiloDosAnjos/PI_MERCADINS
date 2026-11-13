@@ -72,13 +72,9 @@ function IconCart({ size = 20 }: { size?: number }) {
 }
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// Tira acento e deixa minúsculo para a busca funcionar com ou sem acento
 const normalizar = (texto: string) =>
   texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-// Distância de edição (Levenshtein): quantas letras é preciso mudar, tirar ou
-// acrescentar para uma palavra virar a outra — 0 = iguais, 1 = falta uma letra,
-// 2 = duas trocadas/embaralhadas
 function distanciaEdicao(a: string, b: string): number {
   if (!a.length) return b.length;
   if (!b.length) return a.length;
@@ -106,7 +102,6 @@ interface Produto {
   descricao: string;
   preco?: string;
   id_categoria: number;
-  /** Unidades disponíveis — usado para travar o botão de adicionar */
   estoque?: number;
 }
 
@@ -118,7 +113,6 @@ interface Categoria {
 
 interface VitrineMercado {
   id: number;
-  /** Endereço amigável da loja (usado no link e nos dados estruturados) */
   slug?: string | null;
   logo?: string;
   banner?: string;
@@ -132,20 +126,14 @@ interface VitrineMercado {
   corTexto?: string;
   corTextoSec?: string;
   corIcones?: string;
-  /** Tipos de loja declarados no cadastro (ex.: Hortifruti, Padaria) */
   tipos?: string[];
-  /** Horário de funcionamento da semana (JSON do banco) */
   horario?: unknown;
-  /** Endereço da loja (aparece na header da vitrine) */
   rua?: string | null;
   bairro?: string | null;
   cidade?: string | null;
   estado?: string | null;
-  /** Telefone da loja (usado no botão de WhatsApp) */
   telefone?: string | null;
-  /** Plano da loja — 'basico' (Essencial) não tem integração de WhatsApp */
   plano?: string | null;
-  /** Entrega e retirada (vêm do cadastro da loja) */
   taxaEntrega?: number | null;
   pedidoMinimo?: number | null;
   ofereceEntrega?: boolean | null;
@@ -172,7 +160,6 @@ function formatarPreco(valor?: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Corta o texto no limite indicado SEM partir palavras no meio
 function cortarEmPalavra(texto: string, max: number) {
   if (texto.length <= max) return texto;
   const corte = texto.slice(0, max);
@@ -195,7 +182,6 @@ function ProdutoCardCliente({
   categoriaId: number;
   onAbrir?: () => void;
   onAdicionar?: (produto: Produto) => void;
-  /** Quantas unidades já estão no carrinho (mostra no botão) */
   noCarrinho?: number;
 }) {
   const navigate = useNavigate();
@@ -291,15 +277,12 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const [modalDescricao, setModalDescricao] = useState(false);
   const [modalAvaliacoes, setModalAvaliacoes] = useState(false);
 
-  // Relógio do status: a loja muda entre "Aberto" e "Fechado" sozinha,
-  // sem recarregar a página, quando bate o horário de abrir/fechar
   const [agoraVitrine, setAgoraVitrine] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setAgoraVitrine(new Date()), 15_000);
     return () => clearInterval(id);
   }, []);
 
-  // Título da aba com o nome da loja (sobrescreve o título genérico da rota)
   useEffect(() => {
     if (dados?.nome) document.title = `${dados.nome} — Mercadins`;
   }, [dados?.nome]);
@@ -310,8 +293,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   const carrinho = useCarrinho(mercadoId);
   const refsCategoria = useRef<Record<number, HTMLElement | null>>({});
 
-  // Quantidade de cada produto já no carrinho — o botão "+" do card mostra
-  // esse número, como nas lojas de aplicativo
   const quantidadesNoCarrinho = useMemo(
     () => new Map(carrinho.itens.map(i => [i.produto.id_produto, i.quantidade])),
     [carrinho.itens]
@@ -397,7 +378,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     carregarDados();
   }, [mercadoId, showToast]);
 
-  // Título, descrição e prévia de compartilhamento acompanham a loja aberta (SEO)
   useEffect(() => {
     if (!dados) return;
     const resumo = dados.descricao
@@ -410,13 +390,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     });
   }, [dados]);
 
-  // Garante que a tela sempre comece do topo depois que os dados (e categorias)
-  // terminam de carregar — evita que a logo/nome apareçam cortados por trás da
-  // topbar quando o navegador reancora o scroll com múltiplas categorias/imagens.
-  // Usamos requestAnimationFrame (duas vezes) em vez de rodar direto, porque o
-  // reset precisa acontecer DEPOIS que o navegador termina de calcular o layout
-  // final da página — inclusive em navegadores como Safari, que não têm a
-  // propriedade overflow-anchor e por isso não respeitam esse CSS sozinho.
   useEffect(() => {
     if (carregando || !dados) return;
     let raf2 = 0;
@@ -431,7 +404,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     };
   }, [carregando, dados]);
 
-  // Fecha o menu de compartilhar quando o clique fica fora dele
   useEffect(() => {
     if (!menuCompartilhar) return;
     function fora(e: MouseEvent) {
@@ -452,11 +424,9 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           : cat.produtos,
       }))
       .filter(cat => cat.produtos.length > 0 || !termo)
-      // Categoria marcada: aparece só ela (clique de novo nela e volta tudo)
       .filter(cat => categoriaAtiva === null || cat.id === categoriaAtiva);
   }, [dados, busca, categoriaAtiva]);
 
-  // Lista plana de produtos quando o cliente escolhe uma ordenação
   const modoOrdenado = ordenacao !== 'categorias';
   const listaOrdenada = useMemo(() => {
     if (!dados || ordenacao === 'categorias') return [];
@@ -470,15 +440,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     if (ordenacao === 'menor') itens.sort((a, b) => preco(a) - preco(b));
     else if (ordenacao === 'maior') itens.sort((a, b) => preco(b) - preco(a));
     else itens.sort((a, b) => a.produto.nome.localeCompare(b.produto.nome, 'pt-BR'));
-    // Mesma regra do modo por categoria: só a categoria marcada, se houver
     return categoriaAtiva === null
       ? itens
       : itens.filter(x => x.catId === categoriaAtiva);
   }, [dados, busca, ordenacao, categoriaAtiva]);
 
-  // Palavras dos nomes dos produtos (base do "você quis dizer?"): cada entrada
-  // guarda a forma exibida (com acento) e a chave comparável (sem acento, só
-  // letras e números, mínimo de 3 caracteres para não pegar "de", "e", etc.)
   const palavrasProdutos = useMemo(() => {
     const vistas = new Map<string, string>();
     dados?.categorias.forEach(cat =>
@@ -492,10 +458,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     return [...vistas.entries()];
   }, [dados]);
 
-  // Quando a busca não acha nada, tenta adivinhar o termo correto comparando
-  // cada palavra digitada com as palavras dos produtos (tolera letra faltando,
-  // trocada ou embaralhada). Só sugere se o termo corrigido realmente
-  // encontra algum produto — evita palpite sem sentido.
   const sugestaoBusca = useMemo(() => {
     const termo = normalizar(busca.trim());
     if (!termo || !dados || palavrasProdutos.length === 0) return null;
@@ -512,7 +474,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
         const dist = distanciaEdicao(limpa, cand);
         if (dist < melhorDist) { melhorDist = dist; melhorPalavra = exibicao; }
       }
-      // Tolerância maior para palavras longas, menor para curtas
       const limite = limpa.length <= 3 ? 1 : limpa.length <= 5 ? 2 : 3;
       return melhorPalavra && melhorDist <= limite ? melhorPalavra : escrita;
     });
@@ -524,8 +485,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
     ) ? corrigido : null;
   }, [busca, dados, palavrasProdutos]);
 
-  // Fecha o menu de categorias ao pressionar Esc (mesmo comportamento dos
-  // demais painéis e modais do site).
   useEffect(() => {
     if (!catsAberto) return;
     const onKey = (e: KeyboardEvent) => {
@@ -536,7 +495,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   }, [catsAberto]);
 
   function irParaCategoria(id: number) {
-    // Segundo clique na mesma categoria: desmarca e volta a mostrar tudo
     if (categoriaAtiva === id) {
       setCategoriaAtiva(null);
       return;
@@ -552,7 +510,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
   async function handleFavoritar() {
     if (!dados) return;
-    // Favoritar é por perfil: exige usuário logado
     if (!usuario) {
       showToast('erro', 'Faça login para favoritar esta loja.');
       navigate('/auth');
@@ -582,7 +539,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       await navigator.clipboard.writeText(url);
       copiou = true;
     } catch {
-      // Plano B: navegadores/permissões que bloqueiam a API nova de clipboard
       try {
         const area = document.createElement('textarea');
         area.value = url;
@@ -622,7 +578,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
   return (
     <div className="vtc-shell" ref={shellRef} data-tema={tema} style={estiloPaleta}>
 
-      {/* Dados estruturados da loja para o Google (busca local) */}
       <JsonLd
         dados={{
           '@context': 'https://schema.org',
@@ -747,12 +702,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               <em className="vtc-avaliacao-cta">· Avaliar</em>
             </button>
 
-            {/* Localização completa da loja (endereço visível, sem precisar de hover) */}
             <p className="vtc-local">
               <IconMapPin size={15} /> {localizacaoCompleta(dados)}
             </p>
 
-            {/* Como a loja entrega (taxa, mínimo e retirada) — vem do cadastro */}
             {(() => {
               const entrega = dados.ofereceEntrega !== false;
               const retirada = dados.ofereceRetirada !== false;
@@ -773,7 +726,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               );
             })()}
 
-            {/* Status ao vivo: abre e fecha sozinho, sem recarregar a página */}
             {(() => {
               const aberta = estaAberto(parseHorario(dados.horario), agoraVitrine) ?? true;
               const proxima = aberta ? null : proximaAbertura(parseHorario(dados.horario), agoraVitrine);
@@ -796,14 +748,11 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               </div>
             )}
 
-            {/* Falar com a loja no WhatsApp — recurso dos planos Plus e
-                Personalizado; o Essencial não tem integração de WhatsApp */}
             {(() => {
               if (dados.plano !== 'profissional' && dados.plano !== 'personalizado') {
                 return null;
               }
               const tel = (dados.telefone ?? '').replace(/\D/g, '');
-              // Números brasileiros: 55 + DDD + número
               const wa = tel ? (tel.startsWith('55') ? tel : `55${tel}`) : '';
               if (wa.length < 12) return null;
               return (
@@ -818,8 +767,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
               );
             })()}
 
-            {/* No celular o quadro completo da semana ocupa muito espaço;
-                fica recolhido neste botão e o quadro grande some pelo CSS */}
             {gruposDaSemana(parseHorario(dados.horario)).length > 0 && (
               <details className="vtc-horarios-mobile">
                 <summary>
@@ -831,7 +778,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
             )}
           </div>
 
-          {/* Lado direito: horário de funcionamento da semana inteira */}
           <HorarioSemana horario={dados.horario} className="vtc-horario-semana" />
         </div>
 
@@ -839,7 +785,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
       {/* ── Busca + categorias: fixos no topo quando a página rola ───── */}
       <div className="vtc-filtros">
-        {/* Busca + ordenação */}
         <div className="vtc-busca-linha">
           <div className="vtc-busca-wrap">
             <IconSearch size={15} />
@@ -863,7 +808,6 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
           </select>
         </div>
 
-        {/* Menu hambúrguer + tags de categoria */}
         {dados.categorias.length > 0 && (
           <div className="vtc-tags-row">
             <button

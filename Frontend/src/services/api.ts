@@ -14,8 +14,6 @@ async function request(path: string, options: RequestInit = {}) {
   })
   const data = await res.json()
   if (!res.ok) {
-    // "detalhe" traz o motivo real (ex.: erro devolvido pelo Asaas) — exibido
-    // junto do aviso para a pessoa conseguir se ajudar
     const erro = data.erro || data.detalhe || 'Erro na requisição'
     throw new Error(
       data.erro && data.detalhe && data.detalhe !== data.erro
@@ -56,8 +54,6 @@ export const api = {
     request(`/mercados/${mercadoId}`),
   buscarMercadoPorSlug: (slug: string) =>
     request(`/mercados/slug/${slug}`),
-  // Lista pública de mercados (home, favoritos, busca). `limit` sobe o teto
-  // de 20 da API padrão — a home mostra a lista inteira sem "paginação" escondida.
   listarMercados: (busca?: string, limit?: number) => {
     const params = new URLSearchParams();
     if (busca) params.set('busca', busca);
@@ -71,8 +67,6 @@ export const api = {
       body: JSON.stringify(dados),
     });
   },
-  // Cria a subconta do vendedor no Asaas e devolve o Wallet ID (split automático).
-  // companyType: MEI | LIMITED | INDIVIDUAL | ASSOCIATION (exigido pelo Asaas p/ CNPJ)
   criarSubcontaAsaas: (mercadoId: string | number, companyType: string) =>
     request(`/mercados/${mercadoId}/asaas/subconta`, {
       method: 'POST',
@@ -80,7 +74,6 @@ export const api = {
     }),
   dashboardMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/dashboard`),
-  // Painel financeiro do mês: faturamento, custos, lucro e demanda
   financeiroMercado: (mercadoId: string | number, ano: number, mes: number) =>
     request(`/mercados/${mercadoId}/financeiro?ano=${ano}&mes=${mes}`),
 
@@ -187,7 +180,6 @@ export const api = {
       itens: { id_produto: number; quantidade: number }[];
       observacao?: string;
       tipo_entrega?: 'entrega' | 'retirada';
-      // Endereço de entrega (item 1) — só quando a compra será entregue
       endereco_entrega?: string;
       cupom?: string;
       agendamento?: string;
@@ -204,13 +196,10 @@ export const api = {
     request('/pedidos/meus'),
   detalharPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}`),
-  // Cliente cancela o próprio pedido (ainda não preparado)
   cancelarPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/cancelar`, { method: 'POST' }),
-  // Produtos do pedido com preço/estoque atuais, para recomprar
   itensRecompra: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/itens-recompra`),
-  // Cliente remove um pedido da própria lista "Meus pedidos"
   removerPedidoHistorico: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/historico`, { method: 'DELETE' }),
 
@@ -224,7 +213,6 @@ export const api = {
     request('/enderecos', { method: 'POST', body: JSON.stringify(dados) }),
   removerEndereco: (enderecoId: string | number) =>
     request(`/enderecos/${enderecoId}`, { method: 'DELETE' }),
-  // Edita um endereço já cadastrado (e pode marcar como principal)
   atualizarEndereco: (
     enderecoId: string | number,
     dados: {
@@ -236,7 +224,6 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(dados),
     }),
-  // Define o endereço principal da conta (o que vem marcado no carrinho)
   definirEnderecoPrincipal: (enderecoId: string | number) =>
     request(`/enderecos/${enderecoId}/principal`, {
       method: 'PUT',
@@ -261,7 +248,6 @@ export const api = {
     dados: {
       codigo: string; tipo: 'percentual' | 'valor'; valor: number;
       min_pedido?: number; max_usos?: number | null; validade?: string | null;
-      // Escopo do cupom (vazio nas duas = vale para tudo)
       categorias?: number[];
       produtos?: number[];
     }
@@ -281,9 +267,6 @@ export const api = {
     }),
   deletarCupom: (mercadoId: string | number, cupomId: string | number) =>
     request(`/mercados/${mercadoId}/cupons/${cupomId}`, { method: 'DELETE' }),
-  // Confere o cupom no carrinho. Os itens (produto, categoria, preço e
-  // quantidade) vão junto: são a base de cálculo quando o cupom vale só para
-  // algumas categorias/produtos (escopo do cupom).
   validarCupom: (
     mercadoId: string | number,
     codigo: string,
@@ -408,12 +391,10 @@ export const api = {
   adminAlertas:     ()         => request('/admin/alertas'),
   adminBloquearMercado: (id: number) =>
     request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
-  // Aba "Mercados": todas as lojas da plataforma (inclusive as bloqueadas)
   adminMercados: (params?: string) =>
     request(`/admin/mercados${params ? `?${params}` : ''}`),
   adminMercadoDetalhe: (id: number) => request(`/admin/mercados/${id}`),
 
-  // Aba "Catálogo": produtos genéricos prontos que o vendedor pode reaproveitar
   adminCatalogo: () => request('/admin/catalogo'),
   adminCriarCatalogo: (dados: {
     nome: string;

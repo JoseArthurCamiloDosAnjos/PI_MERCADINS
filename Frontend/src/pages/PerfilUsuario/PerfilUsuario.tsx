@@ -31,15 +31,12 @@ import {
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
-// slug: leva o cliente de volta à loja quando ele clica em "Comprar de novo"
-// forma_pagamento: a tela só oferece cancelar enquanto o cliente ainda não pagou
 interface Historico { id: number; id_mercado: number; mercado: string; slug?: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; forma_pagamento?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 interface Depoimento { id: number; nota: number; texto: string; cliente: string; data_cadastro: string; minha: boolean; }
 
 type ShowToast = (tipo: Toast['tipo'], mensagem: string) => void;
 
-// Formato de um item salvo no navegador pelo useCarrinho (localStorage)
 interface ItemCarrinhoLocal {
   produto: {
     id_produto: number;
@@ -84,8 +81,6 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-// Linha do tempo do pedido: pendente → preparo → caminho → entregue.
-// Mostra em que etapa o pedido está e o que já foi concluído.
 const ETAPAS_PEDIDO = [
   { chave: 'pendente', label: 'Pedido recebido' },
   { chave: 'preparo',  label: 'Em preparo' },
@@ -93,7 +88,6 @@ const ETAPAS_PEDIDO = [
   { chave: 'entregue', label: 'Entregue' },
 ] as const;
 
-// Nomes amigáveis dos status (inclusive os novos: aguardando pagamento e cancelado)
 const NOMES_STATUS: Record<string, string> = {
   aguardando_pagamento: 'Aguardando pagamento',
   pendente: 'Recebido pela loja',
@@ -105,7 +99,6 @@ const NOMES_STATUS: Record<string, string> = {
 
 function PilhaStatus({ status }: { status: string }) {
   const idxAtual = ETAPAS_PEDIDO.findIndex(e => e.chave === status);
-  // Fora do fluxo normal (aguardando pagamento/cancelado) não há etapas a marcar
   if (idxAtual < 0) return null;
   const atual = idxAtual;
   return (
@@ -128,10 +121,6 @@ function PilhaStatus({ status }: { status: string }) {
 }
 
 // ─── Card de uma compra no histórico ──────────────────────────────────────────
-// Mostra o que foi comprado, o status e os botões de ação:
-//   • "Acompanhar pedido" — leva para a tela de acompanhamento ao vivo
-//   • "Comprar de novo"   — reconstrói o carrinho com os itens da compra
-//   • "Cancelar pedido"   — só enquanto a loja ainda não começou o preparo
 function CardPedido({ p, showToast, onPedidoCancelado }: {
   p: Historico;
   showToast: ShowToast;
@@ -142,8 +131,6 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
   const [cancelando, setCancelando] = useState(false);
   const [recomprando, setRecomprando] = useState(false);
 
-  // Dá para cancelar enquanto a loja não começou o preparo e o cliente ainda
-  // não pagou (pedido pago por Pix/cartão é resolvido com a loja)
   const pago = p.status === 'pendente' && ['pix', 'cartao'].includes(p.forma_pagamento ?? 'presencial');
   const podeCancelar = ['pendente', 'aguardando_pagamento'].includes(p.status) && !pago;
 
@@ -179,8 +166,6 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
         return;
       }
 
-      // Grava os itens no carrinho desta loja (mesmo formato do useCarrinho)
-      // e abre a tela do carrinho. O que já estava lá é mantido.
       const chave = `carrinho_${p.id_mercado}`;
       let atuais: ItemCarrinhoLocal[] = [];
       try { atuais = JSON.parse(localStorage.getItem(chave) ?? '[]'); } catch { atuais = []; }
@@ -283,7 +268,6 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
   );
 }
 
-// Ícone de lixeira dos endereços salvos
 function IconLixeira({ size = 15 }: { size?: number }) {
   return (
     <svg
@@ -307,16 +291,11 @@ function IconLixeira({ size = 15 }: { size?: number }) {
 }
 
 // ─── Endereços de entrega (aba própria do perfil) ─────────────────────────────
-// O cliente cadastra, edita, apaga e escolhe o endereço principal aqui. O
-// principal é o que já vem marcado na hora de fechar o pedido no carrinho.
-// Exportada porque o painel do vendedor (que também é usuário) usa a mesma aba.
 export function TelaEnderecos() {
   const { enderecos, carregando, adicionar, editar, remover, definirPrincipal } = useEnderecos();
   const { toasts, showToast, dismissToast } = useToast();
   const [popupAberto, setPopupAberto] = useState(false);
-  // Guarda o endereço em edição (null = cadastrando um novo)
   const [editando, setEditando] = useState<EnderecoSalvo | null>(null);
-  // Muda a cada abertura: o pop-up nasce zerado toda vez
   const [popupChave, setPopupChave] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [erroPopup, setErroPopup] = useState<string | null>(null);
@@ -469,7 +448,6 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
   onPedidoCancelado: (id: number) => void;
 }) {
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
-  // Avisos (sucesso/erro) das ações do histórico: recomprar e cancelar pedido
   const { toasts, showToast, dismissToast } = useToast();
 
   return (
@@ -753,12 +731,6 @@ function TelaSeguranca() {
 }
 
 // ─── Tela de depoimentos ──────────────────────────────────────────────────────
-// O cliente conta o que achou da plataforma: uma nota de 1 a 5 estrelas e um
-// texto. Cada cliente deixa um depoimento — se escrever de novo, o anterior é
-// atualizado. Logo abaixo do formulário ficam, em cards, os depoimentos que
-// ele mesmo publicou (no formato de "Avaliações feitas") e, em seguida, os
-// depoimentos recentes de quem já usa o Mercadins (o dele com "Seu depoimento").
-// Exportada porque o painel do vendedor abre a mesma aba.
 export function TelaDepoimentos() {
   const { toasts, showToast, dismissToast } = useToast();
   const [lista, setLista] = useState<Depoimento[]>([]);
@@ -770,7 +742,6 @@ export function TelaDepoimentos() {
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
 
-  // Depoimentos publicados por esta pessoa (a lista completa tem os de todos)
   const meus = lista.filter(d => d.minha);
 
   const carregar = useCallback(() => {
@@ -781,7 +752,6 @@ export function TelaDepoimentos() {
         setMedia(Number(res.media) || 0);
         setTotal(Number(res.total) || 0);
 
-        // Já escreveu antes? Carrega no formulário para poder editar
         const meu = depoimentos.find(d => d.minha);
         if (meu) {
           setJaPublicou(true);
@@ -789,7 +759,7 @@ export function TelaDepoimentos() {
           setTexto(meu.texto);
         }
       })
-      .catch(() => { /* sem conexão: a tela apenas fica sem a lista */ })
+      .catch(() => {  })
       .finally(() => setCarregando(false));
   }, []);
 
@@ -864,8 +834,6 @@ export function TelaDepoimentos() {
 
       <div className="pu-divider" />
 
-      {/* Só os depoimentos publicados por esta pessoa — no mesmo formato da
-          seção "Avaliações feitas" do perfil */}
       <section>
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Meus depoimentos</h2>
@@ -948,9 +916,6 @@ export default function PerfilUsuario() {
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
 
-  // Quem chega pelo atalho #historico-compras (botão "Perfil" do
-  // acompanhamento de pedido) é levado até a seção do histórico de compras.
-  // A espera cobre a troca de tela com fade que acontece na abertura.
   useEffect(() => {
     if (hash !== '#historico-compras') return;
     const alvo = document.getElementById('historico-compras');
@@ -975,7 +940,6 @@ export default function PerfilUsuario() {
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
-  // Depois de cancelar, o cartão muda de status na mesma hora (sem recarregar)
   function marcarPedidoCancelado(id: number) {
     setHistorico(atual =>
       atual.map(h => (h.id === id ? { ...h, status: 'cancelado' } : h))
@@ -1023,7 +987,7 @@ export default function PerfilUsuario() {
       <main className="pu-main">
         <div className="pu-topbar">
           <span className="pu-topbar-title">{TITULOS[nav]}</span>
-        </div> 
+        </div>
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
             {TELAS[telaAtiva]}

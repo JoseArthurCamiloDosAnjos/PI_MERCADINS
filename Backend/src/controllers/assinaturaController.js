@@ -12,8 +12,6 @@ const { validarDadosMercado, criarMercadoCompleto } = require('./marketControlle
 const { MENSAGEM_ACEITE_OBRIGATORIO } = require('../utils/termos');
 const { processarPagamentoPedido } = require('./pedidoController');
 
-// Dados exibidos na tela "Assinaturas": nome comercial + preço do ciclo.
-// 'personalizado' não existe no catálogo do Asaas → cai nos limites do plano.
 function infoPlano(assinatura) {
   const plano = asaas.obterPlano(assinatura.codigo_plano, assinatura.ciclo);
   if (plano) return plano;
@@ -25,11 +23,7 @@ function infoPlano(assinatura) {
   };
 }
 
-// ─────────────────────────────────────────────
 // Cria (ou recupera) o mercado a partir do payload gravado em
-// assinaturas.dados_mercado. Chamado pelo webhook e pela recuperação.
-// Retorna o mercado (novo ou já existente) ou lança erro.
-// ─────────────────────────────────────────────
 async function criarMercadoDaAssinatura(sql, assinatura) {
   if (assinatura.id_mercado) {
     const [mercado] = await sql`
@@ -47,7 +41,6 @@ async function criarMercadoDaAssinatura(sql, assinatura) {
   if (validacao.erro) {
     throw new Error(`Dados do mercado inválidos: ${validacao.erro}`);
   }
-  // Força o plano escolhido no checkout (defesa extra, já que vem do servidor)
   validacao.dados.plano = assinatura.codigo_plano;
 
   const mercado = await criarMercadoCompleto(sql, assinatura.id_usuario, validacao.dados);
@@ -61,10 +54,7 @@ async function criarMercadoDaAssinatura(sql, assinatura) {
   return mercado;
 }
 
-// ─────────────────────────────────────────────
 // Grava (ou atualiza) a fatura da assinatura em pagamentos — idempotente,
-// porque webhook e fallback podem chegar com a mesma cobrança.
-// ─────────────────────────────────────────────
 async function registrarFatura(sql, assinatura, pagamento) {
   const statusPagamento = pagamento.status || 'PENDING';
   const metodo = pagamento.billingType || '';
@@ -96,14 +86,8 @@ async function registrarFatura(sql, assinatura, pagamento) {
   }
 }
 
-// ─────────────────────────────────────────────
 // Pagamento confirmado → assinatura ativa, vigência nova, mercado criado
-// e mercados suspensos reativados. Usado pelo webhook E pelo fallback.
-// ─────────────────────────────────────────────
 async function confirmarAssinatura(sql, assinatura, pagamento) {
-  // Fim da vigência do período pago: se o Asaas não informar a próxima
-  // cobrança, calcula +1 mês / +1 ano. Usar o vencimento que acabou de
-  // ser pago deixaria a data no passado e suspenderia a loja na hora.
   const base = pagamento.paymentDate || pagamento.dueDate || null;
   const proximo = pagamento.nextPaymentDate || proximaVigencia(assinatura.ciclo, base);
 
@@ -115,25 +99,17 @@ async function confirmarAssinatura(sql, assinatura, pagamento) {
     WHERE id = ${assinatura.id}
   `;
 
-  // Pagamento confirmado e mercado ainda não existe → cria agora
   if (!assinatura.id_mercado && assinatura.dados_mercado) {
     await criarMercadoDaAssinatura(sql, assinatura);
   }
 
-  // Regularizou a cobrança → mercados suspensos voltam para o ar
-  // (somente os suspensos por assinatura; bloqueio do admin permanece)
   const reativados = await reativarMercados(sql, assinatura);
   if (reativados > 0) {
     console.log(`Assinatura ${assinatura.id}: ${reativados} mercado(s) reativado(s)`);
   }
 }
 
-// ─────────────────────────────────────────────
 // FALLBACK — o webhook do Asaas não alcança localhost (dev) e às vezes
-// atrasa em produção. Consulta a API na hora e aplica o mesmo caminho do
-// webhook: fatura gravada + assinatura ativa + mercado criado.
-// Retorna { confirmado, pagamento } para a tela mostrar o estado real.
-// ─────────────────────────────────────────────
 async function sincronizarComAsaas(sql, assinatura) {
   if (!assinatura.asaas_subscription_id) return { confirmado: false, pagamento: null };
   if (assinatura.status === 'ativa') return { confirmado: true, pagamento: null };
@@ -153,15 +129,11 @@ async function sincronizarComAsaas(sql, assinatura) {
     return { confirmado: true, pagamento: confirmada };
   }
 
-  // Ainda não pagou → registra a cobrança pendente (a tela mostra o status)
   const pendente = cobrancas.find((p) => p.status === 'PENDING') || cobrancas[0] || null;
   if (pendente) await registrarFatura(sql, assinatura, pendente);
   return { confirmado: false, pagamento: pendente };
 }
 
-// POST /api/assinaturas/checkout — cria customer + assinatura no Asaas e retorna o link de pagamento
-// O mercado NÃO é criado aqui: o payload do formulário fica guardado em
-// assinaturas.dados_mercado e só vira mercado quando o pagamento confirma.
 const criarCheckout = async (req, res) => {
   const id_usuario = req.usuarioId;
   const { codigo_plano, ciclo, mercado } = req.body;
@@ -185,13 +157,10 @@ const criarCheckout = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // O cadastro do mercado só pode avançar com o aceite explícito dos
-    // Termos de Uso e da Política de Privacidade (LGPD).
     if (mercado.aceite_termos !== true) {
       return res.status(400).json({ erro: MENSAGEM_ACEITE_OBRIGATORIO });
     }
 
-    // Valida os dados do mercado (mesma validação do cadastro direto)
     const validacao = validarDadosMercado({
       ...mercado,
       plano: codigo_plano,
@@ -201,10 +170,6 @@ const criarCheckout = async (req, res) => {
       return res.status(400).json({ erro: validacao.erro });
     }
 
-    // Cada loja tem a própria assinatura (uma cobrança por loja). Por isso
-    // uma assinatura existente só "retoma" quando ela ainda NÃO virou loja —
-    // aí é o mesmo cadastro em andamento. Se a loja já existe, o usuário está
-    // criando OUTRA: não bloqueia, segue e cria uma assinatura nova em cima.
     const [assinaturaExistente] = await sql`
       SELECT * FROM assinaturas
       WHERE id_usuario = ${id_usuario}
@@ -222,10 +187,7 @@ const criarCheckout = async (req, res) => {
       }
 
       if (!jaTemLoja) {
-        // Cadastro em andamento: a loja ainda não existe
         if (assinaturaExistente.status !== 'pendente') {
-          // Pagamento já confirmou mas a loja não nasceu (webhook falhou) →
-          // cria agora: não tem nada novo para o usuário pagar.
           try {
             const mercadoRecuperado = await criarMercadoDaAssinatura(sql, assinaturaExistente);
             if (mercadoRecuperado) {
@@ -244,9 +206,6 @@ const criarCheckout = async (req, res) => {
           });
         }
 
-        // Pendente: retoma o MESMO link só quando o formulário enviado é igual
-        // (assim não gera cobrança em dobro). Formulário diferente → a
-        // pendente antiga é substituída pela nova.
         let mesmoFormulario = false;
         if (assinaturaExistente.asaas_subscription_id) {
           const [igual] = await sql`
@@ -263,7 +222,7 @@ const criarCheckout = async (req, res) => {
           let urlCheckout = null;
           try {
             urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
-          } catch { /* assinatura morta no Asaas — cancela e refaz abaixo */ }
+          } catch { /* falha ignorada */ }
 
           if (urlCheckout) {
             return res.json({
@@ -275,12 +234,10 @@ const criarCheckout = async (req, res) => {
           }
         }
 
-        // Sem link utilizável (ou formulário novo) → cancela a pendente e
-        // refaz com o payload enviado agora
         if (assinaturaExistente.asaas_subscription_id) {
           try {
             await asaas.cancelarAssinatura(assinaturaExistente.asaas_subscription_id);
-          } catch { /* pode já estar cancelada no Asaas */ }
+          } catch { /* falha ignorada */ }
         }
         await sql`
           UPDATE assinaturas
@@ -288,11 +245,8 @@ const criarCheckout = async (req, res) => {
           WHERE id = ${assinaturaExistente.id}
         `;
       }
-      // jaTemLoja → cai fora do bloco e cria uma assinatura nova para a
-      // nova loja (é ela que vai aparecer na tela de Assinaturas)
     }
 
-    // Dados do usuário para o customer
     const [usuario] = await sql`
       SELECT nome, email, cpf, telefone FROM usuarios WHERE id_usuario = ${id_usuario}
     `;
@@ -300,7 +254,6 @@ const criarCheckout = async (req, res) => {
       return res.status(404).json({ erro: 'Usuário não encontrado.' });
     }
 
-    // Customer no Asaas
     const customer = await asaas.criarCustomer({
       nome: usuario.nome,
       email: usuario.email,
@@ -309,14 +262,11 @@ const criarCheckout = async (req, res) => {
     });
     const customerId = customer.id;
 
-    // Após pagar, o Asaas devolve o usuário para /registrar-mercado
-    // (a tela detecta o pagamento via ?pagamento=1 e leva para o gerenciador)
     const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
     const redirectUrl = frontendUrl
       ? `${frontendUrl}/registrar-mercado?pagamento=1`
       : undefined;
 
-    // Assinatura no Asaas
     const assinaturaAsaas = await asaas.criarAssinatura({
       customerId,
       valor: plano.valor,
@@ -325,11 +275,8 @@ const criarCheckout = async (req, res) => {
       redirectUrl,
     });
 
-    // Link de checkout da primeira cobrança
     const urlCheckout = await asaas.buscarUrlPagamento(assinaturaAsaas.id);
 
-    // Grava assinatura localmente — o mercado ainda NÃO existe; o payload
-    // fica em dados_mercado e será consumido pelo webhook quando pagar
     const [assinatura] = await sql`
       INSERT INTO assinaturas (
         id_usuario, id_mercado, codigo_plano, ciclo, valor,
@@ -348,7 +295,6 @@ const criarCheckout = async (req, res) => {
       mensagem: 'Assinatura criada. Finalize o pagamento para ativar.',
       idAssinatura: assinatura.id,
       urlCheckout,
-      // true = Asaas recusou o retorno automático (domínio não cadastrado)
       semRedirect: assinaturaAsaas.semRedirect === true,
     });
   } catch (err) {
@@ -357,20 +303,13 @@ const criarCheckout = async (req, res) => {
   }
 };
 
-// GET /api/assinaturas/minha — assinatura + pagamentos do usuário logado
-// Recupera o mercado se o pagamento já confirmou mas o webhook falhou.
 const minhaAssinatura = async (req, res) => {
   const id_usuario = req.usuarioId;
   try {
     const sql = await conectar();
 
-    // Varredura preguiçosa: garante que a tela já mostre a suspensão mesmo
-    // se o job agendado ainda não tiver rodado (ex.: servidor reiniciado)
     await encerrarVencidas(sql);
 
-    // TODAS as assinaturas do usuário (cada loja pode ter um plano diferente).
-    // lista[0] é a mais recente — a "principal" que o checkout e a tela de
-    // aguardando-pagamento já conhecem.
     let lista = await sql`
       SELECT * FROM assinaturas
       WHERE id_usuario = ${id_usuario}
@@ -380,10 +319,6 @@ const minhaAssinatura = async (req, res) => {
       return res.json({ assinatura: null, assinaturas: [], pagamentos: [] });
     }
 
-    // FALLBACK: o webhook do Asaas não chega em desenvolvimento (localhost)
-    // e às vezes atrasa. Consulta a API na hora para CADA assinatura que
-    // depende do Asaas — é o que o botão "Já paguei — atualizar status"
-    // do frontend espera que aconteça.
     let pagamentoAsaas = null;
     let confirmouAlguma = false;
     for (const item of lista) {
@@ -393,12 +328,10 @@ const minhaAssinatura = async (req, res) => {
         if (item.id === lista[0].id) pagamentoAsaas = sincronia.pagamento || null;
         if (sincronia.confirmado) confirmouAlguma = true;
       } catch (eSync) {
-        // Sem conexão com o Asaas não derruba a tela: só loga
         console.error(`ERRO minhaAssinatura (sincronizar Asaas #${item.id}):`, eSync.message);
       }
     }
     if (confirmouAlguma) {
-      // Alguma assinatura mudou de estado → relê tudo para a tela refletir o banco
       lista = await sql`
         SELECT * FROM assinaturas
         WHERE id_usuario = ${id_usuario}
@@ -407,12 +340,8 @@ const minhaAssinatura = async (req, res) => {
     }
     const assinatura = lista[0];
 
-    // Prazo de validade do plano (fim do período pago) + dias restantes
     const vigencia = resumoVigencia(assinatura);
 
-    // Se assinatura ativa e mercado ainda não existe → cria agora (retry do
-    // webhook e do fallback). Roda ANTES de ler mercado_status para a tela
-    // já mostrar a loja recém-criada.
     let mercadoRecuperado = null;
     for (const item of lista) {
       if (item.status !== 'ativa' || item.id_mercado || !item.dados_mercado) continue;
@@ -424,11 +353,9 @@ const minhaAssinatura = async (req, res) => {
         }
       } catch (eRec) {
         console.error(`ERRO minhaAssinatura (recuperar mercado #${item.id}):`, eRec);
-        // Não bloqueia a resposta; o webhook / novo acesso tenta de novo
       }
     }
 
-    // Situação da loja vinculada (suspenso por cobrança aparece aqui)
     let mercado_status = null;
     if (assinatura.id_mercado) {
       const [mercadoDaAssinatura] = await sql`
@@ -438,7 +365,6 @@ const minhaAssinatura = async (req, res) => {
       mercado_status = mercadoDaAssinatura || null;
     }
 
-    // Link de pagamento de cada assinatura pendente (botão "Ir para o pagamento")
     for (const item of lista) {
       item.url_pagamento = null;
       if (item.status === 'pendente' && item.asaas_subscription_id) {
@@ -461,12 +387,9 @@ const minhaAssinatura = async (req, res) => {
         LIMIT 12
       `;
     } catch (ePag) {
-      // Falha ao listar faturas não pode derrubar a tela: o link de
-      // pagamento (urlPagamento) e o status da assinatura continuam válidos
       console.error('ERRO minhaAssinatura (listar pagamentos):', ePag);
     }
 
-    // Mercados vinculados (uma consulta por loja: são poucas por usuário)
     const mercadosPorId = new Map();
     for (const idMerc of new Set(lista.map((a) => a.id_mercado).filter(Boolean))) {
       try {
@@ -480,7 +403,6 @@ const minhaAssinatura = async (req, res) => {
       }
     }
 
-    // Aba "Assinaturas": 1 cartão por assinatura, com a loja que ela cobre
     const assinaturas = lista.map((item) => {
       const vig = resumoVigencia(item);
       return {
@@ -507,7 +429,6 @@ const minhaAssinatura = async (req, res) => {
       dias_restantes: vigencia.dias_restantes,
       carencia_dias: CARENCIA_DIAS,
       mercado_status,
-      // Última cobrança vista no Asaas (PENDING = ainda liquidando)
       pagamento_asaas: pagamentoAsaas
         ? {
             id: pagamentoAsaas.id,
@@ -526,7 +447,6 @@ const minhaAssinatura = async (req, res) => {
   }
 };
 
-// POST /api/assinaturas/:id/cancelar — cancela assinatura do próprio usuário
 const cancelarAssinatura = async (req, res) => {
   const id_usuario = req.usuarioId;
   const id = Number(req.params.id);
@@ -564,13 +484,7 @@ const cancelarAssinatura = async (req, res) => {
   }
 };
 
-// POST /api/webhooks/asaas — recebe eventos do Asaas (sem JWT; valida token do webhook)
-// Quando o pagamento confirma e a assinatura ainda não tem mercado, cria o
-// mercado a partir de dados_mercado (o cadastro só acontece após o pagamento).
 const webhookAsaas = async (req, res) => {
-  // Aceita um ou mais tokens separados por vírgula — assim a integração de
-  // webhook do SANDBOX e a de PRODUÇÃO (contas Asaas diferentes, tokens
-  // diferentes) apontam para a mesma URL e são aceitas as duas.
   const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
     .split(',')
     .map((token) => token.trim())
@@ -582,34 +496,23 @@ const webhookAsaas = async (req, res) => {
       return res.status(401).json({ erro: 'Token de webhook inválido.' });
     }
   } else {
-    // Sem token configurado o payload não vem autenticado — em vez de recusar
-    // (o Asaas reenviaria e NADA seria confirmado em produção), aceita e confere
-    // o status DIRETO na API do Asaas antes de qualquer efeito (ver abaixo).
     console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — eventos aceitos sem token; o status é verificado na API do Asaas antes de agir.');
   }
   const temToken = tokensAceitos.length > 0;
 
   const evento = req.body?.event;
   const pagamento = req.body?.payment;
-  // Eventos de assinatura (SUBSCRIPTION_*) podem vir sem o objeto `payment` —
-  // o id da assinatura vem em `subscription.id`
   const subscriptionNoPayload = req.body?.subscription?.id || null;
 
   if (!evento || (!pagamento?.id && !subscriptionNoPayload)) {
     return res.status(400).json({ erro: 'Payload de webhook inválido.' });
   }
 
-  // Eventos de split (PAYMENT_SPLIT_DONE etc.) identificam o repasse pelo
-  // additionalInfo.splitId — repassa junto para processarPagamentoPedido
   if (pagamento && req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
     pagamento.additionalInfo = req.body.additionalInfo;
   }
 
   try {
-    // Sem token, o corpo veio sem autenticação: substitui os dados da
-    // cobrança pelos da API do Asaas (fonte da verdade). Assim um evento
-    // forjado não consegue nem ativar assinatura nem confirmar pedido.
-    // Falhou a consulta → 500 e o Asaas reenvia o evento depois.
     if (!temToken && pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);
       if (fonte) Object.assign(pagamento, fonte);
@@ -618,36 +521,28 @@ const webhookAsaas = async (req, res) => {
     const sql = await conectar();
 
     // ── B3: pagamento de PEDIDO (Pix/cartão da compra de produtos) ──────────
-    // Cobranças de pedido vêm com externalReference "pedido:<id>"; as de
-    // assinatura têm subscription. Este ramo roda antes e não mexe nelas.
     const refExterna = pagamento?.externalReference || '';
     if (String(refExterna).startsWith('pedido:')) {
       const resultado = await processarPagamentoPedido(sql, evento, pagamento);
       return res.status(200).json(resultado);
     }
 
-    // Localiza assinatura pelo id da assinatura no Asaas
     const subscriptionId = pagamento?.subscription || subscriptionNoPayload;
     const [assinatura] = subscriptionId
       ? await sql`SELECT * FROM assinaturas WHERE asaas_subscription_id = ${subscriptionId} LIMIT 1`
       : [];
 
     if (!assinatura) {
-      // Evento sem assinatura correspondente — acknowledge para o Asaas não reenviar
       return res.status(200).json({ ignorado: true });
     }
 
-    // Fatura da assinatura (idempotente — o fallback pode já tê-la gravado)
     if (pagamento?.id) {
       await registrarFatura(sql, assinatura, pagamento);
     }
 
-    // Atualiza status da assinatura conforme o evento
     if (evento === 'PAYMENT_CONFIRMED' || evento === 'PAYMENT_RECEIVED') {
       await confirmarAssinatura(sql, assinatura, pagamento || {});
     } else if (evento === 'PAYMENT_OVERDUE') {
-      // Vencida: entra em inadimplência agora; a suspensão dos mercados só
-      // acontece após a carência (vigenciaService.encerrarVencidas)
       await sql`
         UPDATE assinaturas
         SET status = 'inadimplente', atualizada_em = NOW()
@@ -664,8 +559,6 @@ const webhookAsaas = async (req, res) => {
     res.status(200).json({ recebido: true });
   } catch (err) {
     console.error('ERRO webhookAsaas:', err);
-    // 500 faz o Asaas reenviar o evento (retry) — se o mercado falhou,
-    // o retry tenta criar de novo
     res.status(500).json({ erro: 'Erro ao processar webhook.' });
   }
 };

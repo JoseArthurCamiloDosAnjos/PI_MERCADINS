@@ -1,6 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ADMIN.CSS — Estilos para o painel de administrador
-   ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Layout principal ─────────────────────────────────────────────────────── */
 
@@ -13,13 +10,9 @@
 
 .adm-main {
   flex: 1;
-  /* min-width: 0 permite que a coluna encolha; sem isso a tabela empurra o
-     layout para 1200+px e o corpo (overflow-x: hidden) simplesmente corta
-     o que passa da largura da janela, sem barra de rolagem para alcançar. */
   min-width: 0;
   margin-left: 240px;
   min-height: 100vh;
-  /* Coluna para a barra superior poder grudar no topo da janela */
   display: flex;
   flex-direction: column;
 }
@@ -62,8 +55,6 @@
   color: var(--cinza-texto);
 }
 
-/* Atalho para conferir a loja do jeito que o cliente vê (abre em outra aba,
-   para o painel continuar aberto) */
 .adm-header-site {
   display: inline-flex;
   align-items: center;
@@ -585,8 +576,6 @@
   margin-bottom: 16px;
 }
 
-/* Aviso de rolagem lateral das tabelas — aparece só quando a tela é estreita
-   demais para caber tudo, para a pessoa saber que pode arrastar para o lado */
 .adm-dica-rolagem {
   display: none;
   align-items: center;
@@ -606,9 +595,6 @@
 
 .adm-table {
   width: 100%;
-  /* Muitas colunas (8 no mercados, 7 nos usuários): em telas estreitas a
-     tabela não espreme — ela ganha largura mínima e o bloco rola para o lado,
-     mantendo cada coluna legível e o conteúdo inteiro à mostra */
   min-width: 960px;
   border-collapse: collapse;
   font-family: var(--font);
@@ -623,8 +609,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--azul-borda);
-  /* O rótulo nunca quebra no meio: coluna cortada chama mais atenção que
-     rolagem */
   white-space: nowrap;
 }
 
@@ -647,7 +631,6 @@
   border-bottom: none;
 }
 
-/* Selos e botões de ação ficam numa linha só, sem quebrar no meio */
 .adm-badge-status,
 .adm-badge-tipo,
 .adm-status-dot,
@@ -838,8 +821,6 @@
     margin-left: 0;
   }
 
-  /* O hambúrguer do menu mora fixo no canto superior esquerdo: a barra
-     abre espaço à esquerda para o título não ficar embaixo dele */
   .adm-header {
     padding-left: 60px;
   }
@@ -889,8 +870,6 @@
     grid-template-columns: 1fr;
   }
 
-  /* Barra compacta no celular: título e ação, sem a descrição (que só
-     atrapalharia a largura da barra) */
   .adm-header {
     padding: 0.8rem 1rem 0.8rem 56px;
     gap: 10px;
@@ -1068,20 +1047,17 @@
   margin-bottom: 12px;
 }
 
-/* Texto secundário (dono, descrição, campos vazios) */
 .adm-muted {
   font-size: 0.76rem;
   color: var(--cinza-texto);
 }
 
-/* Célula com o nome em cima e uma linha fina embaixo (dono da loja) */
 .adm-celula-dupla {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-/* Listas simples do modal de mercado: cupons e equipe */
 .adm-lista-simples {
   list-style: none;
   margin: 0;
@@ -1584,9 +1560,6 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CONFIGURACOES
-   ═══════════════════════════════════════════════════════════════════════════════ */
 
 .adm-config {
   display: flex;
@@ -1765,12 +1738,8 @@
   }
 }
 
-/* Carregamento da aba (lazy) */
 .adm-carregando { color: #8892a4; font-size: 14px; padding: 2rem; text-align: center; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ABA CATÁLOGO — produtos genéricos prontos (reutilização pelo vendedor)
-   ═══════════════════════════════════════════════════════════════════════════ */
 
 .adm-catalogo-celula {
   display: flex;
@@ -1928,14 +1897,7 @@ label.adm-form-check input[type="checkbox"] {
   label.adm-form-check { margin-top: 0; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ACESSIBILIDADE E DESEMPENHO
-   ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Foco visível para quem navega pelo teclado. Só aparece no teclado (o mouse
-   não dispara :focus-visible), então o desenho pronto das telas não muda.
-   O campo de busca já saía com outline:none, o que deixava a pessoa sem
-   saber onde o foco estava. */
 
 .adm-nav-btn:focus-visible,
 .adm-logout-btn:focus-visible,
@@ -1966,10 +1928,6 @@ label.adm-form-check input[type="checkbox"] {
   outline-offset: 1px;
 }
 
-/* Quem pediu menos animação no sistema recebe as telas estáticas: as
-   entradas animadas e o pulsar dos skeletons saem de cena, e o conteúdo
-   continua aparecendo normalmente. Também corta trabalho de composição
-   desnecessário na hora da rolagem. */
 
 @media (prefers-reduced-motion: reduce) {
   .adm-stat-card,

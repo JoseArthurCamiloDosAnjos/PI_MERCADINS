@@ -1,13 +1,7 @@
 const { conectar } = require('../db/neon');
 
-// ─────────────────────────────────────────────
 // B6 — Moderação de avaliações
-// O vendedor (dono/admin da loja) ou o administrador do site pode OCULTAR
-// uma avaliação: ela some do site (e da média), mas continua no banco e
-// pode ser exibida de novo. Nada é apagado.
-// ─────────────────────────────────────────────
 
-// Quem pode moderar: dono/admin do mercado ou administrador do site
 async function podeModerar(sql, idUsuario, mercadoId) {
   if (idUsuario == null) return false;
   const [permissao] = await sql`
@@ -21,11 +15,7 @@ async function podeModerar(sql, idUsuario, mercadoId) {
   return !!admin?.is_admin;
 }
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:id/avaliacoes
-// Público (mostra "minha avaliação" se estiver logado).
-// Ocultas ficam de fora do site; o vendedor/admin vê todas (com marcação).
-// ─────────────────────────────────────────────
 const listarAvaliacoesMercado = async (req, res) => {
   const mercadoId = Number(req.params.id);
   const idUsuario = req.usuarioId ?? null;
@@ -54,14 +44,12 @@ const listarAvaliacoesMercado = async (req, res) => {
       ORDER BY a.data_cadastro DESC
     `;
 
-    // Site: só as visíveis; média e total também só contam as visíveis
     const visiveis = avaliacoes.filter(a => !a.oculta);
     const total = visiveis.length;
     const media = total > 0
       ? visiveis.reduce((soma, a) => soma + Number(a.nota), 0) / total
       : 0;
 
-    // Quem modera vê as ocultas também, para poder exibir de novo
     const lista = moderando ? avaliacoes : visiveis;
 
     res.status(200).json({
@@ -84,10 +72,7 @@ const listarAvaliacoesMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // PUT /api/mercados/:id/avaliacoes/:avaliacaoId — oculta ou exibe (moderação)
-// Body: { oculta: true | false }
-// ─────────────────────────────────────────────
 const alternarVisibilidadeAvaliacao = async (req, res) => {
   const idUsuario  = req.usuarioId;
   const mercadoId  = Number(req.params.id);
@@ -125,11 +110,7 @@ const alternarVisibilidadeAvaliacao = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:id/avaliacoes-produtos — painel do vendedor:
-// todas as avaliações de PRODUTOS da loja (inclusive ocultas), com o nome
-// do produto, para moderar pelo mesmo painel das avaliações da loja.
-// ─────────────────────────────────────────────
 const listarAvaliacoesProdutosDoMercado = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -176,10 +157,7 @@ const listarAvaliacoesProdutosDoMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // POST /api/mercados/:id/avaliacoes
-// Logado; cada usuário avalia uma vez (pode atualizar depois)
-// ─────────────────────────────────────────────
 const criarAvaliacao = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -206,7 +184,6 @@ const criarAvaliacao = async (req, res) => {
 
     const textoLimpo = typeof texto === 'string' ? texto.trim().slice(0, 500) : '';
 
-    // Sobe ou atualiza a avaliação do usuário neste mercado
     await sql`
       INSERT INTO avaliacoes (id_usuario, id_mercado, nota, texto)
       VALUES (${idUsuario}, ${mercadoId}, ${notaNum}, ${textoLimpo})
@@ -231,10 +208,7 @@ const criarAvaliacao = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId/avaliacoes
-// Público (mostra "minha avaliação" se estiver logado)
-// ─────────────────────────────────────────────
 const listarAvaliacoesProduto = async (req, res) => {
   const { mercadoId, categoriaId, produtoId } = req.params;
   const idUsuario = req.usuarioId ?? null;
@@ -269,7 +243,6 @@ const listarAvaliacoesProduto = async (req, res) => {
       ORDER BY a.data_cadastro DESC
     `;
 
-    // Ocultas ficam de fora do site (inclusive da média); quem modera vê todas
     const visiveis = avaliacoes.filter(a => !a.oculta);
     const total = visiveis.length;
     const media = total > 0
@@ -298,10 +271,7 @@ const listarAvaliacoesProduto = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // POST /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId/avaliacoes
-// Logado; cada usuário avalia uma vez (pode atualizar depois)
-// ─────────────────────────────────────────────
 const criarAvaliacaoProduto = async (req, res) => {
   const idUsuario = req.usuarioId;
   const { mercadoId, categoriaId, produtoId } = req.params;
@@ -317,7 +287,6 @@ const criarAvaliacaoProduto = async (req, res) => {
     return res.status(400).json({ erro: 'Escolha uma nota de 1 a 5 estrelas.' });
   }
 
-  // Foto é opcional: quando vem, precisa ser um link de imagem http(s)
   let fotoLimpa = '';
   if (typeof foto === 'string' && foto.trim()) {
     fotoLimpa = foto.trim().slice(0, 500);
@@ -343,8 +312,6 @@ const criarAvaliacaoProduto = async (req, res) => {
 
     const textoLimpo = typeof texto === 'string' ? texto.trim().slice(0, 500) : '';
 
-    // Selo "compra verificada": só recebe quem já comprou este produto.
-    // O pedido guarda os ids comprados em produto_ids (ex.: "12,31,44").
     const [compra] = await sql`
       SELECT 1 FROM historico_compras
       WHERE id_usuario = ${idUsuario}
@@ -354,7 +321,6 @@ const criarAvaliacaoProduto = async (req, res) => {
     `;
     const verificada = !!compra;
 
-    // Sobe ou atualiza a avaliação do usuário neste produto
     await sql`
       INSERT INTO avaliacoes_produtos (id_usuario, id_produto, nota, texto, foto, verificada)
       VALUES (${idUsuario}, ${prodId}, ${notaNum}, ${textoLimpo}, ${fotoLimpa}, ${verificada})
@@ -383,10 +349,7 @@ const criarAvaliacaoProduto = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // PUT /api/mercados/:mercadoId/categorias/:categoriaId/produtos/:produtoId/avaliacoes/:avaliacaoId
-// Oculta ou exibe uma avaliação de produto (moderação — B6)
-// ─────────────────────────────────────────────
 const alternarVisibilidadeAvaliacaoProduto = async (req, res) => {
   const idUsuario = req.usuarioId;
   const { mercadoId, produtoId, avaliacaoId } = req.params;

@@ -9,7 +9,6 @@ export interface ProdutoCarrinho {
   preco?: string;
   imagem?: string;
   imagens?: string[];
-  /** Unidades disponíveis em estoque (trava a quantidade no carrinho) */
   estoque?: number;
 }
 
@@ -92,14 +91,7 @@ export function useCarrinho(mercadoId: number) {
         }));
 
         setItens(prev => {
-          // O carrinho local é a fonte da verdade: ele é gravado a cada mudança
-          // e sobrevive ao login (não é apagado). Nunca somamos local + servidor,
-          // senão as quantidades duplicavam a cada atualização da página.
           if (prev.length > 0) {
-            // Mantém o que o cliente já tinha (ex.: adicionou antes do login)
-            // e reenvia pro servidor pra ficar salvo na conta.
-            // A QUANTIDADE vem do local, mas o ESTOQUE vem do servidor: o valor
-            // guardado no navegador envelhece e travava o botão de aumentar.
             const estoqueDoServidor = new Map(
               itensBanco.map(i => [i.produto.id_produto, i.produto.estoque])
             );
@@ -114,7 +106,6 @@ export function useCarrinho(mercadoId: number) {
             debounceSalvar(mercadoId, prev);
             return atualizados;
           }
-          // Local vazio = navegador novo ou limpo: restaura do servidor
           if (itensBanco.length > 0) {
             saveCarrinhoLocal(mercadoId, itensBanco);
             return itensBanco;
@@ -127,10 +118,6 @@ export function useCarrinho(mercadoId: number) {
     carregouBanco.current = true;
   }, [mercadoId]);
 
-  /**
-   * Adiciona um produto ao carrinho respeitando o estoque.
-   * Retorna false quando não foi possível (sem estoque ou já no máximo).
-   */
   const adicionar = useCallback((produto: ProdutoCarrinho, quantidade: number): boolean => {
     const maximo = produto.estoque ?? 0;
     if (maximo <= 0) return false;
@@ -162,7 +149,6 @@ export function useCarrinho(mercadoId: number) {
       const novos = prev
         .map(i => {
           if (i.produto.id_produto !== idProduto) return i;
-          // Trava a quantidade no estoque disponível do produto
           const maximo = i.produto.estoque ?? 0;
           const nova = maximo > 0
             ? Math.min(i.quantidade + delta, maximo)
@@ -186,8 +172,6 @@ export function useCarrinho(mercadoId: number) {
   }, [mercadoId]);
 
   const limpar = useCallback(() => {
-    // Cancela o salvamento pendente: sem isso, um agendamento antigo
-    // poderia regravar o carrinho no servidor logo após o checkout
     if (debounceTimer) {
       clearTimeout(debounceTimer);
       debounceTimer = null;

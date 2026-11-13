@@ -6,9 +6,6 @@ interface Props {
   onFechar: () => void;
 }
 
-// Modal "Sobre a loja": mostra a descrição completa do mercado.
-// Tem estilo próprio (DescricaoModal.css) para funcionar igual na
-// vitrine do cliente e na do vendedor.
 export default function DescricaoModal({ titulo, descricao, onFechar }: Props) {
   return (
     <div className="dmodal-overlay">

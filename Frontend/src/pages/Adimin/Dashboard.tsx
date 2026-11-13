@@ -13,7 +13,7 @@ import {
 } from '../../components/Icons'
 
 interface Metricas {
-  totalMercados: number 
+  totalMercados: number
   totalUsuarios: number
   totalProdutos: number
   totalPedidos: number
@@ -115,7 +115,6 @@ export default function Dashboard() {
           <div key={key} className="adm-stat-card" style={{ borderTopColor: color }}>
             <div className="adm-stat-icon" style={{ color }}>{icon}</div>
             <div className="adm-stat-info">
-              {/* Contagem sempre em inteiro: "12", nunca "12,00" */}
               <span className="adm-stat-val">{Math.round(Number(dados.metricas[key]) || 0).toLocaleString('pt-BR')}</span>
               <span className="adm-stat-lbl">{label}</span>
             </div>

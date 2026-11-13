@@ -1,10 +1,3 @@
-// Migração 018 — notificações: marcação de leitura
-//
-// • Adiciona a coluna "lida" à tabela notificacoes. Quando é NULL/FALSE o
-//   aviso ainda não foi aberto pela pessoa; TRUE significa que ela já viu.
-// • Cria um índice composto para a listagem "não lidas primeiro" ficar rápida.
-//
-// Idempotente: pode rodar de novo sem quebrar nada.
 
 module.exports = {
   id: '018_notificacoes_lida',

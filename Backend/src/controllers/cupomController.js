@@ -1,26 +1,8 @@
 const { conectar } = require('../db/neon');
 const { limitesDoPlano } = require('../utils/planos');
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Cupons de desconto (B3)
-//  Cada mercado cria os seus cupons no painel do vendedor. No carrinho, o
-//  cliente informa o código e o backend confere se ainda vale (ativo, não
-//  expirado, limite de usos, pedido mínimo) e calcula o desconto — o valor
-//  nunca sai do navegador.
-//  tipo: 'percentual' (10 = 10%) ou 'valor' (10 = R$ 10,00)
-//
-//  Escopo (B10): o vendedor pode escolher em quais CATEGORIAS de produtos e/ou
-//  em quais PRODUTOS específicos o cupom vale. Sem escolher nenhuma das duas,
-//  o cupom continua valendo para o pedido inteiro (comportamento antigo). O
-//  desconto de cupom com escopo é calculado só em cima do valor dos itens que
-//  estiverem nas categorias escolhidas OU forem os produtos escolhidos (união).
-// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Lê a lista de categorias vinda da tela.
- * Devolve `null` quando o campo não veio (não mexe nas categorias) ou uma
- * lista de ids inteiros (pode ficar vazia = cupom vale para tudo).
- */
 function lerCategorias(categorias) {
   if (categorias === undefined || categorias === null) return null;
   if (!Array.isArray(categorias)) return { erro: 'Categorias do cupom inválidas.' };
@@ -39,11 +21,6 @@ function lerCategorias(categorias) {
   return { ids };
 }
 
-/**
- * Lê a lista de produtos específicos vinda da tela.
- * Mesma semântica de lerCategorias: `null` = não mexe no escopo,
- * lista de ids (pode ficar vazia = sem restrição por produto).
- */
 function lerProdutos(produtos) {
   if (produtos === undefined || produtos === null) return null;
   if (!Array.isArray(produtos)) return { erro: 'Produtos do cupom inválidos.' };
@@ -142,7 +119,6 @@ function erroSemElegiveis(categorias, produtos) {
   return `Este cupom vale apenas para: ${partes.join(' | ')}.`;
 }
 
-// Confere se o usuário logado gerencia o mercado (dono ou admin)
 async function podeGerenciar(sql, idUsuario, mercadoId) {
   const [permissao] = await sql`
     SELECT papel FROM usuarios_mercados
@@ -151,7 +127,6 @@ async function podeGerenciar(sql, idUsuario, mercadoId) {
   return !!permissao && ['dono', 'admin'].includes(permissao.papel);
 }
 
-// Cupons são recurso dos planos Plus e Personalizado (Essencial não cria/edita)
 async function planoPermiteCupons(sql, mercadoId) {
   const [mercado] = await sql`
     SELECT plano FROM mercados WHERE id_mercado = ${mercadoId}
@@ -159,7 +134,6 @@ async function planoPermiteCupons(sql, mercadoId) {
   return limitesDoPlano(mercado?.plano).cupons === true;
 }
 
-// Valida os campos do cupom na entrada (criação e edição)
 function validarCupom(body) {
   const { codigo, tipo, valor, min_pedido, max_usos, validade } = body;
 
@@ -219,13 +193,11 @@ function formatarCupom(c, categorias = [], produtos = []) {
     validade: c.validade || null,
     ativo: c.ativo !== false,
     criadoEm: c.criado_em,
-    // Escopo do cupom (listas vazias = vale para tudo)
     categorias: Array.isArray(categorias) ? categorias : [],
     produtos: Array.isArray(produtos) ? produtos : [],
   };
 }
 
-// GET /api/mercados/:id/cupons — lista os cupons do mercado (vendedor)
 const listarCupons = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -262,7 +234,6 @@ const listarCupons = async (req, res) => {
   }
 };
 
-// POST /api/mercados/:id/cupons — cria um cupom (vendedor)
 const criarCupom = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -274,7 +245,6 @@ const criarCupom = async (req, res) => {
   const dados = validarCupom(req.body);
   if (dados.erro) return res.status(400).json({ erro: dados.erro });
 
-  // Escopo: em quais categorias/produtos este cupom vale (opcional)
   const escopo = lerCategorias(req.body.categorias);
   if (escopo && escopo.erro) return res.status(400).json({ erro: escopo.erro });
   const escopoProdutos = lerProdutos(req.body.produtos);
@@ -289,7 +259,6 @@ const criarCupom = async (req, res) => {
       return res.status(403).json({ erro: 'Cupons estão disponíveis nos planos Plus e Personalizado. Faça upgrade para ativar.' });
     }
 
-    // As categorias escolhidas precisam ser do mercado em questão
     if (escopo && escopo.ids.length > 0) {
       const doMercado = await sql`
         SELECT id_categoria FROM categorias
@@ -300,8 +269,6 @@ const criarCupom = async (req, res) => {
       }
     }
 
-    // Os produtos escolhidos também precisam ser do mercado
-    // (produtos não têm id_mercado direto: a ligação é pela categoria)
     if (escopoProdutos && escopoProdutos.ids.length > 0) {
       const doMercado = await sql`
         SELECT p.id_produto FROM produtos p
@@ -357,7 +324,6 @@ const criarCupom = async (req, res) => {
   }
 };
 
-// PUT /api/mercados/:id/cupons/:cupomId — edição (valor, mínimo, usos, validade, ativo)
 const atualizarCupom = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -382,8 +348,6 @@ const atualizarCupom = async (req, res) => {
     `;
     if (!atual) return res.status(404).json({ erro: 'Cupom não encontrado.' });
 
-    // O código não muda (é como o cliente digita); mudam valor, mínimo, usos,
-    // validade e se está ativo ou não.
     const dados = validarCupom({
       codigo: atual.codigo,
       tipo: req.body.tipo ?? atual.tipo,
@@ -394,7 +358,6 @@ const atualizarCupom = async (req, res) => {
     });
     if (dados.erro) return res.status(400).json({ erro: dados.erro });
 
-    // Escopo: quando vem lista de categorias/produtos, substitui a que estava lá
     const escopo = lerCategorias(req.body.categorias);
     if (escopo && escopo.erro) return res.status(400).json({ erro: escopo.erro });
     const escopoProdutos = lerProdutos(req.body.produtos);
@@ -469,7 +432,6 @@ const atualizarCupom = async (req, res) => {
   }
 };
 
-// DELETE /api/mercados/:id/cupons/:cupomId — apaga o cupom
 const deletarCupom = async (req, res) => {
   const idUsuario = req.usuarioId;
   const mercadoId = Number(req.params.id);
@@ -499,8 +461,6 @@ const deletarCupom = async (req, res) => {
   }
 };
 
-// POST /api/mercados/:id/cupons/validar — confere o cupom no carrinho (cliente)
-// Devolve quanto o cupom abateria (levando em conta categorias e produtos do escopo).
 const validarCupomNoCarrinho = async (req, res) => {
   const mercadoId = Number(req.params.id);
   const { codigo, subtotal, itens } = req.body;
@@ -514,8 +474,6 @@ const validarCupomNoCarrinho = async (req, res) => {
     return res.status(400).json({ erro: 'Informe o código do cupom.' });
   }
 
-  // Itens do carrinho: a tela manda produto, quantidade e categoria. É a
-  // partir deles que o desconto de um cupom com escopo é calculado.
   const itensValidos = Array.isArray(itens)
     ? itens
         .map((i) => ({
@@ -574,9 +532,6 @@ const validarCupomNoCarrinho = async (req, res) => {
       });
     }
 
-    // Escopo: sem categoria nem produto escolhido, o cupom vale para o pedido
-    // inteiro. Com escopo, o item é elegível se estiver em UMA das categorias
-    // OU for um dos produtos específicos (união dos dois).
     const categorias = (await categoriasPorCupom(sql, [cupom])).get(Number(cupom.id)) ?? [];
     const produtos = (await produtosPorCupom(sql, [cupom])).get(Number(cupom.id)) ?? [];
 
@@ -612,7 +567,6 @@ const validarCupomNoCarrinho = async (req, res) => {
       valor: Number(cupom.valor),
       desconto,
       minPedido,
-      // Valor do pedido que entrou no cálculo (só os itens do escopo do cupom)
       baseElegivel: base,
       categorias,
       produtos,

@@ -4,9 +4,7 @@ const { VERSAO_TERMOS } = require("../utils/termos");
 const { enviarNotificacao } = require("../utils/notificacoes");
 const asaasService = require("../services/asaasService");
 
-// ─────────────────────────────────────────────
 // Helper — gera slug a partir do nome
-// ─────────────────────────────────────────────
 
 function gerarSlug(nome) {
   return nome
@@ -19,9 +17,7 @@ function gerarSlug(nome) {
     .replace(/^-|-$/g, '');
 }
 
-// ─────────────────────────────────────────────
 // Helpers de validação
-// ─────────────────────────────────────────────
 
 function limparMascara(valor) {
   return valor.replace(/\D/g, "");
@@ -63,14 +59,10 @@ function validarTelefone(telefone) {
 }
 
 // ── Tipos de loja (categorias do mercado) ───────────────────────────────
-// Mesmos tipos dos atalhos da página inicial. O valor é validado contra a
-// lista e salvo como literal de array do Postgres ("{mercado,padaria}"),
-// formato que funciona nos dois drivers (Neon e PostgreSQL local).
 const CATEGORIAS_VALIDAS = [
   "mercado", "hortifruti", "acougue", "padaria", "bebidas", "organicos", "conveniencia",
 ];
 
-// Nome bonito de cada tipo para a aba da vitrine (o tipo é sempre minúsculo)
 const LABELS_CATEGORIAS = {
   mercado: "Mercado", hortifruti: "Hortifruti", acougue: "Açougue",
   padaria: "Padaria", bebidas: "Bebidas", organicos: "Orgânicos",
@@ -80,8 +72,6 @@ const LABELS_CATEGORIAS = {
 function normalizarCategorias(categorias) {
   if (categorias === undefined || categorias === null) return { valor: null, lista: [] };
 
-  // Revalidação de um payload JÁ normalizado pelo próprio validador
-  // (o checkout grava {valor, lista} em dados_mercado e o webhook valida de novo)
   if (!Array.isArray(categorias) && typeof categorias === "object") {
     if (Array.isArray(categorias.lista)) return normalizarCategorias(categorias.lista);
     if (typeof categorias.valor === "string") {
@@ -108,25 +98,14 @@ function normalizarCategorias(categorias) {
 }
 
 // ── Horário de funcionamento ───────────────────────────────────────────
-// Guardado como texto com JSON dentro da coluna "mercados.horario":
-//   {"1":["08:00","18:00"],"2":["08:00","18:00"]}
-// Chave = dia da semana (0 = domingo ... 6 = sábado, igual ao Date do JS).
-// Dia ausente da lista = fechado naquele dia. Se a hora de FECHAR for menor
-// que a de ABRIR, o mercado atravessa a meia-noite (ex.: 18:00 → 02:00).
-// Sem horário (nulo) = loja ainda não configurou; aí o card usa o status.
 const RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function normalizarHorario(horario) {
-  // Não enviado = mantém o que já está no banco (edição parcial)
   if (horario === undefined) return { manter: true };
-  // Enviado vazio/nulo = loja limpou o horário
   if (horario === null || horario === "") return { valor: null };
 
   let obj = horario;
 
-  // Revalidação de um payload JÁ normalizado pelo próprio validador:
-  // dados_mercado guarda o envelope {valor: '{"1":["08:00","18:00"]}'}
-  // e o webhook chama validarDadosMercado de novo em cima dele
   if (typeof obj === "object" && !Array.isArray(obj)) {
     if ("manter" in obj) return { manter: true };
     if ("valor" in obj && Object.keys(obj).length === 1) {
@@ -145,7 +124,7 @@ function normalizarHorario(horario) {
   for (const [dia, faixa] of Object.entries(obj)) {
     if (!/^[0-6]$/.test(dia))
       return { erro: `Dia da semana inválido no horário: ${dia}` };
-    if (faixa === null || faixa === undefined) continue; // dia fechado
+    if (faixa === null || faixa === undefined) continue;
     if (!Array.isArray(faixa) || faixa.length !== 2)
       return { erro: "Cada dia precisa de abertura e fechamento (HH:MM)" };
 
@@ -158,17 +137,10 @@ function normalizarHorario(horario) {
     saida[dia] = [abre, fecha];
   }
 
-  // Sem nenhum dia aberto = tratado como "não configurado"
   return { valor: Object.keys(saida).length > 0 ? JSON.stringify(saida) : null };
 }
 
-// ─────────────────────────────────────────────
 // Entrega e retirada do mercado (B2):
-//   taxa_entrega:   R$ cobrados por entrega (0 = entrega grátis)
-//   pedido_minimo:  valor mínimo em produtos para aceitar pedido de entrega
-//   oferece_entrega / oferece_retirada: quais formas o mercado aceita
-// Campos não enviados ficam como estão no banco (edição parcial).
-// ─────────────────────────────────────────────
 function normalizarEntrega(body) {
   const saida = { taxa: undefined, minimo: undefined, entrega: undefined, retirada: undefined };
   const { taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = body;
@@ -198,24 +170,16 @@ function normalizarEntrega(body) {
   return saida;
 }
 
-// ─────────────────────────────────────────────
 // Valida e normaliza os dados de um mercado.
-// Reaproveitado pelo cadastro direto (admin) e pelo checkout do plano
-// (payload que só vira mercado DEPOIS que o pagamento confirma).
-// ─────────────────────────────────────────────
 function validarDadosMercado(dados = {}) {
   const { nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua,
     descricao, paleta, cor_base, cor_destaque, cor_texto, cor_icones,
     cor_texto_sec, plano, categorias, horario, asaas_wallet_id,
     taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada } = dados;
 
-  // Aceite dos Termos/Privacidade: vem do formulário (checkbox) e é gravado
-  // junto com a data, a versão dos textos e o IP de origem.
   const aceiteTermos = dados.aceite_termos === true;
   const termosIp = String(dados.termos_ip || '').slice(0, 80);
 
-  // Revalidação de payload já normalizado: a entrega vem embutida em
-  // dados.entrega {taxa, minimo, entrega, retirada} em vez dos campos soltos
   const entregaFonte = dados.entrega && typeof dados.entrega === 'object'
     ? {
         taxa_entrega:    dados.entrega.taxa,
@@ -253,8 +217,6 @@ function validarDadosMercado(dados = {}) {
   if (horarioNovo.erro)
     return { erro: horarioNovo.erro };
 
-  // Wallet Asaas do vendedor (opcional): identifica a carteira que recebe
-  // o split dos pedidos pagos online. Formato: UUID ou id numérico do Asaas.
   const wallet = typeof asaas_wallet_id === 'string' ? asaas_wallet_id.trim() : '';
   if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet))
     return { erro: 'Wallet ID do Asaas inválido.' };
@@ -288,15 +250,8 @@ function validarDadosMercado(dados = {}) {
   };
 }
 
-// ─────────────────────────────────────────────
 // Cria o mercado a partir de dados JÁ validados (ver validarDadosMercado).
-// Usado pelo cadastro direto (admin) e pela confirmação de pagamento
-// (webhook do Asaas / recuperação em /api/assinaturas/minha).
-// Lança Error com .status em conflito.
-// ─────────────────────────────────────────────
 async function criarMercadoCompleto(sql, id_usuario, d) {
-  // Duplicidade de CNPJ ou email — se já for DO PRÓPRIO usuário, devolve o
-  // mercado dele (a recuperação de pagamento não pode gerar loja duplicada)
   const existente = await sql`
     SELECT m.id_mercado, um.id_usuario AS dono_id
     FROM mercados m
@@ -327,9 +282,6 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     throw erro;
   }
 
-  // Limite de lojas do usuário: o plano Personalizado permite até 5;
-  // Essencial/Plus são "1 loja" (2º mercado exige upgrade antes de criar).
-  // Admin (criação direta pela API) não passa por esse teto.
   const [dono] = await sql`
     SELECT is_admin FROM usuarios WHERE id_usuario = ${id_usuario}
   `;
@@ -351,7 +303,6 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     }
   }
 
-  // Gera slug único
   let slug = gerarSlug(d.nome);
   const slugExistente = await sql`
     SELECT id_mercado FROM mercados WHERE slug = ${slug}
@@ -360,7 +311,6 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     slug = `${slug}-${Date.now()}`;
   }
 
-  // Cria o mercado
   const [novoMercado] = await sql`
     INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, termos_aceitos_em, termos_versao, termos_ip, asaas_wallet_id)
     VALUES (
@@ -396,14 +346,11 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     RETURNING *
   `;
 
-  // Vincula o mercado ao usuário com papel 'dono'
   await sql`
     INSERT INTO usuarios_mercados (id_usuario, id_mercado, papel)
     VALUES (${id_usuario}, ${novoMercado.id_mercado}, 'dono')
   `;
 
-  // Avisa por e-mail (e registra no histórico da conta) que a loja entrou no
-  // ar. Fire-and-forget: a criação do mercado não espera o envio.
   enviarNotificacao(sql, {
     id_usuario,
     id_mercado: novoMercado.id_mercado,
@@ -412,18 +359,10 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     mensagem: `Olá! O mercado ${d.nome} foi cadastrado com sucesso no Mercadins. Acesse o painel do vendedor para cadastrar seus produtos e acompanhar os pedidos.`,
   }).catch((err) => console.error('Falha na notificação de mercado:', err.message));
 
-  // Carteira Asaas automática: cria a subconta do vendedor para o split dos
-  // pedidos online cair direto na conta dele (o walletId vai para
-  // mercados.asaas_wallet_id). Fire-and-forget: se falhar (ex.: conta raiz
-  // sem CNPJ, CEP não localizado), o cadastro segue e o vendedor pode usar o
-  // botão "Criar automaticamente" no painel depois.
   criarSubcontaDoMercado(sql, novoMercado).catch((err) =>
     console.error('Falha ao criar subconta Asaas do mercado', novoMercado.id_mercado, ':', err.message)
   );
 
-  // Categorias reais da vitrine: cada tipo escolhido vira uma linha na
-  // tabela "categorias" — é daí que a página do mercado lê as abas de
-  // produtos. Sem isso a vitrine do mercado novo ficava sempre vazia.
   if (d.cats.lista.length > 0) {
     const nomesBonitos = d.cats.lista.map((c) => LABELS_CATEGORIAS[c] ?? c);
     const linhasCategorias = await sql`
@@ -432,9 +371,6 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
       RETURNING id_categoria
     `;
 
-    // Semente de demonstração: cada categoria ganha um produto de teste,
-    // para a vitrine já abrir com conteúdo. O vendedor edita ou apaga e
-    // cadastra os produtos reais em seguida.
     if (linhasCategorias.length > 0) {
       await sql`
         INSERT INTO produtos (nome, descricao, id_categoria, preco, estoque)
@@ -453,15 +389,7 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
   return novoMercado;
 }
 
-// ─────────────────────────────────────────────
 // Cria a subconta do vendedor no Asaas (POST /v3/accounts) e grava o
-// walletId em mercados.asaas_wallet_id. Usado (a) logo após o cadastro do
-// mercado (sem usuário para perguntar → default 'LIMITED') e (b) pelo
-// endpoint POST /:id/asaas/subconta (botão "Criar automaticamente" do
-// painel, que envia o tipo de empresa escolhido). Já com wallet devolve o
-// valor atual.
-// ─────────────────────────────────────────────
-// Valores aceitos pelo Asaas em companyType (exigido para CNPJ)
 const TIPOS_EMPRESA_ASAAS = ['MEI', 'LIMITED', 'INDIVIDUAL', 'ASSOCIATION'];
 
 async function criarSubcontaDoMercado(sql, m, companyType = 'LIMITED') {
@@ -490,11 +418,7 @@ async function criarSubcontaDoMercado(sql, m, companyType = 'LIMITED') {
   return walletId;
 }
 
-// ─────────────────────────────────────────────
 // POST /api/mercados — Criar novo mercado
-// Só o admin cria direto pela API; o usuário comum cria apenas após a
-// confirmação do pagamento (webhook do Asaas ou /api/assinaturas/minha).
-// ─────────────────────────────────────────────
 const criarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -529,12 +453,7 @@ const criarMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // POST /api/mercados/:id/asaas/subconta — cria a subconta do vendedor no
-// Asaas e grava o Wallet ID automaticamente (split dos pedidos online).
-// Dono/admin do mercado; se já houver wallet, devolve o existente.
-// Body opcional: { companyType: MEI|LIMITED|INDIVIDUAL|ASSOCIATION }.
-// ─────────────────────────────────────────────
 const criarSubcontaAsaas = async (req, res) => {
   const id_usuario = req.usuarioId;
   if (!id_usuario)
@@ -542,7 +461,6 @@ const criarSubcontaAsaas = async (req, res) => {
 
   const idMercado = Number(req.params.id);
 
-  // Tipo de empresa (exigido pelo Asaas para CNPJ); default se não enviado
   const companyType = typeof req.body?.companyType === 'string'
     ? req.body.companyType.trim().toUpperCase()
     : 'LIMITED';
@@ -576,8 +494,6 @@ const criarSubcontaAsaas = async (req, res) => {
     });
   } catch (err) {
     console.error("ERRO criarSubcontaAsaas:", err);
-    // Motivo real vindo do Asaas (ex.: conta raiz sem CNPJ, CEP inválido)
-    // vai em "detalhe" e é exibido pelo frontend junto do aviso
     res.status(400).json({
       erro: "Não foi possível criar a conta Asaas automaticamente.",
       detalhe: err.message,
@@ -585,10 +501,7 @@ const criarSubcontaAsaas = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados — Listar todos os mercados
-// Rota pública — suporta paginação via query params ?page=1&limit=20
-// ─────────────────────────────────────────────
 
 const listarMercados = async (req, res) => {
   try {
@@ -598,8 +511,6 @@ const listarMercados = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
 
-    // Busca por nome/slug/cidade/estado (usada na home e no modal de favoritos).
-    // O sem_acento deixa "Jose" achar "José" — muita gente digita sem acento.
     const termo = (req.query.busca ?? '').trim();
     const filtro = termo || null;
 
@@ -660,9 +571,7 @@ const listarMercados = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/:id — Buscar mercado por ID
-// ─────────────────────────────────────────────
 
 const buscarMercadoPorId = async (req, res) => {
   const { id } = req.params;
@@ -695,9 +604,7 @@ const buscarMercadoPorId = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/mercados/slug/:slug — Buscar mercado por slug
-// ─────────────────────────────────────────────
 
 const buscarMercadoPorSlug = async (req, res) => {
   const { slug } = req.params;
@@ -730,10 +637,7 @@ const buscarMercadoPorSlug = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // PUT /api/mercados/:id — Atualizar mercado
-// Só dono ou admin do mercado pode atualizar
-// ─────────────────────────────────────────────
 
 const atualizarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -758,8 +662,6 @@ const atualizarMercado = async (req, res) => {
   if (cep && !validarCEP(cep))
     return res.status(400).json({ erro: "CEP inválido" });
 
-  // Custos fixos mensais (aluguel, luz, salários): opcional; quando vier,
-  // precisa ser um número >= 0. Quem não enviu mantém o valor do banco.
   let custosFixosNovo = undefined;
   if (custos_fixos !== undefined && custos_fixos !== null) {
     const v = Number(custos_fixos);
@@ -768,9 +670,6 @@ const atualizarMercado = async (req, res) => {
     custosFixosNovo = v;
   }
 
-  // Wallet Asaas do vendedor (recebimento direto dos pedidos online).
-  // Diferente dos outros campos, string vazia LIMPA o valor (volta ao
-  // comportamento antigo: dinheiro na conta da plataforma).
   const temWallet = req.body.asaas_wallet_id !== undefined && req.body.asaas_wallet_id !== null;
   let walletNovo = null;
   if (temWallet) {
@@ -779,7 +678,6 @@ const atualizarMercado = async (req, res) => {
       return res.status(400).json({ erro: 'Wallet ID do Asaas inválido.' });
   }
 
-  // Entrega e retirada (taxa, mínimo e opções) — mesmo critério dos custos
   const entregaEdicao = normalizarEntrega({ taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada });
   if (entregaEdicao.erro)
     return res.status(400).json({ erro: entregaEdicao.erro });
@@ -817,9 +715,6 @@ const atualizarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    // Horário numa atualização à parte: ele pode ser limpo (valor nulo) e o
-    // COALESCE do UPDATE principal não distinguiria "não enviou" de "limpou".
-    // Quando não veio o campo (edição de outra seção), mantém o banco.
     if (!horarioEdicao.manter) {
       await sql`
         UPDATE mercados SET horario = ${horarioEdicao.valor ?? null}
@@ -827,7 +722,6 @@ const atualizarMercado = async (req, res) => {
       `;
     }
 
-    // Wallet Asaas à parte pelo mesmo motivo: pode ser limpa com string vazia
     if (temWallet) {
       await sql`
         UPDATE mercados SET asaas_wallet_id = ${walletNovo || null}
@@ -888,10 +782,7 @@ const atualizarMercado = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // DELETE /api/mercados/:id — Deletar mercado
-// Só o dono pode deletar
-// ─────────────────────────────────────────────
 
 const deletarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -923,10 +814,6 @@ const deletarMercado = async (req, res) => {
     if (!existente)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    // Remove tudo na ordem das chaves estrangeiras (do filho pro pai).
-    // carrinho e mercado_produtos apontam para mercado E produto; depois
-    // vêm pedidos, avaliações e afins; por último categorias, produtos e o
-    // próprio mercado. Sem essa ordem o banco recusa o DELETE (constraint).
     const idNum = Number(id);
     await sql`DELETE FROM carrinho           WHERE id_mercado = ${idNum}`;
     await sql`DELETE FROM mercado_produtos   WHERE id_mercado = ${idNum}`;
@@ -948,7 +835,6 @@ const deletarMercado = async (req, res) => {
     res.status(500).json({ erro: err.message });
   }
 };
-// GET /api/meus-mercados — mercados do usuário logado
 const meusMercados = async (req, res) => {
   const id_usuario = req.usuarioId;
   if (!id_usuario)
@@ -969,7 +855,6 @@ const meusMercados = async (req, res) => {
 };
 
 
-// GET /api/mercados/:id/dashboard — dados completos para o gerenciamento
 const dashboardMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
   if (!id_usuario)
@@ -980,7 +865,6 @@ const dashboardMercado = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Verifica permissão
     const [permissao] = await sql`
       SELECT papel FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario}
@@ -989,14 +873,12 @@ const dashboardMercado = async (req, res) => {
     if (!permissao)
       return res.status(403).json({ erro: "Você não tem acesso a este mercado" });
 
-    // Busca dados do mercado
     const [mercado] = await sql`
       SELECT * FROM mercados WHERE id_mercado = ${Number(id)}
     `;
     if (!mercado)
       return res.status(404).json({ erro: "Mercado não encontrado" });
 
-    // Busca todos os produtos do mercado (via categorias)
     const produtos = await sql`
       SELECT p.id_produto, p.nome, p.descricao, p.imagem, p.preco, p.custo, p.estoque, p.imagens, p.id_categoria, c.nome AS categoria
       FROM produtos p
@@ -1005,32 +887,27 @@ const dashboardMercado = async (req, res) => {
       ORDER BY p.id_produto
     `;
 
-    // Contagem de categorias
     const [catCount] = await sql`
       SELECT COUNT(*)::int AS total FROM categorias WHERE id_mercado = ${Number(id)}
     `;
 
-    // Limites do plano e uso atual (produtos e fotos)
     const limites = limitesDoPlano(mercado.plano);
     const totalFotos = produtos.reduce(
       (soma, p) => soma + (Array.isArray(p.imagens) ? p.imagens.length : 0), 0
     );
 
-    // Resumo de estoque: produtos sem estoque (0) e estoque baixo (até 5)
     const semEstoque   = produtos.filter(p => (Number(p.estoque) || 0) <= 0).length;
     const estoqueBaixo = produtos.filter(p => {
       const e = Number(p.estoque) || 0;
       return e > 0 && e <= 5;
     }).length;
 
-    // Avaliação média do mercado
     const [avaliacao] = await sql`
       SELECT COALESCE(AVG(a.nota), 0)::numeric(2,1) AS media, COUNT(a.id)::int AS total
       FROM avaliacoes a
       WHERE a.id_mercado = ${Number(id)}
     `;
 
-    // Pedidos e receita de hoje
     const [hoje] = await sql`
       SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(valor_total), 0)::numeric(12,2) AS receita
       FROM historico_compras

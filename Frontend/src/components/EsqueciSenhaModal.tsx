@@ -107,7 +107,6 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
 
         {etapa === "email" ? (
           <>
-            {/* Ícone */}
             <div className="modal-icon-wrap modal-icon-lock">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -158,7 +157,6 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
           </>
         ) : etapa === "codigo" ? (
           <>
-            {/* Tela de digitar código */}
             <div className="modal-icon-wrap modal-icon-success">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -239,7 +237,6 @@ export default function EsqueciSenhaModal({ onClose }: EsqueciSenhaModalProps) {
           </>
         ) : (
           <>
-            {/* Tela de sucesso */}
             <div className="modal-icon-wrap modal-icon-success">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />

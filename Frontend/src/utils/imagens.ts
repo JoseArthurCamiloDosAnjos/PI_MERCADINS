@@ -1,16 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Helpers de imagens — miniaturas geradas pelo backend
-//
-//  O backend grava a miniatura em <pasta>/thumbs/<mesmo arquivo> de cada
-//  imagem enviada (e gera sob demanda para imagens antigas). A URL da
-//  miniatura é derivada por string — nada extra é gravado no banco.
-// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Deriva a URL da miniatura de uma imagem enviada pelo upload
- * (/imagens/produtos/x.jpg → /imagens/produtos/thumbs/x.jpg).
- * Retorna null quando não dá para derivar (URL externa, data:, blob:…).
- */
 export function thumbUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {

@@ -1,11 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   Página "Meus pedidos" — acompanhamento ao vivo (B4)
-
-   Padrão visual igual ao Gerenciamento de mercados e ao Perfil (tokens de cor
-   do tema): barra superior na cor da sidebar, cartões "azul-card", títulos
-   "branco", textos de apoio "cinza-texto" e botões em pílula. Como as cores
-   vêm das variáveis do tema, a tela acompanha o modo escuro/claro do site.
-   ═══════════════════════════════════════════════════════════════════════════ */
 
 .meuspedidos-page {
   min-height: 100vh;
@@ -14,7 +6,6 @@
   color: var(--branco);
 }
 
-/* Barra superior — mesmo bloco do .gm-topbar / .pu-topbar */
 .meuspedidos-topbar {
   display: flex;
   align-items: center;
@@ -24,7 +15,6 @@
   border-bottom: 1px solid var(--azul-borda);
 }
 
-/* Botão secundário em pílula (padrão .gm-btn-back) */
 .meuspedidos-voltar {
   display: inline-flex;
   align-items: center;
@@ -66,7 +56,6 @@
   padding: 1.6rem 1.8rem 60px;
 }
 
-/* Busca de pedidos — canto superior direito da barra */
 .mp-busca {
   position: relative;
   display: flex;
@@ -186,7 +175,6 @@
   color: var(--cinza-texto);
 }
 
-/* Lixeira do pedido — remover o registro do histórico do cliente */
 .mp-card__lixo {
   display: inline-flex;
   align-items: center;
@@ -208,7 +196,6 @@
   color: #e2574c;
 }
 
-/* Confirmação da lixeira, aberta dentro do próprio cartão */
 .mp-remover {
   display: flex;
   flex-wrap: wrap;
@@ -279,8 +266,6 @@
 
 .mp-remover__nao:disabled { opacity: 0.6; cursor: wait; }
 
-/* Selo de status (mesmo conceito do painel do vendedor): chips com cor
-   própria, legíveis tanto no cartão claro quanto no escuro */
 .mp-status {
   display: inline-block;
   padding: 4px 12px;
@@ -348,7 +333,6 @@
   color: var(--cinza-texto);
 }
 
-/* Linha do tempo do status */
 .mp-timeline {
   display: flex;
   align-items: flex-start;
@@ -400,7 +384,6 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--azul-claro) 20%, transparent);
 }
 
-/* Resumo em linhas */
 .mp-info {
   margin-top: 22px;
   border-top: 1px solid var(--azul-borda);
@@ -506,7 +489,6 @@
   gap: 8px;
 }
 
-/* Pontinho que pulsa enquanto espera o pagamento */
 .mp-pix__status::before {
   content: '';
   width: 9px;
@@ -629,7 +611,6 @@
 
 .mp-cancelar-confirmacao__nao:disabled { opacity: 0.6; cursor: wait; }
 
-/* Estados vazios / carregando */
 .mp-vazio {
   background: var(--azul-card);
   border: 1px dashed var(--azul-item);

@@ -10,7 +10,6 @@ const validarSenha = (senha) => {
 }
 
 const validarTelefone = (telefone) => {
-  // código morto removido — só uma return pode existir
   const isString = typeof telefone === 'string' && telefone.trim() !== ''
   if (!isString) return false
   const numeros = telefone.replace(/\D/g, '')
@@ -31,7 +30,7 @@ const validarEmail = async (email) => {
     ])
     return Array.isArray(registros) && registros.length > 0
   } catch {
-    return true // timeout ou erro → aceita o email
+    return true
   }
 }
 

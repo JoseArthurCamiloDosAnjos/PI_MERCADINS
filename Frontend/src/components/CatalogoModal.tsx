@@ -4,7 +4,6 @@ import { TIPOS_LOJA, ORDEM_TIPOS } from '../utils/tiposLoja';
 import Imagem from './Imagem';
 import './CatalogoModal.css';
 
-// Ícone local (mesmo desenho usado na busca da home/vitrine)
 function IconSearch({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -26,7 +25,6 @@ export interface ItemCatalogo {
 }
 
 interface CatalogoModalProps {
-  /** Tipos de loja da vitrine — pré-seleciona o chip mais relevante */
   tiposLoja?: string[];
   onSelecionar: (item: ItemCatalogo) => void;
   onCancelar: () => void;
@@ -39,9 +37,6 @@ function formatarPreco(valor: string | number) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-// Modal de seleção do catálogo de produtos prontos: busca + filtro por tipo
-// de loja + grid de cards. Ao escolher, devolve o item para o CadastroProduto
-// pré-preenchido (fotos, descrição, nome e preço sugerido).
 
 export default function CatalogoModal({
   tiposLoja,
@@ -53,8 +48,6 @@ export default function CatalogoModal({
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
   const [tipoAtivo, setTipoAtivo] = useState<string>(() => {
-    // Pré-seleciona o primeiro tipo da loja (evita mostrar itens que não
-    // fazem sentido para o tipo de estabelecimento); senão, "todos".
     const primeiro = tiposLoja?.find(t => ORDEM_TIPOS.includes(t));
     return primeiro ?? 'todos';
   });

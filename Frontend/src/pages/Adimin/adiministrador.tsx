@@ -5,8 +5,6 @@ import AdminSidebar from './AdminSidebar'
 import { IconEye } from '../../components/Icons'
 import './Admin.css'
 
-// Cada aba carrega em seu próprio arquivo: os gráficos (recharts, ~350 KB)
-// só baixam quando a aba correspondente é aberta, e não junto com a rota.
 const Dashboard = lazy(() => import('./Dashboard'))
 const Usuarios = lazy(() => import('./Usuarios'))
 const Mercados = lazy(() => import('./Mercados'))
@@ -14,9 +12,6 @@ const Catalogo = lazy(() => import('./Catalogo'))
 const Relatorios = lazy(() => import('./Relatorios'))
 const Configuracoes = lazy(() => import('./Configuracoes'))
 
-// Título + descrição de cada aba: o título é o que a barra superior mostra,
-// a descrição explica o que a pessoa encontra na tela (mesmo padrão das
-// outras áreas do Mercadins, que sempre situam quem está navegando).
 const ABAS = [
   { nome: 'Dashboard', desc: 'Visão geral da plataforma em tempo real' },
   { nome: 'Usuários', desc: 'Contas cadastradas e permissões de acesso' },

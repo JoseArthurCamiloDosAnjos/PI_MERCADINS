@@ -19,9 +19,7 @@ import {
 } from "../../utils/endereco";
 import "./Cart.css";
 
-// ---------------------------------------------------------------
 // Tipos
-// ---------------------------------------------------------------
 export interface CartItem {
   id: string;
   name: string;
@@ -29,7 +27,6 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string;
-  /** Unidades disponíveis em estoque — trava o "+" do carrinho */
   estoque?: number;
 }
 
@@ -59,8 +56,6 @@ interface CartScreenProps {
   ofereceRetirada?: boolean;
   tipoEntrega?: "entrega" | "retirada";
   onTipoEntregaChange?: (tipo: "entrega" | "retirada") => void;
-  // Horário de funcionamento da loja (JSON de mercados.horario) — usado para
-  // avisar, quando a loja está fechada, quando a compra poderá ser retirada
   horario?: string | null;
 
   // ── Cupom de desconto ─────────────────────────────────────────────────────
@@ -85,7 +80,6 @@ interface CartScreenProps {
 const formatBRL = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-// Opções de agendamento (escolha simples, sem calendário)
 const OPCOES_AGENDAMENTO = [
   "Quanto antes",
   "Hoje de manhã",
@@ -96,9 +90,7 @@ const OPCOES_AGENDAMENTO = [
   "Amanhã à noite",
 ];
 
-// ---------------------------------------------------------------
 // Ícones (SVG inline, sem dependências externas)
-// ---------------------------------------------------------------
 const IconArrowLeft = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -199,9 +191,7 @@ const IconPencil = () => (
   </svg>
 );
 
-// ---------------------------------------------------------------
 // Componente principal
-// ---------------------------------------------------------------
 export default function CartScreen({
   storeName = "Mercadins",
   storeLocation = "Guariba · SP",
@@ -232,24 +222,15 @@ export default function CartScreen({
   formaPagamento = "presencial",
   onFormaPagamentoChange,
 }: CartScreenProps) {
-  // Os itens vêm do componente pai (useCarrinho) — fonte única de verdade,
-  // sincronizada com o navegador (localStorage) e com o banco.
   const items = initialItems;
   const [coupon, setCoupon] = useState("");
-  // Aviso de endereço incompleto — só aparece quando o cliente tenta finalizar
-  // uma entrega sem precher os campos obrigatórios
   const [erroEndereco, setErroEndereco] = useState<string | null>(null);
-  // Controla se o popup de cadastro de endereço está aberto
   const [enderecoPopupAberto, setEnderecoPopupAberto] = useState(false);
-  // Muda a cada abertura: assim o popup nasce zerado toda vez
   const [popupChave, setPopupChave] = useState(0);
-  // Erro do servidor ao salvar, mostrado dentro do popup
   const [erroPopup, setErroPopup] = useState<string | null>(null);
   const [salvandoEndereco, setSalvandoEndereco] = useState(false);
 
   // ── Endereços de entrega ──────────────────────────────────────────────────
-  // O hook guarda os endereços: na conta quando o cliente está logado e no
-  // navegador quando não está (e leva para a conta assim que ele entrar).
   const { usuario } = useAuth();
   const logado = !!usuario;
   const navigate = useNavigate();
@@ -263,23 +244,16 @@ export default function CartScreen({
   } = useEnderecos();
 
   // ── Quem ainda não tem conta ───────────────────────────────────────────────
-  // Escolher a entrega (ou abrir o cadastro de endereço) exige login: a pessoa
-  // vai para a tela de login e volta direto para este carrinho, com os
-  // endereços dela prontos para usar.
   const irParaLogin = () => {
     sessionStorage.setItem("posLoginDestino", window.location.pathname);
     navigate("/auth");
   };
 
-  // Fica em aberto quando o endereço salvo ainda não tem principal
   const [principalSugerido, setPrincipalSugerido] = useState<EnderecoSalvo | null>(null);
 
-  // Marcação manual do rádio; sem clique, a seleção acompanha o endereço do pedido
   const [escolhaManual, setEscolhaManual] = useState<string | null>(null);
-  // Endereço que está sendo editado no pop-up (null = cadastrando um novo)
   const [enderecoEditando, setEnderecoEditando] = useState<EnderecoSalvo | null>(null);
 
-  // Remove o "id" interno para enviar só os campos do endereço
   const semId = (e: EnderecoSalvo): EnderecoEntrega => ({
     cep: e.cep,
     rua: e.rua,
@@ -289,7 +263,6 @@ export default function CartScreen({
     cidade: e.cidade,
   });
 
-  // Qual endereço vai junto com a entrega (o que está marcado no rádio)
   const enderecoSelecionadoId = useMemo(() => {
     if (escolhaManual && enderecos.some((e) => e.id === escolhaManual)) {
       return escolhaManual;
@@ -297,12 +270,9 @@ export default function CartScreen({
     const igual = enderecos.find(
       (e) => e.rua === endereco.rua && e.numero === endereco.numero && e.cep === endereco.cep
     );
-    // Sem escolha gravada, quem vem marcado é o endereço principal da conta
     return (igual ?? enderecos.find((e) => e.principal) ?? enderecos[0])?.id ?? null;
   }, [enderecos, escolhaManual, endereco]);
 
-  // Mantém o endereço mostrado na tela e o endereço do pedido sendo o mesmo
-  // (sem clique: por exemplo, quando a conta já traz o endereço carregado)
   useEffect(() => {
     const escolhido = enderecos.find((e) => e.id === enderecoSelecionadoId);
     if (!escolhido) return;
@@ -319,11 +289,8 @@ export default function CartScreen({
     [items]
   );
 
-  // Apenas uma forma disponível = escolhida sozinha, sem seletor
   const soEntrega = ofereceEntrega && !ofereceRetirada;
   const soRetirada = !ofereceEntrega && ofereceRetirada;
-  // O cadastro do mercado exige pelo menos uma forma. Esta trava protege a
-  // tela caso um mercado antigo tenha ficado sem nenhuma das duas.
   const semFormaRecebimento = !ofereceEntrega && !ofereceRetirada;
   const tipoEfetivo: "entrega" | "retirada" = soRetirada
     ? "retirada"
@@ -331,27 +298,20 @@ export default function CartScreen({
       ? "entrega"
       : tipoEntrega;
 
-  // Taxa: cobrada só na entrega; no balcão é grátis
   const taxa = tipoEfetivo === "retirada" || subtotal === 0 ? 0 : taxaEntrega;
-  // Desconto do cupom (nunca passa do subtotal)
   const desconto = Math.min(cupom?.desconto ?? 0, subtotal);
   const total = Math.max(0, subtotal - desconto) + taxa;
 
-  // Pedido mínimo: só para entrega, e só quando tem item no carrinho
   const faltaMinimo =
     tipoEfetivo === "entrega" &&
     pedidoMinimo > 0 &&
     subtotal > 0 &&
     subtotal < pedidoMinimo;
 
-  // Loja aberta ou fechada AGORA? null = a loja ainda não cadastrou horário
-  // (aí não mostramos aviso nenhum). "Abre amanhã às 08:00" etc.
   const horarioMercado = useMemo(() => parseHorario(horario), [horario]);
   const lojaAberta = estaAberto(horarioMercado);
   const proximaAbre = proximaAbertura(horarioMercado);
 
-  // Quantidade digitada ou mexida pelos botões: vira diferença para o hook
-  // (que já respeita o estoque e o mínimo de 1)
   const definirQuantidade = (id: string, nova: number) => {
     const item = items.find((i) => i.id === id);
     if (!item || nova === item.quantity) return;
@@ -364,19 +324,14 @@ export default function CartScreen({
 
   const clearCart = () => onClearCart?.();
 
-  // Nome da loja citado no convite "Deseja adicionar mais algum item?"
-  // (vazio só enquanto a tela ainda carrega o mercado)
   const nomeLoja = storeName.trim() || "a loja";
 
   const handleCheckout = () => {
     if (faltaMinimo || semFormaRecebimento) return;
-    // Entrega sem conta: não existe endereço para mostrar nesta tela, então
-    // leva para o login e devolve a pessoa para este mesmo carrinho
     if (tipoEfetivo === "entrega" && items.length > 0 && !logado) {
       irParaLogin();
       return;
     }
-    // Entrega: a loja precisa saber onde entregar — endereço é obrigatório
     if (tipoEfetivo === "entrega" && items.length > 0) {
       const faltando = camposEnderecoFaltando(endereco);
       if (faltando.length > 0) {
@@ -393,7 +348,6 @@ export default function CartScreen({
     onCheckout?.(items, total);
   };
 
-  // Marca um endereço da lista como o endereço da entrega
   const escolherEndereco = (id: string) => {
     const escolhido = enderecos.find((e) => e.id === id);
     if (!escolhido) return;
@@ -402,11 +356,9 @@ export default function CartScreen({
     onEnderecoChange?.(semId(escolhido));
   };
 
-  // Apaga um endereço (da conta ou do navegador) e conserta a seleção
   const removerEnderecoSalvo = async (id: string) => {
     try {
       await removerEnderecoDaConta(id);
-      // Era o endereço escolhido? Passa para o primeiro que sobrar (ou limpa)
       if (enderecoSelecionadoId === id) {
         const proximo = enderecos.find((e) => e.id !== id) ?? null;
         setEscolhaManual(proximo?.id ?? null);
@@ -419,7 +371,6 @@ export default function CartScreen({
     }
   };
 
-  // Abre o popup para cadastrar um endereço novo
   const abrirPopupEndereco = () => {
     setErroPopup(null);
     setEnderecoEditando(null);
@@ -427,7 +378,6 @@ export default function CartScreen({
     setEnderecoPopupAberto(true);
   };
 
-  // Abre o popup já com os dados do endereço escolhido (edição)
   const abrirEdicaoEndereco = (endereco: EnderecoSalvo) => {
     setErroPopup(null);
     setEnderecoEditando(endereco);
@@ -435,16 +385,13 @@ export default function CartScreen({
     setEnderecoPopupAberto(true);
   };
 
-  // Salva o endereço feito no popup: entra na lista e já fica selecionado
   const salvarEnderecoPopup = async (dados: EnderecoEntrega) => {
     try {
       setSalvandoEndereco(true);
       setErroPopup(null);
-      // A conta ainda não tinha principal? Então vale perguntar depois de salvar
       const tinhaPrincipal = enderecos.some((e) => e.principal);
       if (enderecoEditando) {
         await editarEnderecoSalvo(enderecoEditando.id, dados);
-        // O endereço editado continua sendo o escolhido para a entrega
         setEscolhaManual(enderecoEditando.id);
       } else {
         const salvo = await adicionarEndereco(dados);
@@ -464,14 +411,11 @@ export default function CartScreen({
     }
   };
 
-  // Confirma que o endereço recém-cadastro é o principal da conta
   const confirmarEnderecoPrincipal = async () => {
     if (!principalSugerido) return;
     try {
       await definirPrincipal(principalSugerido.id);
-    } catch {
-      /* sem conexão: o endereço continua salvo, só sem o selo de principal */
-    } finally {
+    } catch { /* falha ignorada */ } finally {
       setPrincipalSugerido(null);
     }
   };
@@ -482,8 +426,6 @@ export default function CartScreen({
     onAplicarCupom?.(codigo);
   };
 
-  // Texto do botão de finalizar: usado no painel de resumo (desktop) e na
-  // barra fixa do celular, para os dois mostrarem sempre a mesma ação.
   const textoCheckout = finalizando
     ? "Enviando…"
     : faltaMinimo
@@ -494,7 +436,6 @@ export default function CartScreen({
           ? "Ir para o pagamento do cartão"
           : "Finalizar pedido";
 
-  // Na barra do celular o espaço é menor: mesma ação, texto mais curto
   const textoCheckoutCurto = finalizando
     ? "Enviando…"
     : faltaMinimo
@@ -505,8 +446,6 @@ export default function CartScreen({
           ? "Pagar com cartão"
           : "Finalizar pedido";
 
-  // Quando falta algum dado da entrega, leva a pessoa até o aviso (ele fica no
-  // resumo, que no celular pode estar bem abaixo dos itens).
   useEffect(() => {
     if (!erroEndereco) return;
     document.querySelector(".cart-endereco")?.scrollIntoView({
@@ -517,14 +456,10 @@ export default function CartScreen({
 
   return (
     <div className="cart-page">
-      {/* Barra superior */}
       <div className="cart-topbar">
         <div className="cart-topbar__left">
           <button className="cart-back" onClick={onBack} type="button" aria-label="Voltar à loja">
             <IconArrowLeft />
-            {/* No celular o texto some (não sobra espaço na barra) e fica só a
-                seta, em botão redondo e destacado — o rótulo continua
-                disponível para leitores de tela pelo aria-label acima */}
             <span className="cart-back__texto">Voltar à loja</span>
           </button>
           <div className="cart-topbar__title">
@@ -547,8 +482,6 @@ export default function CartScreen({
               aria-label="Limpar carrinho"
             >
               <IconTrash />
-              {/* Em telas muito estreitas sobra só o ícone; o aria-label
-                  mantém a ação descrita para leitores de tela */}
               <span className="cart-clear__texto">Limpar carrinho</span>
             </button>
           )}
@@ -556,15 +489,11 @@ export default function CartScreen({
       </div>
 
       <div className="cart-body">
-        {/* No celular o nome do mercado e o endereço vêm numa faixa própria,
-            acima da lista de produtos — a barra superior fica estreita demais
-            para mostrar tudo na mesma linha */}
         <div className="cart-store-mobile">
           <strong>{storeName}</strong>
           <span>{storeLocation}</span>
         </div>
 
-        {/* Lista de itens */}
         {items.length > 0 ? (
           <div className="cart-items">
             {items.map((item) => (
@@ -619,8 +548,6 @@ export default function CartScreen({
               </div>
             ))}
 
-            {/* Abaixo do último item: convida a adicionar mais produtos,
-                citando a loja que o cliente acabou de abrir */}
             <div className="cart-addmais">
               <div className="cart-addmais__texto">
                 <span className="cart-addmais__icone" aria-hidden="true"><IconStore /></span>
@@ -653,14 +580,12 @@ export default function CartScreen({
           </div>
         )}
 
-        {/* Resumo do pedido */}
         <div className="cart-summary">
           <h2>
             <IconReceipt />
             Resumo do pedido
           </h2>
 
-          {/* Como quer receber: entrega ou retirada no balcão */}
           {items.length > 0 && ofereceEntrega && ofereceRetirada && (
             <fieldset className="cart-delivery">
               <legend className="cart-delivery__legenda">Como quer receber?</legend>
@@ -671,8 +596,6 @@ export default function CartScreen({
                   value="entrega"
                   checked={tipoEfetivo === "entrega"}
                   onChange={() => onTipoEntregaChange?.("entrega")}
-                  /* Sem conta não dá para informar onde entregar: leva para o
-                     login e a pessoa volta direto para este carrinho */
                   onClick={() => {
                     if (!logado) irParaLogin();
                   }}
@@ -700,8 +623,6 @@ export default function CartScreen({
             </fieldset>
           )}
 
-          {/* Quando a loja oferece só uma forma de recebimento, o seletor acima
-              não aparece. Este aviso deixa claro o que vai acontecer. */}
           {items.length > 0 && (soEntrega || soRetirada || semFormaRecebimento) && (
             <p className={`cart-delivery__nota ${semFormaRecebimento ? "is-erro" : ""}`} role="status">
               {semFormaRecebimento
@@ -712,8 +633,6 @@ export default function CartScreen({
             </p>
           )}
 
-          {/* Loja fechada: avisa quando a compra poderá ser retirada ou quando
-              ela vai chegar (o pedido só é preparado quando a loja abrir) */}
           {items.length > 0 && lojaAberta === false && (
             <div className="cart-aviso-fechado" role="status">
               <IconStore />
@@ -762,7 +681,6 @@ export default function CartScreen({
             )}
           </div>
 
-          {/* Cupom de desconto */}
           {!cupom ? (
             <div className="cart-coupon">
               <label htmlFor="cart-coupon" className="sr-only">Cupom de desconto</label>
@@ -794,11 +712,6 @@ export default function CartScreen({
             </div>
           )}
 
-          {/* Endereço de entrega — aparece só quando a compra será entregue.
-               Cliente logado: lista os endereços da conta em rádio (igual ao
-               pagamento), com botão para adicionar outro. Deslogado: não
-               existe endereço para mostrar, fica só o botão que leva para o
-               login (onde ele pode cadastrar o dele). */}
           {items.length > 0 && !semFormaRecebimento && tipoEfetivo === "entrega" && (
             <fieldset className="cart-endereco">
               <legend className="cart-endereco__legenda">
@@ -810,8 +723,6 @@ export default function CartScreen({
                 <p className="cart-endereco__nota">Carregando seus endereços...</p>
               ) : (
                 <>
-                  {/* Deslogado não mostra endereço nenhum: a conta é que guarda,
-                      então fica só o botão que leva para a tela de login */}
                   {logado && enderecos.map((e, i) => (
                     <div
                       key={e.id}
@@ -867,7 +778,6 @@ export default function CartScreen({
                     </div>
                   ))}
 
-                  {/* Botão para cadastrar mais um endereço (ou o primeiro) */}
                   {(!logado || enderecos.length === 0) && (
                     <p className="cart-endereco__nota">
                       Cadastre seu endereço para a gente entregar em casa.
@@ -892,7 +802,6 @@ export default function CartScreen({
             </fieldset>
           )}
 
-          {/* Quando quer receber (entrega ou retirada) */}
           {items.length > 0 && onAgendamentoChange && (
             <div className="cart-agendamento">
               <label className="cart-agendamento__label" htmlFor="cart-agendamento">
@@ -913,7 +822,6 @@ export default function CartScreen({
             </div>
           )}
 
-          {/* Observação opcional que vai junto do pedido (ex.: "sem cebola") */}
           {onObservacaoChange && (
             <div className="cart-obs">
               <label className="cart-obs__label" htmlFor="cart-obs">
@@ -932,7 +840,6 @@ export default function CartScreen({
             </div>
           )}
 
-          {/* Como quer pagar: na entrega, Pix agora ou cartão online (B3) */}
           {items.length > 0 && onFormaPagamentoChange && (
             <fieldset className="cart-payment">
               <legend className="cart-payment__legenda">Como quer pagar?</legend>
@@ -981,8 +888,6 @@ export default function CartScreen({
             </fieldset>
           )}
 
-          {/* Rodapé do resumo: total, botão de finalizar e aviso de segurança.
-              Fica no fim do painel, sem esconder as seções acima. */}
           <div className="cart-summary__rodape">
             <div className="cart-summary__total">
               <span>Total</span>
@@ -1007,9 +912,6 @@ export default function CartScreen({
         </div>
       </div>
 
-      {/* Barra fixa do celular: mostra o total e o botão de finalizar o tempo
-          todo, como nos aplicativos de compra — sem precisar rolar até o fim
-          do resumo para achar a ação principal */}
       {items.length > 0 && (
         <div className="cart-mobile-bar">
           <div className="cart-mobile-bar__resumo">
@@ -1028,7 +930,6 @@ export default function CartScreen({
         </div>
       )}
 
-      {/* Pop-up de cadastro/edição de endereço de entrega */}
       <EnderecoPopup
         key={popupChave}
         aberto={enderecoPopupAberto}
@@ -1047,9 +948,6 @@ export default function CartScreen({
         onSalvar={salvarEnderecoPopup}
       />
 
-      {/* Pergunta se o endereço recém-cadastro deve virar o principal.
-           Só aparece quando a conta ainda não tinha nenhum. Só fecha com a
-           escolha: ou "Sim, definir principal" ou "Agora não". */}
       {principalSugerido &&
         createPortal(
           <>

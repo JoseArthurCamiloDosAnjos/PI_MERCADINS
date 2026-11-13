@@ -1,15 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Consulta de CEP — preenche rua, bairro, cidade e estado sozinho
-//
-//  A pessoa digita o CEP e a ViaCEP devolve o resto do endereço, evitando
-//  digitação repetida e erro de escrita. Usado no cadastro de endereço de
-//  entrega (carrinho/perfil), no cadastro de mercado e na edição das
-//  informações da loja.
-//
-//  Devolve null quando o CEP não tem 8 dígitos ou a consulta falha (sem
-//  internet, ViaCEP fora do ar): quem chama decide o que avisar. Nada de
-//  endereço inventado — se não achou, os campos continuam para digitar.
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface DadosCep {
   rua: string;

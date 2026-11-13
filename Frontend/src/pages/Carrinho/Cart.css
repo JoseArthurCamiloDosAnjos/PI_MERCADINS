@@ -93,8 +93,6 @@
   color: var(--text-muted);
 }
 
-/* Só no celular: o mercado e o endereço aparecem numa faixa própria acima da
-   lista de produtos (escondida no desktop, onde cabem na barra superior) */
 .cart-store-mobile {
   display: none;
 }
@@ -146,9 +144,6 @@
   min-width: 0;
 }
 
-/* Cada coluna precisa poder encolher abaixo do conteúdo mínimo (nome longo,
-   linha do cupom etc.) — sem isso a grade estoura e corta o lado direito em
-   telas de 320px */
 .cart-body > * {
   min-width: 0;
 }
@@ -195,7 +190,6 @@
   display: block;
 }
 
-/* Placeholder quando o produto não tem imagem (evita ícone de imagem quebrada) */
 .cart-item__thumb-ph {
   width: 100%;
   height: 100%;
@@ -315,7 +309,6 @@
   color: var(--text-primary);
 }
 
-/* Aviso de limite de estoque no carrinho */
 .qty-max {
   font-size: 11px;
   font-weight: 700;
@@ -332,8 +325,6 @@
   text-align: right;
 }
 
-/* Convite "Deseja adicionar mais algum item?" — logo abaixo do último item,
-   citando a loja que o cliente está comprando */
 .cart-addmais {
   display: flex;
   align-items: center;
@@ -466,11 +457,6 @@
 /* ---------------- Summary panel ---------------- */
 .cart-summary {
   --cart-summary-pad: 22px;
-  /* O resumo acompanha a página em qualquer tamanho de tela. Antes ele tinha
-     rolagem interna no computador: em notebooks de 768px de altura as seções
-     de pagamento, agendamento e observações ficavam escondidas dentro do
-     painel e pareciam cortadas. Sem rolagem interna, tudo é alcançado pela
-     rolagem normal da página. */
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -579,7 +565,6 @@
   color: var(--accent);
 }
 
-/* Linha de desconto do cupom e aviso de pedido mínimo */
 .cart-summary__row.is-desconto span:last-child {
   color: var(--success);
 }
@@ -589,7 +574,6 @@
   font-weight: 600;
 }
 
-/* Como quer receber: entrega ou retirada no balcão */
 .cart-delivery {
   border: 0;
   margin: 0;
@@ -649,7 +633,6 @@
   color: var(--text-secondary);
 }
 
-/* Aviso quando a loja oferece só entrega ou só retirada */
 .cart-delivery__nota {
   font-size: 12.5px;
   line-height: 1.55;
@@ -666,8 +649,6 @@
   background: var(--danger-bg);
 }
 
-/* Aviso de loja fechada — aparece logo abaixo das opções de entrega/retirada
-   e diz quando a compra poderá ser retirada ou quando ela vai chegar */
 .cart-aviso-fechado {
   display: flex;
   align-items: flex-start;
@@ -695,7 +676,6 @@
   color: var(--text-primary);
 }
 
-/* Como quer pagar: na entrega, Pix ou cartão (B3) */
 .cart-payment {
   border: 0;
   margin: 14px 0 0;
@@ -751,7 +731,6 @@
   color: var(--text-secondary);
 }
 
-/* Cupom aplicado com sucesso */
 .cart-coupon--aplicado {
   align-items: center;
   justify-content: space-between;
@@ -784,8 +763,6 @@
   border: 0;
 }
 
-/* Endereço de entrega — aparece só quando a compra será entregue,
-   logo acima do campo "Quando quer receber?" */
 .cart-endereco {
   border: 0;
   margin: 0;
@@ -803,7 +780,6 @@
   color: var(--text-secondary);
 }
 
-/* Aviso curto acima da lista (ex.: cliente não logado, ou carregando) */
 .cart-endereco__nota {
   margin: 0;
   font-size: 12.5px;
@@ -811,7 +787,6 @@
   color: var(--text-muted);
 }
 
-/* Link "Entrar" dentro do aviso de cliente não logado */
 .cart-endereco__nota button {
   background: none;
   border: none;
@@ -830,7 +805,6 @@
   color: var(--danger);
 }
 
-/* Agendamento: quando o cliente quer receber ou retirar */
 .cart-agendamento {
   display: flex;
   flex-direction: column;
@@ -861,7 +835,6 @@
   border-color: var(--accent);
 }
 
-/* Observação opcional que vai junto com o pedido */
 .cart-obs {
   display: flex;
   flex-direction: column;
@@ -948,9 +921,6 @@
   flex-shrink: 0;
 }
 
-/* Rodapé do resumo: total, botão de finalizar e aviso de segurança. Fica no
-   fim do painel, sem sobrepor as seções acima. No celular a barra fixa assume
-   o botão e este rodapé volta ao fluxo simples. */
 .cart-summary__rodape {
   display: flex;
   flex-direction: column;
@@ -962,7 +932,6 @@
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
-/* Barra fixa de finalização do celular (escondida no computador) */
 .cart-mobile-bar {
   display: none;
 }
@@ -980,17 +949,12 @@
 
   .cart-summary {
     position: static;
-    /* Uma coluna no celular: o resumo deixa de ter rolagem interna e passa a
-       seguir a página — dá para rolar até o fim e voltar ao topo livremente,
-       alcançando todos os itens sem depender da barra lateral */
     max-height: none;
     overflow-y: visible;
     overscroll-behavior: auto;
     padding-bottom: var(--cart-summary-pad);
   }
 
-  /* Sem rolagem interna o rodapé não precisa mais ficar preso: ele volta ao
-     fluxo, no fim do resumo */
   .cart-summary__rodape {
     position: static;
     margin: 0;
@@ -1030,8 +994,6 @@
   .cart-topbar__title h1 {
     font-size: 17px;
   }
-  /* Sem espaço para o texto na barra: fica só a seta, em botão redondo com o
-     amarelo da marca para destacar a saída para a loja */
   .cart-back__texto {
     display: none;
   }
@@ -1049,7 +1011,6 @@
     background: var(--accent);
     color: var(--accent-ink);
   }
-  /* O mercado e o endereço saem da barra e viram uma faixa acima dos itens */
   .cart-topbar__store {
     display: none;
   }
@@ -1087,8 +1048,6 @@
   }
   .cart-item__name {
     font-size: 14px;
-    /* No celular o nome pode ocupar duas linhas; antes ele era cortado com
-       reticências logo na primeira, escondendo qual produto era */
     white-space: normal;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1105,7 +1064,6 @@
     min-width: auto;
   }
   .cart-endereco__opcao-descricao {
-    /* Endereço completo em até duas linhas, em vez de cortar no meio */
     white-space: normal;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1119,12 +1077,10 @@
     font-size: 20px;
   }
 
-  /* Espaço para a barra fixa não cobrir o fim do resumo */
   .cart-page {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* No celular o botão do resumo dá lugar à barra fixa */
   .cart-checkout-btn {
     display: none;
   }
@@ -1221,8 +1177,6 @@
     font-size: 11px;
     padding: 7px 10px;
   }
-  /* Em 320–400px o texto não cabe na barra; fica só a lixeira, em botão
-     redondo, com o rótulo preservado pelo aria-label */
   .cart-clear__texto {
     display: none;
   }
@@ -1330,7 +1284,6 @@
   color: var(--text-secondary);
 }
 
-/* Botão "Cadastrar endereço de entrega" quando ainda não há endereço */
 .cart-endereco__btn-adicionar {
   display: inline-flex;
   align-items: center;
@@ -1354,8 +1307,6 @@
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
-/* Parte clicável de cada endereço (o rádio fica à esquerda e a lixeira à
-   direita, fora do label para não marcar o rádio sem querer) */
 .cart-endereco__opcao-conteudo {
   display: flex;
   align-items: center;
@@ -1365,7 +1316,6 @@
   cursor: pointer;
 }
 
-/* Lixeira do endereço — apaga só aquele endereço salvo */
 .cart-endereco__remover {
   display: inline-flex;
   align-items: center;
@@ -1387,7 +1337,6 @@
   background: rgba(226, 87, 76, 0.1);
 }
 
-/* Lápis — abre o endereço escolhido para edição no pop-up */
 .cart-endereco__editar {
   display: inline-flex;
   align-items: center;
@@ -1409,7 +1358,6 @@
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-/* Selo "Principal" — o endereço que já vem marcado no carrinho */
 .cart-endereco__selo {
   display: inline-block;
   margin-left: 6px;

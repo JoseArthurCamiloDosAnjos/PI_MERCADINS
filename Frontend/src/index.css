@@ -18,13 +18,7 @@ html {
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* altura livre (só min-height) — com height:100% o #root ficava preso ao
-     tamanho da janela e o conteúdo das telas (ex.: perfil) transbordava
-     para fora, deixando áreas em branco no rodapé */
   min-height: 100vh;
-  /* overflow-x: clip em vez de overflow-y: um container de rolagem
-     em #root quebra o position: sticky do menu lateral (perfil/vendedor),
-     fazendo o menu sumir e deixando áreas em branco atrás dele. */
   overflow-x: clip;
 }
 
@@ -35,9 +29,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Símbolo do Mercadins (logo) em qualquer tela: sempre clicável, com cursor
-   de mão. Ao clicar, o site recarrega e volta para a página inicial
-   (regra única em src/utils/inicio.ts). */
 .logo-img,
 .mobile-logo-img,
 .mp-logo-img,
@@ -47,7 +38,6 @@ body {
   cursor: pointer;
 }
 
-/* Scrollbar personalizada — tema escuro */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--azul-medio) transparent;
@@ -100,8 +90,6 @@ body {
   --novo-bg:        rgba(99,102,241,0.15);
   --novo-texto:     #a5b4fc;
 
-  /* Transições padronizadas do site (item: consistência visual).
-     Use estes valores em vez de inventar tempos diferentes em cada tela. */
   --transicao-rapida: 140ms;
   --transicao:        200ms;
   --transicao-lenta:  280ms;
@@ -132,7 +120,6 @@ body {
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* LOADING OVERLAY */
 .loading-overlay {
   position: fixed; inset: 0;
   background: rgba(13, 27, 42, 0.75);
@@ -191,8 +178,6 @@ summary,
   transition-timing-function: var(--transicao-curva);
 }
 
-/* Entrada suave da página ao navegar entre rotas. Dura menos de 0,3 s para
-   não cansar a vista nem atrapalhar quem está com pressa. */
 .pagina-transicao {
   width: 100%;
   min-height: 100vh;
@@ -201,14 +186,12 @@ summary,
 
 /* ── Acessibilidade (C8) ────────────────────────────────────────────────── */
 
-/* Anel de foco visível para quem navega pelo teclado (Tab) */
 :focus-visible {
   outline: 3px solid var(--amarelo, #f5c84a);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Texto apenas para leitores de tela (rótulos de campos com só ícone) */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -221,7 +204,6 @@ summary,
   border: 0;
 }
 
-/* Quem pediu menos animação no sistema recebe o site estático */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

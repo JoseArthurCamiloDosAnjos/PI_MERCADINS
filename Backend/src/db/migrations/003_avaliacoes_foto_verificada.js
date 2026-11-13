@@ -1,7 +1,3 @@
-// Migração 003 — avaliação de produto com foto e selo "compra verificada".
-//   foto: URL da foto que o cliente opcionalmente anexou à avaliação
-//   verificada: true quando o cliente já comprou este produto no mercado
-//               (calculado no backend no momento de gravar a avaliação)
 
 module.exports = {
   id: '003_avaliacoes_foto_verificada',

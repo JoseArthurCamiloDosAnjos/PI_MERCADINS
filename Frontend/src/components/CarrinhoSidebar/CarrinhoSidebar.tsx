@@ -8,7 +8,6 @@ interface CarrinhoSidebarProps {
   aberto: boolean;
   onFechar: () => void;
   carrinho: ReturnType<typeof useCarrinho>;
-  /** Navega para a página completa do carrinho */
   onIrParaCarrinho?: () => void;
   storeName?: string;
   tema?: string;
@@ -41,11 +40,6 @@ function IconTrash() {
   );
 }
 
-/**
- * Gaveta lateral com os itens do carrinho: abre por cima da tela atual
- * (produto, vitrine...) sem trocar de página. O botão "Ir para o carrinho"
- * leva para a página completa (/vitrine/:slug/carrinho).
- */
 export default function CarrinhoSidebar({
   aberto,
   onFechar,

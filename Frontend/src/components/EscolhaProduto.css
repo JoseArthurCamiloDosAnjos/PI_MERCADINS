@@ -1,6 +1,4 @@
 /* ─── EscolhaProduto — modal "produto pronto × criar do zero" ──────────────── */
-/* Usa os tokens --vt-* da paleta personalizada da vitrine do vendedor         */
-/* (definidos em Vitrine.tsx via style={estiloPaleta}).                        */
 
 .ep-overlay {
   position: fixed;

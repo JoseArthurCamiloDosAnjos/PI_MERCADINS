@@ -68,8 +68,6 @@ export default function EditarMercado({
     return Object.keys(e).length === 0;
   }
 
-  // Salva na pasta imagens/mercados/ do backend (URL que vai para o banco)
-  // e mantém cópia de backup no Supabase.
   async function uploadParaSupabase(file: File): Promise<string | null> {
     return uploadImagem(file, 'mercados');
   }

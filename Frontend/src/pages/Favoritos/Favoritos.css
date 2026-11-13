@@ -1,11 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   Página "Meus favoritos"
-
-   Mesmo padrão visual de "Meus pedidos" e "Acompanhar pedido": fundo na cor
-   da sidebar, barra superior escura, cartões "azul-card", títulos "branco",
-   textos de apoio "cinza-texto" e botões em pílula. As cores vêm das
-   variáveis do tema, então a tela acompanha o modo escuro/claro do site.
-   ═══════════════════════════════════════════════════════════════════════════ */
 
 .favoritos-page {
   min-height: 100vh;
@@ -14,7 +6,6 @@
   color: var(--branco);
 }
 
-/* Barra superior — mesmo bloco do .meuspedidos-topbar / .gm-topbar */
 .favoritos-topbar {
   display: flex;
   align-items: center;
@@ -24,7 +15,6 @@
   border-bottom: 1px solid var(--azul-borda);
 }
 
-/* Botão secundário em pílula (padrão .gm-btn-back) */
 .favoritos-voltar {
   display: inline-flex;
   align-items: center;
@@ -60,14 +50,12 @@
   color: var(--cinza-texto);
 }
 
-/* Conteúdo */
 .favoritos-conteudo {
   max-width: 1080px;
   margin: 0 auto;
   padding: 1.6rem 1.8rem 60px;
 }
 
-/* Grade de cards */
 .favoritos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -90,7 +78,6 @@
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
-/* Foto da loja (botão que abre a vitrine) */
 .favorito-foto {
   display: flex;
   align-items: center;
@@ -158,7 +145,6 @@
   font-weight: 700;
 }
 
-/* Ações do card (botões em pílula, padrão da tela de pedidos) */
 .favorito-acoes {
   display: flex;
   gap: 8px;
@@ -204,7 +190,6 @@
 
 .favorito-remover:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Estado vazio — cartão tracejado, mesmo padrão do .mp-vazio */
 .favoritos-vazio {
   max-width: 560px;
   margin: 0 auto;
@@ -245,7 +230,6 @@
 
 .favoritos-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
-/* Esqueleto de carregamento */
 .favorito-card--skeleton { pointer-events: none; }
 
 .favorito-foto--skeleton,
@@ -270,7 +254,6 @@
   .favorito-card:hover { transform: none; }
 }
 
-/* Responsivo */
 @media (max-width: 560px) {
   .favoritos-topbar { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
   .favoritos-titulo h1 { font-size: 15.5px; }

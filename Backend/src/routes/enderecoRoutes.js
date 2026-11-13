@@ -9,10 +9,8 @@ const {
   removerEndereco,
 } = require('../controllers/enderecoController');
 
-// Só o usuário logado enxerga os próprios endereços
 router.get('/',    autenticar, listarEnderecos);
 router.post('/',   autenticar, criarEndereco);
-// O ":id/principal" vem antes do ":id" para não ser engolido pela rota de edição
 router.put('/:id/principal', autenticar, definirPrincipal);
 router.put('/:id',    autenticar, atualizarEndereco);
 router.delete('/:id', autenticar, removerEndereco);

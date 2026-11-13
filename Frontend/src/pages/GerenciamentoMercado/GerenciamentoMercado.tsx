@@ -29,10 +29,8 @@ import {
   IconReceipt,
 } from '../../components/Icons';
 
-// Alturas fixas para o skeleton do gráfico (evita Math.random no render)
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
 
-// Nomes curtos dos meses (gráficos do painel)
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -55,21 +53,18 @@ interface Pedido {
   cliente: string;
   itens: string;
   preco: string;
-  valorNum: number;   // valor numérico (para o financeiro)
-  data: string;       // data ISO da compra
-  status: 'entregue' | 'caminho' | 'preparo' | 'novo' | 'aguardando' | 'cancelado';   // chave visual (badge)
-  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado'; // valor real do banco
+  valorNum: number;
+  data: string;
+  status: 'entregue' | 'caminho' | 'preparo' | 'novo' | 'aguardando' | 'cancelado';
+  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
   label: string;
   observacao?: string;
-  // Entrega, retirada, cupom e agendamento (B2/B3/B10)
   tipoEntrega: 'entrega' | 'retirada';
-  // Endereço para entregar (item 1) — só quando a compra é entregue
   enderecoEntrega?: string;
   taxaEntrega: number;
   agendamento?: string;
   cupom?: string;
   desconto: number;
-  // Como o cliente vai pagar (B3): na entrega, Pix ou cartão
   formaPagamento: 'presencial' | 'pix' | 'cartao';
 }
 
@@ -79,8 +74,8 @@ interface Avaliacao {
   nome: string;
   n: number;
   texto: string;
-  oculta: boolean;      // B6 — ocultada pelo vendedor (some do site)
-  produto?: string;     // avaliações de produtos mostram o nome do item
+  oculta: boolean;
+  produto?: string;
   produtoId?: number;
   categoriaId?: number;
 }
@@ -95,7 +90,6 @@ interface FinanceiroMes {
   val: number;
 }
 
-// Resumo do mês vindo de GET /api/mercados/:id/financeiro
 interface FinanceiroResumo {
   ano: number;
   mes: number;
@@ -104,21 +98,19 @@ interface FinanceiroResumo {
   ticketMedio: number;
   custoMercadoria: number;
   custoFixo: number;
-  lucro: number;           // pode ser negativo (prejuízo)
-  itensSemCusto: number;   // unidades vendidas sem custo cadastrado
-  // Repasses do mês (Asaas Split): dinheiro dos pedidos online
+  lucro: number;
+  itensSemCusto: number;
   recebimento?: {
     walletCadastrado: boolean;
-    liquidado: number;          // já caiu na conta do vendedor
-    pendente: number;           // split em análise/pendente
-    retidoPlataforma: number;   // ficou na conta da plataforma
+    liquidado: number;
+    pendente: number;
+    retidoPlataforma: number;
   };
   porStatus: Record<string, number>;
   serieDiaria: { dia: number; pedidos: number; receita: number }[];
   topProdutos: { nome: string; qtd: number; receita: number }[];
 }
 
-// Chips dos meses do financeiro
 interface OpcaoMes { ano: number; mes: number; label: string; }
 
 interface MercadoInfo {
@@ -136,12 +128,10 @@ interface MercadoInfo {
   descricao?: string;
   foto_perfil?: string;
   horario?: string | null;
-  // Entrega e retirada (B2)
   taxa_entrega?: number | string | null;
   pedido_minimo?: number | string | null;
   oferece_entrega?: boolean | null;
   oferece_retirada?: boolean | null;
-  // Carteira Asaas do vendedor (pedidos online pagos direto pra conta dele)
   asaas_wallet_id?: string | null;
 }
 
@@ -177,9 +167,6 @@ function formatarBRL(valor: number) {
 }
 
 // ─── Status dos pedidos ───────────────────────────────────────────────────────
-// 'pendente' é o status inicial de todo pedido pago/na entrega (chave: 'novo');
-// pagamentos online entram como 'aguardando_pagamento' e só viram 'pendente'
-// quando o Asaas confirma o Pix/cartão
 const STATUS_PEDIDO: Record<string, { chave: Pedido['status']; label: string }> = {
   aguardando_pagamento: { chave: 'aguardando', label: 'Aguardando pagamento' },
   pendente: { chave: 'novo',     label: 'Novo' },
@@ -189,8 +176,6 @@ const STATUS_PEDIDO: Record<string, { chave: Pedido['status']; label: string }> 
   cancelado: { chave: 'cancelado', label: 'Cancelado' },
 };
 
-// Próximo passo de cada status de fluxo normal. Aguardando pagamento e
-// cancelado não têm próximo passo (o pagamento confirma ou o pedido cai fora).
 const PROXIMO_STATUS: Partial<Record<Pedido['statusAtual'], 'pendente' | 'preparo' | 'caminho' | 'entregue'>> = {
   pendente: 'preparo',
   preparo:  'caminho',
@@ -240,16 +225,10 @@ function LoadingRow() {
 }
 
 // ─── Máscara de moeda ─────────────────────────────────────────────────────────
-// Formata o valor a cada tecla (não só no blur): aceita a vírgula como
-// decimal — digitar "7,50" mostra 7,50 na hora — separa os milhares com
-// ponto e limita a 2 casas decimais. Devolve também onde o cursor deve
-// ficar, para a formatação não puxar o ponteiro para o fim do campo.
 function formatarMoedaDigitando(entrada: string, cursor: number): { texto: string; cursor: number } {
-  // O que é decimal? A vírgula manda; o ponto só é decimal quando não é
-  // padrão de milhar ("1.500") nem está seguido de nada ("1500.")
   let inteiro: string;
   let decimal: string | null = null;
-  let sepIdx = -1; // índice do separador decimal em `entrada`
+  let sepIdx = -1;
 
   const virgula = entrada.indexOf(',');
   if (virgula !== -1) {
@@ -269,26 +248,21 @@ function formatarMoedaDigitando(entrada: string, cursor: number): { texto: strin
     }
   }
 
-  // Zero à esquerda só atrapalha ("07" → "7"), mas o zero sozinho fica
   if (inteiro.length > 1) inteiro = inteiro.replace(/^0+(?=\d)/, '');
   if (inteiro.length > 9) inteiro = inteiro.slice(0, 9);
 
   const inteiroFmt = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  // Sem reais ainda, a vírgula ganha um "0" para se apoiar (",5" → "0,5")
   const sintetizouZero = decimal !== null && inteiro === '';
   const texto = decimal === null ? inteiroFmt : `${inteiroFmt || '0'},${decimal}`;
 
-  // Caracteres com peso antes do cursor: dígitos + o separador decimal.
-  // Os pontos de milhar não contam, senão o cursor anda errado por eles.
   let alvo = 0;
   for (let i = 0; i < cursor && i < entrada.length; i++) {
     const c = entrada[i];
     if (c >= '0' && c <= '9') alvo++;
     else if (i === sepIdx) alvo++;
   }
-  if (sintetizouZero && alvo > 0) alvo++; // o "0" inventado desloca tudo
+  if (sintetizouZero && alvo > 0) alvo++;
 
-  // Anda pelo texto formatado até achar a mesma quantidade de pesos
   let pos = texto.length;
   if (alvo === 0) {
     pos = 0;
@@ -306,7 +280,6 @@ function formatarMoedaDigitando(entrada: string, cursor: number): { texto: strin
   return { texto, cursor: pos };
 }
 
-// No blur o valor ganha as casas que faltam: "7" → "7,00" e "7,5" → "7,50"
 function completarMoeda(valor: string): string {
   if (!valor) return '';
   const { texto } = formatarMoedaDigitando(valor, valor.length);
@@ -349,9 +322,6 @@ function EditarProdutoModal({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
-  // Campos de preço/custo: a máscara formata a cada tecla e o cursor volta
-  // para onde a pessoa estava digitando (o React reescreve o valor ao
-  // renderizar e, sem este passo, ele pularia para o fim do campo).
   const precoRef = useRef<HTMLInputElement>(null);
   const custoRef = useRef<HTMLInputElement>(null);
   const cursorPreco = useRef<number | null>(null);
@@ -378,7 +348,6 @@ function EditarProdutoModal({
     setPreco(texto);
   }
 
-  // Saiu do campo: completa as casas decimais que faltam ("7" → "7,00")
   function handleBlurPreco() {
     setPreco(atual => completarMoeda(atual));
   }
@@ -399,7 +368,6 @@ function EditarProdutoModal({
       setErro('O nome é obrigatório.');
       return;
     }
-    // Valida pelo número (não pela string): cobre "0", "0,00" e "0,0"
     const precoNum = Number(preco.replace(/\./g, '').replace(',', '.'));
     if (!preco || !Number.isFinite(precoNum) || precoNum <= 0) {
       setErro('O preço é obrigatório.');
@@ -413,7 +381,6 @@ function EditarProdutoModal({
         nome: nome.trim(),
         descricao: descricao.trim() || undefined,
         preco: precoNum,
-        // Custo vazio = 0 (produto ainda sem custo cadastrado)
         custo: custo ? Number(custo.replace(/\./g, '').replace(',', '.')) : 0,
         estoque,
       };
@@ -532,7 +499,6 @@ function CaixaUrlLoja({ slug }: { slug: string }) {
     try {
       await navigator.clipboard.writeText(url);
     } catch {
-      // fallback para navegadores/contextos sem permissão de clipboard
       const el = document.createElement('textarea');
       el.value = url;
       el.style.position = 'fixed';
@@ -599,7 +565,6 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
     <div className="gm-section-wrap">
       {slug && <CaixaUrlLoja slug={slug} />}
 
-      {/* Uso do plano: produtos e fotos dentro do limite contratado */}
       {plano && uso && limites && (
         <div className="gm-plan-chip">
           <IconCreditCard size={13} />
@@ -707,8 +672,6 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
       ) : (
         <div className="gm-prod-row">
           {produtos.map((p) => {
-            // Margem sobre o custo cadastrado (B6): o lojista vê o quanto cada
-            // unidade dá de lucro; sem custo, não calcula.
             const preco = Number(p.preco) || 0;
             const custo = Number(p.custo) || 0;
             const temCusto = custo > 0 && preco > 0;
@@ -724,13 +687,11 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
                 <p className="gm-prod-nome">{p.nome}</p>
                 {p.preco != null && <p className="gm-prod-preco">R$ {Number(p.preco).toFixed(2)}</p>}
                 <p className="gm-prod-categoria">{p.categoria}</p>
-                {/* Estoque: avisa quando está acabando ou esgotado */}
                 {estoque <= 0 ? (
                   <span className="gm-prod-estoque gm-prod-estoque--esgotado">Esgotado</span>
                 ) : estoque <= 5 ? (
                   <span className="gm-prod-estoque gm-prod-estoque--baixo">Estoque baixo: {estoque} un.</span>
                 ) : null}
-                {/* Margem de lucro por unidade */}
                 {temCusto && (
                   <p className="gm-prod-margem" title={`Custo: ${formatarBRL(custo)} por unidade`}>
                     Margem: {formatarBRL(margem)} ({margemPct.toFixed(0)}%)
@@ -802,7 +763,6 @@ function SecPedidos({
                 ) : p.statusAtual === 'entregue' ? (
                   <span className="gm-pedido-check" title="Pedido concluído">✓</span>
                 ) : (
-                  // Aguardando pagamento ou cancelado: sem ação para o vendedor
                   <span className="gm-pedido-check" title="Sem ação disponível">—</span>
                 )}
                 {p.observacao && (
@@ -837,7 +797,6 @@ function SecPedidos({
   );
 }
 
-// B6 — Iniciais do cliente para o avatar (reaproveitado nas duas listas)
 function iniciaisDe(nome: string) {
   return nome
     .split(/\s+/)
@@ -847,8 +806,6 @@ function iniciaisDe(nome: string) {
     .join('');
 }
 
-// Cartão de avaliação com o botão de moderação (B6): quem modera vê
-// "Ocultar do site"; as ocultas aparecem marcadas e com "Exibir no site"
 function CartaoAvaliacao({ a, onAlternar }: { a: Avaliacao; onAlternar?: () => void }) {
   return (
     <div className={`gm-review-card${a.oculta ? ' gm-review-card--oculta' : ''}`}>
@@ -921,7 +878,6 @@ function SecAvaliacoes({
         </div>
       )}
 
-      {/* B6 — Moderação das avaliações de PRODUTOS da loja (só o dono vê) */}
       {moderando && avaliacoesProdutos.length > 0 && (
         <>
           <div className="gm-sec-row" style={{ marginTop: 22 }}>
@@ -942,7 +898,6 @@ function SecAvaliacoes({
   );
 }
 
-// Rótulos dos status do pedido no quadro de demanda
 const STATUS_DEMANDA: { chave: string; label: string }[] = [
   { chave: 'pendente', label: 'Pendentes' },
   { chave: 'preparo', label: 'Em preparo' },
@@ -950,7 +905,6 @@ const STATUS_DEMANDA: { chave: string; label: string }[] = [
   { chave: 'entregue', label: 'Entregues' },
 ];
 
-// Converte "150000" (digitos) → "1.500,00" para exibir no campo
 function formatarCampoMoeda(digitos: string): string {
   const limpo = digitos.replace(/\D/g, '');
   if (!limpo) return '';
@@ -959,7 +913,6 @@ function formatarCampoMoeda(digitos: string): string {
   return `${reais},${centavos.slice(-2)}`;
 }
 
-// Painel financeiro do mês: quanto entrou, quanto saiu, lucro/prejuízo e demanda
 function SecFinanceiro({
   fin,
   loading,
@@ -987,8 +940,6 @@ function SecFinanceiro({
   onIrRecebimento: () => void;
   onExportar: () => void;
 }) {
-  // Mesma máscara do modal de produto: formata a cada tecla e devolve o
-  // cursor para onde a pessoa estava digitando
   const fixosRef = useRef<HTMLInputElement>(null);
   const cursorFixos = useRef<number | null>(null);
 
@@ -1010,7 +961,6 @@ function SecFinanceiro({
   const pedidos = fin?.pedidos ?? 0;
   const lucro = fin?.lucro ?? 0;
   const prejuizo = lucro < 0;
-  // Vendeu no mês, mas nenhum item tem custo → o "lucro" ainda é chute
   const avisoSemCusto =
     (fin?.faturamento ?? 0) > 0 &&
     (fin?.custoMercadoria ?? 0) === 0 &&
@@ -1043,7 +993,6 @@ function SecFinanceiro({
         )}
       </div>
 
-      {/* Mês analisado */}
       <div className="gm-meses-chips" role="group" aria-label="Escolher o mês do relatório">
         {meses.map(m => (
           <button
@@ -1058,7 +1007,6 @@ function SecFinanceiro({
         ))}
       </div>
 
-      {/* Custos fixos: o valor que sai todo mês (aluguel, luz, salários) */}
       <div className="gm-fixos-card">
         <div className="gm-fixos-texto">
           <strong>Custos fixos mensais</strong>
@@ -1081,7 +1029,6 @@ function SecFinanceiro({
         </div>
       </div>
 
-      {/* Os números do mês */}
       <div className="gm-stats-row">
         {stats.map((s, i) => (
           <div key={i} className={`gm-stat${carregando ? ' gm-stat--loading' : ''}`} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
@@ -1094,7 +1041,6 @@ function SecFinanceiro({
         ))}
       </div>
 
-      {/* Repasse dos pedidos online (Asaas Split) */}
       {!carregando && fin?.recebimento && (
         <div className="gm-fixos-card">
           <div className="gm-fixos-texto">
@@ -1128,8 +1074,6 @@ function SecFinanceiro({
         </div>
       )}
 
-      {/* Sem Wallet ID: o Pix/cartão dos pedidos online fica na conta da
-          plataforma em vez de cair direto na conta do vendedor */}
       {!carregando && fin?.recebimento && !fin.recebimento.walletCadastrado && (
         <div className="gm-aviso-custo">
           <p>
@@ -1153,7 +1097,6 @@ function SecFinanceiro({
 
       <div className="gm-divider" />
 
-      {/* Demanda: receita por dia e o que mais saiu */}
       <div className="gm-dash-grid">
         <div className="gm-chart-card">
           <p className="gm-sec-title" style={{ marginBottom: '1.2rem' }}>
@@ -1251,7 +1194,6 @@ function SecFinanceiro({
   );
 }
 
-// Dias do editor de horário (ordem comercial; id = dia do Date, 0 = domingo)
 const DIAS_HORARIO: { id: string; nome: string; curto: string }[] = [
   { id: '1', nome: 'Segunda', curto: 'Seg' }, { id: '2', nome: 'Terça', curto: 'Ter' },
   { id: '3', nome: 'Quarta', curto: 'Qua' }, { id: '4', nome: 'Quinta', curto: 'Qui' },
@@ -1259,7 +1201,6 @@ const DIAS_HORARIO: { id: string; nome: string; curto: string }[] = [
   { id: '0', nome: 'Domingo', curto: 'Dom' },
 ];
 
-// Horário em uma linha: "Seg–Sex 08:00–18:00 · Sáb 09:00–13:00 · Dom fechado"
 function resumirHorario(h: HorarioMercado | null): string {
   if (!h) return 'Não configurado';
   const grupos: { faixa: string; dias: string[] }[] = [];
@@ -1280,8 +1221,6 @@ function resumirHorario(h: HorarioMercado | null): string {
 
 function SecInformacoes({ mercado, onSalvo }: {
   mercado: MercadoInfo | null;
-  // aviso null = atualiza a tela sem mostrar o toast padrão (usado pela
-  // criação automática da conta Asaas, que tem aviso próprio)
   onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
 }) {
   if (!mercado) return <EmptyState msg="Carregando informações..." />;
@@ -1289,12 +1228,7 @@ function SecInformacoes({ mercado, onSalvo }: {
 }
 
 // ─── Recebimento dos pedidos online (aba própria) ─────────────────────────────
-// Status do split + criação automática da conta Asaas (wallet) + campo
-// manual para quem já tem carteira. Fica FORA de Informações de propósito:
-// é configuração de pagamento, não dado cadastrais nem de entrega.
 
-// Tipos de empresa aceitos pelo Asaas em companyType (exigido na criação
-// da subconta para CNPJ) — o vendedor escolhe no painel antes de criar
 const TIPOS_EMPRESA = [
   { valor: 'MEI', nome: 'MEI' },
   { valor: 'LIMITED', nome: 'Ltda' },
@@ -1324,8 +1258,6 @@ function RecebimentoConteudo({ mercado, onSalvo }: {
   const walletAtual = mercado.asaas_wallet_id ?? '';
   const alterado = walletManual.trim() !== walletAtual;
 
-  // Cria a subconta do vendedor no Asaas (POST /:id/asaas/subconta) e
-  // preenche o Wallet ID sozinho — sem precisar copiar nada do painel do Asaas
   async function gerarWallet() {
     setGerandoWallet(true);
     setErro('');
@@ -1343,8 +1275,6 @@ function RecebimentoConteudo({ mercado, onSalvo }: {
     }
   }
 
-  // Wallet manual: para quem já tem conta Asaas (ou para limpar e voltar
-  // a deixar o valor na plataforma). PUT parcial — só o wallet muda.
   async function salvarManual() {
     const wallet = walletManual.trim();
     if (wallet && !/^[A-Za-z0-9_-]{4,64}$/.test(wallet)) {
@@ -1459,9 +1389,6 @@ function RecebimentoConteudo({ mercado, onSalvo }: {
 }
 
 // ─── Cupons de desconto (B3) ─────────────────────────────────────────────────
-// O vendedor cria cupons (percentual ou valor fixo) com pedido mínimo, limite
-// de usos e validade. O cliente digita o código no carrinho e o backend
-// confere se ainda vale antes de aplicar o desconto.
 
 interface Cupom {
   id: number;
@@ -1473,12 +1400,10 @@ interface Cupom {
   usos: number;
   validade: string | null;
   ativo: boolean;
-  // Escopo do cupom (as duas vazias = vale para tudo)
   categorias: { id: number; nome: string }[];
   produtos: { id: number; nome: string }[];
 }
 
-// Máximo de itens no escopo — espelho do backend (cupomController.lerProdutos/lerCategorias)
 const MAX_ESCOPO_CUPOM = 20;
 
 function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produto[] }) {
@@ -1494,12 +1419,10 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
   const [form, setForm] = useState({
     codigo: '', tipo: 'percentual' as 'percentual' | 'valor',
     valor: '', min_pedido: '', max_usos: '', validade: '',
-    // Escopo: vazias as duas = o cupom vale para todos os produtos
     categorias: [] as number[],
     produtos: [] as number[],
   });
 
-  // Categorias do mercado — é delas que o vendedor escolhe o escopo do cupom
   useEffect(() => {
     let vivo = true;
     api.listarCategorias(mercadoId)
@@ -1507,35 +1430,28 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
         if (vivo && Array.isArray(lista)) setCategorias(lista as { id: number; nome: string }[]);
       })
       .catch(() => {
-        // sem categoria não dá para restringir: o formulário fica só com "todos"
       });
     return () => { vivo = false; };
   }, [mercadoId]);
 
-  // Carrega os cupons do mercado (padrão do painel: async dentro do efeito)
   useEffect(() => {
     let vivo = true;
     (async () => {
       try {
         const data = await api.cuponsMercado(mercadoId);
         if (vivo) setCupons(data.cupons ?? []);
-      } catch {
-        // silencioso: a seção mostra a lista vazia
-      } finally {
+      } catch { /* falha ignorada */ } finally {
         if (vivo) setLoading(false);
       }
     })();
     return () => { vivo = false; };
   }, [mercadoId]);
 
-  // Recarrega após criar/ativar/apagar (fora do efeito, direto nas ações)
   async function recarregar() {
     try {
       const data = await api.cuponsMercado(mercadoId);
       setCupons(data.cupons ?? []);
-    } catch {
-      // silencioso
-    }
+    } catch { /* falha ignorada */ }
   }
 
   async function criar() {
@@ -1620,14 +1536,11 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
 
   function formatarValidade(v: string | null) {
     if (!v) return 'sem prazo';
-    // A API pode devolver "2026-12-31" ou um timestamp completo; concatenar
-    // horário em cima de um timestamp gerava "até Invalid Date"
     const data = new Date(v.length > 10 ? v : `${v}T12:00:00`);
     if (Number.isNaN(data.getTime())) return 'sem prazo';
     return `até ${data.toLocaleDateString('pt-BR')}`;
   }
 
-  // Nomes das categorias/produtos marcados no formulário (avisos e badge)
   const nomesCategorias = form.categorias
     .map(id => categorias.find(c => c.id === id)?.nome ?? '')
     .filter(Boolean)
@@ -1637,7 +1550,6 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
     .filter(Boolean)
     .join(', ');
 
-  // Lista de produtos pra busca do seletor (filtra por nome)
   const produtosFiltrados = buscaProduto.trim()
     ? produtos.filter(p => p.nome.toLowerCase().includes(buscaProduto.trim().toLowerCase()))
     : produtos;
@@ -1690,7 +1602,6 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
             </label>
           </div>
 
-          {/* Escopo do cupom: categorias e/ou produtos específicos */}
           <div className="gm-cupom-categorias">
             <span className="gm-cupom-categorias-titulo">Categorias do cupom</span>
             <div className="gm-cupom-chips">
@@ -1721,7 +1632,6 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
             </p>
           </div>
 
-          {/* Produtos específicos: o vendedor pode marcar um ou mais produtos */}
           <div className="gm-cupom-categorias">
             <span className="gm-cupom-categorias-titulo">Produtos específicos (opcional)</span>
             <div className="gm-cupom-chips">
@@ -1842,11 +1752,6 @@ function SecCupons({ mercadoId, produtos }: { mercadoId: number; produtos: Produ
   );
 }
 
-// Modo leitura + edição em linha dos dados do mercado. O "Editar" carrega os
-// valores atuais (inclusive o horário) nos campos; o "Salvar" grava no banco
-// (PUT /api/mercados/:id) e atualiza a tela com a resposta; o "Cancelar"
-// descarta as mudanças. O CNPJ fica somente leitura (é o documento da loja).
-// O recebimento (Wallet Asaas) tem aba própria — ver SecRecebimento acima.
 function InfoConteudo({ mercado, onSalvo }: {
   mercado: MercadoInfo;
   onSalvo: (atualizado: MercadoInfo, aviso?: string | null) => void;
@@ -1858,30 +1763,23 @@ function InfoConteudo({ mercado, onSalvo }: {
     nome: '', telefone: '', email: '', rua: '', bairro: '',
     cidade: '', estado: '', cep: '',
   });
-  // Entrega e retirada (B2): taxa, pedido mínimo e quais formas a loja aceita
   const [entrega, setEntrega] = useState({
     taxa: '', minimo: '', ofereceEntrega: true, ofereceRetirada: true,
   });
   const [horario, setHorario] = useState<Record<string, [string, string] | null>>({});
 
-  // Aviso do preenchimento automático do endereço pelo CEP
   const [dicaCep, setDicaCep] = useState<string | null>(null);
-  // CEP que já foi consultado — evita buscar a mesma coisa duas vezes
   const cepJaBuscado = useRef<string | null>(
     mercado.cep ? mercado.cep.replace(/\D/g, '') : null
   );
-  // Guarda se o endereço veio do ViaCEP (aí apagar o CEP apaga ele junto)
   const enderecoPeloCep = useRef(false);
 
-  // CEP completo → rua, bairro, cidade e estado vêm sozinhos (ViaCEP).
-  // Só na edição: fora dela os campos ficam apenas para leitura.
   useEffect(() => {
     if (!editando) return;
 
     const digitos = form.cep.replace(/\D/g, '');
     if (digitos.length !== 8) {
       cepJaBuscado.current = null;
-      // o aviso só muda depois desta tecla, nunca dentro do efeito na hora
       Promise.resolve().then(() => setDicaCep(null));
       return;
     }
@@ -1973,7 +1871,6 @@ function InfoConteudo({ mercado, onSalvo }: {
       setErro('O nome é obrigatório.');
       return;
     }
-    // Horário: envia só os dias abertos, conferindo os horários
     const horarioEnvio = Object.fromEntries(
       Object.entries(horario).filter(([, f]) => f !== null) as [string, [string, string]][]
     );
@@ -1981,7 +1878,6 @@ function InfoConteudo({ mercado, onSalvo }: {
       setErro('Confira o horário: abertura e fechamento precisam ser diferentes.');
       return;
     }
-    // Entrega e retirada: a loja precisa oferecer pelo menos uma forma
     if (!entrega.ofereceEntrega && !entrega.ofereceRetirada) {
       setErro('A loja precisa oferecer entrega ou retirada no balcão (marque pelo menos uma).');
       return;
@@ -2054,7 +1950,6 @@ function InfoConteudo({ mercado, onSalvo }: {
                 onChange={e => {
                   const cep = e.target.value.replace(/\D/g, '').slice(0, 8);
                   set('cep', cep);
-                  // Apagou o CEP: o endereço que ele preencheu sai junto
                   if (cep === '' && enderecoPeloCep.current) {
                     enderecoPeloCep.current = false;
                     setForm(f => ({ ...f, rua: '', bairro: '', cidade: '', estado: '' }));
@@ -2208,7 +2103,6 @@ export default function GerenciamentoMercado({
   const navigate = useNavigate();
   const {toasts, showToast, dismissToast } = useToast();
   const [produtoEditando, setProdutoEditando] = useState<Produto | null>(null);
-  // Quem tem mais de uma loja troca de painel pelo seletor da sidebar (B9)
   const [meusMercados, setMeusMercados] = useState<{ id_mercado: number; nome: string }[]>([]);
   useEffect(() => {
     api.meusMercados()
@@ -2224,7 +2118,6 @@ export default function GerenciamentoMercado({
   const [avaliacoesLoading, setAvaliacoesLoading] = useState(true);
   const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(false);
 
-  // Painel financeiro (aba Financeiro): mês escolhido + dados do servidor
   const [finMes, setFinMes] = useState<{ ano: number; mes: number }>(() => {
     const d = new Date();
     return { ano: d.getFullYear(), mes: d.getMonth() + 1 };
@@ -2268,7 +2161,6 @@ export default function GerenciamentoMercado({
     }
     carregarDashboard();
 
-    // Pedidos reais recebidos pelo mercado (visão do vendedor)
     (async () => {
       setPedidosLoading(true);
       try {
@@ -2313,7 +2205,6 @@ export default function GerenciamentoMercado({
       }
     })();
 
-    // Avaliações reais recebidas pelo mercado (com moderação B6)
     (async () => {
       setAvaliacoesLoading(true);
       try {
@@ -2331,7 +2222,6 @@ export default function GerenciamentoMercado({
             oculta: !!a.oculta,
           }))
         );
-        // B6 — Avaliações de produtos (só chegam para quem modera)
         if (data.moderando) {
           const produtos = await api.avaliacoesProdutosMercado(mercadoId);
           setAvaliacoesProdutos(
@@ -2359,7 +2249,6 @@ export default function GerenciamentoMercado({
     })();
   }, [mercadoId]);
 
-  // Financeiro do mês escolhido (faturamento, custos, lucro e demanda)
   useEffect(() => {
     let vivo = true;
     async function carregarFinanceiro() {
@@ -2382,7 +2271,6 @@ export default function GerenciamentoMercado({
     return () => { vivo = false; };
   }, [mercadoId, finMes]);
 
-  // Salva os custos fixos mensais do mercado (aluguel, luz, salários...)
   async function salvarCustosFixos() {
     const valor = Number(custosFixosInput.replace(/\./g, '').replace(',', '.'));
     if (!Number.isFinite(valor) || valor < 0) {
@@ -2403,7 +2291,6 @@ export default function GerenciamentoMercado({
     }
   }
 
-  // Vendedor avança o status de um pedido (pendente → preparo → caminho → entregue)
   async function handleAvancarStatus(p: Pedido) {
     const proximo = PROXIMO_STATUS[p.statusAtual];
     if (!proximo) return;
@@ -2419,7 +2306,6 @@ export default function GerenciamentoMercado({
     }
   }
 
-  // B6 — Vendedor oculta ou exibe uma avaliação da loja no site
   async function handleModerarAvaliacao(a: Avaliacao) {
     try {
       const resultado = await api.moderarAvaliacao(mercadoId, a.id, !a.oculta);
@@ -2430,7 +2316,6 @@ export default function GerenciamentoMercado({
     }
   }
 
-  // B6 — Vendedor oculta ou exibe uma avaliação de produto no site
   async function handleModerarAvaliacaoProduto(a: Avaliacao) {
     if (!a.produtoId || !a.categoriaId) return;
     try {
@@ -2442,7 +2327,6 @@ export default function GerenciamentoMercado({
     }
   }
 
-  // Receita real por mês (últimos 6 meses), calculada dos pedidos recebidos
   const financeiro = useMemo<FinanceiroMes[]>(() => {
     const agora = new Date();
     const porMes: FinanceiroMes[] = [];
@@ -2450,7 +2334,6 @@ export default function GerenciamentoMercado({
       const ref = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
       const total = pedidos
         .filter(p => {
-          // Cancelados e ainda não pagos não entram no faturamento
           if (p.statusAtual === 'cancelado' || p.statusAtual === 'aguardando_pagamento') return false;
           const d = new Date(p.data);
           return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
@@ -2461,7 +2344,6 @@ export default function GerenciamentoMercado({
     return porMes;
   }, [pedidos]);
 
-  // Chips dos últimos 6 meses (para trocar o mês do painel financeiro)
   const mesesFin = useMemo<OpcaoMes[]>(() => {
     const hoje = new Date();
     return Array.from({ length: 6 }, (_, i) => {
@@ -2474,7 +2356,6 @@ export default function GerenciamentoMercado({
     });
   }, []);
 
-  // Exporta os pedidos em CSV (abre no Excel/Google Planilhas)
   function handleExportarRelatorio() {
     const cabecalho = 'Pedido;Cliente;Itens;Valor (R$);Data;Status;Observação';
     const linhas = pedidos.map(p => {
@@ -2495,9 +2376,6 @@ export default function GerenciamentoMercado({
 
   const { mercado, produtos, totalCategorias, totalProdutos, plano, limites, uso, resumo, loading } = dados;
 
-  // Status ao vivo do mercado na lateral: muda entre Aberto/Fechado sozinho,
-  // sem recarregar a página, quando bate o horário configurado.
-  // null = dashboard ainda carregando (chip neutro, sem mentir "Aberto")
   const [agoraMkt, setAgoraMkt] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setAgoraMkt(new Date()), 15_000);
@@ -2518,8 +2396,6 @@ export default function GerenciamentoMercado({
     showToast('sucesso', 'Produto atualizado com sucesso!');
   }
 
-  // edição das informações do mercado (aba Informações): atualiza a tela
-  // com o que o servidor salvou e avisa o usuário
   function handleInfoSalva(atualizado: MercadoInfo, aviso?: string | null) {
     setDados(prev => ({ ...prev, mercado: { ...prev.mercado!, ...atualizado } }));
     if (aviso !== null) showToast('sucesso', aviso ?? 'Informações atualizadas com sucesso!');
@@ -2575,7 +2451,6 @@ export default function GerenciamentoMercado({
       salvandoCustos={salvandoCustos}
       onSalvarCustos={salvarCustosFixos}
       onIrProdutos={() => setNav(1)}
-      // Sem cupons o filtro encolhe a lista: Recebimento fica no 5 ou no 6
       onIrRecebimento={() => setNav(plano !== 'basico' ? 6 : 5)}
       onExportar={handleExportarRelatorio}
     />,
@@ -2583,18 +2458,14 @@ export default function GerenciamentoMercado({
     <SecInformacoes mercado={mercado} onSalvo={handleInfoSalva} />,
   ];
 
-  // Cupons são recurso dos planos Plus e Personalizado: no Essencial a aba
-  // some da sidebar e o índice da seção acompanha o filtro.
   const temCupons = plano !== 'basico';
   const navItens = SIDEBAR_NAV.filter((_, i) => temCupons || i !== 4);
   const secoes = SECTIONS.filter((_, i) => temCupons || i !== 4);
-  // Defesa: se o conjunto encolheu (plano carregou como Essencial), volta ao início
   const navAtual = nav < secoes.length ? nav : 0;
 
   return (
     <div className="gm-shell">
 
-      {/* SIDEBAR */}
       <aside className="gm-sidebar">
         <div className="gm-mkt-identity">
           <div className="gm-mkt-logo">
@@ -2621,7 +2492,6 @@ export default function GerenciamentoMercado({
                 : '● Fechado agora'}
           </span>
         </div>
-        {/* Troca de loja para quem gerencia mais de um mercado (B9) */}
         {meusMercados.length > 1 && (
           <label className="gm-trocar-loja">
             <span className="gm-trocar-loja__lbl">Minha loja</span>
@@ -2657,7 +2527,6 @@ export default function GerenciamentoMercado({
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="gm-main">
         <div className="gm-topbar">
           <div className="gm-topbar-left">

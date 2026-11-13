@@ -1,15 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  EnderecoPopup — janela para cadastrar um endereço de entrega
-//
-//  Usada em dois lugares:
-//   • no carrinho, quando a pessoa escolhe receber em casa;
-//   • no perfil, em "Endereços de entrega".
-//
-//  Os campos são os mesmos do pedido: Rua, Número, Bairro, CEP, Cidade e
-//  Complemento (opcional). O CEP recebe a máscara sozinho e, assim que os 8
-//  dígitos ficam completos, puxa rua, bairro e cidade sozinho (ViaCEP) —
-//  sobra só número e complemento. Nada é salvo com campo obrigatório em falta.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -28,7 +17,6 @@ import {
 } from "../../utils/geolocalizacao";
 import "./EnderecoPopup.css";
 
-// Um campo do endereço (rua, número, bairro, CEP, cidade, complemento)
 function CampoEndereco({
   id,
   label,
@@ -71,12 +59,9 @@ function CampoEndereco({
 
 export interface EnderecoPopupProps {
   aberto: boolean;
-  /** Endereço que já existe (quando quiser editar) — vazio para cadastrar novo */
   enderecoInicial?: EnderecoEntrega;
   titulo?: string;
-  /** true enquanto o servidor grava (deixa o botão parado) */
   salvando?: boolean;
-  /** Erro vindo do servidor (ex.: rede fora do ar) */
   erro?: string | null;
   onFechar: () => void;
   onSalvar: (endereco: EnderecoEntrega) => void;
@@ -101,28 +86,19 @@ export default function EnderecoPopup({
       cidade: "",
     }
   );
-  // Só destaca os campos em vermelho depois que a pessoa tenta salvar
   const [tentouSalvar, setTentouSalvar] = useState(false);
-  // Aviso do preenchimento automático (buscando, preenchido ou CEP sem achado)
   const [avisoCep, setAvisoCep] = useState<string | null>(null);
-  // Botão "Usar minha localização": fica ocupado enquanto o navegador responde
   const [localizando, setLocalizando] = useState(false);
-  // CEP que já foi consultado — evita buscar a mesma coisa duas vezes
   const ultimoCepBuscado = useRef<string | null>(
     digitosCep(enderecoInicial?.cep ?? "") || null
   );
-  // Guarda se rua/bairro/cidade vieram do ViaCEP (aí o apagar o CEP apaga eles
-  // junto). Digitado à mão, continua na tela.
   const veioDoCep = useRef(false);
 
-  // Com os 8 dígitos do CEP completos, a ViaCEP devolve rua, bairro e cidade
-  // na hora. Número e complemento continuam com o que a pessoa digitar.
   useEffect(() => {
     const digitos = digitosCep(endereco.cep);
 
     if (digitos.length !== 8) {
       ultimoCepBuscado.current = null;
-      // o aviso só muda depois desta tecla, nunca dentro do efeito na hora
       Promise.resolve().then(() => setAvisoCep(null));
       return;
     }
@@ -162,8 +138,6 @@ export default function EnderecoPopup({
     const novo: EnderecoEntrega = { ...endereco };
     if (campo === "cep") {
       novo.cep = mascaraCep(valor);
-      // Apagou o CEP? O que ele trouxe junto também sai (prático e evita
-      // endereço com CEP em branco e rua antiga)
       if (valor === "" && veioDoCep.current) {
         veioDoCep.current = false;
         novo.rua = "";
@@ -187,9 +161,6 @@ export default function EnderecoPopup({
     onSalvar(endereco);
   };
 
-  // Pede autorização ao navegador e preenche o que der (CEP, rua, bairro e
-  // cidade). O número e o complemento continuam por conta da pessoa, porque
-  // nenhum serviço de mapa acerta o número exato do imóvel.
   const usarMinhaLocalizacao = async () => {
     if (localizando) return;
     setLocalizando(true);
@@ -229,8 +200,6 @@ export default function EnderecoPopup({
 
   const nomesFaltando = faltando.map((campo) => NOMES_CAMPOS_ENDERECO[campo]);
 
-  // Enviado para o <body>: assim o pop-up fica centralizado na tela mesmo
-  // dentro de páginas que usam transformação/efeitos no container
   return createPortal(
     <>
       <div className="endereco-popup__backdrop" onClick={onFechar} />

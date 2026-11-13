@@ -2,21 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CookieBanner.css';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Aviso de cookies (LGPD - C7) — BLOQUEANTE
-//
-//  Enquanto a pessoa não clicar em "Aceitar e continuar", o aviso cobre a tela
-//  inteira e impede qualquer interação com o site (navegar, clicar, rolar por
-//  trás). Assim que ela aceita, a escolha fica guardada no navegador e o aviso
-//  não volta mais. Se fechar o site sem aceitar, o bloqueio volta na próxima
-//  entrada. O site usa cookies apenas para manter a pessoa logada e guardar o
-//  carrinho — sem rastreamento de anúncios.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const CHAVE = 'mercadins:cookies-aceitos';
 
 export default function CookieBanner() {
-  // O estado nasce já sabendo se a pessoa aceitou antes (sem efeito)
   const [visivel, setVisivel] = useState(() => !localStorage.getItem(CHAVE));
 
   function aceitar() {

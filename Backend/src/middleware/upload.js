@@ -1,30 +1,16 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Upload local de imagens — pasta "imagens" dentro do Backend
-//
-//  Aceita apenas PNG, JPG e WEBP (máx. 5 MB) e guarda o arquivo em
-//  Backend/imagens/<categoria>/ com nome único (timestamp + aleatório). A rota
-//  devolve a URL pública (/imagens/...), que é o que fica gravado no banco.
-//
-//  A pasta pode ser movida com a variável IMAGENS_DIR (caminho absoluto ou
-//  relativo à pasta Backend) — sem ela, usa Backend/imagens.
-// ─────────────────────────────────────────────────────────────────────────────
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Backend/ (padrão: Backend/imagens) — IMAGENS_DIR sobrescreve quando quiser
-// guardar as imagens em outro lugar (ex.: disco externo ou volume do servidor);
-// caminho relativo é resolvido a partir da pasta Backend.
 const BACKEND = path.resolve(__dirname, '../..');
 const RAIZ_IMAGENS = process.env.IMAGENS_DIR
   ? path.resolve(BACKEND, process.env.IMAGENS_DIR)
   : path.join(BACKEND, 'imagens');
 
-// Garante a pasta na subida do servidor (também cria no container)
 fs.mkdirSync(RAIZ_IMAGENS, { recursive: true });
 
-// Categorias aceitas = subpastas de imagens/
 const CATEGORIAS = ['produtos', 'mercados', 'usuarios', 'avaliacoes', 'catalogo'];
 
 const MIME_EXTENSOES = {
@@ -51,7 +37,7 @@ const upload = multer({
     },
   }),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
+    fileSize: 5 * 1024 * 1024,
     files: 1,
   },
   fileFilter(_req, file, cb) {

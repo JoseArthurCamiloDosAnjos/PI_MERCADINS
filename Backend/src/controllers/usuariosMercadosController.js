@@ -1,9 +1,6 @@
 const { conectar } = require("../db/neon");
 
-// ─────────────────────────────────────────────
 // GET /api/usuarios-mercados/meus
-// Lista apenas os mercados do usuário logado
-// ─────────────────────────────────────────────
 
 const meusMercados = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -26,10 +23,7 @@ const meusMercados = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // GET /api/usuarios-mercados/:id_mercado/membros
-// Lista todos os usuários vinculados a um mercado
-// ─────────────────────────────────────────────
 
 const listarMembros = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -39,7 +33,6 @@ const listarMembros = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Verifica se o solicitante pertence ao mercado
     const [permissao] = await sql`
       SELECT papel FROM usuarios_mercados
       WHERE id_usuario = ${id_usuario}
@@ -64,11 +57,7 @@ const listarMembros = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // POST /api/usuarios-mercados/:id_mercado/vincular
-// Vincula um usuário a um mercado (requer dono/admin)
-// Body: { id_usuario, papel }
-// ─────────────────────────────────────────────
 
 const vincularUsuario = async (req, res) => {
   const id_solicitante = req.usuarioId;
@@ -117,10 +106,7 @@ const vincularUsuario = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
 // DELETE /api/usuarios-mercados/:id_mercado/desvincular/:id_usuario
-// Remove vínculo de um usuário com um mercado
-// ─────────────────────────────────────────────
 
 const desvincularUsuario = async (req, res) => {
   const id_solicitante = req.usuarioId;
@@ -130,7 +116,6 @@ const desvincularUsuario = async (req, res) => {
   try {
     const sql = await conectar();
 
-    // Qualquer um pode se desvincular; só dono/admin pode desvincular outros
     if (Number(id_usuario) !== id_solicitante) {
       const [permissao] = await sql`
         SELECT papel FROM usuarios_mercados

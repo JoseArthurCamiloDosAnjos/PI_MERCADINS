@@ -7,14 +7,7 @@ import { uploadImagem, ehImagemValida } from '../../services/upload'
 import Imagem from '../../components/Imagem'
 import { TIPOS_LOJA, ORDEM_TIPOS } from '../../utils/tiposLoja'
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Aba "Catálogo" do painel do administrador
-//
-//  CRUD dos produtos genéricos prontos que o vendedor escolhe no card "＋"
-//  da vitrine (junto com "criar do zero"). Cada item guarda nome, descrição,
-//  fotos, preço sugerido e o tipo de loja em que faz sentido aparecer
-//  ('geral' = serve a qualquer tipo).
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface ItemCatalogo {
   id: number
@@ -91,8 +84,6 @@ export default function Catalogo() {
   }, [])
 
   useEffect(() => {
-    // Adia um instante: assim o carregamento não dispara setState de forma
-    // síncrona dentro do efeito (mesmo comportamento, sem o alerta do React)
     Promise.resolve().then(carregar)
   }, [carregar])
 
@@ -164,8 +155,6 @@ export default function Catalogo() {
     setImagens(prev => prev.filter((_, i) => i !== idx))
   }
 
-  // Salva na pasta imagens/catalogo/ do backend (URL que vai para o banco)
-  // e mantém cópia de backup no Supabase.
   async function uploadParaSupabase(file: File): Promise<string | null> {
     return uploadImagem(file, 'catalogo')
   }
@@ -182,7 +171,6 @@ export default function Catalogo() {
     setErroForm('')
 
     try {
-      // Upload apenas das imagens novas (as já salvas mantêm a URL)
       const urls: string[] = []
       for (const img of imagens) {
         if (img.file) {

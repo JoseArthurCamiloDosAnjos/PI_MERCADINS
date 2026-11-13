@@ -8,7 +8,7 @@ import './CadastroProduto.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ImagemItem { 
+interface ImagemItem {
   url: string;
   file: File | null;
   uploading?: boolean;
@@ -35,7 +35,6 @@ interface Erros {
 interface ProdutoInicial {
   nome?: string;
   descricao?: string;
-  /** Pode vir como número ("12.90"), texto com vírgula ("12,90") ou já formatado */
   preco?: string;
   imagens?: string[];
 }
@@ -67,7 +66,6 @@ export default function CadastroProduto({
   const [preco, setPreco]             = useState(() => {
     const origem = produto?.preco ?? inicial?.preco;
     if (!origem) return '';
-    // "12,90" → 12.9 (o formato vindo do banco é "12.90", com ponto)
     const limpo = typeof origem === 'string' && origem.includes(',')
       ? origem.replace(/\./g, '').replace(',', '.')
       : origem;
@@ -99,8 +97,6 @@ export default function CadastroProduto({
 
   // ── Upload ──────────────────────────────────────────────────────────────────
 
-  // Salva na pasta imagens/produtos/ do backend (URL que vai para o banco)
-  // e mantém cópia de backup no Supabase.
   function uploadParaSupabase(file: File): Promise<string | null> {
     return uploadImagem(file, 'produtos');
   }
@@ -241,7 +237,6 @@ export default function CadastroProduto({
         }
       }
 
-      // Não salva o produto sem as imagens: o usuário precisa saber do problema
       if (falhaNoUpload) {
         setErroGeral('Não foi possível enviar uma das imagens. Verifique sua conexão e tente novamente.');
         return;
@@ -270,7 +265,6 @@ export default function CadastroProduto({
     <div className="cp-overlay" role="dialog" aria-modal="true" aria-label="Cadastrar produto">
       <div className="cp-modal">
 
-        {/* Header */}
         <div className="cp-header">
           <h2 className="cp-titulo">{editando ? 'Editar produto' : 'Novo produto'}</h2>
           <button
@@ -437,12 +431,10 @@ export default function CadastroProduto({
           </section>
         </div>
 
-        {/* Erro geral (upload / salvar) */}
         {erroGeral && (
           <div className="cp-erro-barra" role="alert">{erroGeral}</div>
         )}
 
-        {/* Footer */}
         <div className="cp-footer">
           <button
             className="cp-btn cp-btn--secundario"

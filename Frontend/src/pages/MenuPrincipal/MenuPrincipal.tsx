@@ -83,15 +83,12 @@ function normalizar(valor: string) {
     .trim();
 }
 
-// Nota da avaliação: "4,8" (vírgula brasileira)
 function formatrarNota(nota?: number) {
   const n = Number(nota ?? 0);
   if (Number.isNaN(n)) return "0,0";
   return n.toFixed(1).replace(".", ",");
 }
 
-// Tipos que o mercado declarou no cadastro (protege contra o banco
-// devolver em texto "{mercado,padaria}" em vez de lista)
 function tiposDoMercado(store: Store): string[] {
   const valor = store.categorias as unknown;
   if (Array.isArray(valor)) return valor.map(String);
@@ -99,8 +96,6 @@ function tiposDoMercado(store: Store): string[] {
   return [];
 }
 
-// Visual de cada tipo de loja pro bloco de categoria do card:
-// quadrado escuro com ícone + nome legível (o banco guarda minúsculo sem acento)
 const TIPO_VISUAL: Record<string, { label: string; Ico: typeof IconStore }> = {
   mercado:      { label: "Mercado",      Ico: IconShoppingCart },
   hortifruti:   { label: "Hortifruti",   Ico: IconLeaf },
@@ -111,9 +106,6 @@ const TIPO_VISUAL: Record<string, { label: string; Ico: typeof IconStore }> = {
   conveniencia: { label: "Conveniência", Ico: IconStore },
 };
 
-// Busca por CEP:
-// - parcial (5 a 7 dígitos) → mesma região, ex.: "15900" pega 15900-010, 15900-023...
-// - completo (8 dígitos) → só o mercado daquele CEP exato, ex.: "15900-013"
 function cepBate(store: Store, buscaLocal: string) {
   const digitosBusca = buscaLocal.replace(/\D/g, "");
   if (digitosBusca.length < 5) return false;
@@ -122,7 +114,6 @@ function cepBate(store: Store, buscaLocal: string) {
   return digitosCep.startsWith(digitosBusca.slice(0, 8));
 }
 
-// Sugestão de produto no dropdown da busca da home
 type ProdutoBusca = {
   id_produto: number;
   nome: string;
@@ -147,7 +138,6 @@ function irParaSecao(id: string) {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// Volta pro topo da página na hora, sem animação
 function irParaTopo() {
   window.scrollTo(0, 0);
 }
@@ -162,28 +152,23 @@ export default function Mercadins() {
   const [busca, setBusca] = useState("");
   const [local, setLocal] = useState("");
   const [categoria, setCategoria] = useState("Todos");
-  // Sugestões de produtos no dropdown da busca
   const [produtosBusca, setProdutosBusca] = useState<ProdutoBusca[]>([]);
   const [buscandoProdutos, setBuscandoProdutos] = useState(false);
   const [dropdownProdutos, setDropdownProdutos] = useState(false);
-  // Menu compacto do topo (celular): abre e fecha o painel com os links
   const [menuAberto, setMenuAberto] = useState(false);
   const buscaFormRef = useRef<HTMLFormElement | null>(null);
   const [favoritosData, setFavoritosData] = useState<{
     usuarioId: number;
     ids: Set<number>;
   } | null>(null);
-  // Mercados que o cliente já visitou (localStorage) — bloco "Continue explorando"
   const [visitados] = useState<string[]>(listarVisitados);
 
-  // Relógio dos cards: recalcula Aberto/Fechado a cada 15 segundos, sem recarregar
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setAgora(new Date()), 15_000);
     return () => clearInterval(id);
   }, []);
 
-  // Card de loja FECHADA clicada: aviso antes de entrar (o cliente escolhe)
   const [lojaFechada, setLojaFechada] = useState<Store | null>(null);
   useEffect(() => {
     if (!lojaFechada) return;
@@ -194,13 +179,9 @@ export default function Mercadins() {
     return () => window.removeEventListener("keydown", onKey);
   }, [lojaFechada]);
 
-  // Status de funcionamento agora: pelo horário quando a loja configurou;
-  // sem horário, ativo = aberto (compatível com mercados ainda sem rotina)
   const lojaAberta = (store: Store) =>
     estaAberto(parseHorario(store.horario), agora) ?? store.status === "ativo";
 
-  // Setas de rolagem da barra de categorias: aparecem só quando existe chip
-  // escondido (testa o espaço real da barra em cada mudança de tela/rolagem)
   const categoriasRef = useRef<HTMLDivElement | null>(null);
   const [setasCategorias, setSetasCategorias] = useState({ esq: false, dir: false });
 
@@ -232,8 +213,6 @@ export default function Mercadins() {
   useEffect(() => {
     let ativo = true;
     api
-      // limit=100: a API padrão traz só 20 mercados e "escondia" os que
-      // vinham depois disso (a lista daqui é a da home, sem paginação)
       .listarMercados(undefined, 100)
       .then((data) => {
         if (!ativo) return;
@@ -273,8 +252,6 @@ export default function Mercadins() {
       ? favoritosData.ids
       : EMPTY_FAVORITOS;
 
-  // Favoritar direto no card da home, sem entrar no mercado. A troca aparece
-  // na hora e volta se a rede falhar.
   const alternarFavorito = async (store: Store) => {
     if (!usuario) {
       navigate("/auth");
@@ -329,8 +306,6 @@ export default function Mercadins() {
   }, [stores, busca, local, categoria, favoritos]);
 
   const notaMedia = useMemo(() => {
-    // Só entra na média quem já tem avaliação — mercado sem nota não
-    // deveria puxar a média pra baixo
     const avaliados = stores.filter(s => Number(s.avaliacao ?? 0) > 0);
     if (avaliados.length === 0) return 0;
     const soma = avaliados.reduce((acc, s) => acc + Number(s.avaliacao ?? 0), 0);
@@ -339,7 +314,6 @@ export default function Mercadins() {
 
   const filtrosAtivos = busca.trim() !== "" || local.trim() !== "" || categoria !== "Todos";
 
-  // Melhores avaliados: top 3 notas (desempate por quantidade de avaliações)
   const melhoresAvaliados = useMemo(
     () =>
       [...stores]
@@ -353,7 +327,6 @@ export default function Mercadins() {
     [stores]
   );
 
-  // Continue explorando: mercados abertos pelo cliente, mais recentes primeiro
   const continueExplorando = useMemo(() => {
     const porSlug = new Map(stores.map((s) => [s.slug, s]));
     return visitados
@@ -362,7 +335,6 @@ export default function Mercadins() {
       .slice(0, 6);
   }, [stores, visitados]);
 
-  // Sugestões de produtos: busca com 300ms de espera em todos os mercados
   useEffect(() => {
     const termo = busca.trim();
     if (termo.length < 2) return;
@@ -376,7 +348,6 @@ export default function Mercadins() {
     return () => window.clearTimeout(timer);
   }, [busca]);
 
-  // Fecha o dropdown quando o clique fica fora da área de busca
   useEffect(() => {
     if (!dropdownProdutos) return;
     function foraDoCampo(e: MouseEvent) {
@@ -388,7 +359,6 @@ export default function Mercadins() {
     return () => document.removeEventListener("mousedown", foraDoCampo);
   }, [dropdownProdutos]);
 
-  // Aviso de CEP no contador: parcial = mesma região; completo = CEP exato
   const digitosLocal = local.replace(/\D/g, "");
   const avisoCep =
     digitosLocal.length < 5
@@ -408,7 +378,6 @@ export default function Mercadins() {
     irParaSecao("mercados");
   }
 
-  // Abre o mercado direto (chamado depois que o cliente confirma)
   function abrirMercado(slug: string) {
     registrarVisita(slug);
     navigate(`/vitrine/${slug}`);
@@ -417,7 +386,6 @@ export default function Mercadins() {
   function irParaMercado(slug: string) {
     if (!slug) return;
     const store = stores.find(s => s.slug === slug);
-    // Loja fechada agora: mostra o aviso antes de entrar — o cliente decide
     if (store && !lojaAberta(store)) {
       setLojaFechada(store);
       return;
@@ -425,7 +393,6 @@ export default function Mercadins() {
     abrirMercado(slug);
   }
 
-  // Aviso de "loja fechada" (aberto pelo card fechado)
   const proximaLoja = lojaFechada
     ? proximaAbertura(parseHorario(lojaFechada.horario))
     : null;
@@ -485,7 +452,6 @@ export default function Mercadins() {
                 </a>
               </li>
               <li className="nav-links__criar">
-                {/* Vai para a página promocional já parando em cima dos planos */}
                 <Link to="/promocional#planos">Crie seu mercado</Link>
               </li>
               {!usuario && (
@@ -536,7 +502,6 @@ export default function Mercadins() {
                 aria-label="Buscar mercados e produtos"
               />
 
-              {/* Sugestões de produtos de todos os mercados */}
               {dropdownProdutos && (buscandoProdutos || produtosBusca.length > 0) && (
                 <div className="search-dd" role="listbox" aria-label="Sugestões de produtos">
                   <p className="search-dd-titulo">
@@ -594,8 +559,6 @@ export default function Mercadins() {
               </>
             )}
 
-            {/* Menu compacto — abaixo de 600px os links do topo somem,
-                então este botão (hambúrguer) abre o painel de navegação */}
             <button
               type="button"
               className="nav-toggle"
@@ -825,7 +788,6 @@ export default function Mercadins() {
                       </div>
                     </button>
 
-                    {/* Favoritar/desfavoritar sem precisar entrar no mercado */}
                     <button
                       type="button"
                       className={`store-favorito-badge store-favorito-badge--btn${
@@ -856,7 +818,6 @@ export default function Mercadins() {
                   </div>
 
                   <div className="store-content">
-                    {/* Bloco visual da categoria do estabelecimento */}
                     <BlocoTipo store={store} />
 
                     <div className="store-title-row">
@@ -870,10 +831,8 @@ export default function Mercadins() {
                       </div>
                     </div>
 
-                    {/* Horário de hoje, quando o mercado configurou */}
                     <LinhaHorario store={store} agora={agora} />
 
-                    {/* Semana inteira visível: dias abertos e fechados */}
                     <HorarioSemana horario={store.horario} />
 
                     {store.descricao && <p className="store-desc">{store.descricao}</p>}
@@ -900,7 +859,6 @@ export default function Mercadins() {
                 </article>
               ))}
 
-              {/* Criar mercado — só para quem não tem loja própria ou não está logado */}
               {(!usuario || !temMercado) && (
                 <button
                   type="button"
@@ -926,7 +884,6 @@ export default function Mercadins() {
             </section>
           )}
 
-          {/* Melhores avaliados — top 3 notas dos clientes */}
           {!carregando && !filtrosAtivos && melhoresAvaliados.length > 0 && (
             <section className="home-secao" id="melhores-avaliados">
               <div className="home-secao-head">
@@ -973,7 +930,6 @@ export default function Mercadins() {
             </section>
           )}
 
-          {/* Continue explorando — mercados que o cliente já visitou */}
           {!carregando && !filtrosAtivos && continueExplorando.length > 0 && (
             <section className="home-secao" id="continue-explorando">
               <div className="home-secao-head">
@@ -1074,10 +1030,6 @@ export default function Mercadins() {
   );
 }
 
-// Bloco visual da categoria no card de mercado: quadrado escuro com ícone
-// + etiqueta com o nome da categoria (e "+N" quando tem mais tipos).
-// Linha de horário de hoje no card: "Hoje: 08:00 – 18:00" ou
-// "Fechado hoje". Mercado sem horário configurado não mostra nada.
 function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
   const texto = horarioDeHoje(parseHorario(store.horario), agora);
   if (!texto) return null;

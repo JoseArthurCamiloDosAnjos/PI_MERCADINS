@@ -17,15 +17,11 @@ router.get('/:id/pedidos',  autenticar, listarPedidosMercado);
 router.get('/:id/financeiro', autenticar, financeiroMercado);
 router.post('/:id/favoritar',  autenticar, favoritarMercado);
 router.delete('/:id/favoritar', autenticar, favoritarMercado);
-// Split: cria a subconta do vendedor no Asaas e grava o Wallet ID (automático)
 router.post('/:id/asaas/subconta', autenticar, criarSubcontaAsaas);
 router.get('/:id/avaliacoes',  autenticarOpcional, listarAvaliacoesMercado);
 router.post('/:id/avaliacoes', autenticar, criarAvaliacao);
-// B6 — Moderação: vendedor/admin oculta ou exibe uma avaliação da loja
 router.put('/:id/avaliacoes/:avaliacaoId', autenticar, alternarVisibilidadeAvaliacao);
-// B6 — Painel do vendedor: avaliações de produtos da loja (para moderar)
 router.get('/:id/avaliacoes-produtos', autenticar, listarAvaliacoesProdutosDoMercado);
-// Cupons de desconto (B3): CRUD do vendedor + validação no carrinho do cliente
 router.get('/:id/cupons',          autenticar, listarCupons);
 router.post('/:id/cupons',         autenticar, criarCupom);
 router.post('/:id/cupons/validar', autenticar, validarCupomNoCarrinho);

@@ -1,6 +1,5 @@
 const { conectar } = require("../db/neon");
 
-// GET /api/usuario/favoritos
 const listarFavoritos = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -16,7 +15,6 @@ const listarFavoritos = async (req, res) => {
   }
 };
 
-// GET /api/usuario/avaliacoes
 const listarAvaliacoes = async (req, res) => {
   const id_usuario = req.usuarioId;
 
@@ -38,17 +36,12 @@ const listarAvaliacoes = async (req, res) => {
   }
 };
 
-// GET /api/usuario/historico
 const listarHistorico = async (req, res) => {
   const id_usuario = req.usuarioId;
 
   try {
     const sql = await conectar();
 
-    // itens_json: cópia dos itens comprados (id + quantidade) — é o que
-    // permite "recomprar": a tela reconstrói o carrinho com ele. slug: leva
-    // o cliente de volta à vitrine da loja. forma_pagamento: a tela só oferece
-    // "cancelar pedido" enquanto o cliente ainda não pagou.
     const historico = await sql`
       SELECT h.id, h.id_mercado, m.nome AS mercado, m.slug, h.produtos, h.valor_total,
              h.data_compra, h.status, h.observacao, h.itens_json, h.forma_pagamento
@@ -65,9 +58,6 @@ const listarHistorico = async (req, res) => {
   }
 };
 
-// Monta a lista de favoritos do usuário (usada pelo perfil e pela página de
-// favoritos): traz os dados da loja necessários para abrir a vitrine e mostrar
-// foto, cidade, nota e situação da loja.
 async function montarFavoritos(sql, id_usuario) {
   return await sql`
     SELECT f.id, f.id_mercado, f.data_cadastro,
@@ -87,8 +77,6 @@ async function montarFavoritos(sql, id_usuario) {
   `;
 }
 
-// POST /api/mercados/:id/favoritar   → adiciona
-// DELETE /api/mercados/:id/favoritar → remove
 const favoritarMercado = async (req, res) => {
   const id_usuario = req.usuarioId;
   const id_mercado = Number(req.params.id);

@@ -13,8 +13,6 @@ export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  // useCallback mantém a referência estável entre renderizações: os efeitos que
-  // dependem de showToast podem listá-lo nas dependências sem reexecutar à toa.
   const dismissToast = useCallback((id: number) => {
     setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, hiding: true } : t)));
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);

@@ -1,11 +1,3 @@
-// Diagnóstico do Asaas — somente leitura (não cria nada, não altera nada).
-//
-//   node scripts/verificarAsaas.js          → ambiente + validade da chave
-//   node scripts/verificarAsaas.js --pix    → cria UMA cobrança Pix de teste
-//                                             (R$ 5,00) e mostra o QR gerado
-//
-// O teste --pix cria uma cobrança real se a chave for de produção (ela expira
-// sozinha amanhã e ninguém paga) — use só para confirmar que o Pix funciona.
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') })
 
 const asaas = require('../src/services/asaasService')

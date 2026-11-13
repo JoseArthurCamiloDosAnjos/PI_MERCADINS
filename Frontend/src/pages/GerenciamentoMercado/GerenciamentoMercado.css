@@ -156,7 +156,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* prevents flex overflow causing white space */
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -194,18 +194,12 @@
 }
 .gm-btn-sec:hover { border-color: var(--branco-suave); color: var(--branco); }
 
-/* Foco visível para quem navega pelo teclado (não aparece para o mouse,
-   então o desenho pronto da barra não muda) */
 .gm-btn-back:focus-visible,
 .gm-btn-sec:focus-visible {
   outline: 3px solid var(--amarelo);
   outline-offset: 2px;
 }
 
-/* "Ver vitrine" é a ação principal da barra do vendedor: ganha o destaque
-   da marca para não passar despercebida ao lado de "Meus mercados".
-   Só este botão recebe o realce — os outros .gm-btn-sec da tela seguem
-   exatamente como estavam. */
 .gm-btn-vitrine {
   background: var(--amarelo);
   border-color: var(--amarelo);
@@ -319,7 +313,6 @@
 }
 
 /* ─── Stats ─────────────────────────────────────────────────────────────── */
-/* Grade: cards de tamanho igual, sem "vazar" para fora da própria área */
 .gm-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .gm-stat {
   min-width: 0;
@@ -548,7 +541,6 @@
 .gm-rev-text  { font-size: 10px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.5; }
 
 /* ─── Moderação de avaliações (B6) ──────────────────────────────────────── */
-/* Avaliação ocultada pelo vendedor: aparece esmaecida, só para ele */
 .gm-review-card--oculta { opacity: 0.55; border-style: dashed; }
 .gm-review-card--oculta:hover { transform: none; border-color: #fca5a5; }
 
@@ -632,7 +624,6 @@
   grid-column: 1 / -1;
 }
 
-/* Aviso do preenchimento automático do endereço pelo CEP */
 .gm-info-dica-cep {
   font-size: 11px;
   font-weight: 700;
@@ -1016,7 +1007,7 @@
 .gm-modal-dica {
   display: block; margin-top: 4px; font-size: 0.72rem;
   color: var(--cinza-texto); font-weight: 400;
-  text-transform: none; /* explicação em caixa baixa, mesmo dentro do label */
+  text-transform: none;
 }
 
 /* ── Estoque e margem por produto (B6) ──────────────────────────────────── */
@@ -1129,8 +1120,6 @@
   gap: 0.8rem; align-items: end; margin-bottom: 0.8rem;
 }
 
-/* Criação automática da conta Asaas (Wallet): select do tipo de empresa
-   ao lado do botão, sem esticar na largura toda */
 .gm-wallet-auto {
   display: flex; gap: 0.8rem; align-items: end; flex-wrap: wrap;
   margin-bottom: 0.8rem;

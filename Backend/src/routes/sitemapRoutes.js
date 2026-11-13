@@ -2,19 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { conectar } = require('../db/neon');
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Sitemap dinâmico (SEO - C6): lista as páginas institucionais e a vitrine de
-//  cada mercado ativo, direto do banco. Guardado em memória por 1 hora para não
-//  consultar o banco a cada acesso de robô.
-//  O robots.txt do frontend aponta para esta URL.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BASE_FRONT = (process.env.FRONTEND_URL || 'https://mercadins.com.br').replace(/\/+$/, '');
-const CACHE_MS = 60 * 60 * 1000; // 1 hora
+const CACHE_MS = 60 * 60 * 1000;
 
 let cache = { xml: null, em: 0 };
 
-// Páginas institucionais fixas + home
 const ROTAS_FIXAS = [
   { rota: '',                     changefreq: 'daily',   priority: '1.0' },
   { rota: '/promocional',         changefreq: 'monthly', priority: '0.7' },
@@ -75,7 +69,6 @@ router.get('/sitemap.xml', async (req, res) => {
     res.type('application/xml').send(xml);
   } catch (err) {
     console.error('ERRO sitemap.xml:', err);
-    // Nunca derruba o site por causa do sitemap: devolve vazio
     res
       .status(500)
       .type('application/xml')

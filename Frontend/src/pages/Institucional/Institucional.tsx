@@ -10,26 +10,15 @@ type Props = {
   children: ReactNode;
 };
 
-/**
- * Layout das páginas institucionais (Sobre, Como funciona, Atendimento,
- * Termos, Privacidade, Cookies...): cabeçalho com logo + botão voltar,
- * conteúdo e rodapé do site.
- */
 export default function PaginaInstitucional({ titulo, subtitulo, children }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ao trocar para uma página institucional, cai no topo na hora
-  // (sem esperar a pintura — evita "piscar" no lugar antigo).
-  // Se a URL tem #secao, deixa a própria página cuidar da rolagem.
   useLayoutEffect(() => {
     if (!location.hash) window.scrollTo(0, 0);
   }, [location.key, location.hash]);
 
   function voltar() {
-    // Veio do cadastro (link aberto em outra aba pelo AceiteTermos): fecha
-    // esta aba e deixa a pessoa no formulário que já estava preenchido.
-    // Se o navegador não deixar fechar a aba, navega para o cadastro aqui.
     const origem = new URLSearchParams(location.search).get("origem");
     if (origem === "cadastro" || origem === "registro-mercado") {
       const destino = origem === "cadastro" ? "/auth/register" : "/registrar-mercado";
@@ -45,7 +34,6 @@ export default function PaginaInstitucional({ titulo, subtitulo, children }: Pro
     <div className="inst-page">
       <header className="inst-header">
         <div className="inst-container inst-header-inner">
-          {/* Símbolo do Mercadins: recarrega a página e volta para o início */}
           <a href="/" className="inst-logo" title="Voltar ao início">
             <img src={logo} alt="Mercadins" />
           </a>

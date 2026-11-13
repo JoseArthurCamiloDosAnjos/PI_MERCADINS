@@ -138,7 +138,6 @@ export default function Usuarios() {
   const [pagina, setPagina] = useState(1)
   const [loading, setLoading] = useState(true)
 
-  // Modais
   const [detalhes, setDetalhes] = useState<DetalhesUsuario | null>(null)
   const [editando, setEditando] = useState<DetalhesUsuario | null>(null)
   const [formEdit, setFormEdit] = useState({ nome: '', email: '', telefone: '', data_nascimento: '', is_admin: false })
@@ -166,8 +165,6 @@ export default function Usuarios() {
   }, [busca, filtroTipo, filtroStatus, pagina])
 
   useEffect(() => {
-    // Adia um instante: assim o carregamento não dispara setState de forma
-    // síncrona dentro do efeito (mesmo comportamento, sem o alerta do React)
     Promise.resolve().then(carregar)
   }, [carregar])
 

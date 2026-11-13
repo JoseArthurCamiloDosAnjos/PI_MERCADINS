@@ -1,21 +1,7 @@
 const { conectar } = require('../db/neon');
 
-// ─────────────────────────────────────────────
 // Depoimentos da plataforma
-//
-// O cliente escreve o que achou do Mercadins (sobre a plataforma como um
-// todo, não sobre um mercado em especial). Fica na página inicial.
-//
-//   • GET  /api/depoimentos → público: só os visíveis, com a média das notas
-//   • POST /api/depoimentos → logado: cria ou atualiza o próprio depoimento
-//     (cada cliente deixa um; se escrever de novo, o anterior é atualizado)
-//
-// 'oculta' existe para o administrador esconder um depoimento do site sem
-// apagá-lo (mesma ideia da moderação de avaliações — B6). O POST devolve
-// 'minha' para a tela saber se o cliente já escreveu e mostrar botão de editar.
-// ─────────────────────────────────────────────
 
-// GET /api/depoimentos — público
 const listarDepoimentos = async (req, res) => {
   const idUsuario = req.usuarioId ?? null;
 
@@ -54,7 +40,6 @@ const listarDepoimentos = async (req, res) => {
   }
 };
 
-// POST /api/depoimentos — logado; cria ou atualiza o depoimento do cliente
 const criarDepoimento = async (req, res) => {
   const idUsuario = req.usuarioId;
   const { nota, texto } = req.body;
@@ -69,7 +54,6 @@ const criarDepoimento = async (req, res) => {
 
     const textoLimpo = typeof texto === 'string' ? texto.trim().slice(0, 600) : '';
 
-    // Sobe ou atualiza o depoimento deste cliente (um por cliente)
     await sql`
       INSERT INTO depoimentos (id_usuario, nota, texto)
       VALUES (${idUsuario}, ${notaNum}, ${textoLimpo})

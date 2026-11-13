@@ -17,7 +17,6 @@ interface Avaliacao {
 interface AvaliacoesModalProps {
   mercadoId: number;
   onFechar: () => void;
-  /** Atualiza a média exibida no cabeçalho da vitrine após enviar */
   onAtualizar?: (media: number, total: number) => void;
 }
 
@@ -88,7 +87,6 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
         setTotal(data.total ?? 0);
         setLista(data.avaliacoes ?? []);
 
-        // Minha avaliação já existente vira o valor inicial do formulário
         const minha = (data.avaliacoes ?? []).find((a: Avaliacao) => a.minha);
         if (minha) {
           setNota(minha.nota);
@@ -132,7 +130,6 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
 
   return (
     <>
-      {/* Clicar fora (no fundo escuro) fecha o pop-up, como nos demais modais */}
       <div className="avm-overlay" onClick={onFechar}>
         <div className="avm-modal" onClick={e => e.stopPropagation()}>
           <div className="avm-header">
@@ -140,7 +137,6 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
             <button className="avm-close" onClick={onFechar} aria-label="Fechar">✕</button>
           </div>
 
-          {/* Média geral */}
           <div className="avm-media">
             <span className="avm-media-num">{media.toFixed(1)}</span>
             <div className="avm-media-info">
@@ -151,7 +147,6 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
             </div>
           </div>
 
-          {/* Formulário */}
           {logado ? (
             <div className="avm-form">
               <p className="avm-form-label">
@@ -185,7 +180,6 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
             </div>
           )}
 
-          {/* Lista de avaliações */}
           <div className="avm-lista">
             {carregando ? (
               <p className="avm-vazio">Carregando avaliações...</p>

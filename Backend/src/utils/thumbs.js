@@ -1,23 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  Miniaturas das imagens ("thumbs")
-//
-//  Para cada imagem em imagens/<categoria>/arquivo.jpg gera, em
-//  imagens/<categoria>/thumbs/arquivo.jpg, uma versão de no máximo
-//  300×300 px (sem ampliar) — é o que o front usa nos cards, miniaturas e
-//  carrinho via srcset, deixando o arquivo original só para as visões
-//  grandes (galeria, banner).
-//
-//  gerarThumb(caminhoOriginal) → caminho do thumb ou null (best effort:
-//  falha na geração nunca derruba o upload/request).
-// ─────────────────────────────────────────────────────────────────────────────
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
 const LADO_MAX_THUMB = 300;
 
-// Serializa gerações concorrentes do mesmo arquivo (dois requests ao mesmo
-// tempo pedindo o mesmo thumb — ex.: página com 20 cards legados).
 const emAndamento = new Map();
 
 function thumbDe(caminhoOriginal) {
@@ -36,7 +23,7 @@ async function gerarThumb(caminhoOriginal) {
     const promessa = (async () => {
       await fs.promises.mkdir(path.dirname(destino), { recursive: true });
       const pipeline = sharp(caminhoOriginal)
-        .rotate() // respeita a orientação EXIF
+        .rotate()
         .resize({
           width: LADO_MAX_THUMB,
           height: LADO_MAX_THUMB,
@@ -67,13 +54,10 @@ async function gerarThumb(caminhoOriginal) {
   }
 }
 
-// Express middleware: em GET /imagens/<categoria>/thumbs/<arquivo> gera a
-// miniatura sob demanda quando ela ainda não existe (imagens antigas, feitas
-// antes deste recurso) e deixa o express.static servir em seguida.
 function middlewareThumbSobDemanda(raizImagens, categorias) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
-    const partes = req.path.split('/').filter(Boolean); // ['produtos','thumbs','x.jpg']
+    const partes = req.path.split('/').filter(Boolean);
     if (partes.length !== 3 || partes[1] !== 'thumbs') return next();
 
     const [categoria, , arquivo] = partes;
@@ -82,7 +66,6 @@ function middlewareThumbSobDemanda(raizImagens, categorias) {
 
     const original = path.join(raizImagens, categoria, arquivo);
     const alvo = path.join(raizImagens, categoria, 'thumbs', arquivo);
-    // Caminho resolvido precisa continuar dentro da pasta de imagens.
     if (!path.resolve(alvo).startsWith(path.resolve(raizImagens) + path.sep)) return next();
     if (fs.existsSync(alvo)) return next();
     if (!fs.existsSync(original)) return next();

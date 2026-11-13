@@ -14,7 +14,6 @@
 }
 
 .endereco-popup {
-  /* paleta própria: funciona dentro do carrinho e dentro do perfil */
   --bg-card: #142744;
   --bg-panel: #101f38;
   --border-subtle: #22375c;
@@ -96,8 +95,6 @@
   overflow-y: auto;
 }
 
-/* Botão "Usar minha localização" — fica acima dos campos, com destaque
-   discreto para não competir com o botão principal de salvar. */
 .endereco-popup__localizacao {
   display: inline-flex;
   align-items: center;
@@ -187,7 +184,6 @@
   cursor: default;
 }
 
-/* Aviso de campo faltando ou erro do servidor, dentro do pop-up */
 .endereco-popup__erro {
   margin: 14px 0 0;
   font-size: 12.5px;
@@ -195,7 +191,6 @@
   color: #e2574c;
 }
 
-/* Retorno do preenchimento automático: buscando, preenchido ou CEP sem achado */
 .endereco-popup__dica {
   margin: 14px 0 0;
   font-size: 12.5px;
@@ -219,7 +214,6 @@
   min-width: 0;
 }
 
-/* A rua ocupa a linha inteira — é o campo mais longo */
 .endereco-campo--rua {
   grid-column: span 2;
 }

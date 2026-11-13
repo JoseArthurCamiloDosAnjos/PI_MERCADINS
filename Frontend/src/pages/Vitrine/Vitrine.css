@@ -196,7 +196,6 @@
 .vt-header {
   background: var(--vt-azul-escuro);
   border-bottom: 1px solid var(--vt-azul-borda);
-  /* Espaço no topo: a identidade fica inteira dentro do header, sem invadir o banner */
   padding: 1.5rem 2.5rem 1.4rem;
   display: flex;
   flex-direction: column;
@@ -209,14 +208,12 @@
   overflow: visible;
 }
 
-/* Identidade (logo + nome + informações) inteira dentro do header, abaixo do banner */
 .vt-header-identity {
   display: flex;
   align-items: flex-start;
   gap: 1.2rem;
 }
 
-/* Logo */
 .vt-logo-btn {
   position: relative;
   background: none;
@@ -268,10 +265,8 @@
 }
 .vt-logo-btn:hover .vt-logo-edit-overlay { opacity: 1; }
 
-/* Nome e descrição */
 .vt-header-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-bottom: 4px; }
 .vt-header-nome-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-/* Limitador de nome: no máximo 2 linhas, o resto vira reticências */
 .vt-nome-mercado {
   font-size: 21px;
   font-weight: 800;
@@ -284,7 +279,6 @@
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-/* Editar sempre visível e legível (mesmo contraste em todas as lojas) */
 .vt-btn-editar {
   display: flex;
   align-items: center;
@@ -302,7 +296,6 @@
 }
 .vt-btn-editar:hover { background: var(--vt-amarelo); color: var(--vt-azul-escuro); border-color: var(--vt-amarelo); }
 
-/* Localização da loja (endereço visível, igual o cliente vê) */
 .vt-local {
   display: flex;
   align-items: center;
@@ -333,7 +326,6 @@
 }
 .vt-btn-leia-mais:hover { opacity: 0.8; }
 
-/* Busca */
 .vt-busca-wrap {
   display: flex;
   align-items: center;
@@ -357,7 +349,6 @@
 }
 .vt-busca-input::placeholder { color: var(--vt-cinza); }
 
-/* Tags / categorias */
 .vt-tags-row {
   display: flex;
   gap: 10px;
@@ -385,8 +376,6 @@
 }
 
 /* ─── Main ───────────────────────────────────────────────────────────────── */
-/* O main rola naturalmente; quem faz a rolagem é o .vt-shell (rolagem única).
-   Com overflow interno aqui, o flex o esmagava e os cards ficavam cortados. */
 .vt-main {
   flex: 1;
   padding: 2rem 2.5rem;
@@ -526,7 +515,6 @@
 .vt-produto-preco { font-size: 13.5px; font-weight: 800; color: var(--vt-amarelo); margin: 0; }
 .vt-produto-desc { font-size: 11px; color: var(--vt-cinza); margin: 2px 0 0; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
 
-/* Botão editar produto */
 .vt-produto-btn-editar {
   position: absolute;
   top: 6px;

@@ -2,23 +2,11 @@ import { useState, type ImgHTMLAttributes, type SyntheticEvent } from 'react';
 import { thumbUrl } from '../utils/imagens';
 
 type ImagemProps = ImgHTMLAttributes<HTMLImageElement> & {
-  /** URL da imagem (a original enviada no upload). */
   src: string;
-  /**
-   * Usa a miniatura (300w) via srcset nas caixas pequenas — o navegador
-   * escolhe entre miniatura e original conforme o `sizes`. Padrão: true.
-   */
   thumb?: boolean;
-  /** Tamanho exibido da imagem (atributo sizes do srcset). */
   sizes?: string;
 };
 
-/**
- * <img> responsivo: serve a miniatura gerada no upload para caixas pequenas
- * (card, miniatura, carrinho) e o original para as grandes (galeria, banner),
- * com fallback automático para o original quando a miniatura não existe
- * (imagens enviadas antes deste recurso). Por padrão carrega lazy.
- */
 export default function Imagem({
   src,
   thumb = true,
@@ -28,8 +16,6 @@ export default function Imagem({
   decoding,
   ...rest
 }: ImagemProps) {
-  // Guarda por src: se a miniatura falhar para esta imagem, para de tentá-la
-  // (e volta a tentar quando o src trocar, ex.: carrossel).
   const [semMiniatura, setSemMiniatura] = useState<string | null>(null);
   const miniatura = thumb && semMiniatura !== src ? thumbUrl(src) : null;
 

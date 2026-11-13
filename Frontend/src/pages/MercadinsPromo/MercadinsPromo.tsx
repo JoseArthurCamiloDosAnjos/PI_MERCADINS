@@ -66,8 +66,6 @@ export default function MercadinsPromo() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Quem chega pelo menu "Crie seu mercado" cai na página já com os planos
-  // na tela (o restante continua acessível rolando para cima).
   useEffect(() => {
     if (window.location.hash !== "#planos") return;
     const atraso = window.setTimeout(() => {
@@ -99,13 +97,11 @@ export default function MercadinsPromo() {
 
   const handleCTA = () => {
     if (!usuario) {
-      // Sem conta: cria a conta e volta já para a escolha do plano
       sessionStorage.setItem("posLoginDestino", "/planos");
       navigate("/auth/register");
     } else if (temMercado) {
       navigate("/vendedor");
     } else {
-      // Escolher o plano é o passo obrigatório antes de criar o mercado
       navigate("/planos");
     }
   };
@@ -121,7 +117,6 @@ export default function MercadinsPromo() {
       return;
     }
     if (usuario.is_admin) {
-      // Admin não assina: não grava o plano para não ir para o pagamento
       localStorage.removeItem("planoSelecionado");
     } else {
       localStorage.setItem("planoSelecionado", JSON.stringify({
@@ -135,7 +130,6 @@ export default function MercadinsPromo() {
 
   return (
     <div className="mp-root">
-      {/* NAVBAR */}
       <nav className={`mp-nav ${mobileMenuOpen ? "mp-nav-open" : ""}`}>
         <div className="mp-nav-inner">
           <div className="mp-logo">
@@ -168,7 +162,6 @@ export default function MercadinsPromo() {
         </div>
       </nav>
 
-      {/* HERO */}
       <section className="mp-hero">
         <div className="mp-hero-bg-circles">
           <div className="mp-circle mp-circle-1" />
@@ -255,7 +248,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* SOBRE O MERCADINS */}
       <section className="mp-about" id="sobre">
         <div className="mp-container">
           <div className="mp-about-grid">
@@ -297,7 +289,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* BENEFÍCIOS */}
       <section className="mp-benefits" id="beneficios">
         <div className="mp-container">
           <div className="mp-section-head">
@@ -318,7 +309,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* PLANOS */}
       <section className="mp-plans" id="planos">
         <div className="mp-container">
           <div className="mp-section-head">
@@ -402,7 +392,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* DEPOIMENTOS */}
       <section className="mp-testimonials">
         <div className="mp-container">
           <div className="mp-section-head">
@@ -450,7 +439,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
       <section className="mp-cta-final">
         <div className="mp-cta-circles">
           <div className="mp-cta-circle mp-cta-c1" />
@@ -472,7 +460,6 @@ export default function MercadinsPromo() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="mp-footer">
         <div className="mp-container mp-footer-inner">
           <div className="mp-logo">

@@ -34,7 +34,6 @@ async function dashboard(_req, res) {
       FROM usuarios_mercados WHERE papel = 'funcionario'
     `
 
-    // Crescimento mensal — últimos 6 meses
     const crescimentoMercados = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', data_cadastro), 'YYYY-MM') AS mes,
@@ -53,7 +52,6 @@ async function dashboard(_req, res) {
       GROUP BY mes ORDER BY mes
     `
 
-    // Atividade recente — últimos registros de mercados e usuários
     const mercadosRecentes = await sql`
       SELECT nome, data_cadastro AS data FROM mercados
       ORDER BY data_cadastro DESC LIMIT 5
@@ -118,16 +116,11 @@ async function listarUsuarios(req, res) {
     const limiteNum = Math.min(100, Math.max(1, Number(limite) || 20))
     const offset = (paginaNum - 1) * limiteNum
 
-    // Texto da busca em minúsculas (a comparação usa LOWER + LIKE)
     const textoBusca = String(busca).trim()
     const buscaLower = `%${textoBusca.toLowerCase()}%`
     const tipoFiltro = ['admin', 'vendedor', 'cliente'].includes(tipo) ? tipo : ''
     const statusFiltro = ['ativo', 'inativo', 'bloqueado'].includes(status) ? status : ''
 
-    // Todos os filtros entraram na consulta (antes o filtro de status que a
-    // tela enviava era ignorado e a paginação contava todo mundo).
-    // As condições são fixas e os valores vão como parâmetro — o banco do
-    // projeto não aceita montar SQL dinâmico colando texto.
     const usuarios = await sql`
       SELECT
         u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro, u.foto_perfil, u.is_admin, u.status, u.ultimo_acesso,
@@ -169,7 +162,6 @@ async function listarUsuarios(req, res) {
         AND (${statusFiltro}::text = '' OR COALESCE(u.status, 'ativo') = ${statusFiltro})
     `
 
-    // Métricas dos cartões: sempre do sistema inteiro (não mudam com o filtro)
     const [contTotal]  = await sql`SELECT COUNT(*)::int AS total FROM usuarios`
     const [contAdmin]  = await sql`SELECT COUNT(*)::int AS total FROM usuarios WHERE is_admin = TRUE`
     const [contVend]   = await sql`SELECT COUNT(*)::int AS total FROM usuarios WHERE id_usuario IN (SELECT id_usuario FROM usuarios_mercados WHERE papel IN ('dono','admin'))`
@@ -202,8 +194,6 @@ async function relatorios(req, res) {
     const sql = await conectar()
     const { periodo = 'tudo', data_inicio } = req.query
 
-    // Período escolhido na tela (dia, mês ou ano) → [início, fim[
-    // Sem período (ou valor fora do padrão) fica null e nada é filtrado.
     const pad = n => String(n).padStart(2, '0')
     const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 00:00:00`
     const valor = typeof data_inicio === 'string' ? data_inicio.trim() : ''
@@ -224,27 +214,19 @@ async function relatorios(req, res) {
       fim = fmt(new Date(a + 1, 0, 1))
     }
 
-    // Cada bloco repete a mesma janela de datas: a camada de banco só aceita
-    // valor como parâmetro, então o texto do SQL não pode ser montado em código.
 
-    // Métricas gerais
     const [totalMercados]  = await sql`SELECT COUNT(*)::int AS total FROM mercados`
     const [totalPedidos]   = await sql`SELECT COUNT(*)::int AS total FROM historico_compras`
     const [pedidosMes]     = await sql`
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE data_compra >= DATE_TRUNC('month', NOW())
     `
-    // Pedido concluído = pedido entregue (é o status final de qualquer pedido,
-    // tanto para quem recebe em casa quanto para quem retira no balcão)
     const [pedidosConcluidos] = await sql`
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE status = 'entregue'
         AND (${inicio}::text IS NULL
              OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
     `
-    // Entrega concluída = pedido entregue FEITO PELA LOJA: quem retirou no
-    // balcão não conta como entrega (antes os dois cartões repetiam o mesmo
-    // número e "Pedidos concluídos" não acompanhava o período escolhido)
     const [entregasConcluidas] = await sql`
       SELECT COUNT(*)::int AS total FROM historico_compras
       WHERE status = 'entregue'
@@ -258,7 +240,6 @@ async function relatorios(req, res) {
              OR (data_compra >= ${inicio}::timestamp AND data_compra < ${fim}::timestamp))
     `
 
-    // Pedidos por período (últimos 6 meses, ou só o período escolhido)
     const pedidosPorPeriodo = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', data_compra), 'YYYY-MM') AS mes,
@@ -275,14 +256,12 @@ async function relatorios(req, res) {
       GROUP BY mes ORDER BY mes
     `
 
-    // Mercados por tipo (paleta)
     const mercadosPorTipo = await sql`
       SELECT COALESCE(paleta, 'classico') AS tipo, COUNT(*)::int AS total
       FROM mercados
       GROUP BY tipo ORDER BY total DESC
     `
 
-    // Entregas por tipo (status)
     const entregasPorTipo = await sql`
       SELECT status, COUNT(*)::int AS total
       FROM historico_compras
@@ -374,7 +353,6 @@ async function alertas(_req, res) {
 
     const alertas = []
 
-    // Mercados sem produtos
     const [mercadosSemProdutos] = await sql`
       SELECT COUNT(*)::int AS total FROM mercados m
       WHERE NOT EXISTS (
@@ -392,7 +370,6 @@ async function alertas(_req, res) {
       })
     }
 
-    // Usuários sem email verificado
     const [semVerificacao] = await sql`
       SELECT COUNT(*)::int AS total FROM usuarios
       WHERE email_verificado = FALSE
@@ -406,7 +383,6 @@ async function alertas(_req, res) {
       })
     }
 
-    // Avaliações baixas
     const [avaliacoesBaixas] = await sql`
       SELECT COUNT(*)::int AS total FROM avaliacoes WHERE nota <= 2
     `
@@ -419,7 +395,6 @@ async function alertas(_req, res) {
       })
     }
 
-    // Total de mercados e usuários
     const [totalMercados] = await sql`SELECT COUNT(*)::int AS total FROM mercados`
     const [totalUsuarios] = await sql`SELECT COUNT(*)::int AS total FROM usuarios`
 
@@ -450,7 +425,6 @@ async function detalhesUsuario(req, res) {
     `
     if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado' })
 
-    // Mercados vinculados
     const mercados = await sql`
       SELECT m.id_mercado, m.nome, m.slug, m.cidade, m.estado, m.status, um.papel,
         (SELECT COUNT(*)::int FROM historico_compras WHERE id_mercado = m.id_mercado) AS total_pedidos
@@ -459,7 +433,6 @@ async function detalhesUsuario(req, res) {
       WHERE um.id_usuario = ${Number(id)}
     `
 
-    // Histórico de atividades
     const atividades = []
 
     const mercadosCad = await sql`
@@ -526,7 +499,6 @@ async function editarUsuario(req, res) {
     const [existe] = await sql`SELECT id_usuario, is_admin, nome FROM usuarios WHERE id_usuario = ${Number(id)}`
     if (!existe) return res.status(404).json({ erro: 'Usuário não encontrado' })
 
-    // Verificar se email já pertence a outro usuário
     if (email) {
       const [emailExistente] = await sql`
         SELECT id_usuario FROM usuarios WHERE email = ${email} AND id_usuario != ${Number(id)}
@@ -534,7 +506,6 @@ async function editarUsuario(req, res) {
       if (emailExistente) return res.status(400).json({ erro: 'Este email já está em uso por outro usuário' })
     }
 
-    // Gerar email admin ao promover a admin
     let emailAdmin = undefined
     if (is_admin === true && !existe.is_admin) {
       emailAdmin = gerarEmailAdmin(nome || existe.nome)
@@ -568,9 +539,6 @@ async function editarUsuario(req, res) {
       FROM usuarios WHERE id_usuario = ${Number(id)}
     `
 
-    // Promoção: avisa no e-mail PESSOAL da pessoa o login administrativo e a
-    // senha (a mesma da conta normal). Se o provedor falhar, a promoção já
-    // está salva — só informamos que o e-mail não saiu.
     let emailEnviado = false
     if (is_admin === true && !existe.is_admin) {
       try {
@@ -650,10 +618,8 @@ async function excluirUsuario(req, res) {
       }
     }
 
-    // Desvincular de mercados primeiro
     await sql`DELETE FROM usuarios_mercados WHERE id_usuario = ${Number(id)}`
 
-    // Excluir usuário (cascade deve cuidar de favoritos, avaliações, carrinho)
     await sql`DELETE FROM usuarios WHERE id_usuario = ${Number(id)}`
 
     res.json({ mensagem: 'Usuário excluído com sucesso' })
@@ -664,9 +630,6 @@ async function excluirUsuario(req, res) {
 }
 
 // ─── Mercados (visão do administrador) ──────────────────────────────────────
-// Aba "Mercados" do painel: lista todas as lojas da plataforma (inclusive as
-// bloqueadas), com busca, filtro de status e contagem de produtos/cupons.
-// Também serve para entender por que uma loja não aparece no site público.
 
 async function listarMercadosAdmin(req, res) {
   try {
@@ -721,7 +684,6 @@ async function listarMercadosAdmin(req, res) {
   }
 }
 
-// GET /api/admin/mercados/:id — o que o administrador precisa ver de uma loja
 async function detalheMercadoAdmin(req, res) {
   try {
     const sql = await conectar()

@@ -2,11 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // ─── Ajustes que valem para qualquer navegação ────────────────────────────────
-// 1) Título da aba do navegador por rota (padrão "X — Mercadins").
-// 2) Voltar ao topo da página quando o endereço muda (mantém a posição
-//    quando a troca é só de âncora, ex.: #contato no Atendimento).
-// As páginas com nome dinâmico (vitrine e produto) sobrescrevem o título
-// depois que os dados chegam.
 
 const TITULO_PADRAO = 'Mercadins — Delivery de mercados perto de você';
 
@@ -42,7 +37,6 @@ function tituloDaRota(pathname: string): string {
   for (const [padrao, titulo] of TITULOS) {
     if (padrao.test(pathname)) return titulo;
   }
-  // Qualquer endereço fora da lista cai na rota "*" = página 404
   return 'Página não encontrada — Mercadins';
 }
 

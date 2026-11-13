@@ -1,11 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  013 — Endereço principal da conta do cliente
-//
-//  O cliente pode ter vários endereços salvos e um deles é o principal: é ele
-//  que já vem marcado no carrinho e no checkout (igual às lojas grandes).
-//  A coluna começa em FALSE; o cadastro do primeiro endereço e a troca de
-//  principal são feitas pelo controller (só pode haver um principal por conta).
-// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   id: '013_endereco_principal',
@@ -17,7 +10,6 @@ module.exports = {
         ADD COLUMN IF NOT EXISTS principal BOOLEAN NOT NULL DEFAULT FALSE
     `;
 
-    // Quem já tem endereço cadastrado leva o mais antigo como principal
     await sql`
       UPDATE enderecos_usuario e
       SET principal = TRUE

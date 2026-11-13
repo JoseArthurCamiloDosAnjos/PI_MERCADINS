@@ -4,8 +4,6 @@ import './EscolherPaleta.css';
 import { IconCheck, IconX, IconAlert } from './Icons';
 
 // ─── Paletas prontas ────────────────────────────────────────────────────────
-// Os nomes das variáveis (azulEscuro, amarelo, etc.) são só rótulos internos —
-// cada paleta define seu próprio conjunto de cores, não precisa ser "azul".
 
 export interface Paleta {
   id: string;
@@ -94,8 +92,6 @@ export function encontrarPaleta(id?: string): Paleta {
 }
 
 // ─── Paleta personalizada ───────────────────────────────────────────────────
-// A partir de 2 cores escolhidas pelo usuário (base escura + destaque), gera
-// automaticamente as variações de claridade que o resto da vitrine precisa.
 
 function hexParaHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -252,7 +248,6 @@ export default function EscolherPaleta({
   const personalizadaAtiva = paletaAtual === 'personalizada';
   const previaPersonalizada = gerarPaletaPersonalizada(corBase, corDestaque, corTexto, corTextoSec, corIcones);
 
-  // Verificar contraste
   const contrasteTexto = verificarContraste(corBase, corTexto);
   const contrasteTextoSec = verificarContraste(corBase, corTextoSec);
   const contrasteIcones = verificarContraste(corBase, corIcones);
@@ -382,7 +377,6 @@ export default function EscolherPaleta({
               </label>
             </div>
 
-            {/* Avisos de contraste */}
             {temAvisoContraste && (
               <div className="ep-aviso-contraste">
                 {contrasteTexto.aviso && (
@@ -406,7 +400,6 @@ export default function EscolherPaleta({
               </div>
             )}
 
-            {/* Preview das cores */}
             <div className="ep-preview-cores">
               <div className="ep-preview-item" style={{ background: corBase, color: corTexto }}>
                 <span>Texto principal</span>

@@ -1,6 +1,3 @@
-// A3 (guarda permanente): procura no backend consultas montadas por texto
-// (padrões que fogem do template marcado do Neon, o único parametrizado).
-// Uso: npm run auditar-sql   → sai com código 1 se achar algo.
 const fs = require('fs');
 const path = require('path');
 
@@ -26,7 +23,6 @@ let achados = 0;
 for (const arquivo of arquivos) {
   const linhas = fs.readFileSync(arquivo, 'utf8').split('\n');
   linhas.forEach((linha, i) => {
-    // ignora comentários simples
     const semComentario = linha.replace(/\/\/.*$/, '');
     for (const { nome, re } of PADROES) {
       if (re.test(semComentario)) {

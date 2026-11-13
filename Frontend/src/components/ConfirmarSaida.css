@@ -100,7 +100,6 @@
 }
 .cfs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Salvar e sair — destaque amarelo */
 .cfs-btn--salvar {
   background: rgba(245, 200, 74, 0.12);
   color: #f5c84a;
@@ -109,7 +108,6 @@
   background: rgba(245, 200, 74, 0.22);
 }
 
-/* Sair sem salvar — vermelho suave */
 .cfs-btn--sair {
   background: rgba(248, 113, 113, 0.08);
   color: #f87171;
@@ -118,7 +116,6 @@
   background: rgba(248, 113, 113, 0.18);
 }
 
-/* Continuar editando — neutro */
 .cfs-btn--cancelar {
   background: transparent;
   color: #7a94c0;
@@ -128,7 +125,6 @@
   color: #c8d6f0;
 }
 
-/* Spinner */
 .cfs-spinner {
   width: 13px;
   height: 13px;

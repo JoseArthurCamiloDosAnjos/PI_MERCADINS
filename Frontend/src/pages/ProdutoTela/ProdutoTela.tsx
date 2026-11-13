@@ -90,14 +90,10 @@ function IconCard({ size = 15 }: { size?: number }) {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ProdutoDetalhe extends ProdutoCarrinho {
-  /** Galeria de imagens; se ausente, cai para [imagem] */
   imagens?: string[];
-  /** Preço "de", exibido riscado ao lado do preço atual */
   precoOriginal?: string;
-  /** Nota média de 0 a 5 */
   avaliacao?: number;
   numAvaliacoes?: number;
-  /** Quantidade em estoque */
   estoque?: number;
 }
 
@@ -136,7 +132,6 @@ interface ProdutoTelaProps {
   paleta?: string;
   corBase?: string;
   corDestaque?: string;
-  /** Outros produtos da mesma categoria sugeridos acima das avaliações */
   recomendados?: ProdutoDetalhe[];
   onAbrirProduto?: (catId: number, prodId: number) => void;
   onVoltar: () => void;
@@ -194,7 +189,6 @@ export default function ProdutoTela({
   const [textoAval, setTextoAval]   = useState('');
   const [fotoAval, setFotoAval]     = useState('');
   const [enviandoAval, setEnviandoAval] = useState(false);
-  // Enviando a foto escolhida para o armazenamento de imagens
   const [fotoEnviando, setFotoEnviando] = useState(false);
 
   useEffect(() => {
@@ -204,7 +198,6 @@ export default function ProdutoTela({
         if (!vivo) return;
         const res = dados as ResumoAvaliacoes;
         setAvaliacoes(res);
-        // Se já avaliei, o formulário nasce com a minha nota/texto antigos
         const minha = res.avaliacoes.find(a => a.minha);
         if (minha) {
           setNotaForm(minha.nota);
@@ -212,11 +205,10 @@ export default function ProdutoTela({
           setFotoAval(minha.foto ?? '');
         }
       })
-      .catch(() => { /* sem avaliações segue zerado */ });
+      .catch(() => {  });
     return () => { vivo = false; };
   }, [mercado.id, categoriaId, produto.id_produto]);
 
-  // Título e prévia de compartilhamento acompanham o produto aberto (SEO)
   useEffect(() => {
     aplicarSeo({
       titulo: `${produto.nome} — ${mercado.nome} — Mercadins`,
@@ -228,22 +220,16 @@ export default function ProdutoTela({
   }, [produto, mercado, imagens]);
 
   const jaAvaliou = !!avaliacoes?.avaliacoes.some(a => a.minha);
-  // Média exibida: ao vivo depois que carrega (atualiza após enviar)
   const mediaExibida = avaliacoes ? avaliacoes.media : (produto.avaliacao ?? 0);
   const totalExibida = avaliacoes ? avaliacoes.total : (produto.numAvaliacoes ?? 0);
 
   // ── Foto da avaliação ───────────────────────────────────────────────────────
-  // Em vez de colar um link, a pessoa tira a foto ou escolhe da galeria (o
-  // accept="image/*" abre as duas opções no celular) e o arquivo vai para a
-  // pasta imagens/avaliacoes/ do backend (com cópia de backup no Supabase).
-  // O campo continua opcional.
   async function enviarFotoParaStorage(arquivo: File): Promise<string | null> {
     return uploadImagem(arquivo, 'avaliacoes');
   }
 
   async function handleEscolherFoto(e: ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0];
-    // Zera o input: assim dá para escolher o mesmo arquivo outra vez
     e.target.value = '';
     if (!arquivo) return;
     if (!ehImagemValida(arquivo)) {
@@ -269,7 +255,6 @@ export default function ProdutoTela({
       showToast('erro', 'Escolha uma nota de 1 a 5 estrelas.');
       return;
     }
-    // Foto é opcional, mas quando preenchida precisa ser um link de imagem
     const foto = fotoAval.trim();
     if (foto && !/^https?:\/\/\S+$/i.test(foto)) {
       showToast('erro', 'A foto precisa ser um link começando com http:// ou https://.');
@@ -294,8 +279,6 @@ export default function ProdutoTela({
 
   const estoqueDisponivel = produto.estoque ?? 0;
   const semEstoque = estoqueDisponivel <= 0;
-  // Quantidade efetiva: mesmo quem tinha mais unidades abertas num produto
-  // anterior nunca pede acima do estoque do produto atual
   const quantidadeEfetiva = semEstoque
     ? 1
     : Math.min(Math.max(quantidade, 1), estoqueDisponivel);
@@ -351,7 +334,6 @@ export default function ProdutoTela({
   return (
     <div className="pd-shell" data-tema={tema} style={estiloPaleta}>
 
-      {/* Dados estruturados do produto para o Google (preço, estoque, nota) */}
       <JsonLd
         dados={{
           '@context': 'https://schema.org',
@@ -421,7 +403,6 @@ export default function ProdutoTela({
       {/* ── Conteúdo ──────────────────────────────────────────────────── */}
       <main className="pd-main">
 
-        {/* Galeria */}
         <section className="pd-galeria">
           {imagens.length > 1 && (
             <div className="pd-miniaturas">
@@ -469,7 +450,6 @@ export default function ProdutoTela({
           )}
         </section>
 
-        {/* Informações */}
         <section className="pd-info">
           <h1 className="pd-nome">{produto.nome}</h1>
 

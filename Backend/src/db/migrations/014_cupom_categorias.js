@@ -1,14 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 //  014 — Cupons com escopo por categoria de produto
-//
-//  O vendedor pode dizer em quais categorias de produtos o cupom vale (ex.:
-//  "só em Hortifruti e Açougue"). Sem nenhuma linha nesta tabela, o cupom
-//  continua valendo para o pedido inteiro — igual era antes, então nenhum
-//  cupom antigo muda de comportamento.
-//
-//  Ao apagar o cupom ou a categoria, a linha correspondente sai junto
-//  (ON DELETE CASCADE).
-// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   id: '014_cupom_categorias',

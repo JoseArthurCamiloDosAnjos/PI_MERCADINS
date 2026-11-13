@@ -5,17 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import './MeusPedidos.css';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  B4 — Acompanhamento do pedido (visão do cliente)
-//
-//  Duas telas na mesma página:
-//    • /pedidos        → lista dos pedidos que o cliente fez
-//    • /pedidos/:id    → detalhe com a linha do tempo do status ATUALIZANDO
-//      sozinho (a página consulta o servidor a cada 10 segundos enquanto o
-//      pedido está em andamento, sem precisar recarregar nada)
-//  Se o pedido ainda aguarda Pix, o QR code aparece na própria tela e a
-//  página fica verificando se o pagamento caiu.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -33,7 +23,6 @@ const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
 
 type ToastTipo = 'sucesso' | 'erro' | 'aviso' | 'info';
 
-// Tira acento e deixa minúsculo para a busca funcionar com ou sem acento
 const normalizar = (texto: string) =>
   texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -56,7 +45,6 @@ interface PedidoLista {
 interface PedidoDetalhe extends PedidoLista {
   cliente: string;
   observacao: string;
-  // Endereço de entrega (item 1) — preenchido só quando a compra foi entregue
   enderecoEntrega?: string;
   gerencia: boolean;
 }
@@ -76,7 +64,6 @@ const IconArrowLeft = () => (
   </svg>
 );
 
-// Lupa da busca de pedidos (canto superior direito)
 const IconLupa = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="7" />
@@ -84,7 +71,6 @@ const IconLupa = () => (
   </svg>
 );
 
-// Lixeira do pedido (remover do histórico)
 const IconLixeira = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -92,7 +78,6 @@ const IconLixeira = () => (
   </svg>
 );
 
-// Fecha / limpa a busca
 const IconFechar = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 6 6 18M6 6l12 12" />
@@ -121,8 +106,6 @@ function ListaPedidos({
     return () => { vivo = false; };
   }, []);
 
-  // Busca no canto superior direito: procura por loja, produto, nº do pedido,
-  // data, status ou forma de entrega/pagamento (ignora acento e maiúscula)
   const filtrados = useMemo(() => {
     if (!pedidos) return null;
     const termo = normalizar(busca.trim());
@@ -143,8 +126,6 @@ function ListaPedidos({
     });
   }, [pedidos, busca]);
 
-  // Lixeira: apaga o registro da listagem do cliente (o pedido continua
-  // gravado e a loja continua vendo no painel dela)
   async function removerPedido(p: PedidoLista) {
     setRemovendo(true);
     try {
@@ -288,14 +269,11 @@ function DetalhePedido({
       const data = await api.detalharPedido(id);
       setPedido(data.pedido);
       setPagamento(data.pagamento ?? null);
-    } catch {
-      // Erro pontual: mantém o que já estava na tela
-    } finally {
+    } catch { /* falha ignorada */ } finally {
       setCarregado(true);
     }
   }, [id]);
 
-  // Carga inicial do pedido
   useEffect(() => {
     let vivo = true;
     (async () => {
@@ -304,17 +282,13 @@ function DetalhePedido({
         if (!vivo) return;
         setPedido(data.pedido);
         setPagamento(data.pagamento ?? null);
-      } catch {
-        // Erro pontual: a tela mostra "não encontrado" abaixo
-      } finally {
+      } catch { /* falha ignorada */ } finally {
         if (vivo) setCarregado(true);
       }
     })();
     return () => { vivo = false; };
   }, [id]);
 
-  // Atualização automática: enquanto o pedido está em andamento (ou aguardando
-  // pagamento), a página consulta o servidor a cada 10 segundos sozinha.
   const statusPedido = pedido?.status;
   useEffect(() => {
     if (!statusPedido) return;
@@ -336,7 +310,6 @@ function DetalhePedido({
     }
   }
 
-  // Item 4 — o cliente cancela o próprio pedido (só quando ainda dá tempo)
   async function cancelarPedido() {
     setCancelando(true);
     try {
@@ -371,15 +344,12 @@ function DetalhePedido({
 
   const total = pedido.valorTotal - pedido.desconto + pedido.taxaEntrega;
   const aguardandoPix = pedido.status === 'aguardando_pagamento' && !!pagamento;
-  // Cancelar só quando: quem olha é o cliente (não a loja), a loja ainda não
-  // começou o preparo e o pedido ainda não foi pago
   const pagoJa = pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.formaPagamento);
   const podeCancelar =
     !pedido.gerencia &&
     ['pendente', 'aguardando_pagamento'].includes(pedido.status) &&
     !pagoJa;
 
-  // Linha do tempo: pedidos cancelados/que aguardam pagamento mostram o caminho normal
   const passos = PASSOS_NORMAL;
   const indiceAtual = passos.indexOf(pedido.status);
 
@@ -455,8 +425,6 @@ function DetalhePedido({
               </p>
             )}
 
-            {/* Nem QR nem link: o Asaas ainda está gerando — a página consulta
-                o servidor a cada 10s, então ele costuma aparecer sozinho */}
             {!pagamento.qrCodeBase64 && !pagamento.copiaEcola && !pagamento.urlPagamento && (
               <p className="mp-pix__aviso">
                 Gerando o código Pix… a página se atualiza sozinha em alguns segundos.
@@ -473,7 +441,6 @@ function DetalhePedido({
           </div>
         )}
 
-        {/* Pedido cancelado: explica o que aconteceu com a compra */}
         {pedido.status === 'cancelado' && (
           <div className="mp-cancelado">
             <strong>Esta compra foi cancelada.</strong>
@@ -484,7 +451,6 @@ function DetalhePedido({
           </div>
         )}
 
-        {/* Cancelar pedido (cliente, enquanto ainda dá tempo) */}
         {podeCancelar && !confirmando && (
           <div className="mp-cancelar">
             <button
@@ -581,8 +547,6 @@ export default function MeusPedidos() {
   return (
     <div className="meuspedidos-page">
       <div className="meuspedidos-topbar">
-        {/* No acompanhamento o atalho é para a conta, caindo direto no
-            histórico de compras; na lista ele segue levando para o início */}
         <button
           className="meuspedidos-voltar"
           onClick={() => navigate(id ? '/perfil#historico-compras' : '/')}
@@ -595,7 +559,6 @@ export default function MeusPedidos() {
           <p>{id ? 'Acompanhe o status em tempo real' : 'Todos os pedidos que você fez'}</p>
         </div>
 
-        {/* Busca de pedidos — só aparece na listagem */}
         {!id && (
           <div className="mp-busca">
             <span className="mp-busca__icone" aria-hidden="true"><IconLupa /></span>

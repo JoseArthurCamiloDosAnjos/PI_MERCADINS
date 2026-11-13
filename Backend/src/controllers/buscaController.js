@@ -1,11 +1,6 @@
 const { conectar } = require('../db/neon');
 
-// ─────────────────────────────────────────────
 // GET /api/busca/produtos?q=termo
-// Busca produtos em TODOS os mercados ativos.
-// Busca sem acento e sem diferenciar maiúsculas
-// ("agua" acha "Água mineral", "PÃO" acha "pão").
-// ─────────────────────────────────────────────
 const buscarProdutos = async (req, res) => {
   const q = String(req.query.q ?? '').trim();
 

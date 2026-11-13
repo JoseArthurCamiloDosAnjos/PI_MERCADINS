@@ -329,7 +329,6 @@ export default function Register() {
     <div className="register-page">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Left panel */}
       <div className="left">
         <div className="left-bg" />
         <div className="circle circle-1" />
@@ -352,7 +351,6 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Right panel */}
       <div className="right">
         <div className="form-card">
           <div className="mobile-logo">
@@ -366,7 +364,6 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} noValidate>
 
-            {/* Nome */}
             <div className={fieldClass("nome")}>
               <div className="field-input-wrap">
                 <input
@@ -391,7 +388,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Telefone */}
             <div className={fieldClass("telefone")}>
               <div className="field-input-wrap">
                 <input
@@ -411,7 +407,6 @@ export default function Register() {
               <span className="field-msg">{fields.telefone.msg}</span>
             </div>
 
-            {/* CPF */}
             <div className={fieldClass("cpf")}>
               <div className="field-input-wrap">
                 <input
@@ -433,7 +428,6 @@ export default function Register() {
               <span className="field-msg">{fields.cpf.msg}</span>
             </div>
 
-            {/* Data de Nascimento */}
             <div className={fieldClass("data_nascimento")}>
               <div className="field-input-wrap date-input-wrap">
                 <input
@@ -501,7 +495,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* E-mail */}
             <div className={fieldClass("email")}>
               <div className="field-input-wrap">
                 <input
@@ -527,7 +520,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Senha */}
             <div className={fieldClass("senha")}>
               <div className="field-input-wrap">
                 <input
@@ -564,7 +556,6 @@ export default function Register() {
               <PasswordStrength senha={form.senha} />
             </div>
 
-            {/* Confirmar Senha */}
             <div className={fieldClass("confirmar")}>
               <div className="field-input-wrap">
                 <input

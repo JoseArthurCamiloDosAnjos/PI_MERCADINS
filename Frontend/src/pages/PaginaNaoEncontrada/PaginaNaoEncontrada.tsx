@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import './PaginaNaoEncontrada.css';
 
-// Página 404: aparece quando a URL não existe (link quebrado, erro de digitação).
 export default function PaginaNaoEncontrada() {
   const navigate = useNavigate();
 

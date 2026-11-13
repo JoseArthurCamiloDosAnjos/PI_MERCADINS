@@ -1,15 +1,3 @@
-// Migração 015 — aceite dos Termos/Privacidade e histórico de notificações
-//
-// • Guarda QUANDO e QUAL versão dos documentos a pessoa aceitou no cadastro
-//   (usuário comum e mercado). Isso é o que a LGPD chama de "comprovação de
-//   consentimento": se um dia houver dúvida, o banco mostra a data, a versão e
-//   o IP de origem.
-// • Cria a tabela "notificacoes": cada aviso enviado (ou registrado) para o
-//   telefone cadastrado fica no histórico, com o status do envio. Enquanto o
-//   serviço de WhatsApp/SMS não estiver configurado, o aviso fica como
-//   "sem_provedor" e pode ser aberto manualmente pelo link do WhatsApp.
-//
-// Idempotente: pode rodar de novo sem quebrar nada.
 
 module.exports = {
   id: '015_termos_notificacoes',

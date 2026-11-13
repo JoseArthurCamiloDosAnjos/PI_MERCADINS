@@ -5,19 +5,9 @@ interface Props {
   marcado: boolean;
   onChange: (valor: boolean) => void;
   erro?: string;
-  /** Muda só a frase de apoio: cadastro de cliente ou de mercado. */
   contexto?: 'cliente' | 'mercado';
 }
 
-/**
- * Caixa de aceite dos Termos de Uso e da Política de Privacidade.
- *
- * Aparece no cadastro de clientes e no cadastro de mercados. Os links abrem os
- * documentos em outra aba para a pessoa poder ler sem perder o formulário —
- * o parâmetro `origem` na URL permite que o botão "Voltar" dessas páginas
- * retorne para o cadastro de onde vieram. O aceite é gravado no banco com
- * data, versão dos textos e IP (LGPD).
- */
 export default function AceiteTermos({
   marcado,
   onChange,

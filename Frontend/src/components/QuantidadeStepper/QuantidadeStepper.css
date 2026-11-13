@@ -1,6 +1,3 @@
-/* Campo digitável da quantidade: continua com a tipografia do número de antes
-   (cada tela cuida do tamanho/cores via a classe dela) e só perde as bordas
-   nativas do input. */
 .qs-campo {
   width: 38px;
   min-width: 0;

@@ -35,6 +35,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+/** Remove do storage tudo que pertence à conta (carrinho, endereços etc.). */
+function limparDadosDaConta() {
+  const chavesExatas = [
+    'token',
+    'is_admin_login',
+    'mercadins_enderecos',
+    'mercadins_endereco_entrega',
+    'aguardandoPagamento',
+  ];
+  const prefixos = ['carrinho_'];
+  const paraRemover: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const chave = localStorage.key(i);
+    if (!chave) continue;
+    if (chavesExatas.includes(chave) || prefixos.some((p) => chave.startsWith(p))) {
+      paraRemover.push(chave);
+    }
+  }
+  paraRemover.forEach((chave) => localStorage.removeItem(chave));
+  sessionStorage.removeItem('posLoginDestino');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregando, setCarregando] = useState(
@@ -65,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .perfil()
       .then((u: Usuario) => {
         if (u.status === 'bloqueado' || u.status === 'inativo') {
-          localStorage.removeItem("token");
+          limparDadosDaConta();
           setTemMercado(false);
           return;
         }
@@ -73,14 +95,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return verificarMercados();
       })
       .catch(() => {
-        localStorage.removeItem("token");
-        setTemMercado(false);
+        // 401 dispara "mercadins:sessao-expirada" (api.ts); outros erros de
+        // rede mantêm a sessão para não deslogar por instabilidade.
+        if (!localStorage.getItem("token")) {
+          setTemMercado(false);
+        }
       })
       .finally(() => setCarregando(false));
   }, [verificarMercados]);
 
+  useEffect(() => {
+    const encerrar = () => {
+      limparDadosDaConta();
+      setUsuario(null);
+      setTemMercado(false);
+    };
+    window.addEventListener('mercadins:sessao-expirada', encerrar);
+    return () => window.removeEventListener('mercadins:sessao-expirada', encerrar);
+  }, []);
+
   async function login(email: string, senha: string): Promise<{ usuario: Usuario; is_admin_login: boolean }> {
     const { usuario: u, token, is_admin_login } = await api.login({ email, senha });
+    if (!token) throw new Error('Resposta de login inválida. Tente novamente.');
     localStorage.setItem("token", token);
     setUsuario(u);
     await verificarMercados();
@@ -88,9 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("is_admin_login");
-    sessionStorage.removeItem("posLoginDestino");
+    limparDadosDaConta();
     setUsuario(null);
     setTemMercado(false);
   }
@@ -103,7 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       setUsuario(u);
-    } catch { /* falha ignorada */ }
+    } catch {
+      // 401 já encerra a sessão via evento; outros erros são ignorados.
+      if (!localStorage.getItem("token")) {
+        setUsuario(null);
+        setTemMercado(false);
+      }
+    }
   }
 
   return (

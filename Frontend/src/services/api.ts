@@ -2,26 +2,53 @@ export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 const getToken = () => localStorage.getItem('token')
 
-async function request(path: string, options: RequestInit = {}) {
+function dispararSessaoExpirada() {
+  window.dispatchEvent(new Event('mercadins:sessao-expirada'))
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- respostas da API são dinâmicas (mesmo comportamento de res.json())
+async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = getToken()
-  const res = await fetch(`${BASE_URL}/api${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...(options.headers as Record<string, string> ?? {}),
-    },
-  })
-  const data = await res.json()
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}/api${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(options.headers as Record<string, string> ?? {}),
+      },
+    })
+  } catch {
+    throw new Error('Falha de conexão com o servidor. Verifique sua internet e tente novamente.')
+  }
+
+  if (res.status === 401) {
+    dispararSessaoExpirada()
+    throw new Error('Sessão expirada. Faça login novamente.')
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- corpo livre da API
+  let data: any = null
+  const texto = await res.text()
+  if (texto) {
+    try {
+      data = JSON.parse(texto)
+    } catch {
+      data = null
+    }
+  }
+
   if (!res.ok) {
-    const erro = data.erro || data.detalhe || 'Erro na requisição'
+    const erro = data?.erro || data?.detalhe || 'Erro na requisição'
+    const detalhe = data?.detalhe
     throw new Error(
-      data.erro && data.detalhe && data.detalhe !== data.erro
-        ? `${erro} (${data.detalhe})`
+      data?.erro && detalhe && detalhe !== erro
+        ? `${erro} (${detalhe})`
         : erro
     )
   }
-  return data
+  return data ?? {}
 }
 
 export const api = {

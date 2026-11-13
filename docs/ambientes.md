@@ -27,8 +27,9 @@ O backend escolhe qual banco usar pela variável `DB_PROVIDER`:
 
 - `DB_PROVIDER=local` → usa `DATABASE_URL_LOCAL` (banco da própria máquina);
 - `DB_PROVIDER=neon` → usa `DATABASE_URL_NEON` (banco online compartilhado pelo site no ar);
-- **sem a variável (padrão `auto`)** → tenta o Neon primeiro e usa o local como
-  fallback — é o que acontece no Render, onde `DB_PROVIDER` nem é obrigatório.
+- **sem a variável (padrão `auto`)** → usa o **local** por padrão (nunca arrisca
+  o banco de produção por engano). No Render a plataforma define `RENDER` e o
+  backend cai direto no Neon, sem precisar cadastrar `DB_PROVIDER`.
 
 Em produção o backend também detecta sozinho o ambiente (a variável `RENDER`
 já é definida pela plataforma), então `NODE_ENV=production` não precisa ser

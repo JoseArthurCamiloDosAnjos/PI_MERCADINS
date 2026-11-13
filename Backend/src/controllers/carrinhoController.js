@@ -36,25 +36,21 @@ const salvarCarrinho = async (req, res) => {
   try {
     const sql = await conectar();
 
-    await sql.transaction((tx) => {
-      const consultas = [
-        tx`
-          DELETE FROM carrinho
-          WHERE id_usuario = ${id_usuario}
-            AND id_mercado = ${Number(mercadoId)}
-        `,
-      ];
+    await sql.transaction(async (tx) => {
+      await tx`
+        DELETE FROM carrinho
+        WHERE id_usuario = ${id_usuario}
+          AND id_mercado = ${Number(mercadoId)}
+      `;
 
       for (const item of itens) {
         if (item.quantidade > 0) {
-          consultas.push(tx`
+          await tx`
             INSERT INTO carrinho (id_usuario, id_mercado, id_produto, quantidade)
             VALUES (${id_usuario}, ${Number(mercadoId)}, ${item.id_produto}, ${item.quantidade})
-          `);
+          `;
         }
       }
-
-      return consultas;
     });
 
     res.status(200).json({ mensagem: 'Carrinho salvo com sucesso' });

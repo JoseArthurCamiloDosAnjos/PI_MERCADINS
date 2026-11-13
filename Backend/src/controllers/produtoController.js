@@ -73,8 +73,8 @@ const criarProduto = async (req, res) => {
       WHERE id_usuario = ${id_usuario}
         AND id_mercado = ${Number(mercadoId)}
     `
-    if (!permissao)
-      return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
+    if (!permissao || !['dono', 'admin'].includes(permissao.papel))
+      return res.status(403).json({ erro: 'Apenas o dono ou admin pode gerenciar produtos.' })
 
     const [categoria] = await sql`
       SELECT id_categoria FROM categorias
@@ -145,8 +145,8 @@ const atualizarProduto = async (req, res) => {
       WHERE id_usuario = ${id_usuario}
         AND id_mercado = ${Number(mercadoId)}
     `
-    if (!permissao)
-      return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
+    if (!permissao || !['dono', 'admin'].includes(permissao.papel))
+      return res.status(403).json({ erro: 'Apenas o dono ou admin pode gerenciar produtos.' })
 
     const [categoria] = await sql`
       SELECT id_categoria FROM categorias
@@ -223,8 +223,8 @@ const deletarProduto = async (req, res) => {
       WHERE id_usuario = ${id_usuario}
         AND id_mercado = ${Number(mercadoId)}
     `
-    if (!permissao)
-      return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
+    if (!permissao || !['dono', 'admin'].includes(permissao.papel))
+      return res.status(403).json({ erro: 'Apenas o dono ou admin pode gerenciar produtos.' })
 
     const [categoria] = await sql`
       SELECT id_categoria FROM categorias

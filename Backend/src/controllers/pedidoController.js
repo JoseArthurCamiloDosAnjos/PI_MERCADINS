@@ -52,17 +52,24 @@ function avisarVendedorPedido(sql, idPedido) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
       if (!dados) return;
-      enviarEmailPedidoVendedor(dados.emailVendedor, dados);
+      const envios = [];
       if (dados.emailVendedor) {
-        enviarNotificacao(sql, {
-          id_mercado: dados.idMercado,
-          email: dados.emailVendedor,
-          tipo: 'pedido_novo_vendedor',
-          titulo: 'Novo pedido recebido',
-          mensagem: `Olá! O ${dados.mercado} recebeu um novo pedido nº ${dados.numero}, de ${dados.cliente}, no valor de R$ ${dados.total.toFixed(2).replace('.', ',')}. Abra o painel do vendedor para acompanhar.`,
-          enviarEmail: false,
-        });
+        envios.push(
+          enviarEmailPedidoVendedor(dados.emailVendedor, dados)
+            .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message))
+        );
+        envios.push(
+          enviarNotificacao(sql, {
+            id_mercado: dados.idMercado,
+            email: dados.emailVendedor,
+            tipo: 'pedido_novo_vendedor',
+            titulo: 'Novo pedido recebido',
+            mensagem: `Olá! O ${dados.mercado} recebeu um novo pedido nº ${dados.numero}, de ${dados.cliente}, no valor de R$ ${dados.total.toFixed(2).replace('.', ',')}. Abra o painel do vendedor para acompanhar.`,
+            enviarEmail: false,
+          }).catch((err) => console.error('Falha na notificação ao vendedor:', err.message))
+        );
       }
+      return Promise.all(envios);
     })
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
 }
@@ -423,39 +430,48 @@ const criarPedido = async (req, res) => {
       quantidade: Number(i.quantidade),
     }));
 
-    const [pedido] = await sql`
-      INSERT INTO historico_compras (
-        id_usuario, id_mercado, produtos, valor_total, status, observacao,
-        tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, produto_ids,
-        forma_pagamento, itens_json, endereco_entrega
-      )
-      VALUES (
-        ${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, ${statusInicial}, ${observacaoLimpa},
-        ${tipoEntrega}, ${taxaEntrega.toFixed(2)}, ${agendamentoLimpo}, ${cupomRegistro ? cupomRegistro.codigo : ''}, ${desconto.toFixed(2)}, ${produtoIds},
-        ${formaPagamento}, ${JSON.stringify(itensJson)}, ${enderecoLimpo}
-      )
-      RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao,
-                tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, forma_pagamento,
-                endereco_entrega
-    `;
+    // Tudo ou nada: pedido + estoque + cupom + carrinho na mesma transação.
+    const pedido = await sql.transaction(async (tx) => {
+      const [novo] = await tx`
+        INSERT INTO historico_compras (
+          id_usuario, id_mercado, produtos, valor_total, status, observacao,
+          tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, produto_ids,
+          forma_pagamento, itens_json, endereco_entrega
+        )
+        VALUES (
+          ${id_usuario}, ${mercadoId}, ${resumo.join(', ')}, ${valorTotal.toFixed(2)}, ${statusInicial}, ${observacaoLimpa},
+          ${tipoEntrega}, ${taxaEntrega.toFixed(2)}, ${agendamentoLimpo}, ${cupomRegistro ? cupomRegistro.codigo : ''}, ${desconto.toFixed(2)}, ${produtoIds},
+          ${formaPagamento}, ${JSON.stringify(itensJson)}, ${enderecoLimpo}
+        )
+        RETURNING id, id_mercado, produtos, valor_total, data_compra, status, observacao,
+                  tipo_entrega, taxa_entrega, agendamento, cupom_codigo, desconto, forma_pagamento,
+                  endereco_entrega
+      `;
 
-    try {
-      await baixarEstoque(sql, itensJson);
-    } catch (erroEstoque) {
-      await sql`DELETE FROM historico_compras WHERE id = ${pedido.id} AND status = ${statusInicial}`;
-      return res.status(400).json({ erro: erroEstoque.message });
-    }
+      await baixarEstoque(tx, itensJson);
 
-    if (cupomRegistro) {
-      await sql`UPDATE cupons SET usos = usos + 1 WHERE id = ${cupomRegistro.id}`;
-    }
+      if (cupomRegistro) {
+        // Incremento atômico com guarda de limite (fecha a corrida de usos).
+        const [cupomOk] = await tx`
+          UPDATE cupons SET usos = usos + 1
+          WHERE id = ${cupomRegistro.id}
+            AND (max_usos IS NULL OR usos < max_usos)
+          RETURNING id
+        `;
+        if (!cupomOk) {
+          throw new Error('Este cupom já atingiu o limite de usos.');
+        }
+      }
 
-    await sql`
-      DELETE FROM carrinho
-      WHERE id_usuario = ${id_usuario}
-        AND id_mercado = ${mercadoId}
-        AND id_produto = ANY(${idsProdutos})
-    `;
+      await tx`
+        DELETE FROM carrinho
+        WHERE id_usuario = ${id_usuario}
+          AND id_mercado = ${mercadoId}
+          AND id_produto = ANY(${idsProdutos})
+      `;
+
+      return novo;
+    });
 
     const totalPedido = round2(valorTotal - desconto + taxaEntrega);
 
@@ -598,6 +614,10 @@ const criarPedido = async (req, res) => {
     });
   } catch (err) {
     console.error('ERRO criarPedido:', err);
+    const msg = String(err.message || '');
+    if (msg.includes('estoque') || msg.includes('cupom')) {
+      return res.status(400).json({ erro: msg });
+    }
     res.status(500).json({ erro: 'Não foi possível registrar o pedido. Tente novamente.' });
   }
 };
@@ -918,7 +938,7 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
           titulo: 'Pagamento confirmado após cancelamento',
           mensagem: `Olá, ${String(dados.cliente || '').split(' ')[0]}! O pagamento do pedido nº ${dados.numero} foi confirmado depois do cancelamento. ${desfecho}`,
           enviarEmail: false,
-        });
+        }).catch((err) => console.error('Falha na notificação pós-cancelamento:', err.message));
       }
       if (dados.emailVendedor) {
         enviarNotificacao(sql, {
@@ -927,7 +947,7 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
           tipo: 'pedido_pagamento_estorno_vendedor',
           titulo: 'Pagamento após cancelamento',
           mensagem: `O pedido nº ${dados.numero} do ${dados.mercado} teve o pagamento confirmado DEPOIS de cancelado. ${desfecho}`,
-        });
+        }).catch((err) => console.error('Falha na notificação ao vendedor:', err.message));
       }
     })
     .catch((err) => console.error('Falha ao avisar pagamento pós-cancelamento:', err.message));
@@ -935,7 +955,19 @@ function avisarPagamentoAposCancelamento(sql, idPedido, estornado) {
 
 // B3 — Webhook do Asaas para PAGAMENTO DE PEDIDO
 async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
-  const ref = pagamentoAsaas?.externalReference || '';
+  let confirmado = pagamentoAsaas;
+  let statusAsaas = pagamentoAsaas?.status || '';
+  try {
+    confirmado = await asaas.buscarPagamento(pagamentoAsaas.id);
+    statusAsaas = confirmado?.status || statusAsaas;
+  } catch (erro) {
+    throw erro;
+  }
+  if (!confirmado) return { ignorado: true };
+
+  // Fonte da verdade é o externalReference VINDO DA API — não o do payload
+  // (evita marcar outro pedido como pago com um paymentId genuíno).
+  const ref = confirmado.externalReference || '';
   const [, idStr] = String(ref).split(':');
   const pedidoId = Number(idStr);
 
@@ -943,15 +975,6 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     ? await sql`SELECT * FROM historico_compras WHERE id = ${pedidoId}`
     : [];
   if (!pedido) return { ignorado: true };
-
-  let statusAsaas = pagamentoAsaas?.status || '';
-  let confirmado = pagamentoAsaas;
-  try {
-    confirmado = await asaas.buscarPagamento(pagamentoAsaas.id);
-    statusAsaas = confirmado?.status || statusAsaas;
-  } catch (erro) {
-    throw erro;
-  }
 
   // ── Split: liquidação/cancelamento de UM repasse ao vendedor ──────────────
   if (String(evento).startsWith('PAYMENT_SPLIT_')) {

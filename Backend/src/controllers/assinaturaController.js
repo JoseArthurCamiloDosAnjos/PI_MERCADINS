@@ -491,14 +491,15 @@ const webhookAsaas = async (req, res) => {
     .filter(Boolean);
   const tokenRecebido = String(req.headers['webhook-security-token'] || '').trim();
 
-  if (tokensAceitos.length > 0) {
-    if (!tokensAceitos.includes(tokenRecebido)) {
-      return res.status(401).json({ erro: 'Token de webhook inválido.' });
-    }
-  } else {
-    console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — eventos aceitos sem token; o status é verificado na API do Asaas antes de agir.');
+  // Fail-closed: sem token configurado o webhook fica fechado (não aceita
+  // eventos anônimos). Cadastre ASAAS_WEBHOOK_TOKEN no painel do Asaas.
+  if (tokensAceitos.length === 0) {
+    console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — rejeitando eventos (fail-closed).');
+    return res.status(401).json({ erro: 'Webhook não configurado (ASAAS_WEBHOOK_TOKEN ausente).' });
   }
-  const temToken = tokensAceitos.length > 0;
+  if (!tokensAceitos.includes(tokenRecebido)) {
+    return res.status(401).json({ erro: 'Token de webhook inválido.' });
+  }
 
   const evento = req.body?.event;
   const pagamento = req.body?.payment;
@@ -513,9 +514,16 @@ const webhookAsaas = async (req, res) => {
   }
 
   try {
-    if (!temToken && pagamento?.id) {
+    // Sempre revalida o pagamento na API — o status que decide é o da fonte,
+    // nunca o "event" do payload (evita forjar PAYMENT_CONFIRMED).
+    let statusApi = null;
+    if (pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);
-      if (fonte) Object.assign(pagamento, fonte);
+      if (!fonte) {
+        return res.status(404).json({ erro: 'Pagamento não encontrado na API do Asaas.' });
+      }
+      statusApi = fonte.status;
+      Object.assign(pagamento, fonte);
     }
 
     const sql = await conectar();
@@ -540,15 +548,19 @@ const webhookAsaas = async (req, res) => {
       await registrarFatura(sql, assinatura, pagamento);
     }
 
-    if (evento === 'PAYMENT_CONFIRMED' || evento === 'PAYMENT_RECEIVED') {
-      await confirmarAssinatura(sql, assinatura, pagamento || {});
-    } else if (evento === 'PAYMENT_OVERDUE') {
-      await sql`
-        UPDATE assinaturas
-        SET status = 'inadimplente', atualizada_em = NOW()
-        WHERE id = ${assinatura.id} AND status != 'cancelada'
-      `;
+    if (pagamento?.id && statusApi) {
+      // Decisão pelo status vindo da API, não pelo nome do evento.
+      if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusApi)) {
+        await confirmarAssinatura(sql, assinatura, pagamento);
+      } else if (statusApi === 'OVERDUE') {
+        await sql`
+          UPDATE assinaturas
+          SET status = 'inadimplente', atualizada_em = NOW()
+          WHERE id = ${assinatura.id} AND status != 'cancelada'
+        `;
+      }
     } else if (evento === 'SUBSCRIPTION_DELETED') {
+      // Evento só de assinatura: só chega aqui com token válido (fail-closed acima).
       await sql`
         UPDATE assinaturas
         SET status = 'cancelada', atualizada_em = NOW()

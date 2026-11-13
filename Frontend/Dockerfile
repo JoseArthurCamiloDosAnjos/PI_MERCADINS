@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 
 # Vazio = chamadas relativas (/api/...) resolvem pelo proxy do nginx.
-# Supabase é obrigatório: services/supabase.ts lança erro se faltar.
+# Supabase é opcional (backup de imagens): sem as vars o client fica null.
 ARG VITE_API_URL=""
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY

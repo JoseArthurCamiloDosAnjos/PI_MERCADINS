@@ -4,12 +4,14 @@ services:
     runtime: node
     plan: free
     buildCommand: cd Backend && npm install
-    startCommand: cd Backend && node src/server.js
+    startCommand: cd Backend && node src/db/migrate.js && node src/server.js
     envVars:
       - key: FRONTEND_URL
         value: https://mercadins.com.br
       - key: ALLOWED_ORIGINS
         value: https://mercadins.com.br,https://www.mercadins.com.br
+      - key: DB_PROVIDER
+        value: neon
       - key: DATABASE_URL_NEON
         sync: false
       - key: JWT_SECRET

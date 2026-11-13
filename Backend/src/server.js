@@ -25,6 +25,14 @@ const app  = express()
 const PORT = process.env.PORT || 3001
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER
 
+// Promessas rejeitadas sem catch não derrubam o processo (Node 22).
+process.on('unhandledRejection', (motivo) => {
+  console.error('unhandledRejection:', motivo);
+});
+process.on('uncaughtException', (erro) => {
+  console.error('uncaughtException:', erro);
+});
+
 // ── HTTPS redirect ───────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   if (isProduction && req.headers['x-forwarded-proto'] !== 'https') {

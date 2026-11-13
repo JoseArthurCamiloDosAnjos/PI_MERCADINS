@@ -8,6 +8,19 @@ function parsePreco(valor) {
   return Number.isFinite(num) ? num : 0;
 }
 
+// Preço/estoque nunca podem ser negativos (aceita 0 = gratuito/promoção).
+function precoValido(valor) {
+  const num = parsePreco(valor);
+  if (!Number.isFinite(num) || num < 0 || num > 99999999) return null;
+  return num;
+}
+
+function estoqueValido(valor) {
+  const num = Number(valor);
+  if (!Number.isFinite(num) || num < 0) return null;
+  return Math.min(Math.floor(num), 9999999);
+}
+
 async function usoDoMercado(sql, mercadoId) {
   const produtos = await sql`
     SELECT COALESCE(array_length(p.imagens, 1), 0) AS fotos
@@ -65,6 +78,14 @@ const criarProduto = async (req, res) => {
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
 
+  const precoNum = precoValido(preco)
+  if (precoNum === null)
+    return res.status(400).json({ erro: 'Preço inválido (deve ser um valor igual ou maior que zero).' })
+
+  const estoqueNum = estoqueValido(estoque)
+  if (estoqueNum === null)
+    return res.status(400).json({ erro: 'Estoque inválido (deve ser um número igual ou maior que zero).' })
+
   try {
     const sql = await conectar()
 
@@ -110,10 +131,10 @@ const criarProduto = async (req, res) => {
         ${nome.trim()},
         ${descricao?.trim() ?? null},
         ${imagem},
-        ${parsePreco(preco)},
+        ${precoNum},
         ${imagensUrls},
         ${Number(categoriaId)},
-        ${Number(estoque) || 0},
+        ${estoqueNum},
         ${Math.max(0, Math.min(99999999, parsePreco(custo)))}
       )
       RETURNING *
@@ -136,6 +157,14 @@ const atualizarProduto = async (req, res) => {
 
   if (!nome?.trim())
     return res.status(400).json({ erro: 'O nome do produto é obrigatório.' })
+
+  const precoNum = precoValido(preco)
+  if (precoNum === null)
+    return res.status(400).json({ erro: 'Preço inválido (deve ser um valor igual ou maior que zero).' })
+
+  const estoqueNum = estoqueValido(estoque)
+  if (estoqueNum === null)
+    return res.status(400).json({ erro: 'Estoque inválido (deve ser um número igual ou maior que zero).' })
 
   try {
     const sql = await conectar()
@@ -189,10 +218,10 @@ const atualizarProduto = async (req, res) => {
       SET nome      = ${nome.trim()},
           descricao = ${descricao?.trim() ?? null},
           imagem    = COALESCE(${imagem ?? null}, imagem),
-          preco     = ${parsePreco(preco)},
+          preco     = ${precoNum},
           custo     = COALESCE(${custoNovo}, custo),
           imagens   = CASE WHEN ${imagensUrls.length} > 0 THEN ${imagensUrls} ELSE imagens END,
-          estoque   = ${Number(estoque) || 0}
+          estoque   = ${estoqueNum}
       WHERE id_produto   = ${Number(produtoId)}
         AND id_categoria = ${Number(categoriaId)}
       RETURNING *

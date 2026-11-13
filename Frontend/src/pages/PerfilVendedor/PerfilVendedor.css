@@ -149,3 +149,130 @@
   .pv-mkt-card { width: calc(50% - 7px); }
   .pv-btn-new { padding: 7px 16px; font-size: 11.5px; }
 }
+
+/* Favoritos clicáveis (abrem a vitrine da loja) */
+.pu-circ-item--link { cursor: pointer; }
+.pu-circ-item--link:focus-visible {
+  outline: 2px solid var(--amarelo);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+.pu-circ-item--link:hover .pu-circ-label { color: var(--amarelo); }
+
+/* Atalho de detalhes no card do histórico */
+.pv-hcard-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--amarelo);
+  transition: gap 0.2s;
+}
+.pu-hcard:hover .pv-hcard-ver { gap: 7px; }
+
+/* Modal com o resumo da compra (mesmo estilo do acompanhamento) */
+.pv-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(4, 10, 24, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  animation: pv-fade-in 0.18s ease;
+}
+
+.pv-modal {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  animation: pv-modal-in 0.22s ease;
+}
+
+.pv-modal-painel .mp-painel__topo { padding-right: 38px; }
+
+.pv-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--azul-item);
+  background: var(--azul-card);
+  color: var(--cinza-texto);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pv-modal-close:hover {
+  background: var(--azul-item);
+  color: var(--branco);
+  border-color: var(--azul-claro);
+}
+
+.pv-modal-estado {
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-lg);
+  padding: 34px 24px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--cinza-texto);
+}
+
+.pv-modal-desconto { color: #1a8e4a; }
+
+.pv-modal-nota {
+  margin: 18px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cinza-texto);
+}
+
+.pv-modal-btn-fechar {
+  margin-top: 18px;
+  width: 100%;
+  border: 1px solid var(--azul-item);
+  background: var(--azul-item);
+  color: var(--branco);
+  border-radius: var(--radius-full);
+  padding: 10px 18px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pv-modal-btn-fechar:hover {
+  background: var(--azul-claro);
+  border-color: var(--azul-claro);
+}
+
+@keyframes pv-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pv-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 560px) {
+  .pv-modal-overlay { padding: 12px; align-items: flex-start; }
+  .pv-modal { max-height: none; }
+  .pv-modal-painel .mp-info__linha { flex-direction: column; gap: 2px; }
+}

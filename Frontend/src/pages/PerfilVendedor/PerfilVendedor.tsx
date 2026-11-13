@@ -17,6 +17,7 @@ import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
+import '../MeusPedidos/MeusPedidos.css';
 import {
   IconUser,
   IconLock,
@@ -43,9 +44,50 @@ interface Mercado {
   papel: string;
 }
 
-interface Favorito { id: number; id_mercado: number; nome: string; data_cadastro: string; }
+interface Favorito { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
 interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
+
+interface PedidoDetalhe {
+  id: number;
+  mercado: string;
+  mercadoSlug: string;
+  cliente: string;
+  itens: string;
+  valorTotal: number;
+  taxaEntrega: number;
+  desconto: number;
+  cupom: string;
+  total: number;
+  tipoEntrega: 'entrega' | 'retirada';
+  enderecoEntrega: string;
+  agendamento: string;
+  observacao: string;
+  status: string;
+  formaPagamento: string;
+  dataCompra: string;
+  gerencia: boolean;
+}
+
+const NOMES_STATUS: Record<string, string> = {
+  aguardando_pagamento: 'Aguardando pagamento',
+  pendente: 'Recebido pela loja',
+  preparo: 'Em preparo',
+  caminho: 'A caminho',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
+const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
+
+const formatBRL = (v: number) =>
+  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const NOMES_PAGAMENTO: Record<string, string> = {
+  pix: 'Pix',
+  cartao: 'Cartão',
+  presencial: 'Presencial',
+};
 
 // ícones que giram nos cards de mercado (na falta de uma imagem real da loja)
 const MKT_ICONS = [IconShoppingCart, IconStore, IconShoppingBag, IconPackage];
@@ -91,6 +133,151 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
   );
 }
 
+// ─── Detalhe da compra no histórico ──────────────────────────────────────────
+// Abre em modal com o mesmo resumo da tela "Acompanhar pedido" (status,
+// linha do tempo e valores), mas sem acompanhamento ao vivo nem ações de
+// pagamento/cancelamento: aqui é só a consulta do registro no histórico.
+function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFechar: () => void }) {
+  const [pedido, setPedido] = useState<PedidoDetalhe | null>(null);
+  const [carregado, setCarregado] = useState(false);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    api.detalharPedido(pedidoId)
+      .then(data => {
+        if (!vivo) return;
+        setPedido(data.pedido);
+      })
+      .catch((e: unknown) => {
+        if (!vivo) return;
+        setErro(e instanceof Error ? e.message : 'Não foi possível carregar o pedido.');
+      })
+      .finally(() => {
+        if (vivo) setCarregado(true);
+      });
+    return () => { vivo = false; };
+  }, [pedidoId]);
+
+  useEffect(() => {
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') onFechar();
+    }
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [onFechar]);
+
+  const indiceAtual = pedido ? PASSOS_NORMAL.indexOf(pedido.status) : -1;
+
+  return (
+    <div
+      className="pv-modal-overlay"
+      role="presentation"
+      onMouseDown={e => { if (e.target === e.currentTarget) onFechar(); }}
+    >
+      <div className="pv-modal" role="dialog" aria-modal="true" aria-label={`Detalhes do pedido nº ${pedidoId}`}>
+        <button className="pv-modal-close" type="button" onClick={onFechar} aria-label="Fechar detalhes do pedido">
+          ×
+        </button>
+
+        {!carregado ? (
+          <div className="pv-modal-estado">Carregando detalhes do pedido…</div>
+        ) : erro ? (
+          <div className="pv-modal-estado">{erro}</div>
+        ) : !pedido ? (
+          <div className="pv-modal-estado">Pedido não encontrado.</div>
+        ) : (
+          <div className="mp-painel pv-modal-painel">
+            <div className="mp-painel__topo">
+              <div>
+                <h2>{pedido.mercado}</h2>
+                <p className="mp-painel__sub">
+                  Pedido nº {pedido.id} · {new Date(pedido.dataCompra).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              <span className={`mp-status mp-status--${pedido.status}`}>
+                {NOMES_STATUS[pedido.status] ?? pedido.status}
+              </span>
+            </div>
+
+            {pedido.status !== 'cancelado' && (
+              <ol className="mp-timeline">
+                {PASSOS_NORMAL.map((p, i) => (
+                  <li
+                    key={p}
+                    className={
+                      'mp-timeline__passo' +
+                      (indiceAtual > i || pedido.status === 'entregue' ? ' is-feito' : '') +
+                      (indiceAtual === i ? ' is-atual' : '')
+                    }
+                  >
+                    {NOMES_STATUS[p]}
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            <div className="mp-info">
+              <div className="mp-info__linha">
+                <span>Itens</span>
+                <span>{pedido.itens}</span>
+              </div>
+              <div className="mp-info__linha">
+                <span>Produtos</span>
+                <span>{formatBRL(pedido.valorTotal)}</span>
+              </div>
+              {pedido.desconto > 0 && (
+                <div className="mp-info__linha">
+                  <span>Cupom {pedido.cupom}</span>
+                  <span className="pv-modal-desconto">− {formatBRL(pedido.desconto)}</span>
+                </div>
+              )}
+              <div className="mp-info__linha">
+                <span>{pedido.tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}</span>
+                <span>{pedido.taxaEntrega > 0 ? formatBRL(pedido.taxaEntrega) : 'Grátis'}</span>
+              </div>
+              {pedido.enderecoEntrega && (
+                <div className="mp-info__linha">
+                  <span>Endereço de entrega</span>
+                  <span>{pedido.enderecoEntrega}</span>
+                </div>
+              )}
+              {pedido.agendamento && (
+                <div className="mp-info__linha">
+                  <span>Quando</span>
+                  <span>{pedido.agendamento}</span>
+                </div>
+              )}
+              {pedido.observacao && (
+                <div className="mp-info__linha">
+                  <span>Observação</span>
+                  <span>{pedido.observacao}</span>
+                </div>
+              )}
+              <div className="mp-info__linha">
+                <span>Pagamento</span>
+                <span>{NOMES_PAGAMENTO[pedido.formaPagamento] ?? pedido.formaPagamento}</span>
+              </div>
+              <div className="mp-info__linha is-total">
+                <strong>Total</strong>
+                <strong>{formatBRL(pedido.total ?? (pedido.valorTotal - pedido.desconto + pedido.taxaEntrega))}</strong>
+              </div>
+            </div>
+
+            <p className="pv-modal-nota">
+              Este é o resumo da compra no seu histórico. Para acompanhar o status ao vivo,
+              abra a página do pedido em “Meus pedidos”.
+            </p>
+            <button className="pv-modal-btn-fechar" type="button" onClick={onFechar}>
+              Fechar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
 function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, onAtualizarFavoritos }: {
@@ -103,6 +290,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 }) {
   const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
+  const [pedidoAberto, setPedidoAberto] = useState<number | null>(null);
   // Painel limpo: mostra só os 6 primeiros mercados. O botão ao lado do
   // título abre a lista completa quando existem mais do que isso (e some
   // quando já não há nada a expandir, para não ficar um botão sem função).
@@ -188,12 +376,29 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
             >+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
-          {favoritos.map((f, i) => (
-            <div key={f.id} className="pu-circ-item" style={{ animationDelay: `${0.38 + i * 0.08}s` }}>
-              <div className="pu-circ"><IconStore size={22} /></div>
-              <span className="pu-circ-label">{f.nome}</span>
-            </div>
-          ))}
+          {favoritos.map((f, i) => {
+            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); };
+            return (
+              <div
+                key={f.id}
+                className={`pu-circ-item${f.slug ? ' pu-circ-item--link' : ''}`}
+                style={{ animationDelay: `${0.38 + i * 0.08}s` }}
+                role={f.slug ? 'button' : undefined}
+                tabIndex={f.slug ? 0 : undefined}
+                title={f.slug ? `Abrir ${f.nome}` : f.nome}
+                onClick={abrirLoja}
+                onKeyDown={e => {
+                  if (f.slug && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    abrirLoja();
+                  }
+                }}
+              >
+                <div className="pu-circ"><IconStore size={22} /></div>
+                <span className="pu-circ-label">{f.nome}</span>
+              </div>
+            );
+          })}
         </div>
         {favoritos.length === 0 && (
           <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
@@ -224,13 +429,28 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
         ) : (
           <div className="pu-hist-grid">
             {historico.map((p, i) => (
-              <div key={p.id} className="pu-hcard" style={{ animationDelay: `${0.3 + i * 0.09}s` }}>
+              <div
+                key={p.id}
+                className="pu-hcard"
+                style={{ animationDelay: `${0.3 + i * 0.09}s` }}
+                onClick={() => setPedidoAberto(p.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setPedidoAberto(p.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Ver detalhes do pedido nº ${p.id} em ${p.mercado}`}
+              >
                 <div className="pu-hcard-img"><IconShoppingBag size={26} /></div>
                 <div className="pu-hcard-body">
                   <p className="pu-hcard-nome">{p.mercado}</p>
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {p.status}</span>
+                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
+                  <span className="pv-hcard-ver">Ver detalhes <IconArrowRight size={12} /></span>
                 </div>
               </div>
             ))}
@@ -263,6 +483,14 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
           </div>
         )}
       </section>
+
+      {pedidoAberto !== null && (
+        <DetalhePedidoHistorico
+          key={pedidoAberto}
+          pedidoId={pedidoAberto}
+          onFechar={() => setPedidoAberto(null)}
+        />
+      )}
     </>
   );
 }

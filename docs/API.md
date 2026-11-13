@@ -256,7 +256,7 @@ são aceitas.
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
 | GET | `/api/health` | público | Responde `{ status: "ok" }` (healthcheck do Render) |
-| GET | `/api/saude/pagamentos` | público | Mostra o ambiente, o banco e a configuração do Asaas — **sandbox × produção** e a presença das chaves (nenhum segredo é exposto) |
+| GET | `/api/saude/pagamentos` | admin | Mostra o ambiente, o banco e a configuração do Asaas — **sandbox × produção** e a presença das chaves (nenhum segredo é exposto) |
 
 Resposta de `/api/saude/pagamentos`:
 

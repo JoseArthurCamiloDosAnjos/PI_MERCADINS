@@ -25,6 +25,20 @@ const app  = express()
 const PORT = process.env.PORT || 3001
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER
 
+// Proxy reverso (Render/nginx): senão req.ip é o IP do proxy e o rate
+// limiter compartilha a mesma conta para todos os usuários.
+if (isProduction) {
+  app.set('trust proxy', 1)
+}
+
+// Promessas rejeitadas sem catch não derrubam o processo (Node 22).
+process.on('unhandledRejection', (motivo) => {
+  console.error('unhandledRejection:', motivo);
+});
+process.on('uncaughtException', (erro) => {
+  console.error('uncaughtException:', erro);
+});
+
 // ── HTTPS redirect ───────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   if (isProduction && req.headers['x-forwarded-proto'] !== 'https') {
@@ -114,39 +128,44 @@ app.use('/imagens', express.static(RAIZ_IMAGENS, {
   fallthrough: true,
 }))
 
-// ── Diagnóstico de pagamento (público, sem segredos) ──────────────────────────
+// ── Diagnóstico de pagamento (admin; sem segredos) ───────────────────────────
 let saudeCache = { em: 0, teste: null }
 
-app.get('/api/saude/pagamentos', async (_req, res) => {
-  const agora = Date.now()
-  if (!saudeCache.teste || agora - saudeCache.em > 30_000) {
-    saudeCache = { em: agora, teste: await asaasService.verificarChave() }
-  }
-  const tokensWebhook = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
+app.get(
+  '/api/saude/pagamentos',
+  require('./middleware/authMiddleware'),
+  require('./middleware/adminMiddleware'),
+  async (_req, res) => {
+    const agora = Date.now()
+    if (!saudeCache.teste || agora - saudeCache.em > 30_000) {
+      saudeCache = { em: agora, teste: await asaasService.verificarChave() }
+    }
+    const tokensWebhook = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
 
-  res.json({
-    ambiente: isProduction ? 'producao' : 'desenvolvimento',
-    banco: process.env.DB_PROVIDER || 'auto',
-    asaas: {
-      ambiente: asaasService.ambienteAsaas(),
-      url_usada: asaasService.baseUrlAsaas(),
-      url_producao: !!process.env.Assas_API_URL_Producao,
-      url_sandbox: !!process.env.Assas_API_URL_Sandbox,
-      chave_api: Boolean(asaasService.chaveApi()),
-      chave_fonte: asaasService.fonteChave(),
-      chave_sandbox: Boolean(process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY),
-      chave_producao: Boolean(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY),
-      chave_status: saudeCache.teste.status,
-      chave_detalhe: saudeCache.teste.erro || null,
-      webhook_token: tokensWebhook.length > 0,
-      webhook_tokens: tokensWebhook.length,
-    },
-    frontend_url: process.env.FRONTEND_URL || null,
-  })
-})
+    res.json({
+      ambiente: isProduction ? 'producao' : 'desenvolvimento',
+      banco: process.env.DB_PROVIDER || 'auto',
+      asaas: {
+        ambiente: asaasService.ambienteAsaas(),
+        url_usada: asaasService.baseUrlAsaas(),
+        url_producao: !!process.env.Assas_API_URL_Producao,
+        url_sandbox: !!process.env.Assas_API_URL_Sandbox,
+        chave_api: Boolean(asaasService.chaveApi()),
+        chave_fonte: asaasService.fonteChave(),
+        chave_sandbox: Boolean(process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY),
+        chave_producao: Boolean(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY),
+        chave_status: saudeCache.teste.status,
+        chave_detalhe: saudeCache.teste.erro || null,
+        webhook_token: tokensWebhook.length > 0,
+        webhook_tokens: tokensWebhook.length,
+      },
+      frontend_url: process.env.FRONTEND_URL || null,
+    })
+  },
+)
 
 // ── Sitemap dinâmico (SEO - C6): páginas institucionais + vitrines ativas ─────
 app.use('/',                   require('./routes/sitemapRoutes'))

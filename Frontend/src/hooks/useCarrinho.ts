@@ -32,11 +32,15 @@ function saveCarrinhoLocal(mercadoId: number, itens: ItemCarrinho[]) {
   localStorage.setItem(`${STORAGE_KEY}_${mercadoId}`, JSON.stringify(itens));
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+// Um timer por mercado: um debounce global cancelaria o save de outro
+// mercado se o usuário trocasse de vitrine no meio da janela.
+const debounceTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 function debounceSalvar(mercadoId: number, itens: ItemCarrinho[]) {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
+  const anterior = debounceTimers.get(mercadoId);
+  if (anterior) clearTimeout(anterior);
+  debounceTimers.set(mercadoId, setTimeout(() => {
+    debounceTimers.delete(mercadoId);
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -44,7 +48,7 @@ function debounceSalvar(mercadoId: number, itens: ItemCarrinho[]) {
       mercadoId,
       itens.map(i => ({ id_produto: i.produto.id_produto, quantidade: i.quantidade }))
     ).catch(() => {});
-  }, 500);
+  }, 500));
 }
 
 interface ItemCarrinhoBanco {
@@ -149,8 +153,10 @@ export function useCarrinho(mercadoId: number) {
       const novos = prev
         .map(i => {
           if (i.produto.id_produto !== idProduto) return i;
-          const maximo = i.produto.estoque ?? 0;
-          const nova = maximo > 0
+          const maximo = i.produto.estoque;
+          // Sem estoque informado ou zerado não deixa aumentar.
+          if (delta > 0 && (maximo === undefined || maximo <= 0)) return i;
+          const nova = typeof maximo === 'number' && maximo > 0
             ? Math.min(i.quantidade + delta, maximo)
             : i.quantidade + delta;
           return { ...i, quantidade: nova };
@@ -172,9 +178,10 @@ export function useCarrinho(mercadoId: number) {
   }, [mercadoId]);
 
   const limpar = useCallback(() => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
+    const timer = debounceTimers.get(mercadoId);
+    if (timer) {
+      clearTimeout(timer);
+      debounceTimers.delete(mercadoId);
     }
     setItens([]);
     saveCarrinhoLocal(mercadoId, []);

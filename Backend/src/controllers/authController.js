@@ -14,6 +14,12 @@ const { enviarNotificacao } = require("../utils/notificacoes");
 
 const cadastrosPendentes = new Map();
 
+// Código numérico de 6 dígitos criptograficamente seguro (Math.random é
+// previsível e não deve gerar tokens de verificação/recuperação).
+function codigoSeguro6() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
 const normalizarFrontendUrl = (url) => {
   let base = (url || "").trim() || "https://mercadins.com.br";
   base = base.replace(/\/+$/, "");
@@ -64,7 +70,7 @@ const signUp = async (req, res) => {
       return res.status(409).json({ erro: "CPF já cadastrado" });
 
     const senhaHash = await bcrypt.hash(senha, 10);
-    const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigoVerificacao = codigoSeguro6();
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const [novoUsuario] = await sql`
@@ -156,7 +162,7 @@ const reenviarCodigoVerificacao = async (req, res) => {
     if (usuario.email_verificado)
       return res.status(400).json({ erro: "Email já verificado. Faça o login." });
 
-    const codigoVerificacao = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigoVerificacao = codigoSeguro6();
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await sql`
@@ -305,7 +311,7 @@ const esqueciSenha = async (req, res) => {
     }
 
     const codigo =
-      Math.floor(100000 + Math.random() * 900000).toString();
+      codigoSeguro6();
 
     const expiracao =
       new Date(Date.now() + 15 * 60 * 1000);
@@ -353,7 +359,7 @@ const reenviarRecuperacao = async (req, res) => {
       "Se o email estiver cadastrado, você receberá um código de recuperação.";
     if (usuario.length === 0) return res.json({ mensagem });
 
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigo = codigoSeguro6();
     const expiracao = new Date(Date.now() + 15 * 60 * 1000);
 
     await sql`
@@ -544,7 +550,7 @@ const solicitarTrocaSenha = async (req, res) => {
       return res.status(400).json({ erro: 'Senha atual incorreta.' });
     }
 
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigo = codigoSeguro6();
     const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
     const expiracao = new Date(Date.now() + 15 * 60 * 1000);
 
@@ -584,7 +590,7 @@ const solicitarTrocaEmail = async (req, res) => {
     const [existente] = await sql`SELECT id_usuario FROM usuarios WHERE email = ${novoEmailFormatado} AND id_usuario != ${req.usuarioId}`;
     if (existente) return res.status(400).json({ erro: 'Este email já está em uso por outra conta.' });
 
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const codigo = codigoSeguro6();
     const expiracao = new Date(Date.now() + 15 * 60 * 1000);
 
     await sql`

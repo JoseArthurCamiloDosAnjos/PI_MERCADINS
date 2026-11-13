@@ -324,7 +324,7 @@ Sintomas e causas:
 ### Diagnóstico rápido
 
 ```
-GET /api/saude/pagamentos
+GET /api/saude/pagamentos   (requer login de administrador)
 ```
 
 Rota pública que devolve **só a presença** das variáveis + um **teste ao vivo

@@ -298,6 +298,17 @@ async function logar(email) {
 }
 
 // ── Programa principal ───────────────────────────────────────────────────────
+(function exigirBancoLocal() {
+  const argDb = process.argv.find((a) => a.startsWith('--db='));
+  const banco = argDb ? argDb.split('=')[1].toLowerCase() : '';
+  if (banco !== 'local') {
+    console.error('❌ Dados demo só no banco LOCAL. Rode:');
+    console.error('   node scripts/dados-demo.js --db=local');
+    process.exit(1);
+  }
+  process.env.DB_PROVIDER = 'local';
+})();
+
 (async () => {
   const sql = await conectar();
   carregarEnvSupabase();

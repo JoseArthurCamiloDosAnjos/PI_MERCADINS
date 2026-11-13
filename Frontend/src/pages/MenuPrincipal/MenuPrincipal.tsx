@@ -28,6 +28,7 @@ import { registrarVisita, listarVisitados } from "../../utils/ultimosMercados";
 import { irParaInicio } from "../../utils/inicio";
 import { tipoPrincipal } from "../../utils/tipoLoja";
 import { localizacao } from "../../utils/localizacao";
+import { buscarCep, digitosCep as digitosCepUtil } from "../../utils/cep";
 import HorarioSemana from "../../components/HorarioSemana";
 import {
   estaAberto,
@@ -271,18 +272,51 @@ export default function Mercadins() {
     }
   };
 
-  const lojasFiltradas = useMemo(() => {
+const lojasFiltradas = useMemo(() => {
     const termo = normalizar(busca);
     const buscaLocal = normalizar(local);
+    const cepDigits = local.replace(/\D/g, "");
+    const cepOriginalLength = cepDigits.length;
+    const cepLocal = cepDigits.padStart(8, "0");
+    const cepFirst5 = cepLocal.slice(0, 5);
+    const cepLast3 = cepDigits.slice(-3);
     const cat = CATEGORIAS.find((c) => c.nome === categoria);
+
+    // Modo CEP completo apenas quando realmente são 8 dígitos digitados
+    const isCepMode = cepOriginalLength === 8 && /^\d+$/.test(cepDigits);
 
     return stores
       .filter((store) => {
+        const storeCep = store.cep ? store.cep.replace(/\D/g, "") : "";
+        const storeCepNormalizado = storeCep.padStart(8, "0");
         const texto = normalizar(
           [store.nome, store.descricao, store.bairro, store.cidade, store.estado]
             .filter(Boolean)
             .join(" ")
         );
+
+        // Modo CEP: quando digitado CEP completo (8 dígitos)
+        if (isCepMode) {
+          const cepBateExato = storeCepNormalizado === cepLocal;
+          const cepParcial = storeCepNormalizado.startsWith(cepFirst5);
+          
+          // Primeira prioridade: CEP exato ou primeiros 5 dígitos correspondem
+          if (cepBateExato || cepParcial) {
+            return true;
+          }
+          
+          // Segunda prioridade: se não tem correspondência CEP, 
+          // filtra pela cidade do CEP digitado (já definida no handleBuscar)
+          const mesmaCidade = localizacao(store as Store).includes(local) || store.cidade === local;
+          
+          // Se a loja está na mesma cidade do CEP digitado, inclui
+          if (mesmaCidade) {
+            return true;
+          }
+          
+          // Nenhum dos filtros correspondeu
+          return false;
+        }
 
         if (termo && !texto.includes(termo)) return false;
         if (
@@ -301,7 +335,35 @@ export default function Mercadins() {
       .sort((a, b) => {
         const favA = favoritos.has(a.id_mercado) ? 1 : 0;
         const favB = favoritos.has(b.id_mercado) ? 1 : 0;
-        return favB - favA;
+        
+        // Sort by proximity in CEP mode: exact CEP first, then by last 3 digits, then by city
+        if (isCepMode) {
+          const cepA = digitosCepUtil(a.cep);
+          const cepB = digitosCepUtil(b.cep);
+          
+          // CEP exato da busca vem primeiro
+          const exactA = cepA === cepLocal;
+          const exactB = cepB === cepLocal;
+          if (exactA && !exactB) return -1;
+          if (!exactA && exactB) return 1;
+          
+          // Depois por correspondência dos últimos 3 dígitos (proximidade)
+          const last3A = (cepA ?? "").slice(-3);
+          const last3B = (cepB ?? "").slice(-3);
+          const exactLast3A = last3A === cepLast3;
+          const exactLast3B = last3B === cepLast3;
+          if (exactLast3A && !exactLast3B) return -1;
+          if (!exactLast3A && exactLast3B) return 1;
+          
+          // Depois por favoritos
+          if (favA !== favB) return favB - favA;
+          
+          return 0;
+        }
+        
+        // Sem modo CEP: apenas favoritos
+        if (favA !== favB) return favB - favA;
+        return 0;
       });
   }, [stores, busca, local, categoria, favoritos]);
 
@@ -348,6 +410,8 @@ export default function Mercadins() {
     return () => window.clearTimeout(timer);
   }, [busca]);
 
+  
+
   useEffect(() => {
     if (!dropdownProdutos) return;
     function foraDoCampo(e: MouseEvent) {
@@ -373,8 +437,23 @@ export default function Mercadins() {
     setCategoria("Todos");
   }
 
-  function handleBuscar(event: React.FormEvent<HTMLFormElement>) {
+  async function handleBuscar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const termo = normalizar(local);
+    if (!termo) return;
+    
+    // Verificar se é um CEP (8 dígitos)
+    const cep = local.replace(/\D/g, "");
+    if (cep.length === 8) {
+      const dadosCep = await buscarCep(cep);
+      if (dadosCep) {
+        // Definir local baseado no CEP consultado
+        setLocal(`${dadosCep.bairro ?? ""} ${dadosCep.cidade ?? ""}`.trim());
+        irParaSecao("mercados");
+        return;
+      }
+    }
+    
     irParaSecao("mercados");
   }
 

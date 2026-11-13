@@ -30,7 +30,7 @@ import {
   IconPencil,
 } from '../../components/Icons';
 
-interface Favorito  { id: number; id_mercado: number; nome: string; data_cadastro: string; }
+interface Favorito  { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
 interface Historico { id: number; id_mercado: number; mercado: string; slug?: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; forma_pagamento?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 interface Depoimento { id: number; nota: number; texto: string; cliente: string; data_cadastro: string; minha: boolean; }
@@ -447,6 +447,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
   onAtualizarFavoritos: (favoritos: Favorito[]) => void;
   onPedidoCancelado: (id: number) => void;
 }) {
+  const navigate = useNavigate();
   const [modalFavoritoAberto, setModalFavoritoAberto] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -466,15 +467,39 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
             >+</div>
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
-          {favoritos.map((f, i) => (
-            <div key={f.id} className="pu-circ-item" style={{ animationDelay: `${0.38 + i * 0.07}s` }}>
-              <div className="pu-circ"><IconStore size={22} /></div>
-              <span className="pu-circ-label">{f.nome}</span>
-            </div>
-          ))}
+          { favoritos.map((f, i) => {
+            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); else if (f.id_mercado) navigate(`/vitrine/${f.id_mercado}`); };
+            return (
+              <div
+                key={f.id}
+                className="pu-circ-item"
+                style={{ animationDelay: `${0.38 + i * 0.07}s` }}
+                role="button"
+                tabIndex={0}
+                title={`Abrir ${f.nome}`}
+                onClick={abrirLoja}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    abrirLoja();
+                  }
+                }}
+              >
+                <div className="pu-circ"><IconStore size={22} /></div>
+                <span className="pu-circ-label">{f.nome}</span>
+              </div>
+            );
+          })}
         </div>
         {favoritos.length === 0 && (
-          <p className="pu-empty-inline">Você ainda não favoritou nenhum mercado. Explore e adicione seus preferidos aqui.</p>
+          <a
+            href="/vitrine"
+            className="pu-empty-inline"
+            onClick={() => navigate('/vitrine')}
+            style={{ cursor: 'pointer' }}
+          >
+            <span>Explore mercados</span>
+          </a>
         )}
       </section>
 

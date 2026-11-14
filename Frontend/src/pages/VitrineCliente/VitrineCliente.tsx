@@ -262,7 +262,7 @@ function ProdutoCardCliente({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineClienteProps) {
+export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
@@ -600,13 +600,10 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       <div className="vtc-topbar">
         <button
           className="vtc-btn-voltar"
-          onClick={() => {
-            if (onVoltar) onVoltar();
-            else navigate('/');
-          }}
+          onClick={() => history.back()}
         >
           <IconArrowLeft size={16} />
-          <span>Voltar ao menu</span>
+          <span>Voltar</span>
         </button>
         <div className="vtc-topbar-direita">
           {usuario ? (

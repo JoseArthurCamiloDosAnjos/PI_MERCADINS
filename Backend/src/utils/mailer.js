@@ -1,9 +1,27 @@
 const { Resend } = require("resend");
 const EmailDominio = "Suporte@mercadins.com.br"
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Verificar se estamos em ambiente de desenvolvimento local
+const isLocalhost = 
+  process.env.BASE_URL?.includes('localhost') || 
+  process.env.BASE_URL?.includes('127.0.0.1') ||
+  process.env.LOG_EMAILS === 'true'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const logEmail = (tipo, email, codigo, link) => {
+  console.log(`=== EMAIL ${tipo} (MODELO LOCAL) ===`)
+  console.log(`Para: ${email}`)
+  console.log(`Código: ${codigo}`)
+  if (link) console.log(`Link: ${link}`)
+  console.log('===========================================\n')
+}
 
 const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
+  if (isLocalhost) {
+    logEmail('VERIFICACAO', email, codigo, linkVerificacao?.toString())
+    return
+  }
   await resend.emails.send({
     from: EmailDominio,
     to: email,
@@ -54,6 +72,10 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
 
 
 const enviarEmailRecuperacao = async (email, codigo) => {
+  if (isLocalhost) {
+    logEmail('RECUPERACAO', email, codigo)
+    return
+  }
   await resend.emails.send({
     from: EmailDominio,
     to: email,
@@ -146,6 +168,10 @@ const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
 };
 
 const enviarEmailTrocaEmail = async (email, codigo) => {
+  if (isLocalhost) {
+    logEmail('TROCA_EMAIL', email, codigo)
+    return
+  }
   await resend.emails.send({
     from: EmailDominio,
     to: email,
@@ -225,6 +251,13 @@ const corpoPedido = (pedido) => `
 `;
 
 const enviarEmailPedidoConfirmado = async (email, pedido) => {
+  if (isLocalhost) {
+    console.log(`=== EMAIL PEDIDO_CONFIRMADO (MODELO LOCAL) ===`)
+    console.log(`Para: ${email}`)
+    console.log(`Pedido: ${pedido.numero}`)
+    console.log('===========================================\n')
+    return
+  }
   await resend.emails.send({
     from: EmailDominio,
     to: email,
@@ -247,6 +280,14 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
 };
 
 const enviarEmailStatusPedido = async (email, pedido, status) => {
+  if (isLocalhost) {
+    console.log(`=== EMAIL STATUS_PEDIDO (MODELO LOCAL) ===`)
+    console.log(`Para: ${email}`)
+    console.log(`Status: ${status}`)
+    console.log(`Pedido: ${pedido.numero}`)
+    console.log('===========================================\n')
+    return
+  }
   const titulos = {
     aguardando_pagamento: 'Aguardando confirmação do pagamento',
     pendente:  'Pedido recebido pela loja',
@@ -289,6 +330,13 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
 };
 
 const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }) => {
+  if (isLocalhost) {
+    console.log(`=== EMAIL_PAGAMENTO_APOS_CANCELAMENTO (MODELO LOCAL) ===`)
+    console.log(`Para: ${email}`)
+    console.log(`Pedido: ${pedido.numero}`)
+    console.log('===========================================\n')
+    return
+  }
   const mensagem = estornado
     ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
     : 'O pagamento deste pedido foi confirmado depois do cancelamento. Nossa equipe vai estornar o valor e entrará em contato. Se tiver dúvidas, fale com a loja.';
@@ -322,6 +370,13 @@ const NOMES_PAGAMENTO = {
 };
 
 const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
+  if (isLocalhost) {
+    console.log(`=== EMAIL_PEDIDO_VENDEDOR (MODELO LOCAL) ===`)
+    console.log(`Para: ${emailVendedor}`)
+    console.log(`Pedido: ${pedido.numero}`)
+    console.log('===========================================\n')
+    return
+  }
   await resend.emails.send({
     from: EmailDominio,
     to: emailVendedor,
@@ -373,6 +428,14 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
 };
 
 const enviarEmailNotificacao = async (email, titulo, mensagem) => {
+  if (isLocalhost) {
+    console.log(`=== EMAIL_NOTIFICACAO (MODELO LOCAL) ===`)
+    console.log(`Para: ${email}`)
+    console.log(`Titulo: ${titulo}`)
+    console.log(`Mensagem: ${mensagem}`)
+    console.log('===========================================\n')
+    return
+  }
   const { error } = await resend.emails.send({
     from: EmailDominio,
     to: email,

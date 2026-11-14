@@ -1,5 +1,4 @@
 require('dotenv').config();
-const { neon } = require('@neondatabase/serverless');
 const { Pool } = require('pg');
 
 let sqlInstance = null;
@@ -17,28 +16,23 @@ const escolherBanco = () => {
   return 'local';
 };
 
-async function conectarNeon() {
-  const neonSql = neon(process.env.DATABASE_URL_NEON);
-  await neonSql`SELECT 1`;
-  console.log('Conectado ao Neon');
-  return neonSql;
+function montarQuery(strings, values) {
+  return strings.reduce(
+    (acc, part, i) => acc + part + (i < values.length ? `$${i + 1}` : ''),
+    '',
+  );
 }
 
-async function conectarLocal() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL_LOCAL,
-  });
-
-  await pool.query('SELECT 1');
-  console.log('Conectado ao PostgreSQL local');
-
+// Camada compatível com os controllers: sql`...` retorna linhas e
+// sql.transaction(fn) dá uma transação INTERATIVA (BEGIN/COMMIT/ROLLBACK
+// no mesmo client) — o que o driver HTTP do Neon não suporta (só lote).
+function criarExecutavel(pool) {
   const executar = async (strings, ...values) => {
     const query = montarQuery(strings, values);
     const result = await pool.query(query, values);
     return result.rows;
   };
 
-  // Compatível com sql.transaction(fn) do driver Neon usado nos controllers.
   executar.transaction = async (fn) => {
     const client = await pool.connect();
     try {
@@ -62,11 +56,24 @@ async function conectarLocal() {
   return executar;
 }
 
-function montarQuery(strings, values) {
-  return strings.reduce(
-    (acc, part, i) => acc + part + (i < values.length ? `$${i + 1}` : ''),
-    '',
-  );
+async function conectarNeon() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL_NEON,
+  });
+
+  await pool.query('SELECT 1');
+  console.log('Conectado ao Neon');
+  return criarExecutavel(pool);
+}
+
+async function conectarLocal() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL_LOCAL,
+  });
+
+  await pool.query('SELECT 1');
+  console.log('Conectado ao PostgreSQL local');
+  return criarExecutavel(pool);
 }
 
 async function conectar() {
@@ -75,17 +82,19 @@ async function conectar() {
   const banco = escolherBanco();
   console.log(`Banco escolhido: ${banco.toUpperCase()}`);
 
-  if (banco === 'neon') {
-    sqlInstance = await conectarNeon();
-    return sqlInstance;
-  }
-
   try {
-    sqlInstance = await conectarLocal();
+    sqlInstance = banco === 'neon'
+      ? await conectarNeon()
+      : await conectarLocal();
     return sqlInstance;
   } catch (err) {
-    console.error('Falha ao conectar ao PostgreSQL local:', err.message);
-    throw new Error('Falha na conexão com o PostgreSQL local (verifique DATABASE_URL_LOCAL e se o serviço está no ar)');
+    const origem = banco === 'neon' ? 'Neon' : 'PostgreSQL local';
+    console.error(`Falha ao conectar ao ${origem}:`, err.message);
+    throw new Error(
+      banco === 'neon'
+        ? 'Falha na conexão com o Neon (verifique DATABASE_URL_NEON e a rede)'
+        : 'Falha na conexão com o PostgreSQL local (verifique DATABASE_URL_LOCAL e se o serviço está no ar)'
+    );
   }
 }
 

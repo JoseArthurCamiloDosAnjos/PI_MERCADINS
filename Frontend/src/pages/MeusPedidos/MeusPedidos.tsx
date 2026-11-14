@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import { fecharAbaAsaas, temAbaAsaasAberta } from '../../utils/abaAsaas';
 import ToastContainer from '../../components/Toast';
 import './MeusPedidos.css';
 
@@ -287,6 +288,22 @@ function DetalhePedido({
   }, [id]);
 
   const statusPedido = pedido?.status;
+  const statusAnteriorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!statusPedido) return;
+    const anterior = statusAnteriorRef.current;
+    statusAnteriorRef.current = statusPedido;
+    const pagou = anterior === 'aguardando_pagamento' && statusPedido !== 'aguardando_pagamento';
+    // primeiro load com a cobrança já paga (ex.: confirmou antes do mount)
+    const primeiroLoad = anterior === null && statusPedido !== 'aguardando_pagamento' && temAbaAsaasAberta();
+    if (pagou || primeiroLoad) {
+      fecharAbaAsaas();
+      if (statusPedido === 'pendente') {
+        showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada e o pedido segue para a loja.');
+      }
+    }
+  }, [statusPedido, showToast]);
+
   useEffect(() => {
     if (!statusPedido) return;
     const emAndamento = !['entregue', 'cancelado'].includes(statusPedido);

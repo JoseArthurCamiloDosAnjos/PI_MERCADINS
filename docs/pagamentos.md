@@ -278,7 +278,7 @@ npm run migrate                   # banco local (DB_PROVIDER)
 | `Assas_API_KEY` | chave única (legada) — vale para os dois ambientes quando as específicas não estão preenchidas |
 | `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API de cada ambiente (o código escolhe junto com o ambiente ativo) |
 | `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `asaas-access-token` (legado: `webhook-security-token`). **Obrigatório**: sem ele o webhook responde `401` e não processa (fail-closed). Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Cadastre o MESMO valor como “Auth Token” da integração de webhook no painel do Asaas |
-| `FRONTEND_URL` | base do site (e-mails, sitemap) e retorno do Asaas após pagar um **pedido** (`/pedidos/{id}`); a assinatura não usa — fluxo de nova aba (§14) |
+| `FRONTEND_URL` | base do site (e-mails, sitemap) — pedidos e assinaturas **não** usam retorno do Asaas; ambos seguem o fluxo de nova aba (§14) |
 
 **Sandbox × produção:** a chave de sandbox **não** vale na URL de produção e
 vice-versa. Por isso cada ambiente tem a sua chave: a mesma máquina pode ter as
@@ -545,35 +545,38 @@ assinatura **não envia `callback`**:
 Nada depende de retorno automático. Se o navegador bloquear a nova aba, o
 botão manual **"Ir para o pagamento"** continua disponível na tela de status.
 
-### Pedido (cartão) — `successUrl` com fallback
+### Pedido (cartão) — nova aba (mesmo fluxo da assinatura)
 
-Terminado o pagamento na página hospedada pelo Asaas, o cliente pode voltar
-para o site. O backend envia `callback: { successUrl, autoRedirect: true }`
-na criação da **cobrança de cartão**:
+A cobrança de cartão **não envia `callback`/`successUrl`** (o Asaas recusa
+`localhost` e o painel não tem campo de domínio em sandbox). O fluxo é o
+mesmo da assinatura:
 
-| Fluxo | Para onde volta |
-|---|---|
-| Pedido (cartão) | `/pedidos/{id}` (acompanhamento) |
+1. o backend cria a cobrança **sem `callback`** (`pedidoController.js`);
+2. o frontend abre o link do checkout em uma **nova aba**
+   (`abrirAbaAsaas` em `Frontend/src/utils/abaAsaas.ts`);
+3. a aba original navega para `/pedidos/{id}` e faz **polling** a cada 10 s
+   (`MeusPedidos`);
+4. assim que o status sai de `aguardando_pagamento`, o site **fecha a aba do
+   Asaas sozinho** e avisa que o pagamento foi confirmado.
 
-### Requisito fora do código (pedidos)
+Se o navegador bloquear a nova aba, o cliente usa o link manual **"Abrir a
+página de pagamento"** na tela do pedido.
 
-A `successUrl` precisa pertencer ao **domínio cadastrado na conta Asaas**
-(painel → **Configurações da conta → Informações** — `mercadins.com.br`, nas
-contas **sandbox e produção**). Sem isso a API recusa o `callback` e o
-sistema cria a cobrança **sem retorno automático** (silenciosamente — o
-frontend avisa o cliente com o aviso de retorno inativo).
+### Requisito fora do código (legado — não é mais usado)
 
-### Comportamento quando o Asaas recusa o `callback`
+> Nenhuma cobrança envia `callback` hoje. A seção abaixo fica como referência
+> caso o retorno automático seja reativado: a `successUrl` precisa pertencer
+> ao **domínio cadastrado na conta Asaas** (painel → **Configurações da conta →
+> Informações** — `mercadins.com.br`, nas contas sandbox e produção). Sem isso
+> a API recusa o `callback` com `400 invalid_object`.
 
-O fallback — disparado apenas em **recusa de validação (4xx)** cuja mensagem
-fala em `successUrl`, `callback` ou `domínio` — cria a cobrança sem
-`callback` (o pagamento nunca falha por isso) e devolve `semRedirect: true`
-em `pagamento` (pedido). **`semRedirect: true` só é retornado quando a
-cobrança foi efetivamente criada** (existe `id`); se a recriação falhar, o
-erro é propagado e nenhum `semRedirect` é enviado. O
-frontend então avisa a pessoa: *"O retorno automático não está ativo: ao
-concluir o pagamento, use o botão voltar do navegador"* — e o botão manual
-**"Ir para o pagamento"** continua disponível na tela de status.
+### Comportamento quando o Asaas recusa o `callback` (fallback defensivo)
+
+O serviço (`asaasService.js`) ainda mantém o fallback — disparado apenas em
+**recusa de validação (4xx)** cuja mensagem fala em `successUrl`, `callback` ou
+`domínio` — que recria a cobrança sem `callback` (o pagamento nunca falha por
+isso) e devolve `semRedirect: true`. Hoje ele é **código defensivo inativo**:
+nenhum chamador envia `redirectUrl`, então `semRedirect` é sempre `false`.
 
 Erros de **rede/timeout** não disparam esse fallback (são ambíguos — a
 cobrança pode ter sido criada); o pedido é verificado por `externalReference`
@@ -581,10 +584,10 @@ antes de qualquer recriação/rollback (§8).
 
 ### Observações
 
-- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o redirect de
-  pedido **nunca** é aceito — `localhost` não é domínio cadastrável; a
-  assinatura nem tenta (fluxo de nova aba acima);
-- **boleto** não redireciona: a confirmação não é imediata (só o cartão
-  tem `autoRedirect`);
+- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o redirect nunca
+  seria aceito — `localhost` não é domínio cadastrável; por isso os dois
+  fluxos (pedido e assinatura) usam **nova aba + polling**;
+- **boleto** não redireciona: a confirmação não é imediata (só o cartão tem
+  sentido em retorno automático);
 - redirecionar **não** confirma pagamento — quem confirma é o webhook ou a
   consulta imediata (§3).

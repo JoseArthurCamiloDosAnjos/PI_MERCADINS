@@ -11,6 +11,7 @@ import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
 import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
+import { abrirAbaAsaas } from './utils/abaAsaas'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -285,12 +286,13 @@ function CartWrapper() {
         setCupom(null)
         setAgendamento('')
         if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
-        if (resposta.pagamento.semRedirect) {
-          showToast('aviso', 'O retorno automático não está ativo: ao finalizar o pagamento, volte para o site usando o botão voltar do navegador. Seu pedido já está salvo.')
-          setTimeout(() => { window.location.href = resposta.pagamento.urlPagamento }, 2600)
+        const janela = abrirAbaAsaas(resposta.pagamento.urlPagamento)
+        if (janela) {
+          showToast('sucesso', 'Pagamento aberto em nova aba. Esta aba acompanha o pedido: assim que for confirmado, a página atualiza sozinha.')
         } else {
-          window.location.href = resposta.pagamento.urlPagamento
+          showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Abrir a página de pagamento" na tela do pedido.')
         }
+        setTimeout(() => navigate(idPedido ? `/pedidos/${idPedido}` : '/pedidos'), 1600)
         return
       }
 

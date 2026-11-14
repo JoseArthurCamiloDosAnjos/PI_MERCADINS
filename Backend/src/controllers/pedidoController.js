@@ -495,8 +495,6 @@ const criarPedido = async (req, res) => {
         motivoSplit = '';
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
-        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-        const redirectUrl = frontendUrl ? `${frontendUrl}/pedidos/${pedido.id}` : undefined;
         let pagamento;
         try {
           pagamento = await asaas.criarPagamentoPedidoCartao({
@@ -505,7 +503,6 @@ const criarPedido = async (req, res) => {
             descricao,
             externalReference: refPedido,
             splits: splits || undefined,
-            redirectUrl,
           });
         } catch (erroSplit) {
           motivoSplit = String(erroSplit.message || '');
@@ -541,7 +538,6 @@ const criarPedido = async (req, res) => {
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
-              redirectUrl,
             });
           }
         }

@@ -325,10 +325,13 @@ Corpo de um pedido:
   "pedido:<id>"`; se a loja tem `asaas_wallet_id`, a cobrança sai com
   **Split de 100%** e o valor líquido vai direto para a conta do vendedor
   (ver [pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor)).
-  A resposta traz `pagamento` (link) e pode incluir
-  `pagamento.semRedirect: true` quando o Asaas recusou o retorno automático —
-  nesse caso o cliente é avisado para voltar ao site pelo navegador
+  A resposta traz `pagamento` (link). A cobrança **não envia
+  `callback`/`successUrl`**: o frontend abre o checkout em **nova aba** e a
+  aba original faz polling em `GET /pedidos/{id}` — quando confirma, a aba do
+  Asaas é fechada pelo site
   ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
+  O campo `pagamento.semRedirect` continua na resposta (sempre `false` hoje,
+  compatibilidade) e indica se um retorno automático foi recusado.
   O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
   exibido como `pix`).
 

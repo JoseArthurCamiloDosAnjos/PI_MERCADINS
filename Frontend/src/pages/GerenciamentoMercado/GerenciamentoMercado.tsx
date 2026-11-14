@@ -1051,7 +1051,7 @@ function SecFinanceiro({
             </strong>
             <span>
               {fin.recebimento.walletCadastrado
-                ? 'O Pix/cartão dos pedidos é repassado automaticamente para a sua carteira Asaas (100%, sem comissão).'
+                ? 'O cartão dos pedidos é repassado automaticamente para a sua carteira Asaas (100%, sem comissão).'
                 : 'Cadastre o Wallet ID do Asaas em Informações para o dinheiro dos pedidos online cair direto na sua conta.'}
             </span>
           </div>
@@ -1314,7 +1314,7 @@ function RecebimentoConteudo({ mercado, onSalvo }: {
           </div>
           <div className="gm-info-row">
             <span className="gm-info-lbl"><IconInfo size={13} /> Como funciona</span>
-            <span className="gm-info-val">100% do Pix/cartão online para você, sem comissão</span>
+            <span className="gm-info-val">100% do cartão online para você, sem comissão</span>
           </div>
         </div>
       </div>

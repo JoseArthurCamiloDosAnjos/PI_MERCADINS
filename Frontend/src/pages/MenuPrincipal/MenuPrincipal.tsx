@@ -338,8 +338,8 @@ const lojasFiltradas = useMemo(() => {
         
         // Sort by proximity in CEP mode: exact CEP first, then by last 3 digits, then by city
         if (isCepMode) {
-          const cepA = digitosCepUtil(a.cep);
-          const cepB = digitosCepUtil(b.cep);
+          const cepA = digitosCepUtil(a.cep ?? "");
+          const cepB = digitosCepUtil(b.cep ?? "");
           
           // CEP exato da busca vem primeiro
           const exactA = cepA === cepLocal;
@@ -659,12 +659,12 @@ const lojasFiltradas = useMemo(() => {
             <div className="hero-text">
               <span className="hero-eyebrow">
                 <IconMapPin size={14} />
-                Delivery de mercados perto de você
+                Mercados perto de você
               </span>
 
               <h1>
                 Seus mercados favoritos{" "}
-                <span className="hero-highlight">em delivery!</span>
+                <span className="hero-highlight">com entrega!</span>
               </h1>
 
               <p>

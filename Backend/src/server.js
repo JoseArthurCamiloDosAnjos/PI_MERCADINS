@@ -193,11 +193,7 @@ app.listen(PORT, () => {
   console.log(`Backend rodando na porta ${PORT} [${isProduction ? 'produção' : 'desenvolvimento'}]`)
   checarVigencia()
   asaasService.verificarConexao().then((resultado) => {
-    if (resultado.ok) {
-      console.log(
-        `Asaas: conexão OK — ambiente ${resultado.ambiente} (${resultado.url}) com ${resultado.fonte}`
-      )
-    } else {
+    if (!resultado.ok) {
       console.error(
         `Asaas: conexão FALHOU — ambiente ${resultado.ambiente} (${resultado.url}) com ${resultado.fonte || 'nenhuma chave'}: ${resultado.erro}`
       )

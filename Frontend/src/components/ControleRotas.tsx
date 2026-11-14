@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 // ─── Ajustes que valem para qualquer navegação ────────────────────────────────
 
-const TITULO_PADRAO = 'Mercadins — Delivery de mercados perto de você';
+const TITULO_PADRAO = 'Mercadins — Mercados perto de você';
 
 const TITULOS: Array<[RegExp, string]> = [
   [/^\/$/, TITULO_PADRAO],

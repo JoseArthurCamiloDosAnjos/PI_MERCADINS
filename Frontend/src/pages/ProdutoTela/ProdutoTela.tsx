@@ -532,7 +532,7 @@ export default function ProdutoTela({
             <div className="pd-caixa-item">
               <span className="pd-caixa-label">Pagamento</span>
               <ul className="pd-caixa-lista">
-                <li><IconCard size={14} /> Pix, cartão ou dinheiro na entrega</li>
+                <li><IconCard size={14} /> Cartão ou dinheiro na entrega</li>
               </ul>
             </div>
           </div>

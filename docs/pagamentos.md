@@ -4,7 +4,7 @@ Como o Mercadins cobra, confirma e controla o acesso de cada loja: o fluxo
 completo desde a escolha do plano até a suspensão automática de um mercado
 cujo pagamento venceu.
 
-Toda a cobrança é feita pelo **Asaas** (Pix, boleto e cartão). O Mercadins
+Toda a cobrança é feita pelo **Asaas** (cartão e boleto). O Mercadins
 não guarda dado de cartão — guarda só o resultado da cobrança.
 
 ---
@@ -35,7 +35,7 @@ RegistrarMercado ──POST /api/assinaturas/checkout──► Asaas (customer +
         │                                                │
         │  grava assinatura 'pendente' + dados_mercado    │ link de pagamento
         │  (o mercado AINDA não existe)                  ▼
-        └──────────────► tela "Aguardando pagamento"  cliente paga (Pix/boleto/cartão)
+        └──────────────► tela "Aguardando pagamento"  cliente paga (boleto/cartão)
                                                             │
                                           ┌─────────────────┴──────────────────┐
                                           │  webhook  OU  consulta imediata    │
@@ -50,8 +50,9 @@ RegistrarMercado ──POST /api/assinaturas/checkout──► Asaas (customer +
    Em seguida cria *customer* e *assinatura* no Asaas e devolve `urlCheckout`.
    Se já existir assinatura `pendente`/`ativa`/`inadimplente`, ela é **retomada**
    em vez de criar outra.
-2. **Aguardando pagamento** — a assinatura fica `pendente`; o cliente é levado ao
-   checkout do Asaas e volta para `/registrar-mercado?pagamento=1`.
+2. **Aguardando pagamento** — a assinatura fica `pendente`; o checkout do
+   Asaas abre em **nova aba** e a aba original faz polling — quando o
+   pagamento confirma, a aba do Asaas **fecha sozinha** (§14).
 3. **Confirmação** — ao confirmar o pagamento (§3): status vira `ativa`,
    `proximo_pagamento` é recalculado no servidor (`+1 mês` ou `+1 ano`), a fatura
    é gravada e **o mercado é criado** a partir de `dados_mercado` (é nesse momento
@@ -219,8 +220,11 @@ O mesmo Asaas é usado na compra de produtos (`forma_pagamento`):
 | Forma | Comportamento |
 |---|---|
 | `presencial` (padrão) | paga direto com o lojista; nada passa pelo Asaas |
-| `pix` | cria cobrança Pix (`criarPagamentoPedidoPix`) e devolve QR + copia e cola |
 | `cartao` | cria cobrança com cartão (`criarPagamentoPedidoCartao`) |
+
+> O **Pix foi removido** do fluxo de pedidos: não há mais criação de cobrança
+> Pix, QR code nem copia-e-cola. `forma_pagamento: "pix"` em pedidos antigos
+> continua reconhecido só para exibição/histórico.
 
 Diferença fundamental: essas cobranças vêm com
 `externalReference = "pedido:<id>"`, enquanto as de plano vêm com
@@ -274,7 +278,7 @@ npm run migrate                   # banco local (DB_PROVIDER)
 | `Assas_API_KEY` | chave única (legada) — vale para os dois ambientes quando as específicas não estão preenchidas |
 | `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API de cada ambiente (o código escolhe junto com o ambiente ativo) |
 | `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `asaas-access-token` (legado: `webhook-security-token`). **Obrigatório**: sem ele o webhook responde `401` e não processa (fail-closed). Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Cadastre o MESMO valor como “Auth Token” da integração de webhook no painel do Asaas |
-| `FRONTEND_URL` | para onde o Asaas devolve o cliente após pagar (`/registrar-mercado?pagamento=1`) |
+| `FRONTEND_URL` | base do site (e-mails, sitemap) e retorno do Asaas após pagar um **pedido** (`/pedidos/{id}`); a assinatura não usa — fluxo de nova aba (§14) |
 
 **Sandbox × produção:** a chave de sandbox **não** vale na URL de produção e
 vice-versa. Por isso cada ambiente tem a sua chave: a mesma máquina pode ter as
@@ -287,7 +291,7 @@ mesmo rodando com `NODE_ENV=production` — serve para colocar tudo no ar e
 testar pagamento sem movimentar dinheiro. Para isso funcionar no Render:
 
 - cadastrar `Assas_API_KEY_Sandbox` (ou deixar a chave de sandbox na
-  `Assas_API_KEY`) — o boot loga `Asaas: conexão OK — ambiente sandbox …`;
+  `Assas_API_KEY`) — confira com `GET /api/saude/pagamentos`;
 - registrar o webhook também na **conta sandbox**, apontando para
   `https://pi-mercadins.onrender.com/api/webhooks/asaas`, e cadastrar o token
   em `ASAAS_WEBHOOK_TOKEN`.
@@ -298,7 +302,7 @@ Render só deve ser feita quando houver **autorização explícita** e as
 credenciais correspondentes (`Assas_API_KEY_Producao` + webhook da conta de
 produção) já cadastradas. O código **não** cai em produção sozinho: sem a
 variável o default é `sandbox`. Depois da troca, reinicie o serviço e confira
-no log as linhas `Asaas: ambiente producao …` + `Asaas: conexão OK …`.
+com `GET /api/saude/pagamentos` (o `asaas.ambiente` deve mostrar `producao`).
 
 No painel do Asaas: criar a **integração de webhook** apontando para
 `https://pi-mercadins.onrender.com/api/webhooks/asaas` e marcar os eventos de
@@ -329,15 +333,13 @@ Sintomas e causas:
 
 | Sintoma | Causa provável |
 |---|---|
-| "aguardando confirmação do banco" | cobrança `PENDING` no Asaas — ainda não liquidou (normal em Pix de teste) |
+| "aguardando confirmação do banco" | cobrança `PENDING` no Asaas — ainda não liquidou |
 | Pagou e a loja não apareceu | conferir `GET /api/assinaturas/minha` e o log do webhook; a consulta imediata deve resolver sozinha |
 | `Dados do mercado inválidos` na ativação | payload de `dados_mercado` fora do formato normalizado (a validação é idempotente, veja `marketController.validarDadosMercado`) |
 | `Chave da API do Asaas não configurada` | falta `Assas_API_KEY` (ou `Assas_API_KEY_Sandbox`/`_Producao`) no `.env` |
-| Pix do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
+| Pagamento do **produto** falha só no site no ar | variáveis do Asaas ausentes/erradas no Render (ver checklist abaixo) |
 | `401 A chave de API fornecida é inválida` (`invalid_access_token`) | chave **revogada/expirada** — gere outra no painel (Integrações > Chaves API) e atualize no `.env`/Render |
-| `401` com `invalid_environment` (ou `403`) do Asaas / `401 A chave de API informada não pertence a este ambiente` | chave do ambiente errado (sandbox na produção ou vice-versa) — confira no log a linha `Asaas: ambiente … [chave: …]` e o `GET /api/saude/pagamentos` |
-| `Não há nenhuma chave Pix disponível para receber cobranças` | a **conta Asaas daquele ambiente** não tem chave Pix cadastrada — cadastrar em *Chaves Pix* no painel (sandbox e produção são contas separadas); até lá o cliente pode pagar de **cartão** |
-| Pedido criado mas **QR vazio** | o `/pixQrCode` demorou — o backend tenta 3× e a tela consulta a cada 10s; se seguir vazio, veja o log `não foi possível buscar o QR do Pix` |
+| `401` com `invalid_environment` (ou `403`) do Asaas / `401 A chave de API informada não pertence a este ambiente` | chave do ambiente errado (sandbox na produção ou vice-versa) — confira no `GET /api/saude/pagamentos` (`asaas.ambiente`, `chave_status`) |
 
 ### Diagnóstico rápido
 
@@ -364,8 +366,7 @@ da chave** (cache de 30s; nenhum valor sensível é exposto):
 `asaas.ambiente` diz qual ambiente as chamadas estão usando agora;
 `chave_api: false` ou `url_usada: null` = variável não cadastrada no ambiente.
 `chave_sandbox`/`chave_producao` mostram se cada ambiente tem chave pronta
-(legada `Assas_API_KEY` conta para os dois). Ao subir o servidor, o log mostra
-também a linha `Asaas: ambiente sandbox → https://api-sandbox.asaas.com [chave: Assas_API_KEY_Sandbox]`.
+(legada `Assas_API_KEY` conta para os dois).
 
 `chave_status` é um **teste ao vivo** da credencial (cache de 30s): `ok` ·
 `invalida` (chave revogada/expirada) · `ambiente_errado` (chave de outro
@@ -376,7 +377,6 @@ Do terminal (mesma verificação):
 ```bash
 cd Backend
 node scripts/verificarAsaas.js          # ambiente + validade da chave (só leitura)
-node scripts/verificarAsaas.js --pix    # cria 1 cobrança Pix de teste e mostra o QR
 ```
 
 ### Checklist de produção (Render)
@@ -386,8 +386,6 @@ node scripts/verificarAsaas.js --pix    # cria 1 cobrança Pix de teste e mostra
 - [ ] `Assas_API_KEY_Producao` = chave de **produção** **válida** (a de sandbox não
       serve na URL de produção; chave revogada/expirada responde `401 invalid_access_token`);
 - [ ] `Assas_API_URL_Producao=https://api.asaas.com/`;
-- [ ] **Chave Pix** cadastrada e ativa na conta de produção do Asaas (sem ela
-      o Pix do pedido falha com *"Não há nenhuma chave Pix disponível"*);
 - [ ] `FRONTEND_URL=https://mercadins.com.br`;
 - [ ] `ASAAS_WEBHOOK_TOKEN` preenchido **e** a integração de webhook criada no
       Asaas (conta de produção) apontando para `https://pi-mercadins.onrender.com/api/webhooks/asaas`
@@ -395,12 +393,8 @@ node scripts/verificarAsaas.js --pix    # cria 1 cobrança Pix de teste e mostra
       sem o token, o webhook funciona mas o servidor confere cada status na API);
 - [ ] Depois de mexer em variável, deixar o Render reiniciar o serviço.
 
-No log do Render, depois de subir, confira as duas linhas de confirmação:
-
-```
-Asaas: ambiente producao → https://api.asaas.com [chave: Assas_API_KEY_Producao]
-Asaas: conexão OK — ambiente producao (https://api.asaas.com) com Assas_API_KEY_Producao
-```
+Depois de subir, confira o ambiente e a chave com `GET /api/saude/pagamentos`
+(login de administrador): `asaas.ambiente: "producao"` e `chave_status: "ok"`.
 
 `conexão FALHOU … 401` com `invalid_environment` = chave de outro ambiente
 (sandbox na produção ou vice-versa — no Render, confira `ASAAS_AMBIENTE`);
@@ -410,8 +404,6 @@ Asaas: conexão OK — ambiente producao (https://api.asaas.com) com Assas_API_K
 
 - [ ] `Assas_API_KEY_Sandbox` = chave de **teste** do sandbox;
 - [ ] `Assas_API_URL_Sandbox=https://api-sandbox.asaas.com/`;
-- [ ] **Chave Pix** criada na conta sandbox (painel → Chaves Pix) — sem ela o
-      Pix de teste falha; cartão e assinatura continuam funcionando;
 - [ ] Split habilitado na conta sandbox (se for testar repasse ao vendedor);
 - [ ] webhook criado também na conta sandbox (ou usar o botão "Já paguei");
 - [ ] em `Backend/.env`: `ASAAS_AMBIENTE=sandbox` (opcional — sem ela o
@@ -419,7 +411,8 @@ Asaas: conexão OK — ambiente producao (https://api.asaas.com) com Assas_API_K
 - [ ] **build publicado (Render):** `ASAAS_AMBIENTE=sandbox` já vem no
       `render.yaml` — cadastrar `Assas_API_KEY_Sandbox` (ou a chave de sandbox
       em `Assas_API_KEY`) e registrar o webhook também na conta sandbox;
-- [ ] subir e conferir no log do Render: `Asaas: conexão OK — ambiente sandbox …`.
+- [ ] subir e conferir com `GET /api/saude/pagamentos`: `ambiente: "sandbox"`
+      e `chave_status: "ok"`.
 
 Quando o pagamento online falha, a API responde `502` com
 `{ "erro": "<mensagem traduzida>", "detalhe": "<motivo exato do Asaas>" }` — o
@@ -432,7 +425,7 @@ Quando o pagamento online falha, a API responde `502` com
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `Backend/src/services/asaasService.js` | cliente da API Asaas: customer, assinatura, cobranças, Pix/cartão de pedido, consulta de pagamentos |
+| `Backend/src/services/asaasService.js` | cliente da API Asaas: customer, assinatura, cobrança de cartão de pedido, consulta de pagamentos |
 | `Backend/src/controllers/assinaturaController.js` | checkout, `/minha` (com fallback), cancelamento, webhook |
 | `Backend/src/services/vigenciaService.js` | vigência, carência, suspensão e reativação |
 | `Backend/src/utils/planos.js` | limites por plano |
@@ -451,7 +444,7 @@ Referência das rotas: [docs/API.md](API.md).
 
 ## 13. Split de pagamento (dinheiro direto ao vendedor)
 
-O Pix/cartão de um pedido pode cair **direto na conta Asaas do lojista**,
+O cartão de um pedido pode cair **direto na conta Asaas do lojista**,
 sem passar pela conta da plataforma. A plataforma não cobra comissão nas
 vendas (coerente com o "0% de comissão" dos planos) — a receita dela é só
 das assinaturas.
@@ -488,7 +481,7 @@ das assinaturas.
    - **manual**: na mesma aba Recebimento, colar o walletId de uma conta
      Asaas já existente no campo "Wallet ID do Asaas".
 2. Na criação do pedido online, `asaasService.montarSplitVendedor` monta
-   `splits: [{ walletId, percentualValue: 100 }]` e a cobrança Pix/cartão
+   `splits: [{ walletId, percentualValue: 100 }]` e a cobrança de cartão
    é criada com esse array. O percentual é sobre o **líquido** (netValue,
    após a taxa do Asaas).
 3. O split é executado pelo Asaas **no recebimento** da cobrança. O status
@@ -527,9 +520,9 @@ das assinaturas.
 1. Habilitar Split na conta sandbox e criar a conta do vendedor (aba
    Recebimento → "Criar conta automaticamente") ou cadastrar o walletId
    manualmente.
-2. Fazer um pedido pagando com Pix e conferir em `repasses`:
+2. Fazer um pedido pagando com cartão e conferir em `repasses`:
    `SELECT * FROM repasses ORDER BY id DESC LIMIT 5;`
-3. Confirmar o Pix no painel sandbox → webhook `PAYMENT_CONFIRMED` +
+3. Confirmar a cobrança no painel sandbox → webhook `PAYMENT_CONFIRMED` +
    `PAYMENT_SPLIT_DONE` → status `DONE` e o saldo cai na conta do vendedor
    (Visão financeira → Extrato, no painel do Asaas dele).
 
@@ -537,49 +530,47 @@ das assinaturas.
 
 ## 14. Retorno automático após o pagamento
 
-Terminado o pagamento na página hospedada pelo Asaas, o cliente deve voltar
+### Assinatura (plano da loja) — nova aba que fecha sozinha
+
+O painel do Asaas (sandbox e produção) **não tem campo para cadastrar
+domínio**, então a `successUrl` é sempre recusada. Por isso o checkout da
+assinatura **não envia `callback`**:
+
+1. o frontend abre o link do checkout em uma **nova aba**;
+2. a tela "Aguardando pagamento" fica na aba original e **faz polling** a
+   cada 5 s em `GET /assinaturas/minha`;
+3. assim que o status vira `ativa`, o site **fecha a aba do Asaas sozinho**
+   e segue para o gerenciador do mercado.
+
+Nada depende de retorno automático. Se o navegador bloquear a nova aba, o
+botão manual **"Ir para o pagamento"** continua disponível na tela de status.
+
+### Pedido (cartão) — `successUrl` com fallback
+
+Terminado o pagamento na página hospedada pelo Asaas, o cliente pode voltar
 para o site. O backend envia `callback: { successUrl, autoRedirect: true }`
-na criação da **assinatura**, da **cobrança de cartão** e do **Pix**:
+na criação da **cobrança de cartão**:
 
 | Fluxo | Para onde volta |
 |---|---|
-| Assinatura (plano da loja) | `/registrar-mercado?pagamento=1` (a tela lê `?pagamento=1` e confere o status) |
-| Pedido (Pix e cartão) | `/pedidos/{id}` (acompanhamento; no Pix o QR fica lá) |
+| Pedido (cartão) | `/pedidos/{id}` (acompanhamento) |
 
-### Pix: dois fluxos, a mesma cobrança
-
-O Pix tem **dois caminhos de pagamento para a mesma cobrança**:
-
-1. **QR Code exibido dentro do Mercadins** (`/pedidos/{id}`) — o cliente paga
-   no app bancário; o status chega por webhook/polling. O `callback` é
-   **inerte** aqui (a página do Asaas nunca é aberta) — por isso ele **não é
-   removido** da cobrança Pix;
-2. **Página hospedada do Asaas** (`invoiceUrl`, link “Abrir a página de
-   pagamento” na tela do pedido) — é o fluxo em que o `callback.successUrl`
-   faz sentido (retorno automático após pagar).
-
-Remover o `callback` do Pix degradaria o fluxo 2; mantê-lo não afeta o fluxo 1.
-
-### Requisito fora do código
+### Requisito fora do código (pedidos)
 
 A `successUrl` precisa pertencer ao **domínio cadastrado na conta Asaas**
 (painel → **Configurações da conta → Informações** — `mercadins.com.br`, nas
 contas **sandbox e produção**). Sem isso a API recusa o `callback` e o
-sistema cria a cobrança **sem retorno automático**, avisando no log:
-
-```
-Asaas: retorno automático NÃO configurado na cobrança Pix — cobrança criada
-SEM redirecionamento. URL: https://mercadins.com.br/pedidos/12 | motivo: ...
-```
+sistema cria a cobrança **sem retorno automático** (silenciosamente — o
+frontend avisa o cliente com o aviso de retorno inativo).
 
 ### Comportamento quando o Asaas recusa o `callback`
 
 O fallback — disparado apenas em **recusa de validação (4xx)** cuja mensagem
 fala em `successUrl`, `callback` ou `domínio` — cria a cobrança sem
 `callback` (o pagamento nunca falha por isso) e devolve `semRedirect: true`
-em `checkout` (assinatura) e em `pagamento` (pedido). **`semRedirect: true`
-só é retornado quando a cobrança foi efetivamente criada** (existe `id`); se a
-recriação falhar, o erro é propagado e nenhum `semRedirect` é enviado. O
+em `pagamento` (pedido). **`semRedirect: true` só é retornado quando a
+cobrança foi efetivamente criada** (existe `id`); se a recriação falhar, o
+erro é propagado e nenhum `semRedirect` é enviado. O
 frontend então avisa a pessoa: *"O retorno automático não está ativo: ao
 concluir o pagamento, use o botão voltar do navegador"* — e o botão manual
 **"Ir para o pagamento"** continua disponível na tela de status.
@@ -590,10 +581,10 @@ antes de qualquer recriação/rollback (§8).
 
 ### Observações
 
-- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o redirect **nunca**
-  é aceito — `localhost` não é domínio cadastrável; teste a volta automática
-  no site publicado;
-- **boleto** não redireciona: a confirmação não é imediata (só Pix e cartão
-  têm `autoRedirect`);
+- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o redirect de
+  pedido **nunca** é aceito — `localhost` não é domínio cadastrável; a
+  assinatura nem tenta (fluxo de nova aba acima);
+- **boleto** não redireciona: a confirmação não é imediata (só o cartão
+  tem `autoRedirect`);
 - redirecionar **não** confirma pagamento — quem confirma é o webhook ou a
   consulta imediata (§3).

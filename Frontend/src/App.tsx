@@ -143,7 +143,7 @@ function CartWrapper() {
   const [cupom, setCupom] = useState<{ codigo: string; desconto: number } | null>(null)
   const [verificandoCupom, setVerificandoCupom] = useState(false)
   const [agendamento, setAgendamento] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'pix' | 'cartao'>('presencial')
+  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'cartao'>('presencial')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
@@ -299,9 +299,7 @@ function CartWrapper() {
       setCupom(null)
       setAgendamento('')
       if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
-      showToast('sucesso', formaPagamento === 'pix'
-        ? 'Pedido criado! Pague com o Pix para a loja iniciar o preparo.'
-        : 'Pedido enviado com sucesso!')
+      showToast('sucesso', 'Pedido enviado com sucesso!')
       navigate(idPedido ? `/pedidos/${idPedido}` : '/pedidos')
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao enviar pedido.')

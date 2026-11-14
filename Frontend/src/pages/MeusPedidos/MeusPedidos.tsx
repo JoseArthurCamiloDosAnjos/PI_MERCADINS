@@ -49,12 +49,10 @@ interface PedidoDetalhe extends PedidoLista {
   gerencia: boolean;
 }
 
-interface PagamentoPix {
+interface PagamentoOnline {
   id: string;
   status: string;
   vencimento: string | null;
-  qrCodeBase64: string;
-  copiaEcola: string;
   urlPagamento: string;
 }
 
@@ -258,9 +256,8 @@ function DetalhePedido({
   showToast: (tipo: ToastTipo, mensagem: string) => void;
 }) {
   const [pedido, setPedido] = useState<PedidoDetalhe | null>(null);
-  const [pagamento, setPagamento] = useState<PagamentoPix | null>(null);
+  const [pagamento, setPagamento] = useState<PagamentoOnline | null>(null);
   const [carregado, setCarregado] = useState(false);
-  const [copiado, setCopiado] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
 
@@ -298,18 +295,6 @@ function DetalhePedido({
     return () => clearInterval(timer);
   }, [statusPedido, carregar]);
 
-  async function copiarCodigo() {
-    if (!pagamento?.copiaEcola) return;
-    try {
-      await navigator.clipboard.writeText(pagamento.copiaEcola);
-      setCopiado(true);
-      showToast('sucesso', 'Código Pix copiado.');
-      setTimeout(() => setCopiado(false), 2500);
-    } catch {
-      showToast('erro', 'Não foi possível copiar. Selecione o código e copie manualmente.');
-    }
-  }
-
   async function cancelarPedido() {
     setCancelando(true);
     try {
@@ -343,7 +328,7 @@ function DetalhePedido({
   }
 
   const total = pedido.valorTotal - pedido.desconto + pedido.taxaEntrega;
-  const aguardandoPix = pedido.status === 'aguardando_pagamento' && !!pagamento;
+  const aguardandoPagamento = pedido.status === 'aguardando_pagamento' && !!pagamento;
   const pagoJa = pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.formaPagamento);
   const podeCancelar =
     !pedido.gerencia &&
@@ -389,35 +374,14 @@ function DetalhePedido({
           </ol>
         )}
 
-        {aguardandoPix && (
+        {aguardandoPagamento && (
           <div className="mp-pix">
-            <h3>Pague com Pix para a loja iniciar o preparo</h3>
+            <h3>Finalize o pagamento para a loja iniciar o preparo</h3>
             <p className="mp-pix__aviso">
               Assim que o pagamento for confirmado, esta página atualiza sozinha.
             </p>
 
-            {pagamento.qrCodeBase64 && (
-              <div className="mp-pix__qr">
-                <img
-                  src={`data:image/png;base64,${pagamento.qrCodeBase64}`}
-                  alt="QR code do pagamento Pix"
-                />
-              </div>
-            )}
-
-            {pagamento.copiaEcola && (
-              <div className="mp-pix__codigo">
-                <label htmlFor="mp-pix-codigo" style={{ position: 'absolute', left: -9999 }}>
-                  Código Pix copia e cola
-                </label>
-                <input id="mp-pix-codigo" readOnly value={pagamento.copiaEcola} />
-                <button className="mp-pix__copiar" onClick={copiarCodigo} type="button">
-                  {copiado ? 'Copiado!' : 'Copiar código'}
-                </button>
-              </div>
-            )}
-
-            {!pagamento.qrCodeBase64 && pagamento.urlPagamento && (
+            {pagamento.urlPagamento && (
               <p style={{ marginTop: 14 }}>
                 <a href={pagamento.urlPagamento} target="_blank" rel="noreferrer">
                   Abrir a página de pagamento
@@ -425,9 +389,9 @@ function DetalhePedido({
               </p>
             )}
 
-            {!pagamento.qrCodeBase64 && !pagamento.copiaEcola && !pagamento.urlPagamento && (
+            {!pagamento.urlPagamento && (
               <p className="mp-pix__aviso">
-                Gerando o código Pix… a página se atualiza sozinha em alguns segundos.
+                Abrindo o pagamento… a página se atualiza sozinha em alguns segundos.
               </p>
             )}
 

@@ -1,4 +1,4 @@
-# Mercadins — delivery de mercados da sua região
+# Mercadins — mercados da sua região
 
 O Mercadins reúne mercados, padarias, açougues e hortifrutis de uma cidade em
 um só lugar: o cliente monta o carrinho, escolhe entre **entrega em casa** ou

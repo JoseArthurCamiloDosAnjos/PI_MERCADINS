@@ -104,7 +104,7 @@ Campo opcional aceito na criação e na atualização (`PUT /:id`) da loja:
 ```
 
 - é o **walletId da conta Asaas do vendedor** (formato UUID ou id numérico);
-- com wallet cadastrado, o Pix/cartão dos pedidos online é criado com
+- com wallet cadastrado, o cartão dos pedidos online é criado com
   Split de 100% do valor líquido → o dinheiro cai direto na conta do
   vendedor (sem comissão da plataforma);
 - string **vazia limpa** o valor (volta ao comportamento antigo: valor na
@@ -221,9 +221,9 @@ Comportamento com assinatura já existente (detalhes em
 loja já criada → nova assinatura sem bloquear; pendência com o **mesmo**
 formulário → retoma o mesmo link; formulário **diferente** → substitui a
 pendência; pagamento confirmado mas a loja não nasceu → cria a loja na hora e
-devolve `mercado` (sem cobrar de novo). A resposta também pode trazer
-`mensagem` e `semRedirect: true` quando o Asaas recusou o retorno automático
-([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
+devolve `mercado` (sem cobrar de novo), com `mensagem`. O `urlCheckout` é
+aberto pelo frontend em **nova aba** que fecha sozinha quando o pagamento
+confirma ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
 
 Fluxo completo, estados, carência de 3 dias e como testar:
 **[docs/pagamentos.md](pagamentos.md)**.
@@ -310,7 +310,7 @@ Corpo de um pedido:
   "cupom": "BEMVINDO10",
   "agendamento": "Hoje à tarde",
   "observacao": "Trocar a nota, por favor",
-  "forma_pagamento": "pix"
+  "forma_pagamento": "cartao"
 }
 ```
 
@@ -320,15 +320,17 @@ Corpo de um pedido:
 - `cupom` (opcional): código validado no servidor — inválido, expirado ou abaixo do mínimo rejeita o pedido;
 - `agendamento` (opcional): texto livre combinado com a loja;
 - `observacao` (opcional): recado do cliente;
-- `forma_pagamento`: `presencial` (padrão, paga na entrega), `pix` ou `cartao`.
-  Nas duas últimas a cobrança é criada no Asaas com `externalReference
+- `forma_pagamento`: `presencial` (padrão, paga na entrega) ou `cartao`.
+  No `cartao` a cobrança é criada no Asaas com `externalReference
   "pedido:<id>"`; se a loja tem `asaas_wallet_id`, a cobrança sai com
   **Split de 100%** e o valor líquido vai direto para a conta do vendedor
   (ver [pagamentos.md §13](pagamentos.md#13-split-de-pagamento-dinheiro-direto-ao-vendedor)).
-  A resposta traz `pagamento` (QR, copia-e-cola e link) e pode incluir
+  A resposta traz `pagamento` (link) e pode incluir
   `pagamento.semRedirect: true` quando o Asaas recusou o retorno automático —
   nesse caso o cliente é avisado para voltar ao site pelo navegador
   ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
+  O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
+  exibido como `pix`).
 
 Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
 `pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda

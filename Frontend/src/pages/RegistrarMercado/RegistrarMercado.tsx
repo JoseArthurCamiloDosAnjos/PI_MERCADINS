@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import { removeEmojis, removeSpecialChars, removeSpecialCharsEmail, bloquearEspaco } from '../../hooks/useBlockEmojis';
-import { BASE_URL, api } from '../../services/api';
+import { api } from '../../services/api';
 import ToastContainer from '../../components/Toast';
 import AceiteTermos from '../../components/AceiteTermos/AceiteTermos';
 import './RegistrarMercado.css';
@@ -60,7 +60,7 @@ function FieldIcon({ children }: { children: React.ReactNode }) {
 
 export default function RegistrarMercado() {
   const navigate = useNavigate();
-  const { refreshMercados, usuario } = useAuth();
+  const { refreshMercados } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -75,6 +75,12 @@ export default function RegistrarMercado() {
   });
   const [urlPagamento, setUrlPagamento] = useState<string | null>(null);
   const [statusAtual, setStatusAtual] = useState<'pendente' | 'ativa' | 'erro' | null>(null);
+  const janelaAsaasRef = useRef<Window | null>(null);
+
+  function fecharAbaAsaas() {
+    try { janelaAsaasRef.current?.close(); } catch { /* aba já fechada */ }
+    janelaAsaasRef.current = null;
+  }
 
   function alternarCategoria(id: string) {
     setCategorias(atual =>
@@ -239,42 +245,6 @@ export default function RegistrarMercado() {
     }
   }
 
-  async function criarDireto() {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('Sessão expirada. Faça login novamente.');
-
-    const res = await fetch(`${BASE_URL}/api/mercados`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        nome: form.nome,
-        email: form.email,
-        telefone: form.telefone.replace(/\D/g, ''),
-        cnpj: form.cnpj.replace(/\D/g, ''),
-        descricao: form.descricao.trim(),
-        cep: form.cep.replace(/\D/g, ''),
-        estado: form.estado,
-        cidade: form.cidade,
-        bairro: form.bairro,
-        rua: form.rua,
-        plano: planoId,
-        categorias,
-        horario: horarioEnvioLocal(),
-        ...dadosEntrega(),
-        aceite_termos: aceite,
-        asaas_wallet_id: wallet.trim() || null,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro ao cadastrar mercado.');
-    showToast('sucesso', 'Mercado cadastrado com sucesso!');
-    await refreshMercados();
-    setTimeout(() => navigate('/vendedor'), 1200);
-  }
-
   function horarioEnvioLocal() {
     return Object.fromEntries(
       Object.entries(horario).filter(([, faixa]) => faixa !== null) as [string, [string, string]][]
@@ -319,13 +289,15 @@ export default function RegistrarMercado() {
     setUrlPagamento(checkout.urlCheckout);
     setStatusAtual('pendente');
     setAguardandoPagamento(true);
-    if (checkout.semRedirect) {
-      showToast('aviso', 'O retorno automático não está ativo: ao concluir o pagamento, use o botão voltar do navegador. Esta tela mostra a confirmação.');
-      setTimeout(() => { window.location.href = checkout.urlCheckout; }, 2600);
+
+    const janela = window.open(checkout.urlCheckout, '_blank');
+    if (!janela) {
+      showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Ir para o pagamento" abaixo.');
       return;
     }
-    showToast('sucesso', 'Redirecionando para o pagamento...');
-    setTimeout(() => { window.location.href = checkout.urlCheckout; }, 1200);
+    janela.opener = null;
+    janelaAsaasRef.current = janela;
+    showToast('sucesso', 'Pagamento aberto em nova aba. Assim que for confirmado, ela fecha sozinha.');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -363,11 +335,6 @@ export default function RegistrarMercado() {
 
     setSalvando(true);
     try {
-      if (usuario?.is_admin && !planoSelecionado) {
-        await criarDireto();
-        return;
-      }
-
       await criarCheckout();
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Erro ao cadastrar.');
@@ -380,12 +347,16 @@ export default function RegistrarMercado() {
     if (!aguardandoPagamento) return;
 
     let cancelado = false;
+    let emCurso = false;
 
     async function verificar() {
+      if (emCurso) return;
+      emCurso = true;
       try {
         const r = await api.minhaAssinatura();
         if (cancelado) return;
         if (r?.assinatura?.status === 'ativa') {
+          fecharAbaAsaas();
           localStorage.removeItem('aguardandoPagamento');
           setStatusAtual('ativa');
           showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
@@ -403,11 +374,14 @@ export default function RegistrarMercado() {
         }
       } catch {
         if (!cancelado) setStatusAtual('erro');
+      } finally {
+        emCurso = false;
       }
     }
 
     verificar();
-    return () => { cancelado = true; };
+    const intervalo = setInterval(verificar, 5000);
+    return () => { cancelado = true; clearInterval(intervalo); };
   }, [aguardandoPagamento, navigate, refreshMercados, showToast]);
 
   // ── Tela de status (aguardando pagamento) ────────────────────────────────
@@ -433,6 +407,7 @@ export default function RegistrarMercado() {
             <h1>Aguardando pagamento</h1>
             <p className="rm-status-sub">
               Seu mercado será criado automaticamente assim que o pagamento for confirmado.
+              A aba do Asaas fecha sozinha quando o pagamento passar.
             </p>
 
             {urlPagamento && statusAtual !== 'ativa' && (
@@ -454,6 +429,7 @@ export default function RegistrarMercado() {
                     try {
                       const r = await api.minhaAssinatura();
                       if (r?.assinatura?.status === 'ativa') {
+                        fecharAbaAsaas();
                         localStorage.removeItem('aguardandoPagamento');
                         showToast('sucesso', 'Pagamento confirmado! Mercado criado.');
                         await refreshMercados();
@@ -694,7 +670,7 @@ export default function RegistrarMercado() {
               </FieldIcon>
             </div>
             <p className="rm-horario-dica">
-              Com o wallet, o Pix/cartão dos pedidos online cai direto na sua conta Asaas
+              Com o wallet, o cartão dos pedidos online cai direto na sua conta Asaas
               (100% para você, sem comissão). Sem wallet, criamos uma conta Asaas para você
               automaticamente no cadastro — a chave vem por e-mail do Asaas.
             </p>
@@ -888,7 +864,7 @@ export default function RegistrarMercado() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
-              ) : <><IconShoppingCart size={16} /> {usuario?.is_admin && !planoSelecionado ? 'Criar mercado' : 'Ir para pagamento'}</>}
+              ) : <><IconShoppingCart size={16} /> Ir para pagamento</>}
             </button>
 
           </form>

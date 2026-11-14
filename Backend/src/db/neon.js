@@ -10,8 +10,6 @@ const escolherBanco = () => {
   if (['local', 'postgres', 'postgresql'].includes(valor)) return 'local';
   if (['neon', 'nuvem', 'cloud'].includes(valor)) return 'neon';
 
-  // auto: fora do Render usa SEMPRE o local (nunca arrisca o banco de
-  // produção por engano). No Render (RENDER definido) usa o Neon.
   if (process.env.RENDER) return 'neon';
   return 'local';
 };
@@ -23,9 +21,6 @@ function montarQuery(strings, values) {
   );
 }
 
-// Camada compatível com os controllers: sql`...` retorna linhas e
-// sql.transaction(fn) dá uma transação INTERATIVA (BEGIN/COMMIT/ROLLBACK
-// no mesmo client) — o que o driver HTTP do Neon não suporta (só lote).
 function criarExecutavel(pool) {
   const executar = async (strings, ...values) => {
     const query = montarQuery(strings, values);
@@ -62,7 +57,6 @@ async function conectarNeon() {
   });
 
   await pool.query('SELECT 1');
-  console.log('Conectado ao Neon');
   return criarExecutavel(pool);
 }
 
@@ -72,7 +66,6 @@ async function conectarLocal() {
   });
 
   await pool.query('SELECT 1');
-  console.log('Conectado ao PostgreSQL local');
   return criarExecutavel(pool);
 }
 
@@ -80,7 +73,6 @@ async function conectar() {
   if (sqlInstance) return sqlInstance;
 
   const banco = escolherBanco();
-  console.log(`Banco escolhido: ${banco.toUpperCase()}`);
 
   try {
     sqlInstance = banco === 'neon'
@@ -98,4 +90,4 @@ async function conectar() {
   }
 }
 
-module.exports = { conectar };
+module.exports = { conectar };

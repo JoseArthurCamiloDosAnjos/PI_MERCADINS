@@ -14,29 +14,7 @@ async function principal() {
     process.exit(1)
   }
 
-  if (!process.argv.includes('--pix')) {
-    console.log('\nChave válida. Rode com --pix para testar a geração do QR code.')
-    return
-  }
-
-  console.log('\nCriando cobrança Pix de teste…')
-  const customer = await asaas.criarCustomer({
-    nome: 'Verificacao Mercadins',
-    email: `verificacao-${Date.now()}@example.com`,
-  })
-  const pix = await asaas.criarPagamentoPedidoPix({
-    customerId: customer.id,
-    valor: 5,
-    descricao: 'Verificacao do sistema Pix — Mercadins',
-    externalReference: 'pedido:0',
-  })
-  console.log('Pagamento:', pix.id, '| status:', pix.status, '| vencimento:', pix.vencimento)
-  console.log('QR (base64, primeiros 60):', (pix.qrCodeBase64 || '(vazio)').slice(0, 60))
-  console.log('Copia e cola (primeiros 60):', (pix.copiaEcola || '(vazio)').slice(0, 60))
-  console.log('Link de pagamento:', pix.urlPagamento || '(vazio)')
-  console.log(pix.qrCodeBase64 || pix.copiaEcola
-    ? '\n✓ Pix gerado com sucesso.'
-    : '\n✗ Cobrança criada, mas o QR veio vazio.')
+  console.log('\nChave válida e ambiente acessível.')
 }
 
 principal().catch(e => {

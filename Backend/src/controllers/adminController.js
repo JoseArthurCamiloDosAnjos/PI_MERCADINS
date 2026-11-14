@@ -544,7 +544,6 @@ async function editarUsuario(req, res) {
       try {
         await enviarEmailPromocaoAdmin(atualizado.email, atualizado.nome, atualizado.email_admin)
         emailEnviado = true
-        console.log(`E-mail de promoção a admin enviado para ${atualizado.email}`)
       } catch (err) {
         console.error('Falha ao enviar e-mail de promoção a admin:', err.message)
       }

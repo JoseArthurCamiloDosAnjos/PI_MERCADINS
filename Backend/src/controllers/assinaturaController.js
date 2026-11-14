@@ -23,7 +23,6 @@ function infoPlano(assinatura) {
   };
 }
 
-// Cria (ou recupera) o mercado a partir do payload gravado em
 async function criarMercadoDaAssinatura(sql, assinatura) {
   if (assinatura.id_mercado) {
     const [mercado] = await sql`
@@ -54,7 +53,6 @@ async function criarMercadoDaAssinatura(sql, assinatura) {
   return mercado;
 }
 
-// Grava (ou atualiza) a fatura da assinatura em pagamentos — idempotente,
 async function registrarFatura(sql, assinatura, pagamento) {
   const statusPagamento = pagamento.status || 'PENDING';
   const metodo = pagamento.billingType || '';
@@ -87,7 +85,6 @@ async function registrarFatura(sql, assinatura, pagamento) {
   }
 }
 
-// Pagamento confirmado → assinatura ativa, vigência nova, mercado criado
 async function confirmarAssinatura(sql, assinatura, pagamento) {
   const base = pagamento.paymentDate || pagamento.dueDate || null;
   const proximo = pagamento.nextPaymentDate || proximaVigencia(assinatura.ciclo, base);
@@ -104,13 +101,9 @@ async function confirmarAssinatura(sql, assinatura, pagamento) {
     await criarMercadoDaAssinatura(sql, assinatura);
   }
 
-  const reativados = await reativarMercados(sql, assinatura);
-  if (reativados > 0) {
-    console.log(`Assinatura ${assinatura.id}: ${reativados} mercado(s) reativado(s)`);
-  }
+  await reativarMercados(sql, assinatura);
 }
 
-// FALLBACK — o webhook do Asaas não alcança localhost (dev) e às vezes
 async function sincronizarComAsaas(sql, assinatura) {
   if (!assinatura.asaas_subscription_id) return { confirmado: false, pagamento: null };
   if (assinatura.status === 'ativa') return { confirmado: true, pagamento: null };
@@ -124,7 +117,6 @@ async function sincronizarComAsaas(sql, assinatura) {
   if (confirmada) {
     await registrarFatura(sql, assinatura, confirmada);
     await confirmarAssinatura(sql, assinatura, confirmada);
-    console.log(`Assinatura ${assinatura.id}: confirmada via consulta direta ao Asaas (${confirmada.id})`);
     return { confirmado: true, pagamento: confirmada };
   }
 
@@ -261,17 +253,11 @@ const criarCheckout = async (req, res) => {
     });
     const customerId = customer.id;
 
-    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-    const redirectUrl = frontendUrl
-      ? `${frontendUrl}/registrar-mercado?pagamento=1`
-      : undefined;
-
     const assinaturaAsaas = await asaas.criarAssinatura({
       customerId,
       valor: plano.valor,
       ciclo: cicloDb,
       descricao: `Plano ${plano.nome} Mercadins — ${cicloDb === 'ANUAL' ? 'anual' : 'mensal'}`,
-      redirectUrl,
     });
 
     const urlCheckout = await asaas.buscarUrlPagamento(assinaturaAsaas.id);
@@ -294,7 +280,6 @@ const criarCheckout = async (req, res) => {
       mensagem: 'Assinatura criada. Finalize o pagamento para ativar.',
       idAssinatura: assinatura.id,
       urlCheckout,
-      semRedirect: assinaturaAsaas.semRedirect === true,
     });
   } catch (err) {
     console.error('ERRO criarCheckout:', err);
@@ -485,10 +470,6 @@ const cancelarAssinatura = async (req, res) => {
 
 const webhookAsaas = async (req, res) => {
   // ── 1. Autenticação ────────────────────────────────────────────────────────
-  // O Asaas envia o authToken do webhook no header `asaas-access-token`
-  // (documentação atual). Mantemos `webhook-security-token` como fallback de
-  // transição para configurações antigas do painel. Fail-closed: sem token
-  // configurado o webhook fica fechado.
   const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
     .split(',')
     .map((token) => token.trim())
@@ -521,10 +502,6 @@ const webhookAsaas = async (req, res) => {
   const sql = await conectar();
 
   // ── 2. Idempotência por ID do EVENTO (gate de 1ª camada) ───────────────────
-  // O Asaas entrega no modelo "at least once": o mesmo `id` pode chegar várias
-  // vezes. INSERT ... ON CONFLICT DO NOTHING garante que a regra de negócio
-  // só roda uma vez por evento. Se o processamento anterior falhou, a linha é
-  // removida antes do 500 — assim a retentativa do Asaas reprocessa.
   let eventoPersistido = false;
   try {
     const linhas = await sql`
@@ -535,8 +512,6 @@ const webhookAsaas = async (req, res) => {
     `;
     eventoPersistido = linhas.length > 0;
   } catch (erroTabela) {
-    // Migração 023 ainda não aplicada: degrada para o comportamento anterior
-    // (idempotência só pelas guardas de estado) em vez de derrubar o webhook.
     console.error(
       'webhookAsaas: tabela asaas_eventos indisponível — processando sem gate de evento (' +
       `${erroTabela.message}). Aplicar migração 023.`
@@ -549,18 +524,12 @@ const webhookAsaas = async (req, res) => {
       SELECT status FROM asaas_eventos WHERE asaas_event_id = ${eventId} LIMIT 1
     `;
     if (existente?.status === 'DONE') {
-      // Duplicata já processada — confirma entrega sem reexecutar regra.
       return res.status(200).json({ recebido: true, duplicado: true });
     }
-    // PENDING: outra entrega em andamento (ou processamento anterior não
-    // finalizou). Confirma para não gerar fila de retry paralela; o processo
-    // em curso é quem conclui (ou remove a linha em caso de falha).
     return res.status(200).json({ recebido: true, duplicado: true });
   }
 
   try {
-    // Sempre revalida o pagamento na API — o status que decide é o da fonte,
-    // nunca o "event" do payload (evita forjar PAYMENT_CONFIRMED).
     let statusApi = null;
     if (pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);
@@ -571,7 +540,7 @@ const webhookAsaas = async (req, res) => {
       Object.assign(pagamento, fonte);
     }
 
-    // ── B3: pagamento de PEDIDO (Pix/cartão da compra de produtos) ──────────
+    // ── B3: pagamento de PEDIDO (cartão da compra de produtos) ───────────────
     const refExterna = pagamento?.externalReference || '';
     if (String(refExterna).startsWith('pedido:')) {
       const resultado = await processarPagamentoPedido(sql, evento, pagamento);
@@ -599,16 +568,12 @@ const webhookAsaas = async (req, res) => {
       if (classe === 'pago_aprovado' || classe === 'pago_liquidado') {
         await confirmarAssinatura(sql, assinatura, pagamento);
       } else if (classe === 'vencido') {
-        // OVERDUE → inadimplente (não é falha nem estorno).
         await sql`
           UPDATE assinaturas
           SET status = 'inadimplente', atualizada_em = NOW()
           WHERE id = ${assinatura.id} AND status != 'cancelada'
         `;
       } else if (classe === 'estorno_concluido') {
-        // REFUNDED/CHARGBACK: gravado em pagamentos por registrarFatura.
-        // NÃO rebaixa assinaturas.status automaticamente (pode haver outras
-        // faturas pagas) — apenas log crítico para reconciliação manual.
         console.error(
           `CRÍTICO — Assinatura ${assinatura.id}: pagamento ${pagamento.id} ESTORNADO/CHARGEBACK (${statusApi}). ` +
           'Reavaliar status da assinatura manualmente.'
@@ -618,9 +583,7 @@ const webhookAsaas = async (req, res) => {
           `Assinatura ${assinatura.id}: estorno SOLICITADO (${statusApi}) — aguardando REFUNDED.`
         );
       }
-      // falha (DELETED/FAILED/EXPIRED) e aguardando: sem transição de assinatura.
     } else if (evento === 'SUBSCRIPTION_DELETED') {
-      // Evento só de assinatura: só chega aqui com token válido (fail-closed acima).
       await sql`
         UPDATE assinaturas
         SET status = 'cancelada', atualizada_em = NOW()
@@ -631,9 +594,6 @@ const webhookAsaas = async (req, res) => {
     await marcarEventoComoDone(sql, eventId);
     res.status(200).json({ recebido: true });
   } catch (err) {
-    // Falha de processamento: remove o gate para a retentativa do Asaas
-    // poder reprocessar (o 500 dispara o retry; sem a linha, o INSERT da
-    // próxima entrega não conflita).
     try {
       await sql`DELETE FROM asaas_eventos WHERE asaas_event_id = ${eventId} AND status = 'PENDING'`;
     } catch (erroLimpeza) {
@@ -660,4 +620,4 @@ async function marcarEventoComoDone(sql, eventId) {
   }
 }
 
-module.exports = { criarCheckout, minhaAssinatura, cancelarAssinatura, webhookAsaas };
+module.exports = { criarCheckout, minhaAssinatura, cancelarAssinatura, webhookAsaas };

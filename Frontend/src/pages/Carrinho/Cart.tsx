@@ -72,9 +72,9 @@ interface CartScreenProps {
   endereco?: EnderecoEntrega;
   onEnderecoChange?: (endereco: EnderecoEntrega) => void;
 
-  // ── Pagamento (B3): pagar na entrega, Pix ou cartão ──────────────────────
-  formaPagamento?: "presencial" | "pix" | "cartao";
-  onFormaPagamentoChange?: (forma: "presencial" | "pix" | "cartao") => void;
+  // ── Pagamento (B3): pagar na entrega ou cartão ─────────────────────────────
+  formaPagamento?: "presencial" | "cartao";
+  onFormaPagamentoChange?: (forma: "presencial" | "cartao") => void;
 }
 
 const formatBRL = (value: number) =>
@@ -147,13 +147,6 @@ const IconTruck = () => (
 const IconStore = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 9l1.5-5h15L21 9M3 9h18v11H3zM3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-  </svg>
-);
-
-const IconPix = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2.5 21.5 12 12 21.5 2.5 12 12 2.5Z" />
-    <path d="M8 8.5 12 12.5 16 8.5M8 15.5l4-4 4 4" />
   </svg>
 );
 
@@ -430,21 +423,17 @@ export default function CartScreen({
     ? "Enviando…"
     : faltaMinimo
       ? "Abaixo do pedido mínimo"
-      : formaPagamento === "pix"
-        ? "Criar pedido e pagar com Pix"
-        : formaPagamento === "cartao"
-          ? "Ir para o pagamento do cartão"
-          : "Finalizar pedido";
+      : formaPagamento === "cartao"
+        ? "Ir para o pagamento do cartão"
+        : "Finalizar pedido";
 
   const textoCheckoutCurto = finalizando
     ? "Enviando…"
     : faltaMinimo
       ? "Abaixo do mínimo"
-      : formaPagamento === "pix"
-        ? "Pagar com Pix"
-        : formaPagamento === "cartao"
-          ? "Pagar com cartão"
-          : "Finalizar pedido";
+      : formaPagamento === "cartao"
+        ? "Pagar com cartão"
+        : "Finalizar pedido";
 
   useEffect(() => {
     if (!erroEndereco) return;
@@ -855,20 +844,6 @@ export default function CartScreen({
                 <span className="cart-payment__texto">
                   <strong>{tipoEfetivo === "retirada" ? "Pagar na retirada" : "Pagar na entrega"}</strong>
                   <small>Dinheiro ou cartão na entrega/retirada</small>
-                </span>
-              </label>
-              <label className={`cart-payment__opcao ${formaPagamento === "pix" ? "is-ativa" : ""}`}>
-                <input
-                  type="radio"
-                  name="forma-pagamento"
-                  value="pix"
-                  checked={formaPagamento === "pix"}
-                  onChange={() => onFormaPagamentoChange("pix")}
-                />
-                <IconPix />
-                <span className="cart-payment__texto">
-                  <strong>Pix agora</strong>
-                  <small>QR code na tela; confirma em segundos</small>
                 </span>
               </label>
               <label className={`cart-payment__opcao ${formaPagamento === "cartao" ? "is-ativa" : ""}`}>

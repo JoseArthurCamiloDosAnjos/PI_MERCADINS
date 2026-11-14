@@ -6,6 +6,10 @@ function resolverAmbiente() {
   const forcado = String(process.env.ASAAS_AMBIENTE || '').toLowerCase().trim()
   if (forcado === 'sandbox' || forcado === 'producao') return forcado
 
+  // Produção só por EXPLÍCITO: chave legada de produção quando não há chaves
+  // por ambiente configuradas. NODE_ENV/RENDER NÃO inferem produção — o
+  // deploy no Render permanece em sandbox até ASAAS_AMBIENTE=producao ser
+  // definido (com autorização explícita e credenciais correspondentes).
   const temChavePorAmbiente = !!(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY_Sandbox)
   if (!temChavePorAmbiente) {
     const legada = (process.env.Assas_API_KEY || '').trim()
@@ -13,8 +17,11 @@ function resolverAmbiente() {
     if (legada.startsWith('$aact_hmlg_')) return 'sandbox'
   }
 
-  const emProducao = process.env.NODE_ENV === 'production' || !!process.env.RENDER
-  return emProducao ? 'producao' : 'sandbox'
+  console.warn(
+    'asaasService: ASAAS_AMBIENTE não definido — usando sandbox (default seguro). ' +
+    'Para produção, defina ASAAS_AMBIENTE=producao explicitamente.'
+  )
+  return 'sandbox'
 }
 
 const AMBIENTE = resolverAmbiente()
@@ -172,13 +179,15 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
   }
 
   try {
-    return await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+    const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+    return { ...assinatura, semRedirect: false }
   } catch (erro) {
-    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
+    if (corpo.callback && erro.status >= 400 && erro.status < 500 && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('assinatura', redirectUrl, erro.message)
       delete corpo.callback
       try {
         const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
+        if (!assinatura?.id) throw new Error('Asaas não devolveu o id da assinatura.')
         return { ...assinatura, semRedirect: true }
       } catch (erroSemCallback) {
         throw erroSemCallback
@@ -264,6 +273,12 @@ async function buscarQrPixComRetry(paymentId, tentativas = 3) {
   throw ultimoErro
 }
 
+// Dois fluxos para a MESMA cobrança Pix:
+//  (a) QR Code exibido dentro do Mercadins (/pedidos/:id) — o cliente paga no
+//      app bancário e o status chega por webhook/polling; o callback é inerte;
+//  (b) página hospedada do Asaas (invoiceUrl, link "Abrir a página de
+//      pagamento") — aqui o callback.successUrl faz sentido (retorno automático).
+// Por isso o callback NÃO é removido do Pix: só age no fluxo (b).
 async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalReference, redirectUrl, splits }) {
   const corpo = {
     customer: customerId,
@@ -283,7 +298,7 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
   try {
     pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
   } catch (erro) {
-    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
+    if (corpo.callback && erro.status >= 400 && erro.status < 500 && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('cobrança Pix', redirectUrl, erro.message)
       delete corpo.callback
       try {
@@ -296,13 +311,15 @@ async function criarPagamentoPedidoPix({ customerId, valor, descricao, externalR
       throw erro
     }
   }
+  // semRedirect só existe junto com uma cobrança efetivamente criada.
+  if (semRedirect && !pagamento?.id) semRedirect = false
   let qr = null
   try {
     qr = await buscarQrPixComRetry(pagamento.id)
   } catch (erroQr) {
     console.error('asaasService: não foi possível buscar o QR do Pix:', erroQr.message)
   }
-  const embutido = pagamento?.pixTransaction?.[0] || pagamento?.pirBank?.[0] || null
+  const embutido = pagamento?.pixTransaction?.[0] || null
   const fonte = qr?.encodedImage || qr?.payload ? qr : embutido
   const { qrCodeBase64, copiaEcola } = normalizarQr(fonte)
   return {
@@ -342,11 +359,12 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
       semRedirect: false,
     }
   } catch (erro) {
-    if (corpo.callback && erroDeCallbackRecusado(erro.message, erro.code)) {
+    if (corpo.callback && erro.status >= 400 && erro.status < 500 && erroDeCallbackRecusado(erro.message, erro.code)) {
       avisarCallbackDescartado('cobrança de cartão', redirectUrl, erro.message)
       delete corpo.callback
       try {
         const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
+        if (!pagamento?.id) throw new Error('Asaas não devolveu o id da cobrança.')
         return {
           id: pagamento.id,
           status: pagamento.status,
@@ -365,6 +383,73 @@ async function criarPagamentoPedidoCartao({ customerId, valor, descricao, extern
 
 async function buscarPagamento(paymentId) {
   return chamarApi(`/v3/payments/${paymentId}`)
+}
+
+// Busca cobrança já criada para um externalReference (ex.: "pedido:123").
+// Usada antes de REcriar cobranças em fallbacks — evita duplicatas quando a
+// primeira chamada chegou ao Asaas mas a resposta se perdeu (rede/timeout).
+async function buscarPagamentoPorExternalReference(externalReference) {
+  if (!externalReference) return null
+  const ref = String(externalReference)
+  const dados = await chamarApi(
+    `/v3/payments?externalReference=${encodeURIComponent(ref)}&limit=10&order=DESC`
+  )
+  const lista = Array.isArray(dados?.data) ? dados.data : []
+  // Considera apenas cobranças "vivas" (não deletadas).
+  return lista.find((p) => p && p.id && p.status !== 'DELETED') || null
+}
+
+// ── Máquina de estados dos pagamentos Asaas ─────────────────────────────────
+// Classes distintas — NÃO tratar todos como equivalentes:
+//   pago_aprovado  → CONFIRMED (aprovado; funds em compensação, ex.: cartão)
+//   pago_liquidado → RECEIVED / RECEIVED_IN_CASH (valor disponível)
+//   aguardando     → PENDING / AWAITING_RISK_ANALYSIS / PENDING_RISK_ANALYSIS
+//   vencido        → OVERDUE (vencida; assinatura → inadimplente)
+//   falha          → DELETED / FAILED / EXPIRED (cobrança não concretizada)
+//   estorno_solicitado → REFUND_REQUESTED (ainda NÃO é estorno concluído)
+//   estorno_concluido  → REFUNDED / CHARGBACK_* (valor devolvido/contestado)
+const STATUS_PAGOS_APROVADO = ['CONFIRMED']
+const STATUS_PAGOS_LIQUIDADO = ['RECEIVED', 'RECEIVED_IN_CASH']
+const STATUS_AGUARDANDO = ['PENDING', 'AWAITING_RISK_ANALYSIS', 'PENDING_RISK_ANALYSIS']
+const STATUS_VENCIDO = ['OVERDUE']
+const STATUS_FALHA = ['DELETED', 'FAILED', 'EXPIRED']
+const STATUS_ESTORNO_SOLICITADO = ['REFUND_REQUESTED']
+const STATUS_ESTORNO_CONCLUIDO = [
+  'REFUNDED',
+  'CHARGBACK_REQUESTED',
+  'CHARGBACK_DISPUTE',
+  'AWAITING_CHARGEBACK_REVERSAL',
+]
+
+function classificarStatusAsaas(status) {
+  const s = String(status || '')
+  if (STATUS_PAGOS_APROVADO.includes(s)) return 'pago_aprovado'
+  if (STATUS_PAGOS_LIQUIDADO.includes(s)) return 'pago_liquidado'
+  if (STATUS_AGUARDANDO.includes(s)) return 'aguardando'
+  if (STATUS_VENCIDO.includes(s)) return 'vencido'
+  if (STATUS_FALHA.includes(s)) return 'falha'
+  if (STATUS_ESTORNO_SOLICITADO.includes(s)) return 'estorno_solicitado'
+  if (STATUS_ESTORNO_CONCLUIDO.includes(s)) return 'estorno_concluido'
+  return 'desconhecido'
+}
+
+// Pagamento efetivamente realizado (inicia preparo do pedido / ativa assinatura).
+function pagamentoPago(status) {
+  const c = classificarStatusAsaas(status)
+  return c === 'pago_aprovado' || c === 'pago_liquidado'
+}
+
+// Classificação do ERRO de uma chamada à API para o fallback do pedido:
+//   validacao → 4xx: cobrança NÃO criada (rollback seguro)
+//   servidor  → 5xx: provavelmente não criada (rollback + msg indisponível)
+//   rede      → sem status HTTP (fetch falhou/timeout): AMBÍGUO — a cobrança
+//               pode ter sido criada; consultar por externalReference antes
+//               de desfazer o pedido.
+function classificarErroAsaas(erro) {
+  const status = Number(erro?.status)
+  if (Number.isFinite(status) && status >= 400 && status < 500) return 'validacao'
+  if (Number.isFinite(status) && status >= 500) return 'servidor'
+  return 'rede'
 }
 
 async function buscarQrPix(paymentId) {
@@ -429,9 +514,13 @@ module.exports = {
   criarPagamentoPedidoPix,
   criarPagamentoPedidoCartao,
   buscarPagamento,
+  buscarPagamentoPorExternalReference,
   buscarQrPix,
   cancelarPagamento,
   estornarPagamento,
+  classificarStatusAsaas,
+  pagamentoPago,
+  classificarErroAsaas,
   verificarChave,
   AMBIENTE,
   BASE_URL,

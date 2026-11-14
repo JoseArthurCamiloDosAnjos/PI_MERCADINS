@@ -61,6 +61,7 @@ async function registrarFatura(sql, assinatura, pagamento) {
   const vencimento = pagamento.dueDate || null;
   const pagoEm = pagamento.paymentDate || null;
   const valor = pagamento.value != null ? Number(pagamento.value).toFixed(2) : null;
+  const ehPago = asaas.pagamentoPago(statusPagamento);
 
   const existente = await sql`
     SELECT id FROM pagamentos WHERE asaas_payment_id = ${pagamento.id} LIMIT 1
@@ -72,7 +73,7 @@ async function registrarFatura(sql, assinatura, pagamento) {
       SET status = ${statusPagamento},
           metodo = ${metodo},
           vencimento = COALESCE(${vencimento}, vencimento),
-          pago_em = CASE WHEN ${statusPagamento} IN ('CONFIRMED', 'RECEIVED') THEN COALESCE(${pagoEm}, NOW()) ELSE pago_em END
+          pago_em = CASE WHEN ${ehPago} THEN COALESCE(${pagoEm}, NOW()) ELSE pago_em END
       WHERE asaas_payment_id = ${pagamento.id}
     `;
   } else {
@@ -80,7 +81,7 @@ async function registrarFatura(sql, assinatura, pagamento) {
       INSERT INTO pagamentos (id_assinatura, asaas_payment_id, valor, status, metodo, vencimento, pago_em)
       VALUES (
         ${assinatura.id}, ${pagamento.id}, ${valor}, ${statusPagamento}, ${metodo}, ${vencimento},
-        ${statusPagamento === 'CONFIRMED' || statusPagamento === 'RECEIVED' ? (pagoEm || new Date().toISOString().slice(0, 10)) : null}
+        ${ehPago ? (pagoEm || new Date().toISOString().slice(0, 10)) : null}
       )
     `;
   }
@@ -119,9 +120,7 @@ async function sincronizarComAsaas(sql, assinatura) {
 
   const cobrancas = await asaas.buscarPagamentosAssinatura(assinatura.asaas_subscription_id);
 
-  const confirmada = cobrancas.find(
-    (p) => p.status === 'CONFIRMED' || p.status === 'RECEIVED'
-  );
+  const confirmada = cobrancas.find((p) => asaas.pagamentoPago(p.status));
   if (confirmada) {
     await registrarFatura(sql, assinatura, confirmada);
     await confirmarAssinatura(sql, assinatura, confirmada);
@@ -485,32 +484,78 @@ const cancelarAssinatura = async (req, res) => {
 };
 
 const webhookAsaas = async (req, res) => {
+  // ── 1. Autenticação ────────────────────────────────────────────────────────
+  // O Asaas envia o authToken do webhook no header `asaas-access-token`
+  // (documentação atual). Mantemos `webhook-security-token` como fallback de
+  // transição para configurações antigas do painel. Fail-closed: sem token
+  // configurado o webhook fica fechado.
   const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
     .split(',')
     .map((token) => token.trim())
     .filter(Boolean);
-  const tokenRecebido = String(req.headers['webhook-security-token'] || '').trim();
+  const tokenRecebido = String(
+    req.headers['asaas-access-token'] || req.headers['webhook-security-token'] || ''
+  ).trim();
 
-  // Fail-closed: sem token configurado o webhook fica fechado (não aceita
-  // eventos anônimos). Cadastre ASAAS_WEBHOOK_TOKEN no painel do Asaas.
   if (tokensAceitos.length === 0) {
     console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — rejeitando eventos (fail-closed).');
     return res.status(401).json({ erro: 'Webhook não configurado (ASAAS_WEBHOOK_TOKEN ausente).' });
   }
-  if (!tokensAceitos.includes(tokenRecebido)) {
+  if (!tokenRecebido || !tokensAceitos.includes(tokenRecebido)) {
     return res.status(401).json({ erro: 'Token de webhook inválido.' });
   }
 
   const evento = req.body?.event;
+  const eventId = req.body?.id;
   const pagamento = req.body?.payment;
   const subscriptionNoPayload = req.body?.subscription?.id || null;
 
-  if (!evento || (!pagamento?.id && !subscriptionNoPayload)) {
-    return res.status(400).json({ erro: 'Payload de webhook inválido.' });
+  if (!evento || !eventId || (!pagamento?.id && !subscriptionNoPayload)) {
+    return res.status(400).json({ erro: 'Payload de webhook inválido (event/id/payment ausentes).' });
   }
 
   if (pagamento && req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
     pagamento.additionalInfo = req.body.additionalInfo;
+  }
+
+  const sql = await conectar();
+
+  // ── 2. Idempotência por ID do EVENTO (gate de 1ª camada) ───────────────────
+  // O Asaas entrega no modelo "at least once": o mesmo `id` pode chegar várias
+  // vezes. INSERT ... ON CONFLICT DO NOTHING garante que a regra de negócio
+  // só roda uma vez por evento. Se o processamento anterior falhou, a linha é
+  // removida antes do 500 — assim a retentativa do Asaas reprocessa.
+  let eventoPersistido = false;
+  try {
+    const linhas = await sql`
+      INSERT INTO asaas_eventos (asaas_event_id, evento, payload, status)
+      VALUES (${eventId}, ${evento}, ${JSON.stringify(req.body)}::jsonb, 'PENDING')
+      ON CONFLICT (asaas_event_id) DO NOTHING
+      RETURNING id
+    `;
+    eventoPersistido = linhas.length > 0;
+  } catch (erroTabela) {
+    // Migração 023 ainda não aplicada: degrada para o comportamento anterior
+    // (idempotência só pelas guardas de estado) em vez de derrubar o webhook.
+    console.error(
+      'webhookAsaas: tabela asaas_eventos indisponível — processando sem gate de evento (' +
+      `${erroTabela.message}). Aplicar migração 023.`
+    );
+    eventoPersistido = true;
+  }
+
+  if (!eventoPersistido) {
+    const [existente] = await sql`
+      SELECT status FROM asaas_eventos WHERE asaas_event_id = ${eventId} LIMIT 1
+    `;
+    if (existente?.status === 'DONE') {
+      // Duplicata já processada — confirma entrega sem reexecutar regra.
+      return res.status(200).json({ recebido: true, duplicado: true });
+    }
+    // PENDING: outra entrega em andamento (ou processamento anterior não
+    // finalizou). Confirma para não gerar fila de retry paralela; o processo
+    // em curso é quem conclui (ou remove a linha em caso de falha).
+    return res.status(200).json({ recebido: true, duplicado: true });
   }
 
   try {
@@ -520,18 +565,17 @@ const webhookAsaas = async (req, res) => {
     if (pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);
       if (!fonte) {
-        return res.status(404).json({ erro: 'Pagamento não encontrado na API do Asaas.' });
+        throw Object.assign(new Error('Pagamento não encontrado na API do Asaas.'), { status: 404 });
       }
       statusApi = fonte.status;
       Object.assign(pagamento, fonte);
     }
 
-    const sql = await conectar();
-
     // ── B3: pagamento de PEDIDO (Pix/cartão da compra de produtos) ──────────
     const refExterna = pagamento?.externalReference || '';
     if (String(refExterna).startsWith('pedido:')) {
       const resultado = await processarPagamentoPedido(sql, evento, pagamento);
+      await marcarEventoComoDone(sql, eventId);
       return res.status(200).json(resultado);
     }
 
@@ -541,6 +585,7 @@ const webhookAsaas = async (req, res) => {
       : [];
 
     if (!assinatura) {
+      await marcarEventoComoDone(sql, eventId);
       return res.status(200).json({ ignorado: true });
     }
 
@@ -548,17 +593,32 @@ const webhookAsaas = async (req, res) => {
       await registrarFatura(sql, assinatura, pagamento);
     }
 
+    // ── Máquina de estados (helper em asaasService) ─────────────────────────
     if (pagamento?.id && statusApi) {
-      // Decisão pelo status vindo da API, não pelo nome do evento.
-      if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusApi)) {
+      const classe = asaas.classificarStatusAsaas(statusApi);
+      if (classe === 'pago_aprovado' || classe === 'pago_liquidado') {
         await confirmarAssinatura(sql, assinatura, pagamento);
-      } else if (statusApi === 'OVERDUE') {
+      } else if (classe === 'vencido') {
+        // OVERDUE → inadimplente (não é falha nem estorno).
         await sql`
           UPDATE assinaturas
           SET status = 'inadimplente', atualizada_em = NOW()
           WHERE id = ${assinatura.id} AND status != 'cancelada'
         `;
+      } else if (classe === 'estorno_concluido') {
+        // REFUNDED/CHARGBACK: gravado em pagamentos por registrarFatura.
+        // NÃO rebaixa assinaturas.status automaticamente (pode haver outras
+        // faturas pagas) — apenas log crítico para reconciliação manual.
+        console.error(
+          `CRÍTICO — Assinatura ${assinatura.id}: pagamento ${pagamento.id} ESTORNADO/CHARGEBACK (${statusApi}). ` +
+          'Reavaliar status da assinatura manualmente.'
+        );
+      } else if (classe === 'estorno_solicitado') {
+        console.warn(
+          `Assinatura ${assinatura.id}: estorno SOLICITADO (${statusApi}) — aguardando REFUNDED.`
+        );
       }
+      // falha (DELETED/FAILED/EXPIRED) e aguardando: sem transição de assinatura.
     } else if (evento === 'SUBSCRIPTION_DELETED') {
       // Evento só de assinatura: só chega aqui com token válido (fail-closed acima).
       await sql`
@@ -568,11 +628,36 @@ const webhookAsaas = async (req, res) => {
       `;
     }
 
+    await marcarEventoComoDone(sql, eventId);
     res.status(200).json({ recebido: true });
   } catch (err) {
+    // Falha de processamento: remove o gate para a retentativa do Asaas
+    // poder reprocessar (o 500 dispara o retry; sem a linha, o INSERT da
+    // próxima entrega não conflita).
+    try {
+      await sql`DELETE FROM asaas_eventos WHERE asaas_event_id = ${eventId} AND status = 'PENDING'`;
+    } catch (erroLimpeza) {
+      console.error('webhookAsaas: falha ao liberar evento para retry:', erroLimpeza.message);
+    }
+    const statusErro = Number(err?.status);
+    if (statusErro === 404) {
+      return res.status(404).json({ erro: err.message });
+    }
     console.error('ERRO webhookAsaas:', err);
     res.status(500).json({ erro: 'Erro ao processar webhook.' });
   }
 };
+
+async function marcarEventoComoDone(sql, eventId) {
+  try {
+    await sql`
+      UPDATE asaas_eventos
+      SET status = 'DONE', atualizado_em = NOW()
+      WHERE asaas_event_id = ${eventId}
+    `;
+  } catch (erro) {
+    console.error(`webhookAsaas: falha ao marcar evento ${eventId} como DONE:`, erro.message);
+  }
+}
 
 module.exports = { criarCheckout, minhaAssinatura, cancelarAssinatura, webhookAsaas };

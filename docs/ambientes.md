@@ -93,10 +93,11 @@ no painel na primeira sincronização.
    chave, os avisos continuam gravados no histórico com status `registrada`;
 5. **Pagamentos (Asaas):** o `render.yaml` já publica o site com
    `ASAAS_AMBIENTE=sandbox` — o build no ar usa a API de **teste** (cadastre
-   `Assas_API_KEY_Sandbox`, ou a chave de sandbox em `Assas_API_KEY`). Para
-   faturar de verdade, troque a variável para `producao` no painel e use a
-   chave de produção (detalhes em [pagamentos.md](pagamentos.md) §10). No
-   desenvolvimento o servidor já cai no sandbox por padrão;
+   `Assas_API_KEY_Sandbox`, ou a chave de sandbox em `Assas_API_KEY`). **Não**
+   altere para `producao` sem autorização explícita + credenciais de produção
+   correspondentes (o código não infere produção por `NODE_ENV`/`RENDER`; sem
+   a variável o default é sandbox — detalhes em [pagamentos.md](pagamentos.md)
+   §10). No desenvolvimento o servidor já cai no sandbox por padrão;
 6. Salvar — o Render reinicia o serviço sozinho.
 
 ### Render — site (`mercadins-frontend`, static_site)

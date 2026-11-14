@@ -477,6 +477,13 @@ const criarPedido = async (req, res) => {
 
     // ── Pagamento online (Pix ou cartão) — B3 ────────────────────────────────
     if (formaPagamento !== 'presencial') {
+      // Declarados fora do try para uso no catch (adoção de cobrança órfã).
+      const walletId0 = String(mercado.asaas_wallet_id || '').trim() || null;
+      const refPedido0 = `pedido:${pedido.id}`;
+      let walletId = walletId0;
+      let refPedido = refPedido0;
+      let splitEnviado = false;
+      let motivoSplit = '';
       try {
         const [usuario] = await sql`
           SELECT nome, email, cpf, telefone FROM usuarios WHERE id_usuario = ${id_usuario}
@@ -488,11 +495,11 @@ const criarPedido = async (req, res) => {
           mobilePhone: usuario?.telefone || undefined,
         });
 
-        const walletId = String(mercado.asaas_wallet_id || '').trim() || null;
-        const refPedido = `pedido:${pedido.id}`;
+        walletId = walletId0;
+        refPedido = refPedido0;
         const splits = asaas.montarSplitVendedor(walletId, refPedido);
-        let splitEnviado = !!splits;
-        let motivoSplit = '';
+        splitEnviado = !!splits;
+        motivoSplit = '';
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
@@ -520,27 +527,55 @@ const criarPedido = async (req, res) => {
           }
         } catch (erroSplit) {
           motivoSplit = String(erroSplit.message || '');
-          if (!splits || !/split|wallet|carteira|invalid_action/i.test(motivoSplit)) {
+          // Só trata como "split recusado" se for VALIDAÇÃO (4xx) do Asaas —
+          // erros de rede/servidor são ambíguos e não devem disparar recriação
+          // (a 1ª chamada pode ter criado a cobrança → duplicata).
+          const ehRecusaSplit =
+            Number(erroSplit.status) >= 400 &&
+            Number(erroSplit.status) < 500 &&
+            /split|wallet|carteira|invalid_action/i.test(motivoSplit);
+          if (!splits || !ehRecusaSplit) {
             throw erroSplit;
           }
-          console.error(`Pedido ${pedido.id}: split recusado (${motivoSplit}) — cobrança refeita sem split.`);
-          splitEnviado = false;
-          if (formaPagamento === 'pix') {
-            pagamento = await asaas.criarPagamentoPedidoPix({
-              customerId: customer.id,
-              valor: totalPedido,
-              descricao,
-              externalReference: refPedido,
-              redirectUrl,
-            });
+          // Antes de REcriar: garante que nenhuma cobrança já existe para este
+          // pedido (evita cobrança duplicada no fallback).
+          const existente = await asaas
+            .buscarPagamentoPorExternalReference(refPedido)
+            .catch(() => null);
+          if (existente?.id) {
+            console.warn(
+              `Pedido ${pedido.id}: erro de split (${motivoSplit}), mas cobrança ${existente.id} já existe — reutilizando sem recriar.`
+            );
+            pagamento = {
+              id: existente.id,
+              status: existente.status,
+              vencimento: existente.dueDate || null,
+              qrCodeBase64: '',
+              copiaEcola: '',
+              urlPagamento: existente.invoiceUrl || '',
+              split: Array.isArray(existente.split) ? existente.split : [],
+              semRedirect: false,
+            };
           } else {
-            pagamento = await asaas.criarPagamentoPedidoCartao({
-              customerId: customer.id,
-              valor: totalPedido,
-              descricao,
-              externalReference: refPedido,
-              redirectUrl,
-            });
+            console.error(`Pedido ${pedido.id}: split recusado (${motivoSplit}) — cobrança refeita sem split.`);
+            splitEnviado = false;
+            if (formaPagamento === 'pix') {
+              pagamento = await asaas.criarPagamentoPedidoPix({
+                customerId: customer.id,
+                valor: totalPedido,
+                descricao,
+                externalReference: refPedido,
+                redirectUrl,
+              });
+            } else {
+              pagamento = await asaas.criarPagamentoPedidoCartao({
+                customerId: customer.id,
+                valor: totalPedido,
+                descricao,
+                externalReference: refPedido,
+                redirectUrl,
+              });
+            }
           }
         }
 
@@ -575,6 +610,74 @@ const criarPedido = async (req, res) => {
           },
         });
       } catch (erroPagamento) {
+        // ── Erros tipados: validação × rede × servidor ──────────────────────
+        // validacao (4xx) → cobrança não criada → rollback seguro.
+        // servidor (5xx)  → provavelmente não criada → rollback + msg.
+        // rede (sem HTTP) → AMBÍGUO: a cobrança pode ter sido criada mesmo
+        //                   sem termos recebido a resposta → consulta por
+        //                   externalReference e ADOPTA em vez de desfazer.
+        const tipoErro = asaas.classificarErroAsaas(erroPagamento);
+        if (tipoErro === 'rede' && refPedido) {
+          try {
+            const existente = await asaas.buscarPagamentoPorExternalReference(refPedido);
+            if (existente?.id) {
+              console.warn(
+                `Pedido ${pedido.id}: erro de rede na criação, mas cobrança ${existente.id} existe no Asaas — adotando (sem rollback).`
+              );
+              const pagamentoAdotado = {
+                id: existente.id,
+                status: existente.status,
+                vencimento: existente.dueDate || null,
+                qrCodeBase64: '',
+                copiaEcola: '',
+                urlPagamento: existente.invoiceUrl || '',
+                split: Array.isArray(existente.split) ? existente.split : [],
+                semRedirect: false,
+              };
+              if (formaPagamento === 'pix') {
+                const pix = await asaas.buscarQrPix(existente.id).catch(() => null);
+                pagamentoAdotado.qrCodeBase64 = pix?.encodedImage || '';
+                pagamentoAdotado.copiaEcola = pix?.payload || '';
+              }
+              await sql`
+                UPDATE historico_compras SET asaas_payment_id = ${existente.id}
+                WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
+              `;
+              await registrarRepassesCriacao(sql, pedido.id, pagamentoAdotado, {
+                walletId,
+                splitEnviado,
+                motivoSplit,
+                valorTotal: totalPedido,
+              });
+              return res.status(201).json({
+                mensagem: formaPagamento === 'pix'
+                  ? 'Pedido criado. Pague com o Pix para a loja iniciar o preparo.'
+                  : 'Pedido criado. Finalize o pagamento do cartão para a loja iniciar o preparo.',
+                pedido: {
+                  ...pedido,
+                  total: totalPedido,
+                  forma_pagamento: formaPagamento,
+                },
+                pagamento: {
+                  id: pagamentoAdotado.id,
+                  vencimento: pagamentoAdotado.vencimento || null,
+                  qrCodeBase64: pagamentoAdotado.qrCodeBase64 || '',
+                  copiaEcola: pagamentoAdotado.copiaEcola || '',
+                  urlPagamento: pagamentoAdotado.urlPagamento || '',
+                  semRedirect: false,
+                },
+              });
+            }
+          } catch (erroBusca) {
+            // Não foi possível verificar → rollback, mas loga possível órfã.
+            console.error(
+              `CRÍTICO — Pedido ${pedido.id}: falha ao verificar cobrança após erro de rede ` +
+              `(${erroBusca.message}). Se o Asaas criou a cobrança para ${refPedido}, ` +
+              'há uma cobrança órfã — reconciliar no painel do Asaas.'
+            );
+          }
+        }
+
         await sql`DELETE FROM historico_compras WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'`;
         await sql`DELETE FROM repasses WHERE id_pedido = ${pedido.id}`;
         await devolverEstoque(sql, itensJson);
@@ -582,8 +685,13 @@ const criarPedido = async (req, res) => {
           await sql`UPDATE cupons SET usos = GREATEST(usos - 1, 0) WHERE id = ${cupomRegistro.id}`;
         }
         const motivo = String(erroPagamento.message || '');
-        console.error(`Pedido ${pedido.id} desfeito: pagamento não iniciado (${motivo}).`);
+        console.error(`Pedido ${pedido.id} desfeito: pagamento não iniciado [${tipoErro}] (${motivo}).`);
         let aviso = 'Não foi possível iniciar o pagamento online. Tente novamente ou escolha pagar na entrega.';
+        if (tipoErro === 'rede') {
+          aviso = 'Falha de conexão ao iniciar o pagamento. Verifique sua internet e tente novamente.';
+        } else if (tipoErro === 'servidor') {
+          aviso = 'O serviço de pagamento está instável no momento. Tente novamente em instantes ou escolha pagar na entrega.';
+        }
         if (/CPF|CNPJ/i.test(motivo)) {
           aviso = 'Falta o CPF/CNPJ na sua conta para pagar online. Cadastre-o no perfil ou escolha pagar na entrega.';
         } else if (/menor que|R\$\s*5/i.test(motivo)) {
@@ -593,7 +701,8 @@ const criarPedido = async (req, res) => {
         } else if (/acesso|access_token|api key|chave|401|403/i.test(motivo)) {
           aviso = 'Pagamento online indisponível no momento. Escolha pagar na entrega.';
         }
-        return res.status(502).json({ erro: aviso, detalhe: motivo });
+        const statusHttp = tipoErro === 'validacao' ? 400 : 502;
+        return res.status(statusHttp).json({ erro: aviso, detalhe: motivo, tipo: tipoErro });
       }
     }
 
@@ -999,8 +1108,13 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     console.error(`Pedido ${pedido.id}: falha ao sincronizar repasses (${erroRepasses.message}).`);
   }
 
-  const pago = ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas);
-  const falhou = ['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
+  // ── Máquina de estados (helper único em asaasService) ─────────────────────
+  // pago_aprovado (CONFIRMED) e pago_liquidado (RECEIVED/RECEIVED_IN_CASH)
+  // iniciam o preparo; falha cancela; estorno_solicitado (REFUND_REQUESTED)
+  // NÃO cancela (estorno ainda não concluído); estorno_concluido (REFUNDED/
+  // CHARGBACK_*) aplica efeitos de estorno apenas em pedido já pago.
+  const classe = asaas.classificarStatusAsaas(statusAsaas);
+  const pago = classe === 'pago_aprovado' || classe === 'pago_liquidado';
 
   if (pago) {
     const [atualizado] = await sql`
@@ -1047,9 +1161,8 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     return { recebido: true, pago: true };
   }
 
-  const estornoPago = ['REFUNDED', 'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas);
-
-  if (falhou && !estornoPago) {
+  // Falha real da cobrança (não confundir com estorno).
+  if (classe === 'falha') {
     const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
       statusAsaas,
       paymentId: pagamentoAsaas.id,
@@ -1058,8 +1171,8 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     return { recebido: true, ...(cancelado ? { cancelado: true } : {}) };
   }
 
-  // ── Estorno/chargeback de pedido JÁ CONFIRMADO ─────────────────────────────
-  if (falhou && estornoPago) {
+  // Estorno/chargeback de pedido JÁ CONFIRMADO (ou aguardando_pagamento).
+  if (classe === 'estorno_concluido') {
     const [atual] = await sql`
       SELECT status FROM historico_compras WHERE id = ${pedido.id}
     `;
@@ -1090,6 +1203,16 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
     return { recebido: true };
   }
 
+  // REFUND_REQUESTED: estorno apenas SOLICITADO — ainda não concluído.
+  // Não cancela o pedido; aguarda o status REFUNDED para aplicar efeitos.
+  if (classe === 'estorno_solicitado') {
+    console.warn(
+      `Pedido ${pedido.id}: estorno SOLICITADO (${statusAsaas}, ${evento}) — sem transição até REFUNDED.`
+    );
+    return { recebido: true, estornoSolicitado: true };
+  }
+
+  // aguardando / vencido / desconhecido: nenhuma transição de estado.
   return { recebido: true };
 }
 
@@ -1373,6 +1496,7 @@ const detalharPedido = async (req, res) => {
       try {
         const cobranca = await asaas.buscarPagamento(pedido.asaas_payment_id);
         const statusAsaas = cobranca?.status || '';
+        const classe = asaas.classificarStatusAsaas(statusAsaas);
         const pix = await asaas.buscarQrPix(pedido.asaas_payment_id).catch(() => null);
         pagamento = {
           id: pedido.asaas_payment_id,
@@ -1382,7 +1506,7 @@ const detalharPedido = async (req, res) => {
           copiaEcola: pix?.payload || '',
           urlPagamento: cobranca?.invoiceUrl || '',
         };
-        if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(statusAsaas)) {
+        if (classe === 'pago_aprovado' || classe === 'pago_liquidado') {
           const [atualizado] = await sql`
             UPDATE historico_compras SET status = 'pendente'
             WHERE id = ${pedido.id} AND status = 'aguardando_pagamento'
@@ -1397,8 +1521,8 @@ const detalharPedido = async (req, res) => {
             avisarClientePedido(sql, pedido.id, 'pendente');
           }
           await sincronizarRepasses(sql, pedido.id, cobranca);
-        } else if (['DELETED', 'FAILED', 'EXPIRED', 'REFUND_REQUESTED', 'REFUNDED',
-                    'CHARGBACK_REQUESTED', 'CHARGBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL'].includes(statusAsaas)) {
+        } else if (classe === 'falha') {
+          // Apenas DELETED/FAILED/EXPIRED — REFUND_REQUESTED não cancela.
           const cancelado = await cancelarPedidoPorFalha(sql, pedido, {
             statusAsaas,
             paymentId: pedido.asaas_payment_id,
@@ -1417,7 +1541,16 @@ const detalharPedido = async (req, res) => {
           } else {
             await sincronizarRepasses(sql, pedido.id, cobranca);
           }
+        } else if (classe === 'estorno_concluido') {
+          // Pedido em aguardando_pagamento com estorno já concluído: só registra
+          // (não há o que estornar localmente); loga para reconciliação.
+          console.warn(
+            `Pedido ${pedido.id}: status ${statusAsaas} (estorno concluído) ainda em aguardando_pagamento — verificar no Asaas.`
+          );
+          await sincronizarRepasses(sql, pedido.id, cobranca);
         } else {
+          // aguardando (PENDING/risk), vencido (OVERDUE), estorno_solicitado
+          // (REFUND_REQUESTED), desconhecido: nenhuma transição.
           await sincronizarRepasses(sql, pedido.id, cobranca);
         }
       } catch (err) {

@@ -233,12 +233,18 @@ Fluxo completo, estados, carência de 3 dias e como testar:
 ## Webhook do Asaas — `POST /api/webhooks/asaas`
 
 Recebe os eventos de pagamento do Asaas (assinaturas **e** pedidos online).
-**Não usa JWT** — valida o cabeçalho `webhook-security-token` contra a variável
-`ASAAS_WEBHOOK_TOKEN`: token diferente → `401`; variável ausente em produção →
-`500` (em desenvolvimento sem a variável, processa mesmo assim). Vários
-tokens? Separe por vírgula — assim as integrações de webhook do **sandbox** e
-da **produção** (contas Asaas diferentes) apontam para a mesma URL e as duas
-são aceitas.
+**Não usa JWT** — valida o cabeçalho `asaas-access-token` (legado:
+`webhook-security-token`) contra a variável `ASAAS_WEBHOOK_TOKEN`: token
+ausente/diferente → `401`; variável não configurada → `401` (fail-closed —
+não há mais modo “processa mesmo sem token”). Vários tokens? Separe por
+vírgula — assim as integrações de webhook do **sandbox** e da **produção**
+(contas Asaas diferentes) apontam para a mesma URL e as duas são aceitas.
+
+**Idempotência:** o `id` do evento (`req.body.id`) é gravado na tabela
+`asaas_eventos` (única) antes de processar — entrega repetida do mesmo
+evento responde `200` com `duplicado: true` sem reexecutar a regra de
+negócio (2ª camada: `asaas_payment_id` único e `UPDATE … RETURNING` nas
+transições de pedido). Payload sem `id`/`event` → `400`.
 
 | Evento | Efeito |
 |---|---|
@@ -246,7 +252,9 @@ são aceitas.
 | `PAYMENT_OVERDUE` (assinatura) | Fatura vencida → assinatura fica `inadimplente` (a suspensão das lojas só ocorre após a carência) |
 | `SUBSCRIPTION_DELETED` (assinatura) | Cancela a assinatura |
 | `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` / `RECEIVED_IN_CASH` (pedido — `externalReference "pedido:<id>"`) | Pedido `aguardando_pagamento` vira `pendente`; e-mails de confirmação ao cliente e aviso ao vendedor |
-| Pagamento falhou (`DELETED`, `FAILED`, `EXPIRED`, `REFUNDED`…) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
+| Falha real (`DELETED`, `FAILED`, `EXPIRED`) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
+| `REFUND_REQUESTED` | Estorno **solicitado** — não cancela; aguarda `REFUNDED` |
+| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela com devoluções; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
 | `PAYMENT_SPLIT_*` | Sincroniza os repasses (tabela `repasses`) do Split |
 
 ---

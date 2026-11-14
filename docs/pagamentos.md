@@ -81,7 +81,7 @@ assinatura → criar/reativar o mercado):
 > liquidando, a tela mostra "aguardando confirmação do banco".
 
 Eventos tratados pelo webhook (validado pelo cabeçalho
-`webhook-security-token`):
+`asaas-access-token` — com fallback para o legado `webhook-security-token`):
 
 | Evento | Efeito |
 |---|---|
@@ -90,9 +90,15 @@ Eventos tratados pelo webhook (validado pelo cabeçalho
 | `SUBSCRIPTION_DELETED` | assinatura `cancelada` |
 | `externalReference` iniciado por `pedido:` | é pagamento de **pedido**, não de plano (§8) |
 
-A gravação da fatura é **idempotente** (chave `asaas_payment_id` única): webhook
-e consulta imediata podem chegar com a mesma cobrança sem duplicar nada.
-Erros devolvem `500`, para o Asaas reenviar o evento (retry).
+**Idempotência em duas camadas:** (1) cada evento é registrado na tabela
+`asaas_eventos` (coluna `asaas_event_id` única) **antes** de processar — o
+mesmo `id` de evento do Asaas (“at least once”) não reexecuta a regra de
+negócio; (2) a gravação da fatura é idempotente (chave `asaas_payment_id`
+única) e as transições de pedido usam `UPDATE … WHERE status = … RETURNING`.
+Erros de processamento devolvem `500` e liberam o evento (retry do Asaas);
+eventos já `DONE` respondem `200` com `duplicado: true` sem reprocessar.
+A validação é **fail-closed**: sem `ASAAS_WEBHOOK_TOKEN` o webhook responde
+`401` (não processa eventos anônimos).
 
 ---
 
@@ -109,8 +115,18 @@ Erros devolvem `500`, para o Asaas reenviar o evento (retry).
 
 ### Cobrança no Asaas (`pagamentos.status`)
 
-`PENDING` (liquidando) · `CONFIRMED` / `RECEIVED` (pago) · `OVERDUE` (vencido) ·
-`REFUNDED` (estornado) · `FAILED`.
+Classes distintas (helper `classificarStatusAsaas` em `asaasService.js`) —
+**não são equivalentes**:
+
+| Classe | Status Asaas | Efeito no pedido / assinatura |
+|---|---|---|
+| `pago_aprovado` | `CONFIRMED` | pedido → `pendente`; assinatura → `ativa` (funds em compensação, ex.: cartão) |
+| `pago_liquidado` | `RECEIVED`, `RECEIVED_IN_CASH` | idem + sincroniza repasses |
+| `aguardando` | `PENDING`, `AWAITING_RISK_ANALYSIS`, `PENDING_RISK_ANALYSIS` | nenhuma transição |
+| `vencido` | `OVERDUE` | assinatura → `inadimplente`; pedido permanece aguardando |
+| `falha` | `DELETED`, `FAILED`, `EXPIRED` | cancela pedido (devolve estoque/cupom) |
+| `estorno_solicitado` | `REFUND_REQUESTED` | **não cancela** — só registra; aguarda `REFUNDED` |
+| `estorno_concluido` | `REFUNDED`, `CHARGBACK_*` | pedido já pago → cancela com devoluções; assinatura → log `CRÍTICO` (sem rebaixar automático) |
 
 ### Mercado (`mercados.status`)
 
@@ -252,12 +268,12 @@ npm run migrate                   # banco local (DB_PROVIDER)
 
 | Variável (Backend) | O que é |
 |---|---|
-| `ASAAS_AMBIENTE` | opcional: `sandbox` ou `producao` — força qual ambiente usar (em branco = produção quando `NODE_ENV=production`/Render, sandbox no desenvolvimento; se só existir a chave legada, o prefixo `$aact_prod_`/`$aact_hmlg_` dela também decide — evita o 401 `invalid_environment`) |
+| `ASAAS_AMBIENTE` | opcional: `sandbox` ou `producao` — força qual ambiente usar. Em branco = **sandbox** (default seguro); produção só por explícito: `ASAAS_AMBIENTE=producao` ou prefixo `$aact_prod_` da chave legada quando não há chaves por ambiente. `NODE_ENV`/`RENDER` **não** inferem mais produção (evita subir para produção sem autorização/credenciais) |
 | `Assas_API_KEY_Sandbox` | chave da API no ambiente de **sandbox** (testes) |
 | `Assas_API_KEY_Producao` | chave da API no ambiente de **produção** (vendas reais) |
 | `Assas_API_KEY` | chave única (legada) — vale para os dois ambientes quando as específicas não estão preenchidas |
 | `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API de cada ambiente (o código escolhe junto com o ambiente ativo) |
-| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `webhook-security-token`. **Recomendado em produção**: com ele o payload vem autenticado. Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Sem token o webhook **ainda funciona**: o servidor confere o status de cada cobrança direto na API antes de agir |
+| `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `asaas-access-token` (legado: `webhook-security-token`). **Obrigatório**: sem ele o webhook responde `401` e não processa (fail-closed). Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Cadastre o MESMO valor como “Auth Token” da integração de webhook no painel do Asaas |
 | `FRONTEND_URL` | para onde o Asaas devolve o cliente após pagar (`/registrar-mercado?pagamento=1`) |
 
 **Sandbox × produção:** a chave de sandbox **não** vale na URL de produção e
@@ -276,11 +292,13 @@ testar pagamento sem movimentar dinheiro. Para isso funcionar no Render:
   `https://pi-mercadins.onrender.com/api/webhooks/asaas`, e cadastrar o token
   em `ASAAS_WEBHOOK_TOKEN`.
 
-**Para faturar de verdade:** no painel do Render, troque `ASAAS_AMBIENTE` de
-`sandbox` para `producao` (ou apague a variável — sem ela, `NODE_ENV=production`
-já cai em produção), troque a chave pela de produção e use o webhook da conta
-de produção. Reinicie o serviço e confira no log as linhas
-`Asaas: ambiente producao …` + `Asaas: conexão OK …`.
+**Para faturar de verdade (requer autorização explícita):** não altere
+`ASAAS_AMBIENTE` por conta própria — a mudança para `producao` no painel do
+Render só deve ser feita quando houver **autorização explícita** e as
+credenciais correspondentes (`Assas_API_KEY_Producao` + webhook da conta de
+produção) já cadastradas. O código **não** cai em produção sozinho: sem a
+variável o default é `sandbox`. Depois da troca, reinicie o serviço e confira
+no log as linhas `Asaas: ambiente producao …` + `Asaas: conexão OK …`.
 
 No painel do Asaas: criar a **integração de webhook** apontando para
 `https://pi-mercadins.onrender.com/api/webhooks/asaas` e marcar os eventos de
@@ -528,6 +546,20 @@ na criação da **assinatura**, da **cobrança de cartão** e do **Pix**:
 | Assinatura (plano da loja) | `/registrar-mercado?pagamento=1` (a tela lê `?pagamento=1` e confere o status) |
 | Pedido (Pix e cartão) | `/pedidos/{id}` (acompanhamento; no Pix o QR fica lá) |
 
+### Pix: dois fluxos, a mesma cobrança
+
+O Pix tem **dois caminhos de pagamento para a mesma cobrança**:
+
+1. **QR Code exibido dentro do Mercadins** (`/pedidos/{id}`) — o cliente paga
+   no app bancário; o status chega por webhook/polling. O `callback` é
+   **inerte** aqui (a página do Asaas nunca é aberta) — por isso ele **não é
+   removido** da cobrança Pix;
+2. **Página hospedada do Asaas** (`invoiceUrl`, link “Abrir a página de
+   pagamento” na tela do pedido) — é o fluxo em que o `callback.successUrl`
+   faz sentido (retorno automático após pagar).
+
+Remover o `callback` do Pix degradaria o fluxo 2; mantê-lo não afeta o fluxo 1.
+
 ### Requisito fora do código
 
 A `successUrl` precisa pertencer ao **domínio cadastrado na conta Asaas**
@@ -542,12 +574,19 @@ SEM redirecionamento. URL: https://mercadins.com.br/pedidos/12 | motivo: ...
 
 ### Comportamento quando o Asaas recusa o `callback`
 
-O fallback — disparado quando a mensagem fala em `successUrl`, `callback` ou
-`domínio` — cria a cobrança sem `callback` (o pagamento nunca falha por isso)
-e devolve `semRedirect: true` em `checkout` (assinatura) e em `pagamento`
-(pedido). O frontend então avisa a pessoa: *"O retorno automático não está
-ativo: ao concluir o pagamento, use o botão voltar do navegador"* — e o
-botão manual **"Ir para o pagamento"** continua disponível na tela de status.
+O fallback — disparado apenas em **recusa de validação (4xx)** cuja mensagem
+fala em `successUrl`, `callback` ou `domínio` — cria a cobrança sem
+`callback` (o pagamento nunca falha por isso) e devolve `semRedirect: true`
+em `checkout` (assinatura) e em `pagamento` (pedido). **`semRedirect: true`
+só é retornado quando a cobrança foi efetivamente criada** (existe `id`); se a
+recriação falhar, o erro é propagado e nenhum `semRedirect` é enviado. O
+frontend então avisa a pessoa: *"O retorno automático não está ativo: ao
+concluir o pagamento, use o botão voltar do navegador"* — e o botão manual
+**"Ir para o pagamento"** continua disponível na tela de status.
+
+Erros de **rede/timeout** não disparam esse fallback (são ambíguos — a
+cobrança pode ter sido criada); o pedido é verificado por `externalReference`
+antes de qualquer recriação/rollback (§8).
 
 ### Observações
 

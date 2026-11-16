@@ -23,11 +23,6 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
     throw new Error('Falha de conexão com o servidor. Verifique sua internet e tente novamente.')
   }
 
-  if (res.status === 401) {
-    dispararSessaoExpirada()
-    throw new Error('Sessão expirada. Faça login novamente.')
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- corpo livre da API
   let data: any = null
   const texto = await res.text()
@@ -37,6 +32,17 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
     } catch {
       data = null
     }
+  }
+
+  if (res.status === 401) {
+    const rotaLogin = path.startsWith('/auth/login')
+    if (token && !rotaLogin) {
+      dispararSessaoExpirada()
+      throw new Error('Sessão expirada. Faça login novamente.')
+    }
+    throw new Error(
+      data?.erro || (rotaLogin ? 'Email ou senha incorretos.' : 'Faça login para continuar.'),
+    )
   }
 
   if (!res.ok) {

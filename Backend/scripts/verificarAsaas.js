@@ -18,6 +18,6 @@ async function principal() {
 }
 
 principal().catch(e => {
-  console.error('\nFALHA:', e.message)
+  console.error('\nFALHA:', e.message) 
   process.exit(1)
 })

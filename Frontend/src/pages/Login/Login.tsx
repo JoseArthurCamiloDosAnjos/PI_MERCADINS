@@ -71,7 +71,7 @@ export default function Login() {
         <div className="circle circle-1" />
         <div className="circle circle-2" />
         <div className="circle circle-3" />
-        <button className="btn-back" aria-label="Voltar" onClick={() => history.back()}>
+        <button className="btn-back" aria-label="Voltar" onClick={() => navigate.goBack()}>
           <svg
             width="18"
             height="18"

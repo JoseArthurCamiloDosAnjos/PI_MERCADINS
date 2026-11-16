@@ -89,7 +89,11 @@ const signUp = async (req, res) => {
     }).catch((err) => console.error('Falha na notificação de cadastro:', err.message));
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
-    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
+    // O cadastro não deve falhar se o e-mail de verificação não puder ser enviado.
+    // O usuário já está cadastrado; pode reenviar o código na tela de verificação.
+    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`).catch((err) => {
+      console.error('Falha ao enviar e-mail de verificação:', err.message);
+    });
 
     res
       .status(201)
@@ -172,7 +176,10 @@ const reenviarCodigoVerificacao = async (req, res) => {
     `;
 
     const frontendUrl = normalizarFrontendUrl(process.env.FRONTEND_URL);
-    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`);
+    await enviarEmailVerificacao(email, codigoVerificacao, `${frontendUrl}/verificar-email?codigo=${codigoVerificacao}`).catch((err) => {
+      console.error('Falha ao reenviar e-mail de verificação:', err.message);
+      throw err;
+    });
 
     res.json({ mensagem: "Novo código enviado! Verifique seu email." });
   } catch (err) {

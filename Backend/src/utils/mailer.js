@@ -1,11 +1,9 @@
 const { Resend } = require("resend");
 const EmailDominio = "Suporte@mercadins.com.br"
 
-// Verificar se estamos em ambiente de desenvolvimento local
-const isLocalhost = 
-  process.env.BASE_URL?.includes('localhost') || 
-  process.env.BASE_URL?.includes('127.0.0.1') ||
-  process.env.LOG_EMAILS === 'true'
+// Quando TRUE, os e-mails são apenas logados no console (não enviados de verdade).
+// Defina LOG_EMAILS=true no .env para desativar o envio real em desenvolvimento.
+const LOG_EMAILS = process.env.LOG_EMAILS === 'true'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -18,7 +16,7 @@ const logEmail = (tipo, email, codigo, link) => {
 }
 
 const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     logEmail('VERIFICACAO', email, codigo, linkVerificacao?.toString())
     return
   }
@@ -72,7 +70,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
 
 
 const enviarEmailRecuperacao = async (email, codigo) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     logEmail('RECUPERACAO', email, codigo)
     return
   }
@@ -168,7 +166,7 @@ const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
 };
 
 const enviarEmailTrocaEmail = async (email, codigo) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     logEmail('TROCA_EMAIL', email, codigo)
     return
   }
@@ -251,7 +249,7 @@ const corpoPedido = (pedido) => `
 `;
 
 const enviarEmailPedidoConfirmado = async (email, pedido) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     console.log(`=== EMAIL PEDIDO_CONFIRMADO (MODELO LOCAL) ===`)
     console.log(`Para: ${email}`)
     console.log(`Pedido: ${pedido.numero}`)
@@ -280,7 +278,7 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
 };
 
 const enviarEmailStatusPedido = async (email, pedido, status) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     console.log(`=== EMAIL STATUS_PEDIDO (MODELO LOCAL) ===`)
     console.log(`Para: ${email}`)
     console.log(`Status: ${status}`)
@@ -330,7 +328,7 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
 };
 
 const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     console.log(`=== EMAIL_PAGAMENTO_APOS_CANCELAMENTO (MODELO LOCAL) ===`)
     console.log(`Para: ${email}`)
     console.log(`Pedido: ${pedido.numero}`)
@@ -370,7 +368,7 @@ const NOMES_PAGAMENTO = {
 };
 
 const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     console.log(`=== EMAIL_PEDIDO_VENDEDOR (MODELO LOCAL) ===`)
     console.log(`Para: ${emailVendedor}`)
     console.log(`Pedido: ${pedido.numero}`)
@@ -428,7 +426,7 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
 };
 
 const enviarEmailNotificacao = async (email, titulo, mensagem) => {
-  if (isLocalhost) {
+  if (LOG_EMAILS) {
     console.log(`=== EMAIL_NOTIFICACAO (MODELO LOCAL) ===`)
     console.log(`Para: ${email}`)
     console.log(`Titulo: ${titulo}`)

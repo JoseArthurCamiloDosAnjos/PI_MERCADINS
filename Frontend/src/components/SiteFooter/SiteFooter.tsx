@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "../../assets/logo2.png";
 import "./SiteFooter.css";
-
 type LinkFooter = { texto: string; para: string };
 
 const COLUNAS: { titulo: string; links: LinkFooter[] }[] = [
@@ -38,9 +37,9 @@ export default function SiteFooter() {
       <div className="sf-container">
         <div className="sf-grid">
           <div className="sf-brand">
-            <a href="/" title="Voltar ao início">
+            <Link to="/" title="Voltar ao início">
               <img src={logo} alt="Mercadins" className="sf-logo" />
-            </a>
+            </Link>
             <p>
               Seus mercados favoritos reunidos em um único lugar.
               Compre online e receba onde estiver.

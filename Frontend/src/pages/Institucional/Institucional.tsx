@@ -34,7 +34,15 @@ export default function PaginaInstitucional({ titulo, subtitulo, children }: Pro
     <div className="inst-page">
       <header className="inst-header">
         <div className="inst-container inst-header-inner">
-          <a href="/" className="inst-logo" title="Voltar ao início">
+          <a
+            href="/"
+            className="inst-logo"
+            title="Voltar ao início"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/");
+            }}
+          >
             <img src={logo} alt="Mercadins" />
           </a>
           <button className="inst-voltar" onClick={voltar}>

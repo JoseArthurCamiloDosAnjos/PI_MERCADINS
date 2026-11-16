@@ -295,6 +295,9 @@ docker compose down -v                            # para e apaga os dados
 | `npm run dados-demo` | Cadastro de demonstração (contas, lojas, produtos, avaliações) |
 | `npm run teste:segunda-loja` | Teste do fluxo de segunda loja/assinatura (Asaas mockado, só local) |
 | `npm run auditar-sql` | Confere se alguma consulta SQL deixou de usar parâmetros (proteção contra SQL Injection) |
+| `node scripts/sincronizar-neon.js --executar --confirmar=neon` | Copia o **banco inteiro** do local para o Neon (faz backup antes e preserva as senhas de produção) |
+| `node scripts/sincronizar-neon.js --verificar` | Confere se o banco local e o Neon estão idênticos (não altera nada) |
+| `node scripts/sincronizar-admin.js --aplicar --confirmar=neon` | Copia **só** admins, os mercados deles e o catálogo para o Neon (zerando o resto) — `--verificar` só confere; ver [docs/backup.md](docs/backup.md#versão-só-o-essencial-sincronizar-admin) |
 
 **Frontend (`cd Frontend`):**
 
@@ -316,7 +319,7 @@ PI_MERCADINS/
 │   ├── Dockerfile                   # imagem da API (Node 22)
 │   ├── .env.example                 # modelo de variáveis do backend
 │   ├── imagens/                     # fotos enviadas (produtos, mercados, usuários…)
-│   ├── scripts/                     # auditar-sql, dados demo, limpar dados, teste 2ª loja
+│   ├── scripts/                     # auditar-sql, dados demo, limpar dados, teste 2ª loja, sincronizar bancos
 │   └── src/
 │       ├── controllers/             # regras de negócio (auth, mercados, pedidos, cupons…)
 │       ├── db/                      # conexão + migrações versionadas
@@ -351,7 +354,7 @@ PI_MERCADINS/
 
 - **[docs/API.md](docs/API.md)** — rotas da API (autenticação, mercados, assinaturas, produtos, pedidos, cupons, **notificações por e-mail**, **upload de imagens**, webhook, administração);
 - **[docs/pagamentos.md](docs/pagamentos.md)** — pagamento: planos, confirmação via webhook, vigência, suspensão, cancelamento e **Split com o vendedor**;
-- **[docs/backup.md](docs/backup.md)** — backup semanal da Neon e como restaurar;
+- **[docs/backup.md](docs/backup.md)** — backup semanal da Neon, como restaurar e **como sincronizar o banco local com o Neon** (local → Neon, preservando as senhas de produção);
 - **[docs/ambientes.md](docs/ambientes.md)** — desenvolvimento × produção, variáveis de ambiente e Docker.
 
 ---

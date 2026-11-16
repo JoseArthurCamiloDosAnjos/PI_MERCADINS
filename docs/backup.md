@@ -12,6 +12,7 @@ preciso.
 | **Migrações versionadas** | Toda mudança de estrutura fica em um arquivo em `Backend/src/db/migrations/` e é aplicada **uma única vez** — o controle fica na tabela `schema_migrations` |
 | **Backup automático** | Toda segunda-feira (03h de Brasília) o GitHub gera um `pg_dump` completo da Neon e guarda como artefato privado |
 | **Backup manual** | Pelo botão **Run workflow** na aba Actions do GitHub — use antes de mudanças grandes |
+| **Sincronização local → Neon** | Script `Backend/scripts/sincronizar-neon.js` — deixa o Neon igual ao banco local, com backup automático e preservando as senhas de produção (ver [§ Sincronizar](#sincronizar-o-banco-local-com-o-neon)) |
 
 Arquivo da ação: `.github/workflows/backup-banco.yml`.
 
@@ -55,6 +56,69 @@ pg_restore --table=cupons --dbname="postgresql://..." backup-mercadins-2026-10-2
 Restauração de um backup **por cima** do banco atual deve ser feita com
 cuidado (substitui dados) — em dúvida, restaure primeiro em um banco novo e
 confira.
+
+---
+
+## Sincronizar o banco local com o Neon
+
+Quando o banco **local** é a fonte da verdade e você quer o Neon igualzinho
+(ex.: depois de reorganizar os dados na sua máquina):
+
+```bash
+cd Backend
+node scripts/sincronizar-neon.js --verificar                   # só confere (não mexe em nada)
+node scripts/sincronizar-neon.js --executar --confirmar=neon   # copia local → Neon
+```
+
+A cópia é **sempre no sentido local → Neon** (nunca ao contrário) e faz, nesta ordem:
+
+1. Confere se os dois bancos têm as mesmas tabelas **e as mesmas colunas** —
+   se algo faltar, o script para e manda rodar `npm run migrate` (local) ou
+   `node src/db/migrate.js --db=neon`;
+2. Gera um backup completo do Neon em
+   `%TEMP%\opencode\mercadins-backups\neon-antes-sync-AAAA-MM-DD.dump`;
+3. Extrai **só os dados** do local (`pg_dump --data-only --column-inserts`);
+4. Esvazia todas as tabelas do Neon (`TRUNCATE ... RESTART IDENTITY`) e restaura
+   por cima;
+5. **Devolve as senhas do Neon** — a coluna `senha` nunca é copiada do local para
+   produção (cada guarda a própria senha por e-mail) e por isso fica **fora** da
+   conferência;
+6. Compara tabela a tabela (contagem de linhas + hash do conteúdo) e imprime
+   `✅ Banco do Neon sincronizado com o local.`
+
+Regras importantes:
+
+- **É cópia de dados, não de estrutura.** Colunas, índices e tudo que é DDL
+  continua sendo papel das migrações (nunca de sincronização);
+- **Reversível:** o `.dump` do passo 2 devolve o Neon ao estado anterior
+  (`pg_restore --no-owner --no-privileges <arquivo>`);
+- **Nunca rode `pg_dump`/`pg_restore` pela URL da Neon com `-pooler`**
+  (justamente a `DATABASE_URL_NEON`). O `pg_dump` grava
+  `set_config('search_path','',false)` no início da sessão e o PgBouncer do
+  pooler **compartilha** a conexão de servidor entre clientes — o valor vaza e o
+  site inteiro passa a falhar com `relation "..." does not exist`. Para operação
+  manual, troque `-pooler.` por `.` na URL (endpoint direto); o script já faz
+  isso sozinho. Blindagem extra aplicada no banco:
+  `ALTER DATABASE neondb SET search_path = public, pg_catalog` (toda conexão nova
+  já nasce com `search_path` válido, inclusive as do pooler).
+
+### Versão "só o essencial": `sincronizar-admin`
+
+Para deixar os dois bancos iguais **mantendo apenas** as contas de administrador,
+os mercados dessas contas (com categorias e produtos) e o catálogo do admin — o
+demais é zerado:
+
+```bash
+cd Backend
+node scripts/sincronizar-admin.js --exportar                       # grava backup-admin-export.json
+node scripts/sincronizar-admin.js --db=neon    --aplicar --confirmar=neon
+node scripts/sincronizar-admin.js --db=local   --aplicar --confirmar=local
+node scripts/sincronizar-admin.js --verificar
+```
+
+O `--aplicar` preserva a senha vigente de **cada** banco por e-mail e reescreve
+`http://localhost:3001` para a URL de produção nas URLs das imagens do catálogo.
+O JSON exportado contém hashes de senha — por isso **não deve ser commitado**.
 
 ---
 

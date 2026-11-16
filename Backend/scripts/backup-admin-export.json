@@ -1,0 +1,271 @@
+{
+  "gerado_em": "2026-11-16T17:21:07.428Z",
+  "admins": [
+    {
+      "id_usuario": 2,
+      "nome": "cayo barroso santos",
+      "email": "cayobarroso1@gmail.com",
+      "senha": "$2b$10$BLla81J6drq8ItWCqWjILOwzMllxx427IczYpiN3mhzqvf2J4YFLq",
+      "telefone": "(16) 99964-4474",
+      "data_cadastro": "2026-08-31T14:48:05.784Z",
+      "email_verificado": true,
+      "token_verificacao": null,
+      "token_expiracao": null,
+      "foto_perfil": "https://bjraizqugvnwvfovphhh.supabase.co/storage/v1/object/public/imagens/usuarios/1789989332548-ga7neg.jpg",
+      "cpf": "45284961862",
+      "data_nascimento": null,
+      "is_admin": true,
+      "status": "ativo",
+      "ultimo_acesso": "2026-09-21T15:42:37.870Z",
+      "email_admin": "cayo.barroso.santos.adim@mercadins.com",
+      "termos_aceitos_em": null,
+      "termos_versao": "",
+      "termos_ip": ""
+    },
+    {
+      "id_usuario": 10,
+      "nome": "Juan De Oliveira Marcondes Xavier",
+      "email": "drjuanmarcondes@gmail.com",
+      "senha": "$2b$10$LK2KGpfpBR62LdNPKkJE2eu0.vpWGFkVd9Vm6.8qwyG9WYr3Ngj06",
+      "telefone": "(16) 99767-6366",
+      "data_cadastro": "2026-09-28T15:06:05.799Z",
+      "email_verificado": true,
+      "token_verificacao": null,
+      "token_expiracao": null,
+      "foto_perfil": "",
+      "cpf": "08763727447",
+      "data_nascimento": "2006-09-25T03:00:00.000Z",
+      "is_admin": true,
+      "status": "ativo",
+      "ultimo_acesso": "2026-11-09T10:42:07.278Z",
+      "email_admin": "juan.de.oliveira.marcondes.xavier.adim@mercadins.com",
+      "termos_aceitos_em": null,
+      "termos_versao": "",
+      "termos_ip": ""
+    },
+    {
+      "id_usuario": 12,
+      "nome": "José Arthur",
+      "email": "josearthurcamilo.30@gmail.com",
+      "senha": "$2b$10$nAy13IZw.9dwPzeJ0ETEtelA6qjfnioRXA/StvUgc5NFRaQcjfM4e",
+      "telefone": "(12) 85541-234",
+      "data_cadastro": "2026-10-04T05:45:27.548Z",
+      "email_verificado": true,
+      "token_verificacao": null,
+      "token_expiracao": null,
+      "foto_perfil": "",
+      "cpf": "46233224837",
+      "data_nascimento": "2007-02-26T03:00:00.000Z",
+      "is_admin": true,
+      "status": "ativo",
+      "ultimo_acesso": "2026-11-16T12:05:08.118Z",
+      "email_admin": "josearthurcamilo.adim@mercadins.com",
+      "termos_aceitos_em": null,
+      "termos_versao": "",
+      "termos_ip": ""
+    },
+    {
+      "id_usuario": 15,
+      "nome": "Raul",
+      "email": "pedrotijolarias@gmail.com",
+      "senha": "$2b$10$ckFRTt4kpdveEaMIuEJfpebr1UWqOB4AckAgi2suVKJeP8Zlmuuw6",
+      "telefone": "(16) 99613-7222",
+      "data_cadastro": "2026-11-11T20:38:06.030Z",
+      "email_verificado": true,
+      "token_verificacao": null,
+      "token_expiracao": null,
+      "foto_perfil": "",
+      "cpf": "",
+      "data_nascimento": null,
+      "is_admin": true,
+      "status": "ativo",
+      "ultimo_acesso": null,
+      "email_admin": "raul.adim@mercadins.com",
+      "termos_aceitos_em": null,
+      "termos_versao": "",
+      "termos_ip": ""
+    }
+  ],
+  "mercados": [
+    {
+      "id_mercado": 8,
+      "nome": "Loje de seu Zel",
+      "cnpj": "10573521000191",
+      "email": "josearthurcamilo.30@gmail.com",
+      "telefone": "11231234432",
+      "cidade": "Guariba",
+      "estado": "SP",
+      "descricao": "Um mercado",
+      "foto_perfil": null,
+      "slug": "loje-de-seu-zel",
+      "tema": null,
+      "data_cadastro": "2026-11-15T22:02:12.723Z",
+      "bairro": "Vila Pacífico",
+      "rua": "Avenida Santos Dumont",
+      "cep": "14840186",
+      "paleta": "classico",
+      "cor_base": "",
+      "cor_destaque": "",
+      "cor_texto": "",
+      "cor_icones": "",
+      "cor_texto_sec": "",
+      "banner": "",
+      "status": "ativo",
+      "plano": "basico",
+      "horario": "{\"1\":[\"08:00\",\"18:00\"],\"2\":[\"08:00\",\"18:00\"],\"3\":[\"08:00\",\"18:00\"],\"4\":[\"08:00\",\"18:00\"],\"5\":[\"08:00\",\"18:00\"]}",
+      "taxa_entrega": "0.00",
+      "pedido_minimo": "0.00",
+      "oferece_entrega": true,
+      "oferece_retirada": true,
+      "suspenso_em": null,
+      "asaas_wallet_id": null,
+      "termos_aceitos_em": "2026-11-15T22:02:12.716Z",
+      "termos_versao": "2026-11-04",
+      "termos_ip": "::1",
+      "categorias": null,
+      "custos_fixos": "0.00"
+    }
+  ],
+  "vinculos": [
+    {
+      "id": 8,
+      "id_usuario": 12,
+      "id_mercado": 8,
+      "papel": "dono",
+      "active": true
+    }
+  ],
+  "categorias": [
+    {
+      "id_categoria": 25,
+      "nome": "Laticínios",
+      "id_mercado": 8
+    },
+    {
+      "id_categoria": 26,
+      "nome": "latcinieos",
+      "id_mercado": 8
+    }
+  ],
+  "produtos": [
+    {
+      "id_produto": 61,
+      "nome": "Arroz Branco 5 kg",
+      "descricao": "Arroz branco tipo 1, pacote de 5 kg.",
+      "imagem": "http://localhost:3001/imagens/catalogo/1794779346692-34201b2b.jpg",
+      "id_categoria": 25,
+      "preco": "28.90",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779346692-34201b2b.jpg"
+      ],
+      "estoque": 3,
+      "custo": "0.00"
+    },
+    {
+      "id_produto": 62,
+      "nome": "Feijão Carioca – 1 kg",
+      "descricao": "Feijão carioca tipo 1, pacote de 1 kg.",
+      "imagem": "http://localhost:3001/imagens/catalogo/1794779415945-05e14804.png",
+      "id_categoria": 25,
+      "preco": "7.99",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779415945-05e14804.png"
+      ],
+      "estoque": 3,
+      "custo": "0.00"
+    },
+    {
+      "id_produto": 63,
+      "nome": "Leite Integral – 1 L",
+      "descricao": "Leite integral UHT, embalagem longa vida de 1 litro.",
+      "imagem": "http://localhost:3001/imagens/catalogo/1794779721621-870affeb.jpg",
+      "id_categoria": 26,
+      "preco": "5.49",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779721621-870affeb.jpg"
+      ],
+      "estoque": 4,
+      "custo": "0.00"
+    }
+  ],
+  "catalogo": [
+    {
+      "id": 1,
+      "nome": "Arroz Branco 5 kg",
+      "descricao": "Arroz branco tipo 1, pacote de 5 kg.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779346692-34201b2b.jpg"
+      ],
+      "preco_sugerido": "28.90",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:49:07.883Z",
+      "atualizado_em": "2026-11-15T21:49:07.883Z"
+    },
+    {
+      "id": 2,
+      "nome": "Feijão Carioca – 1 kg",
+      "descricao": "Feijão carioca tipo 1, pacote de 1 kg.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779415945-05e14804.png"
+      ],
+      "preco_sugerido": "7.99",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:50:16.835Z",
+      "atualizado_em": "2026-11-15T21:50:16.835Z"
+    },
+    {
+      "id": 3,
+      "nome": "Óleo de Soja – 900 ml",
+      "descricao": "Óleo de soja refinado, embalagem de 900 ml.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779528696-9bb4a781.jpg"
+      ],
+      "preco_sugerido": "7.49",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:52:09.142Z",
+      "atualizado_em": "2026-11-15T21:52:09.142Z"
+    },
+    {
+      "id": 4,
+      "nome": "Açúcar Refinado – 1 kg",
+      "descricao": "Açúcar refinado tradicional, pacote de 1 kg.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779644212-4a41f523.jpg"
+      ],
+      "preco_sugerido": "4.99",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:54:04.685Z",
+      "atualizado_em": "2026-11-15T21:54:04.685Z"
+    },
+    {
+      "id": 5,
+      "nome": "Leite Integral – 1 L",
+      "descricao": "Leite integral UHT, embalagem longa vida de 1 litro.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779721621-870affeb.jpg"
+      ],
+      "preco_sugerido": "5.49",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:55:21.795Z",
+      "atualizado_em": "2026-11-15T21:55:21.795Z"
+    },
+    {
+      "id": 6,
+      "nome": "Macarrão Espaguete – 500 g",
+      "descricao": "Macarrão tipo espaguete tradicional, pacote de 500 g.",
+      "imagens": [
+        "http://localhost:3001/imagens/catalogo/1794779810248-cf74e416.jpg"
+      ],
+      "preco_sugerido": "3.99",
+      "tipo_loja": "geral",
+      "ativo": true,
+      "criado_em": "2026-11-15T21:56:50.616Z",
+      "atualizado_em": "2026-11-15T21:56:50.616Z"
+    }
+  ]
+}

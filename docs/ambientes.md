@@ -37,6 +37,22 @@ cadastrada à mão.
 
 Assim, quem programa nunca arrisca apagar ou alterar dados do site real.
 
+### Deixando os dois bancos iguais
+
+Os dois ambientes são independentes por padrão. Quando quiser **copiar** o que
+está no banco local para o de produção (sentido único: local → Neon), use o
+script do backend:
+
+```bash
+cd Backend
+node scripts/sincronizar-neon.js --verificar                   # só confere
+node scripts/sincronizar-neon.js --executar --confirmar=neon   # copia
+```
+
+Ele faz backup do Neon antes, preserva as senhas de produção e confere o
+resultado — detalhes, cuidados e a versão "só dados de administrador" estão em
+[backup.md § Sincronizar](backup.md#sincronizar-o-banco-local-com-o-neon).
+
 ---
 
 ## Arquivos de exemplo (`.env.example`)

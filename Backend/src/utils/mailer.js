@@ -5,7 +5,23 @@ const EmailDominio = "Suporte@mercadins.com.br"
 // Defina LOG_EMAILS=true no .env para desativar o envio real em desenvolvimento.
 const LOG_EMAILS = process.env.LOG_EMAILS === 'true'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Instancia o Resend de forma preguiçosa (lazy): assim a ausência de
+// RESEND_API_KEY não derruba o servidor no boot — o erro só aparece
+// quando um e-mail realmente precisa ser enviado.
+let resendClient = null
+function getResend() {
+  if (!resendClient) {
+    const chave = process.env.RESEND_API_KEY
+    if (!chave) {
+      throw new Error(
+        'RESEND_API_KEY não configurada — não é possível enviar e-mail. ' +
+        'Adicione a chave no .env ou defina LOG_EMAILS=true para apenas logar.'
+      )
+    }
+    resendClient = new Resend(chave)
+  }
+  return resendClient
+}
 
 const logEmail = (tipo, email, codigo, link) => {
   console.log(`=== EMAIL ${tipo} (MODELO LOCAL) ===`)
@@ -20,7 +36,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
     logEmail('VERIFICACAO', email, codigo, linkVerificacao?.toString())
     return
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Verifique seu e-mail — Mercadins",
@@ -74,7 +90,7 @@ const enviarEmailRecuperacao = async (email, codigo) => {
     logEmail('RECUPERACAO', email, codigo)
     return
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Código de recuperação de senha — Mercadins",
@@ -116,7 +132,7 @@ const enviarEmailRecuperacao = async (email, codigo) => {
 
 //  Administração — avisa no e-mail PESSOAL da pessoa que a conta dela foi
 const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Você foi habilitado como administrador — Mercadins",
@@ -170,7 +186,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
     logEmail('TROCA_EMAIL', email, codigo)
     return
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Confirme seu novo e-mail — Mercadins",
@@ -256,7 +272,7 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
     console.log('===========================================\n')
     return
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `Pedido nº ${pedido.numero} recebido — Mercadins`,
@@ -306,7 +322,7 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
   };
   const mensagem = mensagens[status] || 'O status do seu pedido foi atualizado.';
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `${titulos[status] || 'Status do pedido'} — Pedido nº ${pedido.numero}`,
@@ -339,7 +355,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
     ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
     : 'O pagamento deste pedido foi confirmado depois do cancelamento. Nossa equipe vai estornar o valor e entrará em contato. Se tiver dúvidas, fale com a loja.';
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `Pagamento confirmado após cancelamento — Pedido nº ${pedido.numero}`,
@@ -375,7 +391,7 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
     console.log('===========================================\n')
     return
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: EmailDominio,
     to: emailVendedor,
     subject: `Novo pedido nº ${pedido.numero} — ${pedido.mercado}`,
@@ -434,7 +450,7 @@ const enviarEmailNotificacao = async (email, titulo, mensagem) => {
     console.log('===========================================\n')
     return
   }
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `${titulo || 'Notificação'} — Mercadins`,

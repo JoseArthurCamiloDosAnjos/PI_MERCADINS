@@ -600,7 +600,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
       <div className="vtc-topbar">
         <button
           className="vtc-btn-voltar"
-          onClick={() => history.back()}
+          onClick={() => navigate(-1)}
         >
           <IconArrowLeft size={16} />
           <span>Voltar</span>

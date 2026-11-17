@@ -131,3 +131,11 @@ export const IconAlert = (props: IconProps) => <SvgBase {...props}><><path d="M1
 export const IconUpload = (props: IconProps) => <SvgBase {...props}><><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></></SvgBase>;
 
 export const IconTarget = (props: IconProps) => <SvgBase {...props}><><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></></SvgBase>;
+
+export const IconNavigation = (props: IconProps) => <SvgBase {...props}><><polygon points="3 11 22 2 13 21 11 13 3 11" /></></SvgBase>;
+
+export const IconShield = (props: IconProps) => <SvgBase {...props}><><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></></SvgBase>;
+
+export const IconShieldCheck = (props: IconProps) => <SvgBase {...props}><><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></></SvgBase>;
+
+export const IconLocationMap = (props: IconProps) => <SvgBase {...props}><><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></></SvgBase>;

@@ -11,6 +11,7 @@ import PasswordStrength from '../../components/PasswordStrength';
 import AdicionarMercadoFavorito from '../../components/AdicionarMercadoFavorito';
 import TelaAssinaturas from '../../components/TelaAssinaturas/TelaAssinaturas';
 import TelaNotificacoes from '../../components/TelaNotificacoes/TelaNotificacoes';
+import MapaProximos from '../../components/MapaProximos';
 import ModalEditarPerfil from '../../components/ModalEditarPerfil';
 import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
@@ -31,6 +32,8 @@ import {
   IconInbox,
   IconCreditCard,
   IconBell,
+  IconLocationMap,
+  IconShieldCheck,
 } from '../../components/Icons';
 
 interface Mercado {
@@ -98,9 +101,10 @@ const NAV_ITEMS = [
   { icon: <IconMapPin size={18} />, label: 'Endereços' },
   { icon: <IconStar size={18} />, label: 'Depoimentos' },
   { icon: <IconCreditCard size={18} />, label: 'Assinaturas' },
+  { icon: <IconLocationMap size={18} />, label: 'Mapa' },
 ];
 
-const TITULOS = ['Painel do vendedor', 'Notificações', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas'];
+const TITULOS = ['Painel do vendedor', 'Notificações', 'Segurança', 'Endereços', 'Depoimentos', 'Assinaturas', 'Mapa'];
 
 function Stars({ n }: { n: number }) {
   return <span className="pu-stars">{Array.from({ length: 5 }, (_, i) => i < n ? '★' : '☆').join('')}</span>;
@@ -535,6 +539,19 @@ function TelaSeguranca() {
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
       <section>
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
+        <div className={`pu-2fa-status${usuario?.dois_fatores ? ' ativo' : ''}`}>
+          <span className="pu-2fa-icone"><IconShieldCheck size={20} /></span>
+          <div className="pu-2fa-texto">
+            <strong>Verificação em duas etapas</strong>
+            <p>
+              {usuario?.dois_fatores
+                ? 'Ativa. A cada login enviamos um código de 6 dígitos para o seu email.'
+                : 'Será ativada automaticamente no seu próximo login.'}
+            </p>
+          </div>
+          <span className="pu-2fa-badge">{usuario?.dois_fatores ? 'Ativa' : 'Obrigatória'}</span>
+        </div>
+        <h3 className="pu-sub-title">Alterar senha</h3>
         {etapa === 'form' ? (
           <div className="pu-form-block">
             <div className="pu-modal-group">
@@ -721,6 +738,7 @@ export default function PerfilVendedor() {
     <TelaEnderecos key="enderecos" />,
     <TelaDepoimentos key="depoimentos" />,
     <TelaAssinaturas key="assinaturas" />,
+    <MapaProximos key="mapa" />,
   ];
 
   return (

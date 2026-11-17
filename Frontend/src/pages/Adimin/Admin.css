@@ -1591,6 +1591,27 @@
   margin-bottom: 18px;
 }
 
+.adm-2fa-desc { margin-bottom: 12px; }
+
+/* ── Verificação em duas etapas ───────────────────────────────────────────── */
+.adm-2fa-chip {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: var(--azul-medio);
+  color: var(--branco);
+  border: 1px solid var(--azul-borda);
+}
+
+.adm-2fa-chip.ativo {
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border-color: transparent;
+}
+
 /* ── Tema ────────────────────────────────────────────────────────────────── */
 
 .adm-config-theme-row {

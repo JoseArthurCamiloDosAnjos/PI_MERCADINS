@@ -2,7 +2,20 @@ const { conectar } = require("../db/neon");
 const { limitesDoPlano, normalizarPlano } = require("../utils/planos");
 const { VERSAO_TERMOS } = require("../utils/termos");
 const { enviarNotificacao } = require("../utils/notificacoes");
+const { geocodificar, distanciaKm } = require("../services/geocoding");
 const asaasService = require("../services/asaasService");
+
+// Preenche as coordenadas do mercado a partir do endereço. Chamado em
+// segundo plano no cadastro — nunca bloqueia a resposta para o usuário.
+async function geocodificarEnderecoDoMercado(sql, m) {
+  if (m.latitude && m.longitude) return;
+  const coords = await geocodificar(m);
+  if (!coords) return;
+  await sql`
+    UPDATE mercados SET latitude = ${coords.lat}, longitude = ${coords.lng}
+    WHERE id_mercado = ${m.id_mercado} AND (latitude IS NULL OR longitude IS NULL)
+  `;
+}
 
 // Helper — gera slug a partir do nome
 
@@ -361,6 +374,11 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
 
   criarSubcontaDoMercado(sql, novoMercado).catch((err) =>
     console.error('Falha ao criar subconta Asaas do mercado', novoMercado.id_mercado, ':', err.message)
+  );
+
+  // Geocodifica o endereço em segundo plano para o mapa de mercados próximos.
+  geocodificarEnderecoDoMercado(sql, novoMercado).catch((err) =>
+    console.error('Falha ao geocodificar mercado', novoMercado.id_mercado, ':', err.message)
   );
 
   if (d.cats.lista.length > 0) {
@@ -772,6 +790,18 @@ const atualizarMercado = async (req, res) => {
       RETURNING *
     `;
 
+    // Se o endereço mudou, recalcula as coordenadas em segundo plano.
+    const mudouEndereco = [cep, rua, bairro, cidade, estado].some((v) => v !== undefined && v !== null);
+    if (mudouEndereco) {
+      await sql`
+        UPDATE mercados SET latitude = NULL, longitude = NULL
+        WHERE id_mercado = ${Number(id)}
+      `.catch(() => {});
+      geocodificarEnderecoDoMercado(sql, mercadoAtualizado).catch((err) =>
+        console.error('Falha ao geocodificar mercado', id, ':', err.message)
+      );
+    }
+
     res.status(200).json({
       mensagem: "Mercado atualizado com sucesso!",
       mercado: mercadoAtualizado,
@@ -941,6 +971,88 @@ const dashboardMercado = async (req, res) => {
   }
 };
 
+// ── Geocoding: converte endereço do mercado em coordenadas ────────────────────
+
+const geocodificarMercado = async (req, res) => {
+  try {
+    const sql = await conectar();
+    const { id } = req.params;
+
+    const [mercado] = await sql`
+      SELECT id_mercado, rua, bairro, cidade, estado, cep, latitude, longitude
+      FROM mercados WHERE id_mercado = ${Number(id)}
+    `;
+    if (!mercado) return res.status(404).json({ erro: 'Mercado não encontrado' });
+
+    // Se já tem coordenadas, retorna
+    if (mercado.latitude && mercado.longitude) {
+      return res.json({ latitude: mercado.latitude, longitude: mercado.longitude });
+    }
+
+    const coords = await geocodificar(mercado);
+    if (!coords) return res.status(422).json({ erro: 'Não foi possível geocodificar o endereço deste mercado.' });
+
+    await sql`
+      UPDATE mercados SET latitude = ${coords.lat}, longitude = ${coords.lng}
+      WHERE id_mercado = ${mercado.id_mercado}
+    `;
+
+    res.json({ latitude: coords.lat, longitude: coords.lng });
+  } catch (err) {
+    console.error('ERRO geocodificarMercado:', err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
+// ── Mercados próximos a uma coordenada ────────────────────────────────────────
+const listarMercadosProximos = async (req, res) => {
+  try {
+    const sql = await conectar();
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const raio = Math.min(50, Math.max(1, parseFloat(req.query.raio) || 10)); // km, máx 50
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      return res.status(400).json({ erro: 'Informe lat e lng válidos.' });
+    }
+
+    // Mercados ativos com coordenadas, filtrados por raio via bounding box
+    // (bounding box é uma pré-filtração barata; Haversine refina depois)
+    const latDelta = raio / 111; // ~111 km por grau
+    const lngDelta = raio / (111 * Math.cos((lat * Math.PI) / 180));
+
+    const candidatos = await sql`
+      SELECT m.id_mercado, m.nome, m.slug, m.cidade, m.estado, m.bairro,
+             m.foto_perfil, m.cor_base, m.horario, m.latitude, m.longitude,
+             COALESCE(AVG(a.nota), 0)::float8 AS avaliacao,
+             COUNT(a.id)::int AS avaliacoes_count
+      FROM mercados m
+      LEFT JOIN avaliacoes a ON a.id_mercado = m.id_mercado
+      WHERE m.status = 'ativo'
+        AND m.latitude IS NOT NULL AND m.longitude IS NOT NULL
+        AND m.latitude BETWEEN ${lat - latDelta} AND ${lat + latDelta}
+        AND m.longitude BETWEEN ${lng - lngDelta} AND ${lng + lngDelta}
+      GROUP BY m.id_mercado
+      ORDER BY m.nome
+      LIMIT 200
+    `;
+
+    const comDistancia = candidatos
+      .map(m => ({
+        ...m,
+        distancia: Math.round(distanciaKm(lat, lng, m.latitude, m.longitude) * 10) / 10,
+      }))
+      .filter(m => m.distancia <= raio)
+      .sort((a, b) => a.distancia - b.distancia)
+      .slice(0, 30);
+
+    res.json({ mercados: comDistancia, raio });
+  } catch (err) {
+    console.error('ERRO listarMercadosProximos:', err);
+    res.status(500).json({ erro: err.message });
+  }
+};
+
 module.exports = {
   criarMercado,
   criarSubcontaAsaas,
@@ -951,6 +1063,8 @@ module.exports = {
   deletarMercado,
   meusMercados,
   dashboardMercado,
+  geocodificarMercado,
+  listarMercadosProximos,
   validarDadosMercado,
   criarMercadoCompleto,
 };

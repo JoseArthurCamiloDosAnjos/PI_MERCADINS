@@ -11,6 +11,7 @@ const Mercados = lazy(() => import('./Mercados'))
 const Catalogo = lazy(() => import('./Catalogo'))
 const Relatorios = lazy(() => import('./Relatorios'))
 const Configuracoes = lazy(() => import('./Configuracoes'))
+const MapaProximos = lazy(() => import('../../components/MapaProximos'))
 
 const ABAS = [
   { nome: 'Dashboard', desc: 'Visão geral da plataforma em tempo real' },
@@ -19,6 +20,7 @@ const ABAS = [
   { nome: 'Catálogo', desc: 'Produtos e categorias cadastrados nas lojas' },
   { nome: 'Relatórios', desc: 'Pedidos, entregas e faturamento por período' },
   { nome: 'Configurações', desc: 'Perfil do administrador e segurança da conta' },
+  { nome: 'Mapa', desc: 'Sua localização e os mercados próximos' },
 ]
 
 export default function Adiministrador() {
@@ -57,6 +59,7 @@ export default function Adiministrador() {
             {abaAtiva === 3 && <Catalogo />}
             {abaAtiva === 4 && <Relatorios />}
             {abaAtiva === 5 && <Configuracoes />}
+            {abaAtiva === 6 && <MapaProximos />}
           </Suspense>
         </section>
       </main>

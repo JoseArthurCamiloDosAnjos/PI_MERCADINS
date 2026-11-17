@@ -101,6 +101,86 @@
   margin-bottom: 24px;
 }
 
+/* ── Verificação em duas etapas (2FA) ─────────────────────────────────────── */
+.pu-2fa-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--azul-card, var(--azul-sidebar, #12203f));
+  border: 1.5px solid var(--azul-borda, #1e3054);
+  border-radius: 14px;
+  margin-bottom: 22px;
+}
+
+.pu-2fa-status.ativo {
+  border-color: rgba(245, 200, 74, 0.55);
+  background: rgba(245, 200, 74, 0.07);
+}
+
+.pu-2fa-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--azul-medio, #1a3a6b);
+  border: 1px solid var(--azul-claro, #3b6fd4);
+  color: var(--amarelo, #f5c84a);
+  flex-shrink: 0;
+}
+
+.pu-2fa-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.pu-2fa-texto strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--branco, #fff);
+  margin-bottom: 3px;
+}
+
+.pu-2fa-texto p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--cinza-texto, #8892a4);
+}
+
+.pu-2fa-badge {
+  flex-shrink: 0;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: var(--azul-medio, #1a3a6b);
+  color: var(--branco, #fff);
+  border: 1px solid var(--azul-borda, #1e3054);
+}
+
+.pu-2fa-status.ativo .pu-2fa-badge {
+  background: var(--amarelo, #f5c84a);
+  color: var(--azul-escuro, #0d1b2a);
+  border-color: transparent;
+}
+
+.pu-sub-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--branco, #fff);
+  margin: 0 0 14px;
+}
+
+@media (max-width: 560px) {
+  .pu-2fa-status { flex-wrap: wrap; }
+  .pu-2fa-badge { margin-left: 56px; }
+}
+
 .pu-sec-row .pu-sec-title {
   margin-bottom: 0;
 }

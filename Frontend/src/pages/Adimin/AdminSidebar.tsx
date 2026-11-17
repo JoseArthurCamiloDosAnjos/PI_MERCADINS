@@ -10,6 +10,7 @@ import {
   IconGear,
   IconMenu,
   IconX,
+  IconLocationMap,
 } from '../../components/Icons'
 
 interface AdminSidebarProps {
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { icon: <IconPackage size={18} />, label: 'Catálogo' },
   { icon: <IconReceipt size={18} />, label: 'Relatórios' },
   { icon: <IconGear size={18} />, label: 'Configurações' },
+  { icon: <IconLocationMap size={18} />, label: 'Mapa' },
 ]
 
 export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {

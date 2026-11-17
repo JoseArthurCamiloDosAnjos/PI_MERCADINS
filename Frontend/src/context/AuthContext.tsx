@@ -21,17 +21,25 @@ interface Usuario {
   is_admin?: boolean;
   status?: string;
   email_admin?: string;
+  dois_fatores?: boolean;
 }
 
 interface AuthContextType {
   usuario: Usuario | null;
   carregando: boolean;
   temMercado: boolean;
-  login: (email: string, senha: string) => Promise<{ usuario: Usuario; is_admin_login: boolean }>;
+  login: (email: string, senha: string) => Promise<ResultadoLogin>;
+  confirmar2FA: (tokenParcial: string, codigo: string) => Promise<{ usuario: Usuario; is_admin_login: boolean }>;
+  reenviarCodigo2FA: (tokenParcial: string) => Promise<void>;
   logout: () => void;
   refreshMercados: () => Promise<void>;
   refreshUsuario: () => Promise<void>;
 }
+
+/** Resultado do login: ou conclui, ou pede o código de 2FA. */
+type ResultadoLogin =
+  | { etapa: 'ok'; usuario: Usuario; is_admin_login: boolean }
+  | { etapa: '2fa'; tokenParcial: string; mensagem: string };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
@@ -114,13 +122,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('mercadins:sessao-expirada', encerrar);
   }, []);
 
-  async function login(email: string, senha: string): Promise<{ usuario: Usuario; is_admin_login: boolean }> {
-    const { usuario: u, token, is_admin_login } = await api.login({ email, senha });
+  /** Conclui o login depois que o usuário digita o código de 2FA. */
+  async function concluirLogin(resposta: {
+    usuario: Usuario;
+    token: string;
+    is_admin_login?: boolean;
+  }): Promise<{ usuario: Usuario; is_admin_login: boolean }> {
+    const { usuario: u, token, is_admin_login } = resposta;
     if (!token) throw new Error('Resposta de login inválida. Tente novamente.');
     localStorage.setItem("token", token);
     setUsuario(u);
     await verificarMercados();
     return { usuario: u, is_admin_login: is_admin_login ?? false };
+  }
+
+  async function login(email: string, senha: string): Promise<ResultadoLogin> {
+    const resposta = await api.login({ email, senha });
+
+    // 2FA obrigatório: devolve o token parcial para a tela de código.
+    if (resposta?.requer_2fa) {
+      return {
+        etapa: '2fa',
+        tokenParcial: resposta.token_parcial,
+        mensagem: resposta.mensagem ?? 'Código de verificação enviado para seu email.',
+      };
+    }
+
+    const resultado = await concluirLogin(resposta);
+    return { etapa: 'ok', ...resultado };
+  }
+
+  async function confirmar2FA(tokenParcial: string, codigo: string) {
+    const resposta = await api.verificar2FA({ token_parcial: tokenParcial, codigo });
+    return concluirLogin(resposta);
+  }
+
+  async function reenviarCodigo2FA(tokenParcial: string) {
+    await api.reenviar2FA({ token_parcial: tokenParcial });
   }
 
   function logout() {
@@ -148,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuario, carregando, temMercado, login, logout, refreshMercados: verificarMercados, refreshUsuario }}
+      value={{ usuario, carregando, temMercado, login, confirmar2FA, reenviarCodigo2FA, logout, refreshMercados: verificarMercados, refreshUsuario }}
     >
       {children}
     </AuthContext.Provider>

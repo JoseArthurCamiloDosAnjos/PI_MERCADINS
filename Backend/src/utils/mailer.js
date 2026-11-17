@@ -85,6 +85,52 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
 
 
 
+//  Verificação em duas etapas (2FA) — código de login
+const enviarEmail2FA = async (email, codigo) => {
+  if (LOG_EMAILS) {
+    logEmail('2FA', email, codigo)
+    return
+  }
+  await getResend().emails.send({
+    from: EmailDominio,
+    to: email,
+    subject: "Código de verificação — Mercadins",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: 'Nunito', Arial, sans-serif; background: #f0f2f7; margin: 0; padding: 40px 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+
+          <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Verificação em duas etapas</h1>
+            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
+          </div>
+
+          <div style="padding: 36px 32px; text-align: center;">
+            <p style="color: #0d2a5e; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Olá!</p>
+            <p style="color: #8892a4; font-size: 14px; line-height: 1.6; margin: 0 0 28px;">
+              Recebemos uma tentativa de login na sua conta. Use o código abaixo para confirmar que é você.
+            </p>
+
+            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 28px;">
+              <span style="color: #0d2a5e; font-size: 36px; font-weight: 800; letter-spacing: 8px;">${codigo}</span>
+            </div>
+
+            <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
+              <p style="color: #8892a4; font-size: 12px; line-height: 1.6; margin: 0;">
+                Este código expira em <strong>10 minutos</strong>.<br/>
+                Se você não tentou entrar, ignore este email — sua senha continua protegida.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};
+
 const enviarEmailRecuperacao = async (email, codigo) => {
   if (LOG_EMAILS) {
     logEmail('RECUPERACAO', email, codigo)
@@ -481,6 +527,7 @@ const enviarEmailNotificacao = async (email, titulo, mensagem) => {
 
 module.exports = {
   enviarEmailVerificacao,
+  enviarEmail2FA,
   enviarEmailRecuperacao,
   enviarEmailTrocaEmail,
   enviarEmailPromocaoAdmin,

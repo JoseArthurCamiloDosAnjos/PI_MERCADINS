@@ -13,6 +13,7 @@ import {
   IconCreditCard,
   IconMapPin,
   IconBell,
+  IconLocationMap,
 } from "./Icons";
 import { getReturnUrl } from "../utils/returnUrl";
 
@@ -41,6 +42,7 @@ const NAV_ITEMS_PADRAO: NavItem[] = [
   { icon: <IconMapPin size={18} />, label: "Endereços" },
   { icon: <IconMessage size={18} />, label: "Depoimentos" },
   { icon: <IconCreditCard size={18} />, label: "Assinaturas" },
+  { icon: <IconLocationMap size={18} />, label: "Mapa" },
 ];
 
 export default function Sidebar({

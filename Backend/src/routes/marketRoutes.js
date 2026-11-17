@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const autenticar = require('../middleware/authMiddleware');
 const autenticarOpcional = require('../middleware/authOpcionalMiddleware');
-const { criarMercado, criarSubcontaAsaas, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado } = require('../controllers/marketController');
+const { criarMercado, criarSubcontaAsaas, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado, geocodificarMercado, listarMercadosProximos } = require('../controllers/marketController');
 const { favoritarMercado } = require('../controllers/usuarioController');
 const { listarAvaliacoesMercado, criarAvaliacao, alternarVisibilidadeAvaliacao, listarAvaliacoesProdutosDoMercado } = require('../controllers/avaliacaoController');
 const { criarPedido, listarPedidosMercado, financeiroMercado } = require('../controllers/pedidoController');
@@ -10,8 +10,10 @@ const { listarCupons, criarCupom, atualizarCupom, deletarCupom, validarCupomNoCa
 
 router.post('/',            autenticar, criarMercado);
 router.get('/',             listarMercados);
+router.get('/proximos',     listarMercadosProximos);
 router.get('/meus',         autenticar, meusMercados);
 router.get('/slug/:slug',   autenticarOpcional, buscarMercadoPorSlug);
+router.post('/:id/geocodificar', autenticar, geocodificarMercado);
 router.post('/:id/pedidos', autenticar, criarPedido);
 router.get('/:id/pedidos',  autenticar, listarPedidosMercado);
 router.get('/:id/financeiro', autenticar, financeiroMercado);

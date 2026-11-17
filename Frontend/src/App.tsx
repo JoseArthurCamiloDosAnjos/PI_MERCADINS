@@ -18,6 +18,7 @@ const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/Pagin
 const Register = lazy(() => import('./pages/Register/Register'))
 const PerfilUsuario = lazy(() => import('./pages/PerfilUsuario/PerfilUsuario'))
 const Favoritos = lazy(() => import('./pages/Favoritos/Favoritos'))
+const Mapa = lazy(() => import('./pages/Mapa/Mapa'))
 const PerfilVendedor = lazy(() => import('./pages/PerfilVendedor/PerfilVendedor'))
 const GerenciamentoMercado = lazy(() => import('./pages/GerenciamentoMercado/GerenciamentoMercado'))
 const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha/RedefinirSenha'))
@@ -422,6 +423,7 @@ function Rotas() {
           <Route path="/verificar-email"   element={<VerificarEmail />} />
           <Route path="/perfil"            element={usuario ? <PerfilUsuario /> : <Navigate to="/auth" />} />
           <Route path="/favoritos"         element={usuario ? <Favoritos /> : <Navigate to="/auth" />} />
+          <Route path="/mapa"              element={<Mapa />} />
           <Route path="/pedidos"           element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
           <Route path="/pedidos/:pedidoId" element={usuario ? <MeusPedidos /> : <Navigate to="/auth" />} />
           <Route path="/vendedor"          element={usuario && temMercado ? <PerfilVendedor /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />

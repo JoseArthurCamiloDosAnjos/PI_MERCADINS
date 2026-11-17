@@ -1,0 +1,80 @@
+.mapa-page {
+  min-height: 100vh;
+  background: var(--azul-bg);
+  font-family: var(--font);
+  color: var(--branco);
+}
+
+.mapa-topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 1rem 1.8rem;
+  background: var(--azul-sidebar);
+  border-bottom: 1px solid var(--azul-borda);
+}
+
+.mapa-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cinza-texto);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.mapa-voltar:hover {
+  background: var(--azul-item);
+  border-color: var(--azul-claro);
+  color: var(--branco);
+}
+
+.mapa-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mapa-titulo h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--branco);
+  white-space: nowrap;
+}
+
+.mapa-titulo p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--cinza-texto);
+}
+
+.mapa-conteudo {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.4rem 1.8rem 40px;
+}
+
+/* O mapa ocupa bem a altura da página quando está sozinho */
+.mapa-conteudo .mp-shell {
+  height: calc(100vh - 150px);
+}
+
+@media (max-width: 860px) {
+  .mapa-topbar { padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+  .mapa-titulo { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .mapa-titulo h1 { font-size: 15.5px; }
+  .mapa-conteudo { padding: 1rem 1rem 32px; }
+  .mapa-conteudo .mp-shell { height: calc(100vh - 170px); min-height: 460px; }
+}

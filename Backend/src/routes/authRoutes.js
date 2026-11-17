@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const autenticar = require('../middleware/authMiddleware');
 const limiter = require('../middleware/rateLimiter');
-const { signUp, signIn, verificarEmail, reenviarCodigoVerificacao, esqueciSenha, reenviarRecuperacao, confirmarTrocaSenha,redefinirSenha,solicitarTrocaSenha, getPerfil, atualizarPerfil, solicitarTrocaEmail, confirmarTrocaEmail, verificar2FA, ativar2FA, confirmarAtivacao2FA, desativar2FA, reenviarCodigo2FA } = require('../controllers/authController');
+const { signUp, signIn, verificarEmail, reenviarCodigoVerificacao, esqueciSenha, reenviarRecuperacao, confirmarTrocaSenha,redefinirSenha,solicitarTrocaSenha, getPerfil, atualizarPerfil, solicitarTrocaEmail, confirmarTrocaEmail, verificar2FA, reenviarCodigo2FA } = require('../controllers/authController');
 
 router.post('/register',        limiter(5, 15 * 60 * 1000), signUp);
 router.post('/login',           limiter(10, 60 * 1000), signIn);

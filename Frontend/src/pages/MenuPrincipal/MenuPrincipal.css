@@ -368,6 +368,24 @@ button {
   background: var(--blue);
 }
 
+/* Botão de mira: usa a localização do navegador e abre o mapa */
+.location-form .location-geo {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #eef3fb;
+  color: #17438e;
+  flex: 0 0 auto;
+}
+
+.location-form .location-geo:hover {
+  background: #d9e5f8;
+}
+
 .hero-trust {
   display: flex;
   flex-wrap: wrap;
@@ -1294,7 +1312,7 @@ button {
   }
 
   .location-form input {
-    width: calc(100% - 40px);
+    width: calc(100% - 96px);
     padding: 12px 8px;
   }
 
@@ -1302,6 +1320,18 @@ button {
     width: 100%;
     min-height: 46px;
     border-radius: 7px;
+  }
+
+  .location-form .location-geo {
+    width: 46px;
+    height: 46px;
+    min-height: 0;
+    border-radius: 50%;
+    margin-right: 0;
+  }
+
+  .location-form button:not(.location-geo) {
+    width: 100%;
   }
 
   .section-header {

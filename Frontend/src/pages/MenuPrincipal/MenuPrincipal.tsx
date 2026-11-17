@@ -8,6 +8,7 @@ import Imagem from "../../components/Imagem";
 import SiteFooter from "../../components/SiteFooter/SiteFooter";
 import {
   IconMapPin,
+  IconTarget,
   IconStore,
   IconShoppingCart,
   IconArrowLeft,
@@ -683,6 +684,15 @@ const lojasFiltradas = useMemo(() => {
                   placeholder="Digite seu bairro, cidade ou CEP"
                   aria-label="Bairro, cidade ou CEP"
                 />
+                <button
+                  type="button"
+                  className="location-geo"
+                  title="Usar minha localização"
+                  aria-label="Usar minha localização e ver o mapa"
+                  onClick={() => navigate("/mapa")}
+                >
+                  <IconTarget size={17} />
+                </button>
                 <button type="submit">Buscar mercados</button>
               </form>
 

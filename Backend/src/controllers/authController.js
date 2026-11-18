@@ -8,7 +8,7 @@ const {
   validarTelefone,
   validarCPF,
 } = require("../utils/validators");
-const { enviarEmailVerificacao, enviarEmail2FA, enviarEmailRecuperacao, enviarEmailTrocaEmail } = require("../utils/mailer");
+const { enviarEmailVerificacao, enviarEmailRecuperacao, enviarEmailTrocaEmail } = require("../utils/mailer");
 const { VERSAO_TERMOS, MENSAGEM_ACEITE_OBRIGATORIO } = require("../utils/termos");
 const { enviarNotificacao } = require("../utils/notificacoes");
 
@@ -227,43 +227,37 @@ const signIn = async (req, res) => {
     if (is_admin_login && !usuario.is_admin)
       return res.status(403).json({ erro: "Este email é de administrador. Faça login com seu email normal." });
 
-    // ── Verificação em duas etapas (2FA) — obrigatória para todos ────
-    // Todo login exige o código enviado por email. Na primeira vez o
-    // cadastro é marcado como "dois_fatores" para fins de histórico.
-    {
-      const codigo = codigoSeguro6();
-      const expiracao = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+    await sql`
+      UPDATE usuarios SET
+        ultimo_acesso = NOW(),
+        dois_fatores_codigo = NULL,
+        dois_fatores_expiracao = NULL,
+        dois_fatores_tentativas = 0
+      WHERE id_usuario = ${usuario.id_usuario}
+    `;
 
-      await sql`
-        UPDATE usuarios SET
-          dois_fatores_codigo = ${codigo},
-          dois_fatores_expiracao = ${expiracao},
-          dois_fatores_tentativas = 0
-        WHERE id_usuario = ${usuario.id_usuario}
-      `;
+    const token = jwt.sign(
+      { id: usuario.id_usuario, email: usuario.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
 
-      try {
-        await enviarEmail2FA(usuario.email, codigo);
-      } catch (err) {
-        console.error('Falha ao enviar código 2FA:', err.message);
-        return res.status(502).json({
-          erro: "Não foi possível enviar o código de verificação. Tente novamente em instantes.",
-        });
-      }
-
-      // Token temporário de 10 minutos para completar o 2FA
-      const tokenParcial = jwt.sign(
-        { id: usuario.id_usuario, email: usuario.email, login_email: email, etapa: '2fa' },
-        process.env.JWT_SECRET,
-        { expiresIn: "10m" },
-      );
-
-      return res.json({
-        requer_2fa: true,
-        token_parcial: tokenParcial,
-        mensagem: "Código de verificação enviado para seu email.",
-      });
-    }
+    res.json({
+      usuario: {
+        id_usuario: usuario.id_usuario,
+        nome: usuario.nome,
+        email: usuario.email,
+        cpf: usuario.cpf ?? "",
+        telefone: usuario.telefone ?? "",
+        data_nascimento: usuario.data_nascimento ?? null,
+        email_verificado: usuario.email_verificado,
+        foto_perfil: usuario.foto_perfil ?? "",
+        is_admin: usuario.is_admin ?? false,
+        email_admin: usuario.email_admin ?? "",
+      },
+      token,
+      is_admin_login,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: "Erro ao realizar login" });
@@ -682,148 +676,6 @@ const confirmarTrocaEmail = async (req, res) => {
   }
 };
 
-// ── Verificação em duas etapas (2FA) ──────────────────────────────────────────
-
-const verificar2FA = async (req, res) => {
-  const { token_parcial, codigo } = req.body;
-  if (!token_parcial || !codigo)
-    return res.status(400).json({ erro: 'Token e código são obrigatórios.' });
-  if (codigo.length !== 6)
-    return res.status(400).json({ erro: 'O código deve ter 6 dígitos.' });
-
-  try {
-    // Verifica o token parcial (deve ter etapa '2fa')
-    let payload;
-    try {
-      payload = jwt.verify(token_parcial, process.env.JWT_SECRET);
-    } catch {
-      return res.status(401).json({ erro: 'Sessão expirada. Faça login novamente.' });
-    }
-    if (payload.etapa !== '2fa')
-      return res.status(401).json({ erro: 'Token inválido.' });
-
-    const sql = await conectar();
-    const [usuario] = await sql`
-      SELECT id_usuario, nome, email, cpf, telefone, data_nascimento,
-             foto_perfil, is_admin, email_admin, email_verificado,
-             dois_fatores_codigo, dois_fatores_expiracao, dois_fatores_tentativas
-      FROM usuarios WHERE id_usuario = ${payload.id}
-    `;
-
-    if (!usuario || !usuario.dois_fatores_codigo)
-      return res.status(400).json({ erro: 'Código inválido ou expirado.' });
-
-    // Limite de 5 tentativas
-    if ((usuario.dois_fatores_tentativas ?? 0) >= 5) {
-      await sql`
-        UPDATE usuarios SET dois_fatores_codigo = NULL, dois_fatores_expiracao = NULL
-        WHERE id_usuario = ${usuario.id_usuario}
-      `;
-      return res.status(429).json({ erro: 'Muitas tentativas. Solicite um novo código.' });
-    }
-
-    // Incrementa tentativa
-    await sql`
-      UPDATE usuarios SET dois_fatores_tentativas = dois_fatores_tentativas + 1
-      WHERE id_usuario = ${usuario.id_usuario}
-    `;
-
-    // Verifica código e expiração
-    if (usuario.dois_fatores_codigo !== codigo)
-      return res.status(400).json({ erro: 'Código incorreto.' });
-    if (new Date() > new Date(usuario.dois_fatores_expiracao)) {
-      await sql`
-        UPDATE usuarios SET dois_fatores_codigo = NULL, dois_fatores_expiracao = NULL
-        WHERE id_usuario = ${usuario.id_usuario}
-      `;
-      return res.status(400).json({ erro: 'Código expirado. Solicite um novo.' });
-    }
-
-    // Sucesso — confirma o 2FA, limpa o código e emite o token definitivo
-    await sql`
-      UPDATE usuarios SET
-        dois_fatores = TRUE,
-        dois_fatores_codigo = NULL,
-        dois_fatores_expiracao = NULL,
-        dois_fatores_tentativas = 0,
-        ultimo_acesso = NOW()
-      WHERE id_usuario = ${usuario.id_usuario}
-    `;
-
-    const token = jwt.sign(
-      { id: usuario.id_usuario, email: usuario.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' },
-    );
-
-    const loginEmail = String(payload.login_email || payload.email || '').toLowerCase();
-    const is_admin_login = !!usuario.email_admin &&
-      loginEmail === String(usuario.email_admin).toLowerCase();
-
-    res.json({
-      usuario: {
-        id_usuario: usuario.id_usuario,
-        nome: usuario.nome,
-        email: usuario.email,
-        cpf: usuario.cpf ?? '',
-        telefone: usuario.telefone ?? '',
-        data_nascimento: usuario.data_nascimento ?? null,
-        email_verificado: usuario.email_verificado,
-        foto_perfil: usuario.foto_perfil ?? '',
-        is_admin: usuario.is_admin ?? false,
-        email_admin: usuario.email_admin ?? '',
-      },
-      token,
-      is_admin_login,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: 'Erro ao verificar código.' });
-  }
-};
-
-const reenviarCodigo2FA = async (req, res) => {
-  const { token_parcial } = req.body;
-  if (!token_parcial) return res.status(400).json({ erro: 'Token obrigatório.' });
-
-  try {
-    let payload;
-    try {
-      payload = jwt.verify(token_parcial, process.env.JWT_SECRET);
-    } catch {
-      return res.status(401).json({ erro: 'Sessão expirada. Faça login novamente.' });
-    }
-    if (payload.etapa !== '2fa')
-      return res.status(401).json({ erro: 'Token inválido.' });
-
-    const sql = await conectar();
-    const [usuario] = await sql`
-      SELECT id_usuario, email FROM usuarios WHERE id_usuario = ${payload.id}
-    `;
-    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
-
-    const codigo = codigoSeguro6();
-    const expiracao = new Date(Date.now() + 10 * 60 * 1000);
-
-    await sql`
-      UPDATE usuarios SET
-        dois_fatores_codigo = ${codigo},
-        dois_fatores_expiracao = ${expiracao},
-        dois_fatores_tentativas = 0
-      WHERE id_usuario = ${usuario.id_usuario}
-    `;
-
-    await enviarEmail2FA(usuario.email, codigo).catch((err) => {
-      console.error('Falha ao reenviar código 2FA:', err.message);
-    });
-
-    res.json({ mensagem: 'Novo código enviado para seu email.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: 'Erro ao reenviar código.' });
-  }
-};
-
 module.exports = {
   signUp,
   signIn,
@@ -838,6 +690,4 @@ module.exports = {
   confirmarTrocaSenha,
   solicitarTrocaEmail,
   confirmarTrocaEmail,
-  verificar2FA,
-  reenviarCodigo2FA,
 };

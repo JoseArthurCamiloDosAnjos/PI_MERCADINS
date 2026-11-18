@@ -240,31 +240,6 @@
 }
 .login-page .forgot:hover { color: var(--gold-dark); }
 
-/* ── 2FA ── */
-.login-page .two-factor-msg {
-  margin: -14px 0 22px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--navy-mid);
-  text-align: center;
-}
-.login-page .two-factor-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-.login-page .two-factor-actions .forgot {
-  margin: 0;
-  text-align: left;
-  font-size: 13px;
-}
-.login-page .two-factor-actions .forgot:last-child { text-align: right; }
-.login-page .two-factor-actions .forgot:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
 /* ── BUTTONS ── */
 .login-page .btn {
   display: flex;

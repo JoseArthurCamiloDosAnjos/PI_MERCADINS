@@ -12,7 +12,7 @@ import logo2Img from "../../assets/logo2.png";
 import { irParaInicio } from "../../utils/inicio";
 
 export default function Login() {
-  const { login, confirmar2FA, reenviarCodigo2FA } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -20,12 +20,6 @@ export default function Login() {
   const [showSenha, setShowSenha] = useState(false);
   const [showEsqueciModal, setShowEsqueciModal] = useState(false);
   const [carregando, setCarregando] = useState(false);
-
-  // ── Etapa 2FA ───────────────────────────────────────────────────────────────
-  const [tokenParcial, setTokenParcial] = useState<string | null>(null);
-  const [codigo, setCodigo] = useState('');
-  const [mensagem2FA, setMensagem2FA] = useState('');
-  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -47,16 +41,7 @@ export default function Login() {
     }
     setCarregando(true);
     try {
-      const resultado = await login(form.email, form.senha);
-
-      if (resultado.etapa === '2fa') {
-        setTokenParcial(resultado.tokenParcial);
-        setMensagem2FA(resultado.mensagem);
-        setCodigo('');
-        return;
-      }
-
-      const { usuario, is_admin_login } = resultado;
+      const { usuario, is_admin_login } = await login(form.email, form.senha);
       if (is_admin_login) {
         localStorage.setItem('is_admin_login', 'true');
       } else {
@@ -76,41 +61,6 @@ export default function Login() {
     }
   }
 
-  async function confirmarCodigo() {
-    if (!tokenParcial) return;
-    if (codigo.length !== 6) {
-      showToast("erro", "Digite o código de 6 dígitos.");
-      return;
-    }
-    setCarregando(true);
-    try {
-      const { usuario, is_admin_login } = await confirmar2FA(tokenParcial, codigo);
-      if (is_admin_login) {
-        localStorage.setItem('is_admin_login', 'true');
-      } else {
-        localStorage.removeItem('is_admin_login');
-      }
-      showToast("sucesso", `Bem-vindo(a) de volta, ${usuario?.nome ?? ""}!`);
-      setTimeout(irParaDestino, 1500);
-    } catch (err) {
-      showToast("erro", err instanceof Error ? err.message : "Código incorreto ou expirado.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function reenviarCodigo() {
-    if (!tokenParcial || enviandoCodigo) return;
-    setEnviandoCodigo(true);
-    try {
-      await reenviarCodigo2FA(tokenParcial);
-      showToast("sucesso", "Novo código enviado para seu email.");
-    } catch (err) {
-      showToast("erro", err instanceof Error ? err.message : "Erro ao reenviar código.");
-    } finally {
-      setEnviandoCodigo(false);
-    }
-  }
   return (
     <div className="login-page">
       {showEsqueciModal && (
@@ -157,86 +107,11 @@ export default function Login() {
           </div>
           <div className="form-header">
             <h1>
-              {tokenParcial ? (
-                <>Verificação<br />em duas etapas</>
-              ) : (
-                <>Bem-vindo<br />de volta!</>
-              )}
+              Bem-vindo<br />de volta!
             </h1>
-            <p>
-              {tokenParcial
-                ? "Digite o código que enviamos para o seu email."
-                : "Acesse a sua conta abaixo."}
-            </p>
+            <p>Acesse a sua conta abaixo.</p>
           </div>
 
-          {tokenParcial ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                confirmarCodigo();
-              }}
-              noValidate
-            >
-              <div className="field">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="Código de 6 dígitos"
-                  maxLength={6}
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  autoFocus
-                  required
-                />
-                <span className="field-icon-login">
-                  <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                </span>
-              </div>
-
-              <p className="two-factor-msg">{mensagem2FA}</p>
-
-              <button type="submit" className="btn btn-secondary" disabled={carregando}>
-                {carregando ? <span className="login-spinner" /> : "Confirmar"}
-              </button>
-
-              <div className="divider">ou</div>
-
-              <div className="two-factor-actions">
-                <button
-                  type="button"
-                  className="forgot"
-                  onClick={reenviarCodigo}
-                  disabled={enviandoCodigo}
-                >
-                  {enviandoCodigo ? "Enviando..." : "Reenviar código"}
-                </button>
-                <button
-                  type="button"
-                  className="forgot"
-                  onClick={() => {
-                    setTokenParcial(null);
-                    setCodigo('');
-                    setForm({ email: "", senha: "" });
-                  }}
-                >
-                  Usar outra conta
-                </button>
-              </div>
-            </form>
-          ) : (
           <form onSubmit={handleSubmit} noValidate>
             <div className="field">
               <input
@@ -340,7 +215,6 @@ export default function Login() {
               Cadastrar-se
             </button>
           </form>
-          )}
 
           <div className="badge">
             <span />

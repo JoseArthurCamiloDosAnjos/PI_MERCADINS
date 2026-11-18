@@ -80,12 +80,6 @@ export const api = {
   confirmarTrocaEmail: (dados: { codigo: string }) =>
     request('/auth/confirmar-troca-email', { method: 'POST', body: JSON.stringify(dados) }),
 
-  // ── Verificação em duas etapas (2FA) ─────────────────────────────────────────
-  verificar2FA: (dados: { token_parcial: string; codigo: string }) =>
-    request('/auth/2fa/verificar', { method: 'POST', body: JSON.stringify(dados) }),
-  reenviar2FA: (dados: { token_parcial: string }) =>
-    request('/auth/2fa/reenviar', { method: 'POST', body: JSON.stringify(dados) }),
-
   // ── Mercados ─────────────────────────────────────────────────────────────────
   meusMercados: () =>
     request('/usuarios-mercados/meus'),

@@ -478,6 +478,13 @@ mudada com a variável `IMAGENS_DIR`.
 
 As imagens são servidas em `GET /imagens/<categoria>/<arquivo>`.
 
+> **Fluxo completo do upload (frontend):** o `Frontend/src/services/upload.ts`
+> envia para esta rota **e**, em paralelo, faz uma cópia de backup no Supabase
+> (bucket `imagens`, `cacheControl` de 24 h). A falha do backup é registrada
+> no console mas não bloqueia o upload local. Em seguida a imagem é indexada
+> no cache offline do navegador (IndexedDB `mercadins-cache`, ver
+> `Frontend/src/services/imagemCache.ts`), então ela já aparece sem rede.
+
 ---
 
 ## Depoimentos — `/api/depoimentos`

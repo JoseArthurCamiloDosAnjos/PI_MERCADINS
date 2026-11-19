@@ -51,11 +51,7 @@ export default function Login() {
       setTimeout(irParaDestino, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("Verifique")) {
-        navigate(`/verificar-email?email=${encodeURIComponent(form.email.trim())}`);
-      } else {
-        showToast("erro", msg || "E-mail ou senha incorretos.");
-      }
+      showToast("erro", msg || "E-mail ou senha incorretos.");
     } finally {
       setCarregando(false);
     }

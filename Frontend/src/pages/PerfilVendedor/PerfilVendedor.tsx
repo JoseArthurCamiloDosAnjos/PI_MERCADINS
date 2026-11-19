@@ -33,7 +33,6 @@ import {
   IconCreditCard,
   IconBell,
   IconLocationMap,
-  IconShieldCheck,
 } from '../../components/Icons';
 
 interface Mercado {
@@ -539,18 +538,6 @@ function TelaSeguranca() {
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
       <section>
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
-        <div className={`pu-2fa-status${usuario?.dois_fatores ? ' ativo' : ''}`}>
-          <span className="pu-2fa-icone"><IconShieldCheck size={20} /></span>
-          <div className="pu-2fa-texto">
-            <strong>Verificação em duas etapas</strong>
-            <p>
-              {usuario?.dois_fatores
-                ? 'Ativa. A cada login enviamos um código de 6 dígitos para o seu email.'
-                : 'Será ativada automaticamente no seu próximo login.'}
-            </p>
-          </div>
-          <span className="pu-2fa-badge">{usuario?.dois_fatores ? 'Ativa' : 'Obrigatória'}</span>
-        </div>
         <h3 className="pu-sub-title">Alterar senha</h3>
         {etapa === 'form' ? (
           <div className="pu-form-block">

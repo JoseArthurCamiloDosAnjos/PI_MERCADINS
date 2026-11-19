@@ -245,6 +245,8 @@ export default function ProdutoTela({
       const url = await enviarFotoParaStorage(arquivo);
       if (url) setFotoAval(url);
       else showToast('erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível enviar a foto. Tente novamente.');
     } finally {
       setFotoEnviando(false);
     }

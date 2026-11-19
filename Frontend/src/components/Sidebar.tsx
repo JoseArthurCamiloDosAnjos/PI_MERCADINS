@@ -16,6 +16,7 @@ import {
   IconLocationMap,
 } from "./Icons";
 import { getReturnUrl } from "../utils/returnUrl";
+import { onAvatarError } from "../utils/imagens";
 
 interface NavItem {
   icon: ReactNode;
@@ -112,7 +113,7 @@ export default function Sidebar({
         <div className="sb-profile">
           <div className="sb-avatar">
             {foto
-              ? <img src={foto} alt={nome} className="sb-avatar-img" />
+              ? <img src={foto} alt={nome} className="sb-avatar-img" onError={onAvatarError} />
               : iniciais
             }
           </div>

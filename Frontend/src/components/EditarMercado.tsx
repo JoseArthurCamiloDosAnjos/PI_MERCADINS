@@ -34,6 +34,7 @@ export default function EditarMercado({
   const [logoFile, setLogoFile] = useState<File | undefined>();
   const [bannerFile, setBannerFile] = useState<File | undefined>();
   const [erros, setErros]       = useState<{ nome?: string }>({});
+  const [erroGeral, setErroGeral] = useState('');
   const inputLogoRef            = useRef<HTMLInputElement>(null);
   const inputBannerRef          = useRef<HTMLInputElement>(null);
 
@@ -74,16 +75,21 @@ export default function EditarMercado({
 
   async function handleSalvar() {
     if (!validar()) return;
+    setErroGeral('');
 
     let logo_url: string | undefined;
     let banner_url: string | undefined;
 
-    if (logoFile) {
-      logo_url = await uploadParaSupabase(logoFile) ?? undefined;
-    }
-
-    if (bannerFile) {
-      banner_url = await uploadParaSupabase(bannerFile) ?? undefined;
+    try {
+      if (logoFile) {
+        logo_url = await uploadParaSupabase(logoFile) ?? undefined;
+      }
+      if (bannerFile) {
+        banner_url = await uploadParaSupabase(bannerFile) ?? undefined;
+      }
+    } catch (e) {
+      setErroGeral(e instanceof Error ? e.message : 'Erro ao enviar a imagem. Tente novamente.');
+      return;
     }
 
     onSalvar({ nome: nome.trim(), descricao: descricao.trim(), logo_url, banner_url });
@@ -194,6 +200,7 @@ export default function EditarMercado({
         </div>
 
         <div className="em-footer">
+          {erroGeral && <span className="em-erro em-erro-geral">{erroGeral}</span>}
           <button className="em-btn em-btn--secundario" onClick={onCancelar} disabled={salvando}>
             Cancelar
           </button>

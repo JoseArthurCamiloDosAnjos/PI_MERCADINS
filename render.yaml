@@ -50,3 +50,10 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://pi-mercadins.onrender.com
+      # Backup permanente de imagens (storage) — sem estas chaves o upload em
+      # produção grava só no disco efêmero do Render e as imagens somem no
+      # próximo redeploy. Chave publishable (pública por design, vai no bundle)
+      - key: VITE_SUPABASE_URL
+        value: https://bjraizqugvnwvfovphhh.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: sb_publishable_6yNtqTIREbRr83mzwi9lUQ_0lxH_wa_

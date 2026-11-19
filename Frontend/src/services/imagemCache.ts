@@ -55,7 +55,7 @@ function abrirBanco(): Promise<IDBDatabase | null> {
 
 let origensCache: Set<string> | null = null
 
-/** Domínios cacheáveis: origin do Backend (BASE_URL) e do Supabase. */
+/** Domínios cacheáveis: origin do Backend (BASE_URL), do Supabase e da própria página (imagens relativas via proxy do Vite). */
 function origensPermitidas(): Set<string> {
   if (origensCache) return origensCache
   const lista = new Set<string>()
@@ -70,6 +70,7 @@ function origensPermitidas(): Set<string> {
   }
   adicionar(BASE_URL)
   adicionar(import.meta.env.VITE_SUPABASE_URL)
+  if (typeof window !== 'undefined') lista.add(window.location.origin)
   origensCache = lista
   return lista
 }

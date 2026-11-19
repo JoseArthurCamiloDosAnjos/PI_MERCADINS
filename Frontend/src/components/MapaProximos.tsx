@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../services/api';
 import { IconMapPin, IconStore, IconNavigation } from './Icons';
+import { onAvatarError } from '../utils/imagens';
 import 'leaflet/dist/leaflet.css';
 import './MapaProximos.css';
 
@@ -328,7 +329,7 @@ export default function MapaProximos() {
                         className="mp-item-foto"
                         style={m.cor_base ? { background: m.cor_base } : undefined}
                       >
-                        {m.foto_perfil ? <img src={m.foto_perfil} alt="" /> : <IconStore size={16} />}
+                        {m.foto_perfil ? <img src={m.foto_perfil} alt="" onError={onAvatarError} /> : <IconStore size={16} />}
                       </span>
                       <span className="mp-item-info">
                         <strong>{m.nome}</strong>

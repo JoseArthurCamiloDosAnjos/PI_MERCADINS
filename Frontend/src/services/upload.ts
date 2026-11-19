@@ -99,22 +99,27 @@ export async function uploadImagem(file: File, categoria: string): Promise<strin
   // continua visível offline sem novo fetch.
   const indexar = (url: string) => guardarBlob(url, arquivo).catch(console.error)
 
-  if (local.status === 'fulfilled') {
-    // Backup Supabase é só cópia: a falha não bloqueia, mas fica visível.
-    if (backup.status === 'rejected') {
-      console.error('Backup da imagem no Supabase falhou:', backup.reason)
+  // Com Supabase configurado o backup é OBRIGATÓRIO: a URL gravada no banco
+  // precisa ser permanente (o disco do Render é efêmero e URLs localhost de
+  // dev não existem em produção). Sem Supabase (auto-hospedado), usa a URL
+  // local mesmo.
+  if (supabase) {
+    if (backup.status === 'fulfilled' && backup.value) {
+      if (local.status === 'fulfilled') indexar(local.value)
+      indexar(backup.value)
+      return backup.value
     }
+    console.error('Backup da imagem no Supabase falhou:', backup.status === 'rejected' ? backup.reason : 'sem URL')
+    throw new Error(
+      'Não foi possível salvar a imagem no armazenamento permanente (Supabase). ' +
+        'O registro não foi salvo — tente novamente.'
+    )
+  }
+
+  if (local.status === 'fulfilled') {
     indexar(local.value)
     return local.value
   }
   console.error('Erro no upload local:', local.reason)
-
-  if (backup.status === 'fulfilled' && backup.value) {
-    indexar(backup.value)
-    return backup.value
-  }
-  if (backup.status === 'rejected') {
-    console.error('Erro no backup Supabase:', backup.reason)
-  }
   return null
 }

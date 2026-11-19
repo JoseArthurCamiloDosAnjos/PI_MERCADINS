@@ -12,6 +12,7 @@ import {
   IconX,
   IconLocationMap,
 } from '../../components/Icons'
+import { onAvatarError } from '../../utils/imagens'
 
 interface AdminSidebarProps {
   navAtivo: number
@@ -70,7 +71,7 @@ export default function AdminSidebar({ navAtivo, onNav }: AdminSidebarProps) {
         <div className="adm-profile">
           <div className="adm-avatar">
             {usuario?.foto_perfil
-              ? <img src={usuario.foto_perfil} alt={usuario.nome} className="adm-avatar-img" />
+              ? <img src={usuario.foto_perfil} alt={usuario.nome} className="adm-avatar-img" onError={onAvatarError} />
               : iniciais
             }
           </div>

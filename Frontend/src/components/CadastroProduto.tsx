@@ -253,7 +253,11 @@ export default function CadastroProduto({
       });
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      setErroGeral('Ocorreu um erro ao salvar o produto. Tente novamente.');
+      setErroGeral(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Ocorreu um erro ao salvar o produto. Tente novamente.'
+      );
     } finally {
       setEnviando(false);
     }

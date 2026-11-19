@@ -213,11 +213,6 @@ const signIn = async (req, res) => {
     if (!senhaValida)
       return res.status(401).json({ erro: "Email ou senha incorretos" });
 
-    if (!usuario.email_verificado)
-      return res
-        .status(403)
-        .json({ erro: "Verifique seu email antes de fazer login." });
-
     if (usuario.status === 'bloqueado')
       return res.status(403).json({ erro: "Sua conta foi bloqueada. Entre em contato com o suporte." });
 
@@ -230,6 +225,7 @@ const signIn = async (req, res) => {
     await sql`
       UPDATE usuarios SET
         ultimo_acesso = NOW(),
+        email_verificado = TRUE,
         dois_fatores_codigo = NULL,
         dois_fatores_expiracao = NULL,
         dois_fatores_tentativas = 0
@@ -250,7 +246,7 @@ const signIn = async (req, res) => {
         cpf: usuario.cpf ?? "",
         telefone: usuario.telefone ?? "",
         data_nascimento: usuario.data_nascimento ?? null,
-        email_verificado: usuario.email_verificado,
+        email_verificado: true,
         foto_perfil: usuario.foto_perfil ?? "",
         is_admin: usuario.is_admin ?? false,
         email_admin: usuario.email_admin ?? "",

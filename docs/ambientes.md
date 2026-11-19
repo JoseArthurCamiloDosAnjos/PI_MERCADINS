@@ -22,6 +22,9 @@ clientes usam), e como manter essa separação sem segredo.
 > o **caminho** vai para o banco. No
 > Render o disco é efêmero (some a cada deploy), por isso o upload também
 > mantém uma cópia no Supabase Storage (bucket `imagens`) como backup.
+> O navegador guarda ainda uma **cópia offline** das imagens já vistas no
+> IndexedDB (`mercadins-cache`, teto de ~50 MB): elas continuam aparecendo
+> sem internet e a imagem recém-enviada fica visível na hora, sem novo fetch.
 
 O backend escolhe qual banco usar pela variável `DB_PROVIDER`:
 

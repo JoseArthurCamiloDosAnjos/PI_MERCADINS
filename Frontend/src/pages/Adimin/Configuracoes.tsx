@@ -4,7 +4,8 @@ import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import { LIMITS, bloquearEspaco, sanitizeEmail, sanitizePassword } from '../../hooks/useBlockEmojis'
-import { IconCamera, IconLock, IconShieldCheck, IconUser } from '../../components/Icons'
+import { IconCamera, IconLock, IconUser } from '../../components/Icons'
+import { onAvatarError } from '../../utils/imagens'
 
 export default function Configuracoes() {
   const { usuario, refreshUsuario } = useAuth()
@@ -99,7 +100,7 @@ export default function Configuracoes() {
         <div className="adm-config-avatar-area">
           <div className="adm-config-avatar">
             {usuario?.foto_perfil
-              ? <img src={usuario.foto_perfil} alt={usuario.nome} />
+              ? <img src={usuario.foto_perfil} alt={usuario.nome} onError={onAvatarError} />
               : iniciais
             }
             <label className="adm-config-avatar-overlay">
@@ -158,19 +159,6 @@ export default function Configuracoes() {
             {salvandoPerfil ? 'Salvando...' : 'Salvar alteracoes'}
           </button>
         </div>
-      </div>
-
-      {/* ─── Verificação em duas etapas ────────────────────────── */}
-      <div className="adm-config-section">
-        <h3><IconShieldCheck size={18} /> Verificacao em duas etapas</h3>
-        <p className="adm-config-desc adm-2fa-desc">
-          {usuario?.dois_fatores
-            ? 'Ativa. A cada login enviamos um codigo de 6 digitos para o seu email.'
-            : 'Sera ativada automaticamente no seu proximo login.'}
-        </p>
-        <span className={`adm-2fa-chip${usuario?.dois_fatores ? ' ativo' : ''}`}>
-          {usuario?.dois_fatores ? 'Ativa' : 'Obrigatoria'}
-        </span>
       </div>
 
       {/* ─── Senha ─────────────────────────────────────────────── */}

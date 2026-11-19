@@ -29,7 +29,6 @@ import {
   IconMapPin,
   IconPlus,
   IconPencil,
-  IconShieldCheck,
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
@@ -581,7 +580,6 @@ function TelaSeguranca() {
   const [mostrarAtual, setMostrarAtual] = useState(false);
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
-  const doisFatores = usuario?.dois_fatores ?? false;
 
   async function enviarConfirmacao() {
     if (!form.senhaAtual) return showToast('erro', 'Digite a senha atual.');
@@ -623,19 +621,6 @@ function TelaSeguranca() {
 
       <section>
         <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
-
-        <div className={`pu-2fa-status${doisFatores ? ' ativo' : ''}`}>
-          <span className="pu-2fa-icone"><IconShieldCheck size={20} /></span>
-          <div className="pu-2fa-texto">
-            <strong>Verificação em duas etapas</strong>
-            <p>
-              {doisFatores
-                ? 'Ativa. A cada login enviamos um código de 6 dígitos para o seu email.'
-                : 'Será ativada automaticamente no seu próximo login.'}
-            </p>
-          </div>
-          <span className="pu-2fa-badge">{doisFatores ? 'Ativa' : 'Obrigatória'}</span>
-        </div>
 
         <h3 className="pu-sub-title">Alterar senha</h3>
 

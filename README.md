@@ -106,7 +106,7 @@ Navegador ──► Frontend (React + Vite)
 
 | Camada | Ferramentas |
 |---|---|
-| **Frontend** | React 19 + TypeScript, Vite, React Router, CSS puro por página |
+| **Frontend** | React 19 + TypeScript, Vite, React Router, CSS puro por página, **cache offline de imagens (IndexedDB)** |
 | **Backend** | Node.js 22, Express 5, JWT (autenticação), Resend (E-mails e notificações), Asaas (cobrança e Split) |
 | **Banco** | PostgreSQL 16 — local em desenvolvimento, **Neon** em produção; migrações versionadas |
 | **Serviços** | Render (API **e** site, conforme `render.yaml`), Neon (banco), Supabase (backup de fotos), Asaas (pagamentos), GitHub Actions (verificações e backup) |
@@ -338,7 +338,7 @@ PI_MERCADINS/
 │       ├── context/                 # estado global (carrinho, autenticação)
 │       ├── hooks/                   # hooks reutilizáveis
 │       ├── pages/                   # login, home, vitrine, produto, carrinho, painel do vendedor, admin
-│       ├── services/api.ts          # comunicação com a API
+│       ├── services/                # comunicação com a API, upload e cache offline de imagens
 │       └── utils/                   # SEO por página, tipos de loja, paletas
 ├── docs/
 │   ├── API.md                       # documentação das rotas da API

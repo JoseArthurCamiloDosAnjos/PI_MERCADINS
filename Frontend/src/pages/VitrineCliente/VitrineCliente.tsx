@@ -33,7 +33,7 @@ import {
   IconClock,
   IconChevronRight,
 } from '../../components/Icons';
-import { useCarrinho } from '../../hooks/useCarrinho';
+import { useCarrinho, mensagemLimiteQuantidade } from '../../hooks/useCarrinho';
 import { localizacaoCompleta } from '../../utils/localizacao';
 import { estaAberto, parseHorario, proximaAbertura, gruposDaSemana } from '../../utils/horario';
 
@@ -316,7 +316,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
       ok ? 'sucesso' : 'erro',
       ok
         ? `${produto.nome} foi adicionado ao carrinho.`
-        : 'Não foi possível adicionar. Confira o estoque disponível.'
+        : mensagemLimiteQuantidade(produto.estoque)
     );
   }
 

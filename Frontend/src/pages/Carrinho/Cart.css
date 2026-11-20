@@ -290,12 +290,13 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.qty-stepper button:hover:not(:disabled) {
+.qty-stepper button:hover:not(:disabled):not([aria-disabled="true"]) {
   background: var(--accent);
   color: var(--accent-ink);
 }
 
-.qty-stepper button:disabled {
+.qty-stepper button:disabled,
+.qty-stepper button[aria-disabled="true"] {
   opacity: 0.35;
   cursor: not-allowed;
 }

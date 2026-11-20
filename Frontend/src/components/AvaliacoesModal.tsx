@@ -9,6 +9,7 @@ interface Avaliacao {
   id: number;
   nota: number;
   texto: string;
+  editado?: boolean;
   data_cadastro: string;
   cliente: string;
   minha: boolean;
@@ -78,6 +79,15 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
 
+  // Edição/remoção do comentário do próprio usuário
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [textoEdicao, setTextoEdicao] = useState('');
+  const [notaEdicao, setNotaEdicao] = useState(0);
+  const [notaEdicaoHover, setNotaEdicaoHover] = useState(0);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState<number | null>(null);
+  const [removendo, setRemovendo] = useState(false);
+
   const notaExibida = notaHover || nota;
 
   const carregar = useCallback(() =>
@@ -125,6 +135,60 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
       showToast('erro', err instanceof Error ? err.message : 'Não foi possível enviar a avaliação.');
     } finally {
       setEnviando(false);
+    }
+  }
+
+  function iniciarEdicao(a: Avaliacao) {
+    setConfirmandoRemocao(null);
+    setEditandoId(a.id);
+    setTextoEdicao(a.texto ?? '');
+    setNotaEdicao(a.nota);
+    setNotaEdicaoHover(0);
+  }
+
+  async function salvarEdicao(a: Avaliacao) {
+    const textoLimpo = textoEdicao.replace(/\r\n/g, '\n').trim();
+
+    if (notaEdicao < 1 || notaEdicao > 5) {
+      showToast('erro', 'Escolha de 1 a 5 estrelas.');
+      return;
+    }
+    if (!textoLimpo) {
+      showToast('erro', 'Escreva o comentário antes de salvar.');
+      return;
+    }
+    if (textoLimpo.length > 500) {
+      showToast('erro', 'O comentário pode ter no máximo 500 caracteres.');
+      return;
+    }
+
+    setSalvandoEdicao(true);
+    try {
+      const res = await api.editarAvaliacao(mercadoId, a.id, { nota: notaEdicao, texto: textoLimpo });
+      setEditandoId(null);
+      showToast('sucesso', 'Comentário atualizado com sucesso.');
+      onAtualizar?.(res.media ?? 0, res.total ?? 0);
+      await carregar();
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível atualizar o comentário.');
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
+
+  async function removerComentario(a: Avaliacao) {
+    setRemovendo(true);
+    try {
+      const res = await api.removerAvaliacao(mercadoId, a.id);
+      setConfirmandoRemocao(null);
+      setEditandoId(null);
+      showToast('sucesso', 'Comentário removido com sucesso.');
+      onAtualizar?.(res.media ?? 0, res.total ?? 0);
+      await carregar();
+    } catch (err) {
+      showToast('erro', err instanceof Error ? err.message : 'Não foi possível remover o comentário.');
+    } finally {
+      setRemovendo(false);
     }
   }
 
@@ -195,8 +259,88 @@ export default function AvaliacoesModal({ mercadoId, onFechar, onAtualizar }: Av
                     </span>
                     <Estrelas nota={a.nota} tamanho={13} />
                   </div>
-                  {a.texto && <p className="avm-item-texto">{a.texto}</p>}
-                  <span className="avm-item-data">{formatarData(a.data_cadastro)}</span>
+
+                  {editandoId === a.id ? (
+                    <div className="avm-edicao">
+                      <Estrelas
+                        nota={notaEdicaoHover || notaEdicao}
+                        tamanho={22}
+                        interativas
+                        onEscolher={setNotaEdicao}
+                        onHover={setNotaEdicaoHover}
+                      />
+                      <textarea
+                        className="avm-textarea"
+                        placeholder="Conte como foi sua experiência nesta loja"
+                        maxLength={500}
+                        rows={3}
+                        value={textoEdicao}
+                        onChange={e => setTextoEdicao(e.target.value)}
+                      />
+                      <div className="avm-edicao-acoes">
+                        <button
+                          type="button"
+                          className="avm-btn-enviar"
+                          onClick={() => salvarEdicao(a)}
+                          disabled={salvandoEdicao || notaEdicao < 1}
+                        >
+                          {salvandoEdicao ? 'Salvando...' : 'Salvar'}
+                        </button>
+                        <button
+                          type="button"
+                          className="avm-btn-secundario"
+                          onClick={() => setEditandoId(null)}
+                          disabled={salvandoEdicao}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    a.texto && <p className="avm-item-texto">{a.texto}</p>
+                  )}
+
+                  <span className="avm-item-data">
+                    {formatarData(a.data_cadastro)}
+                    {a.editado ? ' · (editado)' : ''}
+                  </span>
+
+                  {a.minha && editandoId !== a.id && (
+                    <div className="avm-item-acoes">
+                      <button type="button" className="avm-link" onClick={() => iniciarEdicao(a)}>
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="avm-link avm-link--perigo"
+                        onClick={() => { setEditandoId(null); setConfirmandoRemocao(a.id); }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  )}
+
+                  {a.minha && confirmandoRemocao === a.id && (
+                    <div className="avm-confirmar" role="alertdialog" aria-label="Confirmar remoção">
+                      <span>Remover este comentário?</span>
+                      <button
+                        type="button"
+                        className="avm-btn-enviar"
+                        onClick={() => removerComentario(a)}
+                        disabled={removendo}
+                      >
+                        {removendo ? 'Removendo...' : 'Sim, remover'}
+                      </button>
+                      <button
+                        type="button"
+                        className="avm-link"
+                        onClick={() => setConfirmandoRemocao(null)}
+                        disabled={removendo}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}

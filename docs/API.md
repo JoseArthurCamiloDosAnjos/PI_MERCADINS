@@ -72,8 +72,10 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 | DELETE | `/:id` | token | Remove a loja |
 | POST | `/:id/favoritar` | token | Adiciona aos favoritos do cliente |
 | DELETE | `/:id/favoritar` | token | Remove dos favoritos |
-| GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja |
-| POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5 e texto) |
+| GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja (cada item traz `minha` e `editado`) |
+| POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5; texto opcional, até 500 caracteres) |
+| PATCH | `/:id/avaliacoes/:avaliacaoId` | token (autor) | Edita o **próprio** comentário (nota + texto não vazio até 500) → `403` se for de outro usuário e `editado: true` na resposta |
+| DELETE | `/:id/avaliacoes/:avaliacaoId` | token (autor) | Remove o **próprio** comentário → `403` se for de outro usuário |
 | PUT | `/:id/avaliacoes/:avaliacaoId` | token (dono) | Moderação: oculta/exibe uma avaliação da loja |
 | GET | `/:id/avaliacoes-produtos` | token (dono) | Avaliações de produtos da loja (moderação no painel) |
 | GET | `/:id/financeiro?ano=&mes=` | token | Resumo financeiro do mês (padrão: mês atual; inclui bloco `recebimento` com os repasses do Split) |
@@ -292,7 +294,7 @@ cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, mínimo e cupom; envia E-mail de confirmação) |
+| POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, teto de 99 unidades por produto, mínimo e cupom; envia E-mail de confirmação) |
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
 | GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
 | GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
@@ -363,8 +365,10 @@ O resumo financeiro da loja (`GET /:id/financeiro`) devolve o bloco
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/` | opcional | Média, total e lista (com `minha` quando o logado já avaliou) |
+| GET | `/` | opcional | Média, total e lista (com `minha` quando o logado já avaliou e `editado` quando ele editou) |
 | POST | `/` | token | Avalia o produto; `foto` (link) é opcional |
+| PATCH | `/:avaliacaoId` | token (autor) | Edita o **próprio** comentário (nota + texto não vazio até 500) → `403` se for de outro usuário |
+| DELETE | `/:avaliacaoId` | token (autor) | Remove o **próprio** comentário → `403` se for de outro usuário |
 
 ```json
 { "nota": 5, "texto": "Muito fresco", "foto": "https://.../produto.jpg" }
@@ -427,7 +431,7 @@ CRUD completo (painel → aba "Catálogo"):
 | GET | `/api/usuario/avaliacoes` | token | Avaliações de lojas feitas pelo cliente |
 | GET | `/api/usuario/historico` | token | Compras do cliente |
 | GET | `/api/carrinho/:mercadoId` | token | Carrinho salvo de uma loja |
-| PUT | `/api/carrinho/:mercadoId` | token | Salva o carrinho (sobrevive ao fechar a aba) |
+| PUT | `/api/carrinho/:mercadoId` | token | Salva o carrinho (sobrevive ao fechar a aba); itens acima do limite — estoque ou 99 unidades por produto — são ajustados e a resposta vem com `ajustado: true` |
 | DELETE | `/api/carrinho/:mercadoId` | token | Limpa o carrinho |
 
 ---

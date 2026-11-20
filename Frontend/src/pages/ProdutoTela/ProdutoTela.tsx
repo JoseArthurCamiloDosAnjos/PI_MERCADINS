@@ -11,7 +11,7 @@ import { api } from '../../services/api';
 import { resolverPaleta } from '../../components/EscolherPaleta';
 import { aplicarSeo } from '../../utils/seo';
 import JsonLd from '../../components/JsonLd';
-import { useCarrinho, type ProdutoCarrinho } from '../../hooks/useCarrinho';
+import { useCarrinho, limiteQuantidade, mensagemLimiteQuantidade, type ProdutoCarrinho } from '../../hooks/useCarrinho';
 import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import QuantidadeStepper from '../../components/QuantidadeStepper/QuantidadeStepper';
 import {
@@ -71,13 +71,6 @@ function IconTruck({ size = 15 }: { size?: number }) {
     </svg>
   );
 }
-function IconShield({ size = 15 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path d="M12 2.8l7.5 3v5.4c0 4.7-3.2 8.9-7.5 10-4.3-1.1-7.5-5.3-7.5-10V5.8L12 2.8Z" strokeLinejoin="round" />
-    </svg>
-  );
-}
 function IconCard({ size = 15 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
@@ -104,6 +97,7 @@ export interface AvaliacaoProduto {
   texto: string;
   foto?: string;
   verificada?: boolean;
+  editado?: boolean;
   data_cadastro: string;
   cliente: string;
   minha: boolean;
@@ -191,6 +185,15 @@ export default function ProdutoTela({
   const [enviandoAval, setEnviandoAval] = useState(false);
   const [fotoEnviando, setFotoEnviando] = useState(false);
 
+  // ── Edição/remoção do próprio comentário ─────────────────────────────────
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [textoEdicao, setTextoEdicao] = useState('');
+  const [notaEdicao, setNotaEdicao] = useState(0);
+  const [notaEdicaoHover, setNotaEdicaoHover] = useState(0);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState<number | null>(null);
+  const [removendoAval, setRemovendoAval] = useState(false);
+
   useEffect(() => {
     let vivo = true;
     api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto)
@@ -252,6 +255,83 @@ export default function ProdutoTela({
     }
   }
 
+  /** Recarrega a lista e sincroniza o formulário com o comentário do usuário. */
+  async function recarregarAvaliacoes(): Promise<ResumoAvaliacoes | null> {
+    try {
+      const novo = await api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto) as ResumoAvaliacoes;
+      setAvaliacoes(novo);
+
+      const minha = novo.avaliacoes.find(x => x.minha);
+      if (minha) {
+        setNotaForm(minha.nota);
+        setTextoAval(minha.texto);
+        setFotoAval(minha.foto ?? '');
+      } else {
+        setNotaForm(0);
+        setTextoAval('');
+        setFotoAval('');
+      }
+      return novo;
+    } catch {
+      return null;
+    }
+  }
+
+  function iniciarEdicao(a: AvaliacaoProduto) {
+    setConfirmandoRemocao(null);
+    setEditandoId(a.id);
+    setTextoEdicao(a.texto);
+    setNotaEdicao(a.nota);
+    setNotaEdicaoHover(0);
+  }
+
+  async function salvarEdicao(a: AvaliacaoProduto) {
+    const texto = textoEdicao.replace(/\r\n/g, '\n').trim();
+
+    if (notaEdicao < 1 || notaEdicao > 5) {
+      showToast('erro', 'Escolha uma nota de 1 a 5 estrelas.');
+      return;
+    }
+    if (!texto) {
+      showToast('erro', 'Escreva o comentário antes de salvar.');
+      return;
+    }
+    if (texto.length > 500) {
+      showToast('erro', 'O comentário pode ter no máximo 500 caracteres.');
+      return;
+    }
+
+    setSalvandoEdicao(true);
+    try {
+      await api.editarAvaliacaoProduto(mercado.id, categoriaId, produto.id_produto, a.id, {
+        nota: notaEdicao,
+        texto,
+      });
+      setEditandoId(null);
+      showToast('sucesso', 'Comentário atualizado com sucesso.');
+      await recarregarAvaliacoes();
+    } catch (err) {
+      showToast('erro', (err as Error).message || 'Não foi possível atualizar o comentário.');
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
+
+  async function removerComentario(a: AvaliacaoProduto) {
+    setRemovendoAval(true);
+    try {
+      await api.removerAvaliacaoProduto(mercado.id, categoriaId, produto.id_produto, a.id);
+      setConfirmandoRemocao(null);
+      setEditandoId(null);
+      showToast('sucesso', 'Comentário removido com sucesso.');
+      await recarregarAvaliacoes();
+    } catch (err) {
+      showToast('erro', (err as Error).message || 'Não foi possível remover o comentário.');
+    } finally {
+      setRemovendoAval(false);
+    }
+  }
+
   async function handleEnviarAvaliacao() {
     if (notaForm < 1) {
       showToast('erro', 'Escolha uma nota de 1 a 5 estrelas.');
@@ -270,8 +350,7 @@ export default function ProdutoTela({
         foto: foto || undefined,
       });
       showToast('sucesso', jaAvaliou ? 'Sua avaliação foi atualizada com sucesso.' : 'Avaliação enviada com sucesso.');
-      const novo = await api.avaliacoesProduto(mercado.id, categoriaId, produto.id_produto) as ResumoAvaliacoes;
-      setAvaliacoes(novo);
+      await recarregarAvaliacoes();
     } catch (err) {
       showToast('erro', (err as Error).message || 'Não foi possível enviar sua avaliação.');
     } finally {
@@ -279,7 +358,8 @@ export default function ProdutoTela({
     }
   }
 
-  const estoqueDisponivel = produto.estoque ?? 0;
+  // Limite de unidades selecionáveis: estoque disponível ou limite do plano.
+  const estoqueDisponivel = limiteQuantidade(produto.estoque);
   const semEstoque = estoqueDisponivel <= 0;
   const quantidadeEfetiva = semEstoque
     ? 1
@@ -304,8 +384,7 @@ export default function ProdutoTela({
   function handleAdicionar() {
     const ok = carrinho.adicionar(produto, quantidadeEfetiva);
     if (!ok) {
-      if (semEstoque) showToast('erro', 'Produto sem estoque disponível.');
-      else showToast('erro', `Estoque esgotado: só temos ${estoqueDisponivel} unidade${estoqueDisponivel !== 1 ? 's' : ''}.`);
+      showToast('erro', mensagemLimiteQuantidade(produto.estoque));
       return;
     }
     showToast('sucesso', `${produto.nome} adicionado ao carrinho!`);
@@ -317,8 +396,7 @@ export default function ProdutoTela({
     const ok = carrinho.adicionar(produto, quantidadeEfetiva);
     setEnviando(false);
     if (!ok) {
-      if (semEstoque) showToast('erro', 'Produto sem estoque disponível.');
-      else showToast('erro', `Estoque esgotado: só temos ${estoqueDisponivel} unidade${estoqueDisponivel !== 1 ? 's' : ''}.`);
+      showToast('erro', mensagemLimiteQuantidade(produto.estoque));
       return;
     }
     if (onIrParaCarrinho) {
@@ -492,6 +570,7 @@ export default function ProdutoTela({
               valor={quantidadeEfetiva}
               maximo={estoqueDisponivel}
               onMudar={setQuantidade}
+              aoExceder={() => showToast('erro', mensagemLimiteQuantidade(produto.estoque))}
               desabilitado={semEstoque}
               desabilitarMenos={false}
               iconeMenos={<IconMinus size={13} />}
@@ -526,7 +605,6 @@ export default function ProdutoTela({
             <div className="pd-caixa-item">
               <span className="pd-caixa-label">Serviços</span>
               <ul className="pd-caixa-lista">
-                <li><IconShield size={14} /> Trocas e devoluções em 7 dias</li>
                 <li><IconTruck size={14} /> Retirada ou entrega combinada com a loja</li>
               </ul>
             </div>
@@ -702,6 +780,7 @@ export default function ProdutoTela({
                         {new Date(a.data_cadastro).toLocaleDateString('pt-BR', {
                           day: '2-digit', month: 'long', year: 'numeric',
                         })}
+                        {a.editado ? ' · (editado)' : ''}
                       </span>
                     </div>
                     <span className="pd-aval-estrelas-item">
@@ -710,20 +789,113 @@ export default function ProdutoTela({
                       ))}
                     </span>
                   </div>
-                  {a.texto && <p className="pd-aval-texto-item">{a.texto}</p>}
-                  {a.foto && (
-                    <a
-                      className="pd-aval-foto"
-                      href={a.foto}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <img
-                        src={a.foto}
-                        alt={`Foto do produto enviada por ${a.cliente}`}
-                        loading="lazy"
+
+                  {editandoId === a.id ? (
+                    <div className="pd-aval-edicao">
+                      <div className="pd-aval-picker" role="group" aria-label="Altere a nota de 1 a 5">
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <button
+                            key={n}
+                            type="button"
+                            className={`pd-aval-estrela-btn ${n <= (notaEdicaoHover || notaEdicao) ? 'ativa' : ''}`}
+                            onClick={() => setNotaEdicao(n)}
+                            onMouseEnter={() => setNotaEdicaoHover(n)}
+                            onMouseLeave={() => setNotaEdicaoHover(0)}
+                            aria-label={`Nota ${n}`}
+                          >
+                            <IconStar size={18} filled={n <= (notaEdicaoHover || notaEdicao)} />
+                          </button>
+                        ))}
+                        {(notaEdicaoHover || notaEdicao) > 0 && (
+                          <span className="pd-aval-dica">{ROTULOS_NOTA[notaEdicaoHover || notaEdicao]}</span>
+                        )}
+                      </div>
+                      <textarea
+                        className="pd-aval-textarea"
+                        rows={3}
+                        maxLength={500}
+                        placeholder="Conte como foi sua experiência com o produto"
+                        value={textoEdicao}
+                        onChange={e => setTextoEdicao(e.target.value)}
                       />
-                    </a>
+                      <div className="pd-aval-edicao-acoes">
+                        <button
+                          type="button"
+                          className="pd-aval-btn"
+                          onClick={() => salvarEdicao(a)}
+                          disabled={salvandoEdicao || notaEdicao < 1}
+                        >
+                          {salvandoEdicao ? 'Salvando...' : 'Salvar'}
+                        </button>
+                        <button
+                          type="button"
+                          className="pd-aval-btn pd-aval-btn--secundario"
+                          onClick={() => setEditandoId(null)}
+                          disabled={salvandoEdicao}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {a.texto && <p className="pd-aval-texto-item">{a.texto}</p>}
+                      {a.foto && (
+                        <a
+                          className="pd-aval-foto"
+                          href={a.foto}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={a.foto}
+                            alt={`Foto do produto enviada por ${a.cliente}`}
+                            loading="lazy"
+                          />
+                        </a>
+                      )}
+                    </>
+                  )}
+
+                  {a.minha && editandoId !== a.id && (
+                    <div className="pd-aval-item-acoes">
+                      <button
+                        type="button"
+                        className="pd-aval-link"
+                        onClick={() => iniciarEdicao(a)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="pd-aval-link pd-aval-link--perigo"
+                        onClick={() => { setEditandoId(null); setConfirmandoRemocao(a.id); }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  )}
+
+                  {a.minha && confirmandoRemocao === a.id && (
+                    <div className="pd-aval-confirmar" role="alertdialog" aria-label="Confirmar remoção">
+                      <span>Remover este comentário?</span>
+                      <button
+                        type="button"
+                        className="pd-aval-btn pd-aval-btn--perigo"
+                        onClick={() => removerComentario(a)}
+                        disabled={removendoAval}
+                      >
+                        {removendoAval ? 'Removendo...' : 'Sim, remover'}
+                      </button>
+                      <button
+                        type="button"
+                        className="pd-aval-link"
+                        onClick={() => setConfirmandoRemocao(null)}
+                        disabled={removendoAval}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   )}
                 </article>
               ))

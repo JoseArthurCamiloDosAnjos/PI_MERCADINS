@@ -48,7 +48,7 @@ export default function Termos() {
           Os preços e a disponibilidade dos produtos são definidos por cada
           mercado e podem mudar sem aviso. O pedido só se confirma após o aceite
           do lojista e a confirmação do pagamento. Condições de pagamento,
-          entrega, retirada e trocas aparecem na vitrine de cada mercado e no
+          entrega e retirada aparecem na vitrine de cada mercado e no
           momento da finalização do pedido.
         </p>
         <p>
@@ -57,22 +57,7 @@ export default function Termos() {
           na entrega ou na retirada, o acerto é feito diretamente com o mercado.
         </p>
 
-        <h2>5. Direito de arrependimento</h2>
-        <p>
-          Nas compras feitas pela internet, o Código de Defesa do Consumidor
-          (art. 49 da Lei 8.078/1990) garante o direito de desistir da compra em
-          até 7 dias corridos a partir do recebimento do produto. Para exercer
-          esse direito, fale com o mercado pelo canal indicado na vitrine ou com
-          o atendimento do Mercadins. O produto deve ser devolvido sem uso e na
-          embalagem original, quando possível. Valores pagos são devolvidos
-          conforme a forma de pagamento utilizada.
-        </p>
-        <p>
-          Produtos perecíveis, personalizados ou já consumidos podem ter regras
-          próprias de troca, sempre respeitando o Código de Defesa do Consumidor.
-        </p>
-
-        <h2>6. Planos e assinatura</h2>
+        <h2>5. Planos e assinatura</h2>
         <p>
           Mercados pagam a mensalidade conforme o plano escolhido (Essencial,
           Plus ou Personalizado), com limites de produtos, fotos e pedidos
@@ -83,7 +68,7 @@ export default function Termos() {
           contrário.
         </p>
 
-        <h2>7. Responsabilidades</h2>
+        <h2>6. Responsabilidades</h2>
         <p>
           O cliente e o mercado são responsáveis entre si pela compra: qualidade,
           quantidades, prazos e eventuais problemas de entrega são tratados
@@ -94,7 +79,7 @@ export default function Termos() {
           brasileira.
         </p>
 
-        <h2>8. Atendimento e solução de problemas</h2>
+        <h2>7. Atendimento e solução de problemas</h2>
         <p>
           Reclamações, dúvidas e pedidos de suporte podem ser enviados para
           Suporte@mercadins.com.br ou pelo WhatsApp (16) 98875-5641. O Mercadins
@@ -102,14 +87,14 @@ export default function Termos() {
           com o mercado quando a questão envolver o produto ou a entrega.
         </p>
 
-        <h2>9. Propriedade intelectual</h2>
+        <h2>8. Propriedade intelectual</h2>
         <p>
           A marca, o layout e o código do Mercadins são protegidos. As fotos e
           descrições dos produtos pertencem aos mercados que as publicam, que
           declaram ter autorização para usá-las.
         </p>
 
-        <h2>10. Dados pessoais</h2>
+        <h2>9. Dados pessoais</h2>
         <p>
           O tratamento dos dados pessoais segue a Lei Geral de Proteção de Dados
           (Lei 13.709/2018) e está detalhado na Política de Privacidade. Você
@@ -117,7 +102,7 @@ export default function Termos() {
           dados pelo e-mail Suporte@mercadins.com.br.
         </p>
 
-        <h2>11. Alterações destes termos</h2>
+        <h2>10. Alterações destes termos</h2>
         <p>
           Estes termos podem ser atualizados. Mudanças relevantes serão avisadas
           na plataforma ou por e-mail, com antecedência razoável. Se a mudança
@@ -126,7 +111,7 @@ export default function Termos() {
           versão.
         </p>
 
-        <h2>12. Legislação e foro</h2>
+        <h2>11. Legislação e foro</h2>
         <p>
           Estes termos são regidos pelas leis brasileiras. Eventuais conflitos
           serão resolvidos preferencialmente por atendimento e, se necessário,
@@ -134,7 +119,7 @@ export default function Termos() {
           Consumidor.
         </p>
 
-        <h2>13. Contato</h2>
+        <h2>12. Contato</h2>
         <p>
           Dúvidas sobre estes termos: Suporte@mercadins.com.br ou WhatsApp (16)
           98875-5641.

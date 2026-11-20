@@ -343,6 +343,19 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ oculta }),
     }),
+
+  // ── Comentário do próprio usuário (editar/remover) ─────────────────────────
+  editarAvaliacao: (
+    mercadoId: string | number,
+    avaliacaoId: string | number,
+    dados: { nota: number; texto: string }
+  ) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    }),
+  removerAvaliacao: (mercadoId: string | number, avaliacaoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, { method: 'DELETE' }),
   avaliacoesProdutosMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/avaliacoes-produtos`),
   moderarAvaliacaoProduto: (
@@ -374,6 +387,27 @@ export const api = {
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`, {
       method: 'POST',
       body: JSON.stringify(dados),
+    }),
+
+  editarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number,
+    dados: { nota: number; texto: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    }),
+  removerAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'DELETE',
     }),
 
   // ── Carrinho ────────────────────────────────────────────────────────────────

@@ -6,6 +6,9 @@ import { IconShoppingCart } from "../../components/Icons";
 import Imagem from "../../components/Imagem";
 import { useAuth } from "../../context/AuthContext";
 import { useEnderecos } from "../../hooks/useEnderecos";
+import { useToast } from "../../hooks/useToast";
+import ToastContainer from "../../components/Toast";
+import { limiteQuantidade, mensagemLimiteQuantidade } from "../../hooks/useCarrinho";
 import EnderecoPopup from "../../components/EnderecoPopup/EnderecoPopup";
 import QuantidadeStepper from "../../components/QuantidadeStepper/QuantidadeStepper";
 import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
@@ -216,6 +219,7 @@ export default function CartScreen({
   onFormaPagamentoChange,
 }: CartScreenProps) {
   const items = initialItems;
+  const { toasts, showToast, dismissToast } = useToast();
   const [coupon, setCoupon] = useState("");
   const [erroEndereco, setErroEndereco] = useState<string | null>(null);
   const [enderecoPopupAberto, setEnderecoPopupAberto] = useState(false);
@@ -510,14 +514,20 @@ export default function CartScreen({
                     <QuantidadeStepper
                       className="qty-stepper"
                       valor={item.quantity}
-                      maximo={item.estoque}
+                      maximo={limiteQuantidade(item.estoque)}
                       onMudar={(nova) => definirQuantidade(item.id, nova)}
+                      aoExceder={() =>
+                        showToast("erro", mensagemLimiteQuantidade(item.estoque))
+                      }
                       iconeMenos={<IconMinus />}
                       iconeMais={<IconPlus />}
                     />
-                    {item.estoque != null && item.estoque > 0 && item.quantity >= item.estoque && (
-                      <span className="qty-max">Máx. {item.estoque}</span>
-                    )}
+                    {limiteQuantidade(item.estoque) > 0 &&
+                      item.quantity >= limiteQuantidade(item.estoque) && (
+                        <span className="qty-max">
+                          Máx. {limiteQuantidade(item.estoque)}
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -961,6 +971,8 @@ export default function CartScreen({
           </>,
           document.body
         )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

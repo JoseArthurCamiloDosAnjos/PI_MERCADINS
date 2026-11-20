@@ -8,6 +8,7 @@ import {
   IconMapPin,
   IconStore,
 } from '../../components/Icons';
+import { onAvatarError } from '../../utils/imagens';
 import './Favoritos.css';
 
 function IconStar({ size = 14, filled = true }: { size?: number; filled?: boolean }) {
@@ -137,7 +138,7 @@ export default function Favoritos() {
                     aria-label={`Abrir a loja ${f.nome}`}
                   >
                     {f.foto_perfil ? (
-                      <img src={f.foto_perfil} alt={f.nome} loading="lazy" />
+                      <img src={f.foto_perfil} alt={f.nome} loading="lazy" onError={onAvatarError} />
                     ) : (
                       <IconStore size={30} />
                     )}

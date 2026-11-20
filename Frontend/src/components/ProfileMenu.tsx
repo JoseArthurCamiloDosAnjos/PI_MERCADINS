@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { IconUser, IconGear, IconHeart, IconShoppingCart } from "./Icons";
 import { saveReturnUrl } from "../utils/returnUrl";
+import { onAvatarError } from "../utils/imagens";
 import "./ProfileMenu.css";
 
 function getIniciais(nome: string) {
@@ -89,7 +90,7 @@ export default function ProfileMenu({ onNavigate, inline = false }: ProfileMenuP
         type="button"
       >
         {usuario.foto_perfil ? (
-          <img src={usuario.foto_perfil} alt={usuario.nome} className="pm-avatar-img" />
+          <img src={usuario.foto_perfil} alt={usuario.nome} className="pm-avatar-img" onError={onAvatarError} />
         ) : (
           <span className="pm-iniciais">{getIniciais(usuario.nome) || "?"}</span>
         )}

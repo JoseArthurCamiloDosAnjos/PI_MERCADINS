@@ -36,7 +36,7 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
     logEmail('VERIFICACAO', email, codigo, linkVerificacao?.toString())
     return
   }
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Verifique seu e-mail — Mercadins",
@@ -81,62 +81,17 @@ const enviarEmailVerificacao = async (email, codigo, linkVerificacao) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 
-
-//  Verificação em duas etapas (2FA) — código de login
-const enviarEmail2FA = async (email, codigo) => {
-  if (LOG_EMAILS) {
-    logEmail('2FA', email, codigo)
-    return
-  }
-  await getResend().emails.send({
-    from: EmailDominio,
-    to: email,
-    subject: "Código de verificação — Mercadins",
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <body style="font-family: 'Nunito', Arial, sans-serif; background: #f0f2f7; margin: 0; padding: 40px 20px;">
-        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-
-          <div style="background: linear-gradient(145deg, #f5c518 0%, #1a3a7a 55%, #0a1f4e 100%); padding: 40px 32px; text-align: center;">
-            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 700;">Verificação em duas etapas</h1>
-            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Mercadins — Seu mercado inteligente</p>
-          </div>
-
-          <div style="padding: 36px 32px; text-align: center;">
-            <p style="color: #0d2a5e; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Olá!</p>
-            <p style="color: #8892a4; font-size: 14px; line-height: 1.6; margin: 0 0 28px;">
-              Recebemos uma tentativa de login na sua conta. Use o código abaixo para confirmar que é você.
-            </p>
-
-            <div style="background: #f0f2f7; border-radius: 12px; padding: 20px; margin: 0 0 28px;">
-              <span style="color: #0d2a5e; font-size: 36px; font-weight: 800; letter-spacing: 8px;">${codigo}</span>
-            </div>
-
-            <div style="border-top: 1px solid #dde3ef; padding-top: 20px;">
-              <p style="color: #8892a4; font-size: 12px; line-height: 1.6; margin: 0;">
-                Este código expira em <strong>10 minutos</strong>.<br/>
-                Se você não tentou entrar, ignore este email — sua senha continua protegida.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </body>
-      </html>
-    `,
-  });
-};
 
 const enviarEmailRecuperacao = async (email, codigo) => {
   if (LOG_EMAILS) {
     logEmail('RECUPERACAO', email, codigo)
     return
   }
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Código de recuperação de senha — Mercadins",
@@ -174,11 +129,12 @@ const enviarEmailRecuperacao = async (email, codigo) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 //  Administração — avisa no e-mail PESSOAL da pessoa que a conta dela foi
 const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Você foi habilitado como administrador — Mercadins",
@@ -225,6 +181,7 @@ const enviarEmailPromocaoAdmin = async (email, nome, emailAdmin) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 const enviarEmailTrocaEmail = async (email, codigo) => {
@@ -232,7 +189,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
     logEmail('TROCA_EMAIL', email, codigo)
     return
   }
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: "Confirme seu novo e-mail — Mercadins",
@@ -270,6 +227,7 @@ const enviarEmailTrocaEmail = async (email, codigo) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 //  Pedidos — e-mails disparados quando o cliente finaliza e a cada mudança de
@@ -318,7 +276,7 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
     console.log('===========================================\n')
     return
   }
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `Pedido nº ${pedido.numero} recebido — Mercadins`,
@@ -337,6 +295,7 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 const enviarEmailStatusPedido = async (email, pedido, status) => {
@@ -368,7 +327,7 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
   };
   const mensagem = mensagens[status] || 'O status do seu pedido foi atualizado.';
 
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `${titulos[status] || 'Status do pedido'} — Pedido nº ${pedido.numero}`,
@@ -387,6 +346,7 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }) => {
@@ -401,7 +361,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
     ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
     : 'O pagamento deste pedido foi confirmado depois do cancelamento. Nossa equipe vai estornar o valor e entrará em contato. Se tiver dúvidas, fale com a loja.';
 
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: email,
     subject: `Pagamento confirmado após cancelamento — Pedido nº ${pedido.numero}`,
@@ -420,6 +380,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 //  B2 — Aviso de pedido novo para o VENDEDOR
@@ -437,7 +398,7 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
     console.log('===========================================\n')
     return
   }
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: EmailDominio,
     to: emailVendedor,
     subject: `Novo pedido nº ${pedido.numero} — ${pedido.mercado}`,
@@ -485,6 +446,7 @@ const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {
       </html>
     `,
   });
+  if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
 const enviarEmailNotificacao = async (email, titulo, mensagem) => {
@@ -527,7 +489,6 @@ const enviarEmailNotificacao = async (email, titulo, mensagem) => {
 
 module.exports = {
   enviarEmailVerificacao,
-  enviarEmail2FA,
   enviarEmailRecuperacao,
   enviarEmailTrocaEmail,
   enviarEmailPromocaoAdmin,

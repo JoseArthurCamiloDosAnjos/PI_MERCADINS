@@ -310,3 +310,9 @@
   .em-overlay { align-items: flex-end; padding: 0; }
   .em-modal   { border-radius: 10px 10px 0 0; max-height: 100vh; }
 }
+/* ── Erro geral no footer (upload bloqueado) ─────────────────────────────── */
+.em-erro-geral {
+  margin-right: auto;
+  align-self: center;
+  max-width: 60%;
+}

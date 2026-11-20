@@ -72,9 +72,28 @@ const allowedOrigins = [
   ].filter(Boolean)),
 ]
 
+// Em desenvolvimento, aceita também origins da rede local (IPs privados) para
+// permitir testar o site de outros dispositivos na mesma rede sem configurar
+// ALLOWED_ORIGINS (o IP pode mudar a cada DHCP). Em produção, nunca.
+function ehOrigemRedeLocal(origin) {
+  if (isProduction) return false
+  try {
+    const { protocol, hostname } = new URL(origin)
+    if (protocol !== 'http:') return false
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]') return true
+    const partes = hostname.split('.')
+    if (partes.length !== 4 || partes.some((p) => !/^\d{1,3}$/.test(p))) return false
+    const [a, b] = partes.map(Number)
+    if (partes.some((p) => Number(p) > 255)) return false
+    return a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31)
+  } catch {
+    return false
+  }
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || ehOrigemRedeLocal(origin)) {
       callback(null, true)
     } else {
       console.error(`CORS bloqueado: ${origin}`)

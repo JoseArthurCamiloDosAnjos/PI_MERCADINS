@@ -8,6 +8,7 @@ import { parseHorario, estaAberto, type HorarioMercado } from '../../utils/horar
 import { buscarCep } from '../../utils/cep';
 import ToastContainer from '../../components/Toast';
 import Imagem from '../../components/Imagem';
+import { onAvatarError } from '../../utils/imagens';
 import {
   IconBarChart,
   IconPackage,
@@ -2470,7 +2471,7 @@ export default function GerenciamentoMercado({
         <div className="gm-mkt-identity">
           <div className="gm-mkt-logo">
             {mercado?.foto_perfil
-              ? <img src={mercado.foto_perfil} alt={mercado.nome} className="gm-mkt-logo-img" />
+              ? <img src={mercado.foto_perfil} alt={mercado.nome} className="gm-mkt-logo-img" onError={onAvatarError} />
               : <IconShoppingCart size={24} />
             }
           </div>

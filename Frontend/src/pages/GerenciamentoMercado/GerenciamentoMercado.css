@@ -172,17 +172,6 @@
 .gm-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .gm-topbar-actions { display: flex; align-items: center; gap: 10px; }
 
-.gm-btn-back {
-  display: flex; align-items: center; gap: 6px;
-  background: var(--azul-card); color: var(--cinza-texto);
-  font-size: 12px; font-weight: 700;
-  padding: 7px 16px; border-radius: var(--radius-full);
-  border: 1px solid var(--azul-item);
-  cursor: pointer; transition: all 0.2s;
-  white-space: nowrap;
-}
-.gm-btn-back:hover { background: var(--azul-item); color: var(--branco); }
-
 .gm-btn-sec {
   display: flex; align-items: center; gap: 7px;
   background: var(--azul-card); color: var(--branco-suave);
@@ -194,7 +183,6 @@
 }
 .gm-btn-sec:hover { border-color: var(--branco-suave); color: var(--branco); }
 
-.gm-btn-back:focus-visible,
 .gm-btn-sec:focus-visible {
   outline: 3px solid var(--amarelo);
   outline-offset: 2px;
@@ -992,6 +980,7 @@
 }
 .gm-aviso-custo p { margin: 0; font-size: 0.85rem; color: var(--pendente-texto); }
 
+.gm-bar-chart--diario { gap: 2px; }
 .gm-bar-chart--diario .gm-bar-val { display: none; }
 .gm-bar-chart--diario .gm-bar-col { flex: 1; min-width: 0; }
 .gm-bar-chart--diario .gm-bar-label { font-size: 9px; }

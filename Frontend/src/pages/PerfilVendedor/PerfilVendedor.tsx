@@ -17,6 +17,7 @@ import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
 import '../MeusPedidos/MeusPedidos.css';
+import LogoTopbar from '../../components/LogoTopbar';
 import {
   IconUser,
   IconLock,
@@ -291,10 +292,14 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   const [mostrandoTodos, setMostrandoTodos] = useState(false);
   const mercadosVisiveis = mostrandoTodos ? mercados : mercados.slice(0, LIMITE_MERCADOS);
 
+  const mediaAvaliacoes = avaliacoes.length > 0
+    ? avaliacoes.reduce((soma, a) => soma + a.nota, 0) / avaliacoes.length
+    : 0;
+
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados ativos' },
-    { Icon: IconStar, cls: 'gold', val: '0 ★', lbl: 'Avaliação média' },
-    { Icon: IconPackage, cls: 'gold', val: '0', lbl: 'Pedidos totais' },
+    { Icon: IconStar, cls: 'gold', val: `${mediaAvaliacoes.toFixed(1)} ★`, lbl: 'Avaliação média' },
+    { Icon: IconPackage, cls: 'gold', val: String(historico.length), lbl: 'Pedidos totais' },
   ];
 
   return (
@@ -744,7 +749,10 @@ export default function PerfilVendedor() {
       />
       <main className="pv-main">
         <div className="pv-topbar">
-          <span className="pv-topbar-title">{TITULOS[nav]}</span>
+          <div className="pv-topbar-esq">
+            <LogoTopbar />
+            <span className="pv-topbar-title">{TITULOS[nav]}</span>
+          </div>
           <button className="pv-btn-new" onClick={() => navigate(ROTA_CRIAR_MERCADO)}>+ Novo Mercado</button>
         </div>
         <div className="pv-content">

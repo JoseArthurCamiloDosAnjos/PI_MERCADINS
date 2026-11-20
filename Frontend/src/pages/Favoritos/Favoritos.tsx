@@ -4,10 +4,10 @@ import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import {
-  IconArrowLeft,
   IconMapPin,
   IconStore,
 } from '../../components/Icons';
+import LogoTopbar from '../../components/LogoTopbar';
 import { onAvatarError } from '../../utils/imagens';
 import './Favoritos.css';
 
@@ -84,10 +84,7 @@ export default function Favoritos() {
   return (
     <div className="favoritos-page">
       <div className="favoritos-topbar">
-        <button className="favoritos-voltar" onClick={() => navigate('/')} type="button">
-          <IconArrowLeft size={16} />
-          Início
-        </button>
+        <LogoTopbar />
         <div className="favoritos-titulo">
           <h1>Meus favoritos</h1>
           <p>

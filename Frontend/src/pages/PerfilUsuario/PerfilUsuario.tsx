@@ -17,6 +17,7 @@ import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
 import { useEnderecos } from '../../hooks/useEnderecos';
 import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../../utils/endereco';
 import './PerfilUsuario.css';
+import LogoTopbar from '../../components/LogoTopbar';
 import {
   IconLock,
   IconStore,
@@ -1015,7 +1016,10 @@ export default function PerfilUsuario() {
       />
       <main className="pu-main">
         <div className="pu-topbar">
-          <span className="pu-topbar-title">{TITULOS[nav]}</span>
+          <div className="pu-topbar-esq">
+            <LogoTopbar />
+            <span className="pu-topbar-title">{TITULOS[nav]}</span>
+          </div>
         </div>
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>

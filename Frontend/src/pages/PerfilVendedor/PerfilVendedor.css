@@ -16,6 +16,7 @@
   z-index: 40;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
+.pv-topbar-esq { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .pv-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); }
 .pv-topbar-actions { display: flex; align-items: center; gap: 10px; }
 

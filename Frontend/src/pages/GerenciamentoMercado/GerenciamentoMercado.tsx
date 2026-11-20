@@ -20,7 +20,6 @@ import {
   IconInbox,
   IconZap,
   IconEye,
-  IconArrowLeft,
   IconMapPin,
   IconPhone,
   IconMail,
@@ -29,6 +28,7 @@ import {
   IconTruck,
   IconReceipt,
 } from '../../components/Icons';
+import LogoTopbar from '../../components/LogoTopbar';
 
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
 
@@ -108,6 +108,7 @@ interface FinanceiroResumo {
     retidoPlataforma: number;
   };
   porStatus: Record<string, number>;
+  serieMensal?: { mes: string; val: number }[];
   serieDiaria: { dia: number; pedidos: number; receita: number }[];
   topProdutos: { nome: string; qtd: number; receita: number }[];
 }
@@ -608,7 +609,7 @@ function SecDashboard({ stats, financeiro, loading, slug, plano, uso, limites, r
           ) : (
             <div className="gm-bar-chart">
               {financeiro.map((f, i) => {
-                const max = Math.max(...financeiro.map(x => x.val));
+                const max = Math.max(...financeiro.map(x => x.val)) || 1;
                 const pct = (f.val / max) * 100;
                 return (
                   <div key={i} className="gm-bar-col">
@@ -1132,7 +1133,9 @@ function SecFinanceiro({
                           }}
                         />
                       </div>
-                      <span className="gm-bar-label">{d.dia}</span>
+                      <span className="gm-bar-label">
+                        {d.dia === 1 || d.dia % 5 === 0 ? d.dia : ''}
+                      </span>
                     </div>
                   );
                 })}
@@ -2331,6 +2334,20 @@ export default function GerenciamentoMercado({
   const financeiro = useMemo<FinanceiroMes[]>(() => {
     const agora = new Date();
     const porMes: FinanceiroMes[] = [];
+
+    // Fonte principal: série de 6 meses calculada no backend (todos os pedidos,
+    // com desconto/taxa e fuso horário corretos).
+    if (fin?.serieMensal) {
+      const porChave = new Map(fin.serieMensal.map(s => [s.mes, s.val]));
+      for (let i = 5; i >= 0; i--) {
+        const ref = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+        const chave = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
+        porMes.push({ mes: MESES_CURTO[ref.getMonth()], val: porChave.get(chave) ?? 0 });
+      }
+      return porMes;
+    }
+
+    // Fallback: cálculo local enquanto a API carrega ou se falhar.
     for (let i = 5; i >= 0; i--) {
       const ref = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
       const total = pedidos
@@ -2343,7 +2360,7 @@ export default function GerenciamentoMercado({
       porMes.push({ mes: MESES_CURTO[ref.getMonth()], val: Math.round(total * 100) / 100 });
     }
     return porMes;
-  }, [pedidos]);
+  }, [pedidos, fin]);
 
   const mesesFin = useMemo<OpcaoMes[]>(() => {
     const hoje = new Date();
@@ -2531,9 +2548,7 @@ export default function GerenciamentoMercado({
       <main className="gm-main">
         <div className="gm-topbar">
           <div className="gm-topbar-left">
-            <button className="gm-btn-back" onClick={onVoltar}>
-              <IconArrowLeft size={14} /> Meus mercados
-            </button>
+            <LogoTopbar onClick={onVoltar} title="Meus mercados" />
             <span className="gm-topbar-title">
               {navItens[navAtual].icon} {navItens[navAtual].label}
             </span>

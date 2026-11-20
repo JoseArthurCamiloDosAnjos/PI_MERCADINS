@@ -15,28 +15,6 @@
   border-bottom: 1px solid var(--azul-borda);
 }
 
-.favoritos-voltar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--azul-card);
-  border: 1px solid var(--azul-item);
-  border-radius: var(--radius-full);
-  padding: 7px 16px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--cinza-texto);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-}
-
-.favoritos-voltar:hover {
-  background: var(--azul-item);
-  border-color: var(--azul-claro);
-  color: var(--branco);
-}
-
 .favoritos-titulo h1 {
   margin: 0;
   font-size: 16px;

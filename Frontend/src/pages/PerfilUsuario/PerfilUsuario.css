@@ -47,6 +47,14 @@
   color: var(--branco);
 }
 
+.pu-page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--branco);
+  letter-spacing: -0.3px;
+}
+
 .pu-btn-edit {
   display: flex;
   align-items: center;
@@ -190,6 +198,10 @@
 
 .pu-sec-row .pu-sec-title {
   margin-bottom: 0;
+}
+
+.pu-sec-row--fim {
+  justify-content: flex-end;
 }
 
 .pu-btn-link {

@@ -172,6 +172,17 @@
 .gm-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .gm-topbar-actions { display: flex; align-items: center; gap: 10px; }
 
+.gm-page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 1.4rem;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--branco);
+  letter-spacing: -0.3px;
+}
+
 .gm-btn-sec {
   display: flex; align-items: center; gap: 7px;
   background: var(--azul-card); color: var(--branco-suave);

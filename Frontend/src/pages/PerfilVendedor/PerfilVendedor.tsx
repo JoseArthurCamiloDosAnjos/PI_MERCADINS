@@ -542,7 +542,6 @@ function TelaSeguranca() {
     <>
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
         <h3 className="pu-sub-title">Alterar senha</h3>
         {etapa === 'form' ? (
           <div className="pu-form-block">
@@ -751,12 +750,12 @@ export default function PerfilVendedor() {
         <div className="pv-topbar">
           <div className="pv-topbar-esq">
             <LogoTopbar />
-            <span className="pv-topbar-title">{TITULOS[nav]}</span>
           </div>
           <button className="pv-btn-new" onClick={() => navigate(ROTA_CRIAR_MERCADO)}>+ Novo Mercado</button>
         </div>
         <div className="pv-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
+            <h1 className="pv-page-title">{TITULOS[nav]}</h1>
             {TELAS[telaAtiva]}
           </div>
         </div>

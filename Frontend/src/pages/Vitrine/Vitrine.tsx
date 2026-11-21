@@ -26,7 +26,6 @@ import {
   IconArrowLeft,
   IconMapPin,
 } from '../../components/Icons';
-import LogoTopbar from '../../components/LogoTopbar';
 import { localizacaoCompleta } from '../../utils/localizacao';
 
 // ─── Ícones locais (mesmos usados na VitrineCliente) ──────────────────────────
@@ -732,7 +731,6 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vt-topbar">
         <div className="vt-topbar-esq">
-          <LogoTopbar />
           {onVoltar && (
             <button className="vt-btn-voltar" onClick={() => tentarSair('voltar')}>
               <IconArrowLeft size={15} /> Voltar ao Gerenciamento

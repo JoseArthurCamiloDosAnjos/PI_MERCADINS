@@ -19,7 +19,6 @@ import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../.
 import './PerfilUsuario.css';
 import LogoTopbar from '../../components/LogoTopbar';
 import {
-  IconLock,
   IconStore,
   IconShoppingBag,
   IconStar,
@@ -358,8 +357,7 @@ export function TelaEnderecos() {
 
   return (
     <section>
-      <div className="pu-sec-row">
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços de entrega</h2>
+      <div className="pu-sec-row pu-sec-row--fim">
         <button className="pu-btn-link" onClick={abrirNovo}>Adicionar endereço</button>
       </div>
 
@@ -621,8 +619,6 @@ function TelaSeguranca() {
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
 
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
-
         <h3 className="pu-sub-title">Alterar senha</h3>
 
         {etapa === 'form' ? (
@@ -864,14 +860,13 @@ export function TelaDepoimentos() {
       <div className="pu-divider" />
 
       <section>
-        <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Meus depoimentos</h2>
-          {meus.length > 0 && (
+        {meus.length > 0 && (
+          <div className="pu-sec-row">
             <span className="pu-dep-resumo">
               {meus.length} publicado{meus.length > 1 ? 's' : ''}
             </span>
-          )}
-        </div>
+          </div>
+        )}
         {meus.length === 0 ? (
           <div className="pu-empty">
             <div className="pu-empty-icon"><IconStar size={22} /></div>
@@ -1018,11 +1013,11 @@ export default function PerfilUsuario() {
         <div className="pu-topbar">
           <div className="pu-topbar-esq">
             <LogoTopbar />
-            <span className="pu-topbar-title">{TITULOS[nav]}</span>
           </div>
         </div>
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
+            <h1 className="pu-page-title">{TITULOS[nav]}</h1>
             {TELAS[telaAtiva]}
           </div>
         </div>

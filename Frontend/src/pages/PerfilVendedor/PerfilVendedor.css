@@ -18,6 +18,7 @@
 }
 .pv-topbar-esq { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .pv-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); }
+.pv-page-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--branco); letter-spacing: -0.3px; }
 .pv-topbar-actions { display: flex; align-items: center; gap: 10px; }
 
 .pv-btn-new {

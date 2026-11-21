@@ -2549,9 +2549,6 @@ export default function GerenciamentoMercado({
         <div className="gm-topbar">
           <div className="gm-topbar-left">
             <LogoTopbar onClick={onVoltar} title="Meus mercados" />
-            <span className="gm-topbar-title">
-              {navItens[navAtual].icon} {navItens[navAtual].label}
-            </span>
           </div>
           <div className="gm-topbar-actions">
             <button
@@ -2565,6 +2562,9 @@ export default function GerenciamentoMercado({
         </div>
 
         <div className="gm-content" key={navAtual}>
+          <h1 className="gm-page-title">
+            {navItens[navAtual].icon} {navItens[navAtual].label}
+          </h1>
           {secoes[navAtual]}
         </div>
       </main>

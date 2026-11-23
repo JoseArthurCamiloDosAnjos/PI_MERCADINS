@@ -34,7 +34,7 @@ import {
 } from '../../components/Icons';
 
 import LogoTopbar from '../../components/LogoTopbar';
-import { useCarrinho } from '../../hooks/useCarrinho';
+import { useCarrinho, mensagemLimiteQuantidade } from '../../hooks/useCarrinho';
 
 import { localizacaoCompleta } from '../../utils/localizacao';
 import { estaAberto, parseHorario, proximaAbertura, gruposDaSemana } from '../../utils/horario';

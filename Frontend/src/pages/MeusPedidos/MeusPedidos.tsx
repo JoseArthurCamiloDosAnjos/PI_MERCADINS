@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { fecharAbaAsaas, temAbaAsaasAberta } from '../../utils/abaAsaas';
 import ToastContainer from '../../components/Toast';
+import LogoTopbar from '../../components/LogoTopbar';
 import './MeusPedidos.css';
 
 //  B4 — Acompanhamento do pedido (visão do cliente)
@@ -528,13 +529,10 @@ export default function MeusPedidos() {
   return (
     <div className="meuspedidos-page">
       <div className="meuspedidos-topbar">
-        <button
-          className="meuspedidos-voltar"
+        <LogoTopbar
           onClick={() => navigate(id ? '/perfil#historico-compras' : '/')}
-          type="button"
-        >
-          <IconArrowLeft /> {id ? 'Perfil' : 'Início'}
-        </button>
+          title={id ? 'Ir para o perfil' : 'Ir para o início'}
+        />
         <div className="meuspedidos-titulo">
           <h1>{id ? 'Acompanhar pedido' : 'Meus pedidos'}</h1>
           <p>{id ? 'Acompanhe o status em tempo real' : 'Todos os pedidos que você fez'}</p>

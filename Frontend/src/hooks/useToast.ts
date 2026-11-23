@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
+const MAX_TOASTS = 3;
+
 export interface Toast {
   id: number;
   tipo: "sucesso" | "erro" | "aviso" | "info";
@@ -64,17 +66,21 @@ export function useToast() {
     }
 
     const id = ++toastIdCounter;
-    let novos = [...toastsRef.current, { id, tipo, mensagem: texto }];
 
-    // Ultrapassou o limite: remove os mais antigos imediatamente.
-    while (novos.length > MAX_TOASTS) {
-      limparTimer(novos[0].id);
-      novos = novos.slice(1);
-    }
+    setToasts((prev) => {
+      const next = [...prev, { id, tipo, mensagem }];
+      if (next.length > MAX_TOASTS) {
+        const removeId = next[0].id;
+        clearTimeout(toastTimers.current.get(removeId));
+        toastTimers.current.delete(removeId);
+        return next.slice(1);
+      }
+      return next;
+    });
+    const timer = setTimeout(() => dismissToast(id), 3500);
+    toastTimers.current.set(id, timer);
+  }, [dismissToast]);
 
-    aplicar(novos);
-    agendarDismiss(id);
-  }, [agendarDismiss, aplicar, limparTimer]);
 
   return { toasts, showToast, dismissToast };
 }

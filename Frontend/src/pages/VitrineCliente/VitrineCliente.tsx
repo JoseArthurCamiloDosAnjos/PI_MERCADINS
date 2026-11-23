@@ -21,7 +21,6 @@ import { aplicarSeo } from '../../utils/seo';
 import JsonLd from '../../components/JsonLd';
 import {
   IconStore,
-  IconArrowLeft,
   IconShare,
   IconLink,
   IconMessage,
@@ -33,7 +32,10 @@ import {
   IconClock,
   IconChevronRight,
 } from '../../components/Icons';
-import { useCarrinho, mensagemLimiteQuantidade } from '../../hooks/useCarrinho';
+
+import LogoTopbar from '../../components/LogoTopbar';
+import { useCarrinho } from '../../hooks/useCarrinho';
+
 import { localizacaoCompleta } from '../../utils/localizacao';
 import { estaAberto, parseHorario, proximaAbertura, gruposDaSemana } from '../../utils/horario';
 
@@ -598,13 +600,7 @@ export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineCli
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
-        <button
-          className="vtc-btn-voltar"
-          onClick={onVoltar ?? (() => navigate("/"))}
-        >
-          <IconArrowLeft size={16} />
-          <span>Voltar</span>
-        </button>
+        <LogoTopbar onClick={onVoltar ?? undefined} />
         <div className="vtc-topbar-direita">
           {usuario ? (
             <ProfileMenu />

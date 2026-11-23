@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import AdminSidebar from './AdminSidebar'
 import { IconEye } from '../../components/Icons'
+import LogoTopbar from '../../components/LogoTopbar'
 import './Admin.css'
 
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -43,9 +44,12 @@ export default function Adiministrador() {
       <AdminSidebar navAtivo={abaAtiva} onNav={setAbaAtiva} />
       <main className="adm-main">
         <header className="adm-header">
-          <div className="adm-header-texto">
-            <h1>{ABAS[abaAtiva].nome}</h1>
-            <p>{ABAS[abaAtiva].desc}</p>
+          <div className="adm-header-esq">
+            <LogoTopbar />
+            <div className="adm-header-texto">
+              <h1>{ABAS[abaAtiva].nome}</h1>
+              <p>{ABAS[abaAtiva].desc}</p>
+            </div>
           </div>
           <a className="adm-header-site" href="/" target="_blank" rel="noreferrer">
             <IconEye size={15} /> Ver site

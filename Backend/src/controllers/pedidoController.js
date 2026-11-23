@@ -843,13 +843,38 @@ const financeiroMercado = async (req, res) => {
 
     const pedidos = await sql`
       SELECT h.produtos, h.valor_total, h.desconto, h.taxa_entrega, h.status,
-             (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo' AS data_local
+             TO_CHAR(
+               (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo',
+               'YYYY-MM-DD'
+             ) AS dia_iso
       FROM historico_compras h
       WHERE h.id_mercado = ${mercadoId}
         AND h.data_compra >= ${folgaInicio}
         AND h.data_compra <  ${folgaFim}
       ORDER BY h.data_compra ASC
       LIMIT 5000
+    `;
+
+    const serieMensalRaw = await sql`
+      SELECT TO_CHAR(
+               DATE_TRUNC('month',
+                 (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo'
+               ),
+               'YYYY-MM'
+             ) AS mes,
+             COALESCE(
+               SUM(
+                 COALESCE(h.valor_total, 0) - COALESCE(h.desconto, 0) + COALESCE(h.taxa_entrega, 0)
+               ),
+               0
+             )::float AS val
+      FROM historico_compras h
+      WHERE h.id_mercado = ${mercadoId}
+        AND h.status NOT IN ('cancelado', 'aguardando_pagamento')
+        AND (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo'
+          >= DATE_TRUNC('month', (now() AT TIME ZONE 'America/Sao_Paulo')) - INTERVAL '5 months'
+      GROUP BY 1
+      ORDER BY 1
     `;
 
     const produtosMercado = await sql`
@@ -888,8 +913,8 @@ const financeiroMercado = async (req, res) => {
     const porProduto = new Map();
 
     for (const p of pedidos) {
-      const d = new Date(p.data_local);
-      if (d.getFullYear() !== ano || d.getMonth() + 1 !== mes) continue;
+      const diaIso = p.dia_iso;
+      if (!diaIso || diaIso.slice(0, 7) !== `${ano}-${String(mes).padStart(2, '0')}`) continue;
 
       const st = p.status || 'pendente';
       porStatus[st] = (porStatus[st] || 0) + 1;
@@ -902,7 +927,7 @@ const financeiroMercado = async (req, res) => {
       faturamento += valor;
       totalPedidos += 1;
 
-      const dia = d.getDate();
+      const dia = Number(diaIso.slice(8, 10));
       const reg = porDia.get(dia) || { pedidos: 0, receita: 0 };
       reg.pedidos += 1;
       reg.receita += valor;
@@ -942,6 +967,10 @@ const financeiroMercado = async (req, res) => {
         retidoPlataforma: round2(repasseRetido),
       },
       porStatus,
+      serieMensal: serieMensalRaw.map(r => ({
+        mes: r.mes,
+        val: Math.round((Number(r.val) || 0) * 100) / 100,
+      })),
       serieDiaria: Array.from({ length: diasNoMes }, (_, i) => {
         const reg = porDia.get(i + 1) || { pedidos: 0, receita: 0 };
         return { dia: i + 1, pedidos: reg.pedidos, receita: round2(reg.receita) };

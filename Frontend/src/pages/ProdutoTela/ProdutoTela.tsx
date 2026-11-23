@@ -16,9 +16,9 @@ import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import QuantidadeStepper from '../../components/QuantidadeStepper/QuantidadeStepper';
 import {
   IconStore,
-  IconArrowLeft,
   IconCamera,
 } from '../../components/Icons';
+import LogoTopbar from '../../components/LogoTopbar';
 import { uploadImagem, ehImagemValida } from '../../services/upload';
 
 // ─── Ícones locais (mesmo padrão usado na VitrineCliente) ─────────────────────
@@ -444,9 +444,7 @@ export default function ProdutoTela({
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="pd-topbar">
-        <button className="pd-btn-voltar" onClick={onVoltar}>
-          <IconArrowLeft size={15} /> Voltar
-        </button>
+        <LogoTopbar onClick={onVoltar} />
 
         <div className="pd-busca-wrap">
           <IconSearch size={14} />

@@ -542,7 +542,7 @@
 }
 .gm-rev-nome  { font-size: 11px; font-weight: 700; color: var(--branco-suave); margin: 0; }
 .gm-stars     { color: var(--amarelo); font-size: 12px; letter-spacing: 1.5px; }
-.gm-rev-text  { font-size: 10px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.5; }
+.gm-rev-text  { font-size: 10px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ─── Moderação de avaliações (B6) ──────────────────────────────────────── */
 .gm-review-card--oculta { opacity: 0.55; border-style: dashed; }

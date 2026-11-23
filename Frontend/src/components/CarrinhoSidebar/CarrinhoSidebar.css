@@ -173,8 +173,9 @@
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.cs-stepper button:hover:not(:disabled) { background: var(--vt-amarelo, #f5c518); color: #0a1628; }
-.cs-stepper button:disabled { opacity: 0.4; cursor: not-allowed; }
+.cs-stepper button:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--vt-amarelo, #f5c518); color: #0a1628; }
+.cs-stepper button:disabled,
+.cs-stepper button[aria-disabled="true"] { opacity: 0.4; cursor: not-allowed; }
 
 .cs-max { font-size: 11px; font-weight: 700; color: var(--cinza-texto, #9aa7b8); white-space: nowrap; }
 .cs-stepper span,

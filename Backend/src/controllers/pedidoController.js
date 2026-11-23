@@ -8,6 +8,7 @@ const {
 } = require('../utils/mailer');
 const { enviarNotificacao } = require('../utils/notificacoes');
 const { limitesDoPlano } = require('../utils/planos');
+const { MAX_UNIDADES_PRODUTO } = require('../utils/limites');
 
 async function montarDadosPedidoParaEmail(sql, idPedido) {
   const [dados] = await sql`
@@ -233,6 +234,11 @@ const criarPedido = async (req, res) => {
     if (!Number.isInteger(idProduto) || idProduto <= 0 ||
         !Number.isInteger(quantidade) || quantidade <= 0) {
       return res.status(400).json({ erro: 'Item inválido no pedido.' });
+    }
+    if (quantidade > MAX_UNIDADES_PRODUTO) {
+      return res.status(400).json({
+        erro: `Cada produto aceita no máximo ${MAX_UNIDADES_PRODUTO} unidades por pedido. Reduza a quantidade e tente novamente.`,
+      });
     }
   }
 

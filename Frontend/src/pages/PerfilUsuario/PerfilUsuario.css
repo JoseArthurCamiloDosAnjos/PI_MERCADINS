@@ -623,6 +623,8 @@
   color: var(--cinza-texto);
   margin-top: 6px;
   line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .pu-modal-overlay {
@@ -1306,6 +1308,8 @@
   font-size: 12px;
   color: var(--cinza-texto);
   line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

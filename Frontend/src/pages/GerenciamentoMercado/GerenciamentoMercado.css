@@ -214,6 +214,11 @@
 }
 .gm-btn-vitrine:focus-visible { outline-color: var(--azul-claro); }
 
+.gm-sidebar-voltar {
+  margin: 0.9rem 0.8rem 0;
+  animation-delay: 0s !important;
+}
+
 .gm-content {
   flex: 1;
   overflow-y: auto;

@@ -27,6 +27,7 @@ import {
   IconTag,
   IconTruck,
   IconReceipt,
+  IconArrowLeft,
 } from '../../components/Icons';
 import LogoTopbar from '../../components/LogoTopbar';
 
@@ -2540,7 +2541,15 @@ export default function GerenciamentoMercado({
             </button>
           ))}
         </nav>
-
+          <button
+          className="gm-nav-btn gm-sidebar-voltar"
+          onClick={onVoltar}
+          aria-label="Voltar para o gerenciamento de mercados"
+          title="Voltar para o gerenciamento de mercados"
+        >
+          <span className="gm-nav-icon"><IconArrowLeft size={16} /></span>
+          <span className="gm-nav-label">Voltar</span>
+        </button>
         <div className="gm-sidebar-footer">
         </div>
       </aside>
@@ -2560,7 +2569,7 @@ export default function GerenciamentoMercado({
             </button>
           </div>
         </div>
-
+        
         <div className="gm-content" key={navAtual}>
           <h1 className="gm-page-title">
             {navItens[navAtual].icon} {navItens[navAtual].label}
@@ -2568,7 +2577,7 @@ export default function GerenciamentoMercado({
           {secoes[navAtual]}
         </div>
       </main>
-
+          
       {produtoEditando && (
         <EditarProdutoModal
           produto={produtoEditando}

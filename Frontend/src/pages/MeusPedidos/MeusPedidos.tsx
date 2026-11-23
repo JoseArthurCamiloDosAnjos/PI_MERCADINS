@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { fecharAbaAsaas, temAbaAsaasAberta } from '../../utils/abaAsaas';
 import ToastContainer from '../../components/Toast';
@@ -525,12 +526,16 @@ export default function MeusPedidos() {
   const id = Number(pedidoId);
   const [busca, setBusca] = useState('');
   const { toasts, showToast, dismissToast } = useToast();
+  // Quem tem loja volta para o painel do vendedor — nunca para o perfil de
+  // usuário comum, senão o vendedor "perde" o próprio perfil ao voltar.
+  const { temMercado } = useAuth();
+  const rotaPerfil = temMercado ? '/vendedor' : '/perfil';
 
   return (
     <div className="meuspedidos-page">
       <div className="meuspedidos-topbar">
         <LogoTopbar
-          onClick={() => navigate(id ? '/perfil#historico-compras' : '/')}
+          onClick={() => navigate(id ? `${rotaPerfil}#historico-compras` : '/')}
           title={id ? 'Ir para o perfil' : 'Ir para o início'}
         />
         <div className="meuspedidos-titulo">

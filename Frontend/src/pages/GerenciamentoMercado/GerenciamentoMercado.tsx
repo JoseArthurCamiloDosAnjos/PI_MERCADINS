@@ -185,6 +185,17 @@ const PROXIMO_STATUS: Partial<Record<Pedido['statusAtual'], 'pendente' | 'prepar
   caminho:  'entregue',
 };
 
+/** Etapas na ordem em que o pedido caminha — serve para avançar e para voltar. */
+const FLUXO_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'] as const;
+
+type StatusFluxo = (typeof FLUXO_STATUS)[number];
+
+const STATUS_ANTERIOR: Partial<Record<StatusFluxo, StatusFluxo>> = {
+  preparo:  'pendente',
+  caminho:  'preparo',
+  entregue: 'caminho',
+};
+
 // ─── Sidebar nav ─────────────────────────────────────────────────────────────
 
 const SIDEBAR_NAV: { icon: ReactNode; label: string }[] = [
@@ -717,14 +728,16 @@ function SecProdutos({ produtos, loading, onEditar }: { produtos: Produto[]; loa
 function SecPedidos({
   pedidos,
   loading,
-  onAvancar,
+  onMudarStatus,
+  salvandoIds,
   expandido,
   onAlternar,
   total,
 }: {
   pedidos: Pedido[];
   loading: boolean;
-  onAvancar: (p: Pedido) => void;
+  onMudarStatus: (p: Pedido, novo: Pedido['statusAtual'], confirmar?: boolean) => void;
+  salvandoIds: Set<number>;
   expandido: boolean;
   onAlternar: () => void;
   total: number;
@@ -747,7 +760,6 @@ function SecPedidos({
       ) : (
         <div className="gm-pedidos-list">
           {pedidos.map((p, i) => {
-            const proximo = PROXIMO_STATUS[p.statusAtual];
             return (
               <div key={p.id} className="gm-pedido-row" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
                 <span className="gm-pedido-num">#{p.id}</span>
@@ -755,19 +767,7 @@ function SecPedidos({
                 <span className="gm-pedido-itens">{p.itens}</span>
                 <span className="gm-pedido-preco">{p.preco}</span>
                 <span className={`gm-pedido-status gm-pedido-status--${p.status}`}>{p.label}</span>
-                {proximo ? (
-                  <button
-                    className="gm-pedido-acao"
-                    onClick={() => onAvancar(p)}
-                    title={`Avançar o pedido #${p.id} para "${STATUS_PEDIDO[proximo].label}"`}
-                  >
-                    {STATUS_PEDIDO[proximo].label} →
-                  </button>
-                ) : p.statusAtual === 'entregue' ? (
-                  <span className="gm-pedido-check" title="Pedido concluído">✓</span>
-                ) : (
-                  <span className="gm-pedido-check" title="Sem ação disponível">—</span>
-                )}
+                <AcoesPedido pedido={p} onMudarStatus={onMudarStatus} salvando={salvandoIds.has(p.id)} />
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
                     <IconInfo size={12} /> {p.observacao}
@@ -796,6 +796,210 @@ function SecPedidos({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Ações de status de um pedido na visão da loja:
+ *  · "Etapa anterior" e "próxima etapa" agem na hora (correção rápida);
+ *  · o menu "⋯" leva para qualquer status e cancela o pedido — ambos passam
+ *    pelo modal de confirmação.
+ */
+function AcoesPedido({
+  pedido,
+  onMudarStatus,
+  salvando = false,
+}: {
+  pedido: Pedido;
+  onMudarStatus: (p: Pedido, novo: Pedido['statusAtual'], confirmar?: boolean) => void;
+  salvando?: boolean;
+}) {
+  const [menuAberto, setMenuAberto] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuAberto) return;
+    function aoClicarFora(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setMenuAberto(false);
+    }
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuAberto(false);
+    }
+    document.addEventListener('mousedown', aoClicarFora);
+    document.addEventListener('keydown', aoTeclar);
+    return () => {
+      document.removeEventListener('mousedown', aoClicarFora);
+      document.removeEventListener('keydown', aoTeclar);
+    };
+  }, [menuAberto]);
+
+  if (pedido.statusAtual === 'aguardando_pagamento') {
+    return <span className="gm-pedido-check gm-pedido-check--espera" title="Aguardando a confirmação do pagamento do cliente">—</span>;
+  }
+  if (pedido.statusAtual === 'cancelado') {
+    return <span className="gm-pedido-check gm-pedido-check--cancelado" title="Pedido cancelado">✕</span>;
+  }
+
+  const anterior = STATUS_ANTERIOR[pedido.statusAtual as StatusFluxo];
+  const proximo = PROXIMO_STATUS[pedido.statusAtual];
+
+  return (
+    <div
+      className="gm-pedido-acoes"
+      ref={wrapRef}
+      onClick={(e) => e.stopPropagation()}
+      role="group"
+      aria-label={`Ações do pedido ${pedido.num}`}
+    >
+      {anterior && (
+        <button
+          type="button"
+          className="gm-pedido-btn"
+          onClick={() => onMudarStatus(pedido, anterior)}
+          disabled={salvando}
+          title={`Voltar o pedido ${pedido.num} para "${STATUS_PEDIDO[anterior].label}"`}
+        >
+          ← {STATUS_PEDIDO[anterior].label}
+        </button>
+      )}
+
+      {proximo ? (
+        <button
+          type="button"
+          className="gm-pedido-acao"
+          onClick={() => onMudarStatus(pedido, proximo)}
+          disabled={salvando}
+          title={`Avançar o pedido ${pedido.num} para "${STATUS_PEDIDO[proximo].label}"`}
+        >
+          {STATUS_PEDIDO[proximo].label} →
+        </button>
+      ) : (
+        <span className="gm-pedido-check" title="Pedido concluído">✓</span>
+      )}
+
+      <div className="gm-pedido-menu-wrap">
+        <button
+          type="button"
+          className="gm-pedido-menu-btn"
+          onClick={() => setMenuAberto((v) => !v)}
+          disabled={salvando}
+          aria-label={`Mais ações do pedido ${pedido.num}`}
+          aria-haspopup="menu"
+          aria-expanded={menuAberto}
+          title="Outras ações do pedido"
+        >
+          ⋯
+        </button>
+
+        {menuAberto && (
+          <div className="gm-pedido-menu" role="menu">
+            <p className="gm-pedido-menu-titulo">Mudar status para</p>
+            {FLUXO_STATUS.filter((s) => s !== pedido.statusAtual).map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="menuitem"
+                className="gm-pedido-menu-item"
+                onClick={() => {
+                  setMenuAberto(false);
+                  onMudarStatus(pedido, s, true);
+                }}
+              >
+                {STATUS_PEDIDO[s].label}
+              </button>
+            ))}
+            <div className="gm-pedido-menu-div" />
+            <button
+              type="button"
+              role="menuitem"
+              className="gm-pedido-menu-item gm-pedido-menu-item--perigo"
+              onClick={() => {
+                setMenuAberto(false);
+                onMudarStatus(pedido, 'cancelado', true);
+              }}
+            >
+              Cancelar pedido
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Confirmação de mudança de status ─────────────────────────────────────────
+
+function ModalConfirmarStatus({
+  pedido,
+  novoStatus,
+  onConfirmar,
+  onFechar,
+}: {
+  pedido: Pedido;
+  novoStatus: Pedido['statusAtual'];
+  onConfirmar: () => void;
+  onFechar: () => void;
+}) {
+  const ehCancelamento = novoStatus === 'cancelado';
+  const novoInfo = STATUS_PEDIDO[novoStatus] ?? STATUS_PEDIDO.pendente;
+
+  useEffect(() => {
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') onFechar();
+    }
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [onFechar]);
+
+  return (
+    <div
+      className="gm-modal-overlay"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onFechar(); }}
+    >
+      <div className="gm-modal" role="dialog" aria-modal="true" aria-labelledby="gm-status-titulo">
+        <div className="gm-modal-header">
+          <h3 id="gm-status-titulo">
+            {ehCancelamento ? `Cancelar pedido ${pedido.num}` : `Alterar status do pedido ${pedido.num}`}
+          </h3>
+          <button type="button" className="gm-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
+        </div>
+
+        <div className="gm-modal-body">
+          <div className="gm-status-mudanca">
+            <div className="gm-status-mudanca-bloco">
+              <span className="gm-status-mudanca-rotulo">Situação atual</span>
+              <span className={`gm-pedido-status gm-pedido-status--${pedido.status}`}>{pedido.label}</span>
+            </div>
+            <span className="gm-status-mudanca-seta" aria-hidden="true">→</span>
+            <div className="gm-status-mudanca-bloco">
+              <span className="gm-status-mudanca-rotulo">Nova situação</span>
+              <span className={`gm-pedido-status gm-pedido-status--${novoInfo.chave}`}>{novoInfo.label}</span>
+            </div>
+          </div>
+
+          <p className="gm-status-mudanca-nota">
+            {ehCancelamento
+              ? 'O estoque dos itens volta para a loja, o cupom usado é liberado e o cliente é avisado por e-mail. Pagamentos online são estornados.'
+              : 'O cliente recebe a atualização por e-mail e a linha do pedido muda na hora. Dá para voltar a etapa depois, se precisar.'}
+          </p>
+
+          {pedido.cliente && (
+            <p className="gm-status-mudanca-cliente">Cliente: <strong>{pedido.cliente}</strong></p>
+          )}
+        </div>
+
+        <div className="gm-modal-footer">
+          <button type="button" className="gm-btn-sec" onClick={onFechar}>Voltar</button>
+          <button
+            type="button"
+            className={`gm-btn-primary ${ehCancelamento ? 'gm-btn-danger' : ''}`}
+            onClick={onConfirmar}
+          >
+            {ehCancelamento ? 'Cancelar pedido' : 'Confirmar'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2117,6 +2321,8 @@ export default function GerenciamentoMercado({
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [pedidosLoading, setPedidosLoading] = useState(true);
   const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
+  const [confirmacaoStatus, setConfirmacaoStatus] = useState<{ pedido: Pedido; novo: Pedido['statusAtual'] } | null>(null);
+  const [salvandoStatus, setSalvandoStatus] = useState<Set<number>>(new Set());
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [avaliacoesProdutos, setAvaliacoesProdutos] = useState<Avaliacao[]>([]);
   const [avaliacoesModerando, setAvaliacoesModerando] = useState(false);
@@ -2296,18 +2502,46 @@ export default function GerenciamentoMercado({
     }
   }
 
-  async function handleAvancarStatus(p: Pedido) {
-    const proximo = PROXIMO_STATUS[p.statusAtual];
-    if (!proximo) return;
+  /** Abre o modal quando `confirmar`; senão aplica na hora (avanço/volta rápida). */
+  function handleMudarStatus(p: Pedido, novo: Pedido['statusAtual'], confirmar = false) {
+    if (confirmar) {
+      setConfirmacaoStatus({ pedido: p, novo });
+      return;
+    }
+    void aplicarMudancaStatus(p, novo);
+  }
+
+  /** Muda o status no backend e reflete a mudança na lista da tela. */
+  async function aplicarMudancaStatus(p: Pedido, novo: Pedido['statusAtual']) {
+    setSalvandoStatus(prev => new Set(prev).add(p.id));
     try {
-      await api.atualizarStatusPedido(p.id, proximo);
-      const info = STATUS_PEDIDO[proximo];
+      if (novo === 'cancelado') {
+        await api.cancelarPedido(p.id);
+        const info = STATUS_PEDIDO.cancelado;
+        setPedidos(prev =>
+          prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: 'cancelado', label: info.label } : x))
+        );
+        showToast('sucesso', `Pedido #${p.id} cancelado. O estoque dos itens voltou para a loja.`);
+        return;
+      }
+
+      // 'aguardando_pagamento' é estado do webhook — a loja não muda na mão.
+      if (novo === 'aguardando_pagamento') return;
+
+      await api.atualizarStatusPedido(p.id, novo);
+      const info = STATUS_PEDIDO[novo];
       setPedidos(prev =>
-        prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: proximo, label: info.label } : x))
+        prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: novo, label: info.label } : x))
       );
       showToast('sucesso', `Pedido #${p.id} agora está "${info.label}".`);
     } catch (err) {
       showToast('erro', err instanceof Error ? err.message : 'Não foi possível atualizar o pedido.');
+    } finally {
+      setSalvandoStatus(prev => {
+        const novoSet = new Set(prev);
+        novoSet.delete(p.id);
+        return novoSet;
+      });
     }
   }
 
@@ -2442,7 +2676,8 @@ export default function GerenciamentoMercado({
     <SecPedidos
       pedidos={pedidosExpandidos ? pedidos : pedidos.slice(0, 5)}
       loading={pedidosLoading}
-      onAvancar={handleAvancarStatus}
+      onMudarStatus={handleMudarStatus}
+      salvandoIds={salvandoStatus}
       expandido={pedidosExpandidos}
       onAlternar={() => setPedidosExpandidos(v => !v)}
       total={pedidos.length}
@@ -2584,6 +2819,19 @@ export default function GerenciamentoMercado({
           mercadoId={mercadoId}
           onFechar={() => setProdutoEditando(null)}
           onSalvo={handleProdutoSalvo}
+        />
+      )}
+
+      {confirmacaoStatus && (
+        <ModalConfirmarStatus
+          pedido={confirmacaoStatus.pedido}
+          novoStatus={confirmacaoStatus.novo}
+          onConfirmar={() => {
+            const { pedido, novo } = confirmacaoStatus;
+            setConfirmacaoStatus(null);
+            void aplicarMudancaStatus(pedido, novo);
+          }}
+          onFechar={() => setConfirmacaoStatus(null)}
         />
       )}
 

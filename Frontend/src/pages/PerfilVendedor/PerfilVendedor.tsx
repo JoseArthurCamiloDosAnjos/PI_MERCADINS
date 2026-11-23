@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -413,7 +413,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 
       <div className="pu-divider" />
 
-      <section>
+      <section id="historico-compras">
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconShoppingBag size={14} /></span>Histórico de Compras</h2>
           <button className="pu-btn-link">Ver todos</button>
@@ -691,6 +691,17 @@ export default function PerfilVendedor() {
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const { usuario } = useAuth();
   const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  // Mesma âncora do perfil de usuário: voltar de um pedido leva o vendedor
+  // direto ao histórico de compras do painel dele.
+  useEffect(() => {
+    if (hash !== '#historico-compras') return;
+    const alvo = document.getElementById('historico-compras');
+    if (!alvo) return;
+    const t = setTimeout(() => alvo.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 

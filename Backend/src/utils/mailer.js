@@ -358,7 +358,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
     return
   }
   const mensagem = estornado
-    ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — a devolução aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
+    ? 'O pagamento deste pedido foi confirmado depois do cancelamento. Já solicitamos o estorno do valor — o reembolso aparece no seu meio de pagamento em até alguns dias úteis. Se tiver dúvidas, fale com a loja.'
     : 'O pagamento deste pedido foi confirmado depois do cancelamento. Nossa equipe vai estornar o valor e entrará em contato. Se tiver dúvidas, fale com a loja.';
 
   const { error } = await getResend().emails.send({

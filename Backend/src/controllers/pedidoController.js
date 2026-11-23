@@ -775,9 +775,15 @@ const atualizarStatusPedido = async (req, res) => {
       return res.status(400).json({ erro: 'Este pedido foi cancelado e não pode mudar de status.' });
     }
 
+    // Avançar e retroceder são permitidos: a loja corrige etapas marcadas por
+    // engano (ex.: "A caminho" voltando para "Em preparo"). Só não muda quem
+    // está aguardando pagamento ou já cancelado, bloqueados acima.
     const atual = ORDEM_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
-    if (ORDEM_STATUS.indexOf(status) < ORDEM_STATUS.indexOf(atual)) {
-      return res.status(400).json({ erro: 'O status de um pedido só pode avançar, não voltar.' });
+    if (status === atual) {
+      return res.status(200).json({
+        mensagem: 'O pedido já está neste status.',
+        pedido: { id: pedido.id, status: atual },
+      });
     }
 
     const [atualizado] = await sql`
@@ -1200,30 +1206,53 @@ const cancelarPedido = async (req, res) => {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
     }
 
-    if (Number(pedido.id_usuario) !== Number(id_usuario)) {
-      return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
+    // Quem cancela pode ser o cliente dono do pedido ou a própria loja
+    // (dono/admin/funcionario vinculado ao mercado).
+    const ehDono = Number(pedido.id_usuario) === Number(id_usuario);
+    let ehDaLoja = false;
+    if (!ehDono) {
+      const [membro] = await sql`
+        SELECT papel FROM usuarios_mercados
+        WHERE id_usuario = ${id_usuario} AND id_mercado = ${pedido.id_mercado}
+      `;
+      if (!membro) {
+        return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
+      }
+      ehDaLoja = true;
     }
 
     if (pedido.status === 'cancelado') {
       return res.status(200).json({ mensagem: 'Este pedido já estava cancelado.', pedido: { id: pedido.id, status: 'cancelado' } });
     }
 
-    if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
-      return res.status(400).json({
-        erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
-      });
+    if (ehDaLoja) {
+      // A loja cancela enquanto o pedido não for entregue — inclusive em
+      // preparo ou a caminho, quando a entrega não vai acontecer.
+      if (pedido.status === 'entregue') {
+        return res.status(400).json({
+          erro: 'Este pedido já foi entregue e não pode mais ser cancelado.',
+        });
+      }
+    } else {
+      if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
+        return res.status(400).json({
+          erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
+        });
+      }
+
+      if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
+        return res.status(400).json({
+          erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
+        });
+      }
     }
 
-    if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
-      return res.status(400).json({
-        erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
-      });
-    }
+    const motivoCancelamento = ehDaLoja ? 'Cancelado pela loja' : 'Cancelado pelo cliente';
 
     const [cancelado] = await sql`
       UPDATE historico_compras
-      SET status = 'cancelado', motivo_cancelamento = 'Cancelado pelo cliente'
-      WHERE id = ${pedido.id} AND status IN ('pendente', 'aguardando_pagamento')
+      SET status = 'cancelado', motivo_cancelamento = ${motivoCancelamento}
+      WHERE id = ${pedido.id} AND status = ${pedido.status}
       RETURNING id, status
     `;
     if (!cancelado) {
@@ -1238,9 +1267,19 @@ const cancelarPedido = async (req, res) => {
 
     if (pedido.asaas_payment_id) {
       try {
-        await asaas.cancelarPagamento(pedido.asaas_payment_id);
+        if (ehDaLoja) {
+          // Pagamento já confirmado → estorno. Se ainda estiver pendente o
+          // estorno falha e a cobrança é apenas cancelada em seguida.
+          try {
+            await asaas.estornarPagamento(pedido.asaas_payment_id);
+          } catch {
+            await asaas.cancelarPagamento(pedido.asaas_payment_id);
+          }
+        } else {
+          await asaas.cancelarPagamento(pedido.asaas_payment_id);
+        }
       } catch (err) {
-        console.error(`Falha ao cancelar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
+        console.error(`Falha ao encerrar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
       }
     }
 

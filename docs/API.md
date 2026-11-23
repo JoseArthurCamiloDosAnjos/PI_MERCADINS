@@ -258,7 +258,7 @@ transições de pedido). Payload sem `id`/`event` → `400`.
 | `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` / `RECEIVED_IN_CASH` (pedido — `externalReference "pedido:<id>"`) | Pedido `aguardando_pagamento` vira `pendente`; e-mails de confirmação ao cliente e aviso ao vendedor |
 | Falha real (`DELETED`, `FAILED`, `EXPIRED`) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
 | `REFUND_REQUESTED` | Estorno **solicitado** — não cancela; aguarda `REFUNDED` |
-| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela com devoluções; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
+| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela o pedido e estorna as cobranças; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
 | `PAYMENT_SPLIT_*` | Sincroniza os repasses (tabela `repasses`) do Split |
 
 ---
@@ -298,8 +298,8 @@ cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
 | GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
 | GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
-| PUT | `/api/pedidos/:id/status` | token (dono) | Muda o status e avisa o cliente por E-mail |
-| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível) |
+| PUT | `/api/pedidos/:id/status` | token (membro da loja) | Muda o status para qualquer etapa (avança **ou volta**) e avisa o cliente por E-mail |
+| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível); a loja cancela até a entrega |
 | GET | `/api/pedidos/:id/itens-recompra` | token | Produtos do pedido com preço/estoque atuais (base do botão "comprar de novo") |
 | DELETE | `/api/pedidos/:id/historico` | token | Cliente remove o pedido da própria lista |
 | GET | `/api/usuario/historico` | token | Histórico de compras do cliente |
@@ -339,10 +339,13 @@ Corpo de um pedido:
   O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
   exibido como `pix`).
 
-Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
-`pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda
-os estados especiais `aguardando_pagamento` (webhook ainda não confirmou) e
-`cancelado` (não muda mais).
+Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila é
+`pendente → preparo → caminho → entregue` e a loja pode percorrê-la nos dois
+sentidos — inclusive **voltar uma etapa** para corrigir um status marcado por
+engano; existem ainda os estados especiais `aguardando_pagamento` (webhook
+ainda não confirmou) e `cancelado` (não muda mais). O cancelamento
+(`POST /:id/cancelar`) é feito pelo cliente ou pela loja, até a entrega, e
+recupera estoque e cupom.
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").

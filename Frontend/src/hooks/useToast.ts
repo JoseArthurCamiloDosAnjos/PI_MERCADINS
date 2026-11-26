@@ -1,7 +1,5 @@
 import { useCallback, useRef, useState } from "react";
 
-const MAX_TOASTS = 3;
-
 export interface Toast {
   id: number;
   tipo: "sucesso" | "erro" | "aviso" | "info";

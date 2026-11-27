@@ -297,9 +297,9 @@ cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 | POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, teto de 99 unidades por produto, mínimo e cupom; envia E-mail de confirmação) |
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
 | GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
-| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
-| PUT | `/api/pedidos/:id/status` | token (membro da loja) | Muda o status para qualquer etapa (avança **ou volta**) e avisa o cliente por E-mail |
-| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível); a loja cancela até a entrega |
+| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja); para quem **gerencia**, inclui contato do cliente, motivo do cancelamento e itens detalhados |
+| PUT | `/api/pedidos/:id/status` | token (membro da loja) | Muda o status para qualquer etapa (avança **ou volta**), inclusive `tentativa`, e avisa o cliente por E-mail |
+| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível); a loja cancela até a entrega e pode enviar `{ "motivo": "..." }` no corpo |
 | GET | `/api/pedidos/:id/itens-recompra` | token | Produtos do pedido com preço/estoque atuais (base do botão "comprar de novo") |
 | DELETE | `/api/pedidos/:id/historico` | token | Cliente remove o pedido da própria lista |
 | GET | `/api/usuario/historico` | token | Histórico de compras do cliente |
@@ -339,13 +339,33 @@ Corpo de um pedido:
   O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
   exibido como `pix`).
 
-Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila é
-`pendente → preparo → caminho → entregue` e a loja pode percorrê-la nos dois
-sentidos — inclusive **voltar uma etapa** para corrigir um status marcado por
-engano; existem ainda os estados especiais `aguardando_pagamento` (webhook
-ainda não confirmou) e `cancelado` (não muda mais). O cancelamento
-(`POST /:id/cancelar`) é feito pelo cliente ou pela loja, até a entrega, e
-recupera estoque e cupom.
+Status possíveis do pedido (`PUT /api/pedidos/:id/status`), por tipo de
+recebimento:
+
+- **entrega**: `pendente → preparo → pronto → caminho → entregue`;
+- **retirada**: `pendente → preparo → pronto → entregue` (não existe "saiu
+  para entrega" — o cliente busca no balcão).
+
+A loja pode percorrer a fila nos dois sentidos — inclusive **voltar uma etapa**
+para corrigir um status marcado por engano. Há ainda o desvio `tentativa`
+("Tentativa de entrega", **só em pedidos de entrega**): marca que o entregador
+tentou e não conseguiu; o pedido segue valendo a etapa `caminho` e volta a ela
+ou avança para `entregue`. Em retirada o servidor recusa `tentativa`. Os estados
+especiais `aguardando_pagamento` (webhook ainda não confirmou) e `cancelado`
+(não muda mais) continuam como antes.
+
+O cancelamento (`POST /:id/cancelar`) é feito pelo cliente ou pela loja, até a
+entrega, e recupera estoque e cupom. Quando quem cancela é a loja, o corpo pode
+trazer `{ "motivo": "..." }` (até 300 caracteres): o texto é gravado em
+`motivo_cancelamento` (`"Cancelado pela loja: …"`), aparece no e-mail e na
+notificação do cliente e é devolvido em `GET /pedidos/:id` para quem gerencia.
+
+As **chaves** de status são sempre as mesmas, mas o **texto** exibido no site
+depende de `tipo_entrega`: em pedidos de `retirada`, `pronto`/`caminho` aparece
+como **"Pronto para retirada"** e `entregue` como **"Retirado no balcão"** (na
+visão da loja, "Retirado"), em vez de "A caminho"/"Entregue". Os rótulos vêm de
+`Frontend/src/utils/statusPedido.ts` e os e-mails/notificações repetem a mesma
+lógica no backend.
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").

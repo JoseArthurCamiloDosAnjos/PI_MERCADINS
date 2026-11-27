@@ -256,6 +256,8 @@
 .mp-status--aguardando_pagamento { background: #fff4d6; color: #8a6100; }
 .mp-status--pendente             { background: #e8effc; color: #1a3a7a; }
 .mp-status--preparo              { background: #fdf3d7; color: #7a5c00; }
+.mp-status--pronto               { background: #d9f7ec; color: #0f6b52; }
+.mp-status--tentativa            { background: #fdeedc; color: #9a4a06; }
 .mp-status--caminho              { background: #dff5e7; color: #14663a; }
 .mp-status--entregue             { background: #d6f2e0; color: #14532d; }
 .mp-status--cancelado            { background: #fde8ea; color: #9b1c2c; }

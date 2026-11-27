@@ -35,6 +35,7 @@ import {
   IconBell,
   IconLocationMap,
 } from '../../components/Icons';
+import { nomeStatusCliente, passosPedido, indiceDoStatus, type TipoEntrega } from '../../utils/statusPedido';
 
 interface Mercado {
   id_mercado: number;
@@ -46,7 +47,7 @@ interface Mercado {
 }
 
 interface Favorito { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; tipo_entrega?: TipoEntrega; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
 interface PedidoDetalhe {
@@ -60,7 +61,7 @@ interface PedidoDetalhe {
   desconto: number;
   cupom: string;
   total: number;
-  tipoEntrega: 'entrega' | 'retirada';
+  tipoEntrega: TipoEntrega;
   enderecoEntrega: string;
   agendamento: string;
   observacao: string;
@@ -69,17 +70,6 @@ interface PedidoDetalhe {
   dataCompra: string;
   gerencia: boolean;
 }
-
-const NOMES_STATUS: Record<string, string> = {
-  aguardando_pagamento: 'Aguardando pagamento',
-  pendente: 'Recebido pela loja',
-  preparo: 'Em preparo',
-  caminho: 'A caminho',
-  entregue: 'Entregue',
-  cancelado: 'Cancelado',
-};
-
-const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
 
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -164,7 +154,7 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [onFechar]);
 
-  const indiceAtual = pedido ? PASSOS_NORMAL.indexOf(pedido.status) : -1;
+  const indiceAtual = pedido ? indiceDoStatus(pedido.status, pedido.tipoEntrega) : -1;
 
   return (
     <div
@@ -193,13 +183,13 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
                 </p>
               </div>
               <span className={`mp-status mp-status--${pedido.status}`}>
-                {NOMES_STATUS[pedido.status] ?? pedido.status}
+                {nomeStatusCliente(pedido.status, pedido.tipoEntrega)}
               </span>
             </div>
 
             {pedido.status !== 'cancelado' && (
               <ol className="mp-timeline">
-                {PASSOS_NORMAL.map((p, i) => (
+                {passosPedido(pedido.tipoEntrega).map((p, i) => (
                   <li
                     key={p}
                     className={
@@ -208,7 +198,7 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
                       (indiceAtual === i ? ' is-atual' : '')
                     }
                   >
-                    {NOMES_STATUS[p]}
+                    {nomeStatusCliente(p, pedido.tipoEntrega)}
                   </li>
                 ))}
               </ol>
@@ -447,7 +437,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
                   <p className="pu-hcard-nome">{p.mercado}</p>
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
+                  <span className={`pu-status ${p.status}`}>● {nomeStatusCliente(p.status, p.tipo_entrega)}</span>
                   <span className="pv-hcard-ver">Ver detalhes <IconArrowRight size={12} /></span>
                 </div>
               </div>

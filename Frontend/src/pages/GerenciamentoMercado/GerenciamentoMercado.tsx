@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
@@ -30,6 +30,7 @@ import {
   IconArrowLeft,
 } from '../../components/Icons';
 import LogoTopbar from '../../components/LogoTopbar';
+import { nomeStatusLoja, passosPedido, statusNaLinha, statusAnterior, proximoStatus, type TipoEntrega } from '../../utils/statusPedido';
 
 const SKELETON_HEIGHTS = [55, 80, 65, 90, 45, 75];
 
@@ -57,11 +58,13 @@ interface Pedido {
   preco: string;
   valorNum: number;
   data: string;
-  status: 'entregue' | 'caminho' | 'preparo' | 'novo' | 'aguardando' | 'cancelado';
-  statusAtual: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
+  status: 'entregue' | 'caminho' | 'pronto' | 'tentativa' | 'preparo' | 'novo' | 'aguardando' | 'cancelado';
+  statusAtual:
+    | 'pendente' | 'preparo' | 'pronto' | 'caminho' | 'tentativa' | 'entregue'
+    | 'aguardando_pagamento' | 'cancelado';
   label: string;
   observacao?: string;
-  tipoEntrega: 'entrega' | 'retirada';
+  tipoEntrega: TipoEntrega;
   enderecoEntrega?: string;
   taxaEntrega: number;
   agendamento?: string;
@@ -170,31 +173,49 @@ function formatarBRL(valor: number) {
 }
 
 // ─── Status dos pedidos ───────────────────────────────────────────────────────
-const STATUS_PEDIDO: Record<string, { chave: Pedido['status']; label: string }> = {
-  aguardando_pagamento: { chave: 'aguardando', label: 'Aguardando pagamento' },
-  pendente: { chave: 'novo',     label: 'Novo' },
-  preparo:  { chave: 'preparo',  label: 'Em preparo' },
-  caminho:  { chave: 'caminho',  label: 'A caminho' },
-  entregue: { chave: 'entregue', label: 'Entregue' },
-  cancelado: { chave: 'cancelado', label: 'Cancelado' },
+/**
+ * Chave de cada status na tela da loja. O texto exibido vem de
+ * `nomeStatusLoja(status, tipoEntrega)`, que troca "A caminho"/"Entregue" por
+ * "Pronto para retirada"/"Retirado" quando o pedido é para retirada no balcão.
+ */
+const STATUS_PEDIDO: Record<string, { chave: Pedido['status'] }> = {
+  aguardando_pagamento: { chave: 'aguardando' },
+  pendente: { chave: 'novo' },
+  preparo: { chave: 'preparo' },
+  pronto: { chave: 'pronto' },
+  caminho: { chave: 'caminho' },
+  tentativa: { chave: 'tentativa' },
+  entregue: { chave: 'entregue' },
+  cancelado: { chave: 'cancelado' },
 };
 
-const PROXIMO_STATUS: Partial<Record<Pedido['statusAtual'], 'pendente' | 'preparo' | 'caminho' | 'entregue'>> = {
-  pendente: 'preparo',
-  preparo:  'caminho',
-  caminho:  'entregue',
-};
+/**
+ * Etapas do pedido, na ordem em que ele caminha. Muda com o tipo de
+ * recebimento: entrega passa por "saiu para entrega"; retirada vai direto do
+ * preparo para o balcão. 'tentativa' fica fora da linha (é um desvio, só em
+ * entrega) e por isso não aparece aqui.
+ */
+function etapasDoPedido(tipoEntrega: TipoEntrega): Pedido['statusAtual'][] {
+  return passosPedido(tipoEntrega) as Pedido['statusAtual'][];
+}
 
-/** Etapas na ordem em que o pedido caminha — serve para avançar e para voltar. */
-const FLUXO_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'] as const;
+/** Etapa anterior à atual, já respeitando o tipo de recebimento. */
+function etapaAnterior(pedido: Pedido): Pedido['statusAtual'] | null {
+  return (statusAnterior(pedido.statusAtual, pedido.tipoEntrega) ?? null) as Pedido['statusAtual'] | null;
+}
 
-type StatusFluxo = (typeof FLUXO_STATUS)[number];
+/** Próxima etapa da linha principal; `null` quando o pedido terminou. */
+function proximaEtapa(pedido: Pedido): Pedido['statusAtual'] | null {
+  return (proximoStatus(pedido.statusAtual, pedido.tipoEntrega) ?? null) as Pedido['statusAtual'] | null;
+}
 
-const STATUS_ANTERIOR: Partial<Record<StatusFluxo, StatusFluxo>> = {
-  preparo:  'pendente',
-  caminho:  'preparo',
-  entregue: 'caminho',
-};
+/** Todos os status que a loja pode escolher para este pedido, menos o atual. */
+function statusDisponiveis(pedido: Pedido): Pedido['statusAtual'][] {
+  const atual = statusNaLinha(pedido.statusAtual, pedido.tipoEntrega);
+  const desvios: Pedido['statusAtual'][] = pedido.tipoEntrega === 'retirada' ? [] : ['tentativa'];
+  return [...etapasDoPedido(pedido.tipoEntrega), ...desvios]
+    .filter((s) => s !== atual && s !== pedido.statusAtual);
+}
 
 // ─── Sidebar nav ─────────────────────────────────────────────────────────────
 
@@ -729,6 +750,7 @@ function SecPedidos({
   pedidos,
   loading,
   onMudarStatus,
+  onVerDetalhes,
   salvandoIds,
   expandido,
   onAlternar,
@@ -737,6 +759,7 @@ function SecPedidos({
   pedidos: Pedido[];
   loading: boolean;
   onMudarStatus: (p: Pedido, novo: Pedido['statusAtual'], confirmar?: boolean) => void;
+  onVerDetalhes: (p: Pedido) => void;
   salvandoIds: Set<number>;
   expandido: boolean;
   onAlternar: () => void;
@@ -767,7 +790,7 @@ function SecPedidos({
                 <span className="gm-pedido-itens">{p.itens}</span>
                 <span className="gm-pedido-preco">{p.preco}</span>
                 <span className={`gm-pedido-status gm-pedido-status--${p.status}`}>{p.label}</span>
-                <AcoesPedido pedido={p} onMudarStatus={onMudarStatus} salvando={salvandoIds.has(p.id)} />
+                <AcoesPedido pedido={p} onMudarStatus={onMudarStatus} onVerDetalhes={onVerDetalhes} salvando={salvandoIds.has(p.id)} />
                 {p.observacao && (
                   <span className="gm-pedido-obs" title="Observação do cliente">
                     <IconInfo size={12} /> {p.observacao}
@@ -779,8 +802,8 @@ function SecPedidos({
                   </span>
                 )}
                 {(p.tipoEntrega === 'retirada' || p.taxaEntrega > 0 || p.cupom || p.agendamento || p.formaPagamento !== 'presencial') && (
-                  <span className="gm-pedido-obs" title="Entrega, agendamento, pagamento e cupom do pedido">
-                    <IconTruck size={12} />{' '}
+                  <span className="gm-pedido-obs" title="Entrega ou retirada, agendamento, pagamento e cupom do pedido">
+                    {p.tipoEntrega === 'retirada' ? <IconStore size={12} /> : <IconTruck size={12} />}{' '}
                     {p.tipoEntrega === 'retirada'
                       ? 'Retirada no balcão'
                       : p.taxaEntrega > 0
@@ -809,10 +832,12 @@ function SecPedidos({
 function AcoesPedido({
   pedido,
   onMudarStatus,
+  onVerDetalhes,
   salvando = false,
 }: {
   pedido: Pedido;
   onMudarStatus: (p: Pedido, novo: Pedido['statusAtual'], confirmar?: boolean) => void;
+  onVerDetalhes: (p: Pedido) => void;
   salvando?: boolean;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -841,8 +866,8 @@ function AcoesPedido({
     return <span className="gm-pedido-check gm-pedido-check--cancelado" title="Pedido cancelado">✕</span>;
   }
 
-  const anterior = STATUS_ANTERIOR[pedido.statusAtual as StatusFluxo];
-  const proximo = PROXIMO_STATUS[pedido.statusAtual];
+  const anterior = etapaAnterior(pedido);
+  const proximo = proximaEtapa(pedido);
 
   return (
     <div
@@ -858,9 +883,9 @@ function AcoesPedido({
           className="gm-pedido-btn"
           onClick={() => onMudarStatus(pedido, anterior)}
           disabled={salvando}
-          title={`Voltar o pedido ${pedido.num} para "${STATUS_PEDIDO[anterior].label}"`}
+          title={`Voltar o pedido ${pedido.num} para "${nomeStatusLoja(anterior, pedido.tipoEntrega)}"`}
         >
-          ← {STATUS_PEDIDO[anterior].label}
+          ← {nomeStatusLoja(anterior, pedido.tipoEntrega)}
         </button>
       )}
 
@@ -870,9 +895,9 @@ function AcoesPedido({
           className="gm-pedido-acao"
           onClick={() => onMudarStatus(pedido, proximo)}
           disabled={salvando}
-          title={`Avançar o pedido ${pedido.num} para "${STATUS_PEDIDO[proximo].label}"`}
+          title={`Avançar o pedido ${pedido.num} para "${nomeStatusLoja(proximo, pedido.tipoEntrega)}"`}
         >
-          {STATUS_PEDIDO[proximo].label} →
+          {nomeStatusLoja(proximo, pedido.tipoEntrega)} →
         </button>
       ) : (
         <span className="gm-pedido-check" title="Pedido concluído">✓</span>
@@ -895,7 +920,7 @@ function AcoesPedido({
         {menuAberto && (
           <div className="gm-pedido-menu" role="menu">
             <p className="gm-pedido-menu-titulo">Mudar status para</p>
-            {FLUXO_STATUS.filter((s) => s !== pedido.statusAtual).map((s) => (
+            {statusDisponiveis(pedido).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -906,10 +931,21 @@ function AcoesPedido({
                   onMudarStatus(pedido, s, true);
                 }}
               >
-                {STATUS_PEDIDO[s].label}
+                {nomeStatusLoja(s, pedido.tipoEntrega)}
               </button>
             ))}
             <div className="gm-pedido-menu-div" />
+            <button
+              type="button"
+              role="menuitem"
+              className="gm-pedido-menu-item"
+              onClick={() => {
+                setMenuAberto(false);
+                onVerDetalhes(pedido);
+              }}
+            >
+              Ver detalhes do pedido
+            </button>
             <button
               type="button"
               role="menuitem"
@@ -938,11 +974,12 @@ function ModalConfirmarStatus({
 }: {
   pedido: Pedido;
   novoStatus: Pedido['statusAtual'];
-  onConfirmar: () => void;
+  onConfirmar: (motivo: string) => void;
   onFechar: () => void;
 }) {
   const ehCancelamento = novoStatus === 'cancelado';
   const novoInfo = STATUS_PEDIDO[novoStatus] ?? STATUS_PEDIDO.pendente;
+  const [motivo, setMotivo] = useState('');
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
@@ -974,13 +1011,27 @@ function ModalConfirmarStatus({
             <span className="gm-status-mudanca-seta" aria-hidden="true">→</span>
             <div className="gm-status-mudanca-bloco">
               <span className="gm-status-mudanca-rotulo">Nova situação</span>
-              <span className={`gm-pedido-status gm-pedido-status--${novoInfo.chave}`}>{novoInfo.label}</span>
+              <span className={`gm-pedido-status gm-pedido-status--${novoInfo.chave}`}>{nomeStatusLoja(novoStatus, pedido.tipoEntrega)}</span>
             </div>
           </div>
 
+          {ehCancelamento && (
+            <label className="gm-status-motivo">
+              <span>Motivo do cancelamento <em>(informado ao cliente)</em></span>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                maxLength={300}
+                rows={3}
+                placeholder="Ex.: item sem estoque, cliente desistiu, endereço fora da área…"
+              />
+              <small>{motivo.length}/300 caracteres</small>
+            </label>
+          )}
+
           <p className="gm-status-mudanca-nota">
             {ehCancelamento
-              ? 'O estoque dos itens volta para a loja, o cupom usado é liberado e o cliente é avisado por e-mail. Pagamentos online são estornados.'
+              ? 'O estoque dos itens volta para a loja, o cupom usado é liberado e o cliente é avisado por e-mail com o motivo. Pagamentos online são estornados.'
               : 'O cliente recebe a atualização por e-mail e a linha do pedido muda na hora. Dá para voltar a etapa depois, se precisar.'}
           </p>
 
@@ -994,10 +1045,281 @@ function ModalConfirmarStatus({
           <button
             type="button"
             className={`gm-btn-primary ${ehCancelamento ? 'gm-btn-danger' : ''}`}
-            onClick={onConfirmar}
+            onClick={() => onConfirmar(motivo.trim())}
           >
             {ehCancelamento ? 'Cancelar pedido' : 'Confirmar'}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Detalhes completos do pedido ─────────────────────────────────────────────
+
+interface ItemDetalhado {
+  id_produto: number;
+  nome: string;
+  imagem?: string;
+  quantidade: number;
+  preco: number;
+  subtotal: number;
+}
+
+interface PedidoDetalhado {
+  id: number;
+  cliente: string;
+  clienteEmail?: string;
+  clienteTelefone?: string;
+  itens: string;
+  valorTotal: number;
+  taxaEntrega: number;
+  desconto: number;
+  cupom: string;
+  total: number;
+  tipoEntrega: TipoEntrega;
+  enderecoEntrega: string;
+  agendamento: string;
+  observacao: string;
+  status: string;
+  formaPagamento: string;
+  dataCompra: string;
+  motivoCancelamento?: string;
+  itensDetalhados?: ItemDetalhado[];
+}
+
+const FORMAS_PAGAMENTO: Record<string, string> = {
+  presencial: 'Pagamento na entrega',
+  pix: 'Pix',
+  cartao: 'Cartão',
+};
+
+/**
+ * Painel completo de um pedido: quem pediu (com contato), o que foi pedido
+ * (item a item), como e onde recebe, observações e a linha de status — que
+ * também é o controle de etapas: clicar em uma etapa leva o pedido para lá.
+ */
+function ModalDetalhesPedido({
+  pedido,
+  onFechar,
+  onMudarStatus,
+  onStatusServidor,
+}: {
+  pedido: Pedido;
+  onFechar: () => void;
+  onMudarStatus: (p: Pedido, novo: Pedido['statusAtual'], confirmar?: boolean) => void;
+  onStatusServidor: (id: number, status: Pedido['statusAtual']) => void;
+}) {
+  const [detalhe, setDetalhe] = useState<PedidoDetalhado | null>(null);
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let vivo = true;
+    api.detalharPedido(pedido.id)
+      .then((data) => {
+        if (!vivo) return;
+        setDetalhe(data.pedido ?? null);
+        // O servidor pode estar mais novo que a lista (pagamento confirmado,
+        // outra pessoa da loja mexeu): a lista é a fonte única do status.
+        if (data.pedido?.status) onStatusServidor(pedido.id, data.pedido.status);
+      })
+      .catch((err) => { if (vivo) setErro(err instanceof Error ? err.message : 'Não foi possível carregar o pedido.'); })
+      .finally(() => { if (vivo) setCarregando(false); });
+    return () => { vivo = false; };
+  }, [pedido.id, onStatusServidor]);
+
+  useEffect(() => {
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') onFechar();
+    }
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [onFechar]);
+
+  // Fonte única do status: a lista da loja (atualizada por quem muda o status).
+  const statusAtual = pedido.statusAtual;
+  const tipoEntrega = detalhe?.tipoEntrega ?? pedido.tipoEntrega;
+  const pedidoAtualizado: Pedido = {
+    ...pedido,
+    statusAtual,
+    status: STATUS_PEDIDO[statusAtual]?.chave ?? pedido.status,
+    label: nomeStatusLoja(statusAtual, tipoEntrega),
+    tipoEntrega,
+  };
+  const etapas = passosPedido(tipoEntrega);
+  const desvios: string[] = tipoEntrega === 'retirada' ? [] : ['tentativa'];
+  const indiceAtual = etapas.indexOf(statusNaLinha(statusAtual, tipoEntrega));
+  const encerrado = statusAtual === 'cancelado' || statusAtual === 'entregue';
+
+  function irPara(status: string) {
+    if (status === statusAtual) return;
+    onMudarStatus(pedidoAtualizado, status as Pedido['statusAtual'], true);
+  }
+
+  return (
+    <div
+      className="gm-modal-overlay"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onFechar(); }}
+    >
+      <div className="gm-modal gm-modal--detalhes" role="dialog" aria-modal="true" aria-labelledby="gm-detalhes-titulo">
+        <div className="gm-modal-header">
+          <h3 id="gm-detalhes-titulo">Pedido {pedido.num} — detalhes</h3>
+          <button type="button" className="gm-modal-close" onClick={onFechar} aria-label="Fechar">✕</button>
+        </div>
+
+        <div className="gm-modal-body">
+          {carregando ? (
+            <p className="gm-detalhe-status-msg">Carregando pedido…</p>
+          ) : erro ? (
+            <p className="gm-detalhe-status-msg gm-detalhe-status-msg--erro">{erro}</p>
+          ) : detalhe ? (
+            <>
+              <div className="gm-detalhe-topo">
+                <span className={`gm-pedido-status gm-pedido-status--${STATUS_PEDIDO[statusAtual]?.chave ?? 'novo'}`}>
+                  {nomeStatusLoja(statusAtual, tipoEntrega)}
+                </span>
+                <span className="gm-detalhe-data">
+                  <IconClock size={13} /> {new Date(detalhe.dataCompra).toLocaleString('pt-BR')}
+                </span>
+                <span className="gm-detalhe-tipo">
+                  {tipoEntrega === 'retirada' ? <IconStore size={13} /> : <IconTruck size={13} />}
+                  {tipoEntrega === 'retirada' ? 'Retirada no balcão' : 'Entrega'}
+                </span>
+              </div>
+
+              {/* Linha do tempo = controle de etapas (clicar muda o status) */}
+              <ol className="gm-detalhe-etapas" aria-label="Etapas do pedido — clique para mudar o status">
+                {etapas.map((etapa, i) => {
+                  const feita = indiceAtual >= 0 && i < indiceAtual;
+                  const ativa = indiceAtual >= 0 && i === indiceAtual;
+                  return (
+                    <li key={etapa} className="gm-detalhe-etapa">
+                      <button
+                        type="button"
+                        className={`gm-detalhe-etapa-btn${feita ? ' feita' : ''}${ativa ? ' ativa' : ''}`}
+                        onClick={() => irPara(etapa)}
+                        disabled={ativa || encerrado || carregando}
+                        title={`Mover o pedido para "${nomeStatusLoja(etapa, tipoEntrega)}"`}
+                      >
+                        <span className="gm-detalhe-etapa-ponto" aria-hidden="true">{feita ? '✓' : i + 1}</span>
+                        <span>{nomeStatusLoja(etapa, tipoEntrega)}</span>
+                      </button>
+                      {i < etapas.length - 1 && <span className="gm-detalhe-etapa-liga" aria-hidden="true" />}
+                    </li>
+                  );
+                })}
+                {desvios.map((desvio) => (
+                  <li key={desvio} className="gm-detalhe-etapa gm-detalhe-etapa--desvio">
+                    <button
+                      type="button"
+                      className={`gm-detalhe-etapa-btn${statusAtual === desvio ? ' ativa' : ''}`}
+                      onClick={() => irPara(desvio)}
+                      disabled={statusAtual === desvio || encerrado || carregando}
+                      title="Marcar uma tentativa de entrega sem sucesso"
+                    >
+                      <span className="gm-detalhe-etapa-ponto" aria-hidden="true">!</span>
+                      <span>{nomeStatusLoja(desvio, tipoEntrega)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+
+              {statusAtual === 'tentativa' && (
+                <p className="gm-detalhe-nota">
+                  O pedido continua na etapa “{nomeStatusLoja('caminho', tipoEntrega)}”: a tentativa falhou e o
+                  entregador pode tentar de novo ou o cliente combina uma nova entrega com a loja.
+                </p>
+              )}
+
+              <div className="gm-detalhe-grid">
+                <section className="gm-detalhe-bloco">
+                  <h4><IconInfo size={14} /> Cliente</h4>
+                  <p><strong>{detalhe.cliente}</strong></p>
+                  {detalhe.clienteEmail && (
+                    <p className="gm-detalhe-linha"><IconMail size={13} /> {detalhe.clienteEmail}</p>
+                  )}
+                  {detalhe.clienteTelefone && (
+                    <p className="gm-detalhe-linha"><IconPhone size={13} /> {detalhe.clienteTelefone}</p>
+                  )}
+                </section>
+
+                <section className="gm-detalhe-bloco">
+                  <h4>
+                    {tipoEntrega === 'retirada' ? <IconStore size={14} /> : <IconMapPin size={14} />}
+                    {tipoEntrega === 'retirada' ? 'Retirada' : 'Entrega'}
+                  </h4>
+                  {tipoEntrega === 'retirada' ? (
+                    <p>O cliente retira no balcão da loja.</p>
+                  ) : (
+                    <p className="gm-detalhe-linha">{detalhe.enderecoEntrega || 'Sem endereço informado.'}</p>
+                  )}
+                  <p className="gm-detalhe-linha">
+                    Taxa: {detalhe.taxaEntrega > 0 ? formatarBRL(detalhe.taxaEntrega) : 'grátis'}
+                  </p>
+                  {detalhe.agendamento && <p className="gm-detalhe-linha"><IconClock size={13} /> {detalhe.agendamento}</p>}
+                </section>
+
+                <section className="gm-detalhe-bloco">
+                  <h4><IconReceipt size={14} /> Pagamento</h4>
+                  <p>{FORMAS_PAGAMENTO[detalhe.formaPagamento] ?? detalhe.formaPagamento}</p>
+                  <p className="gm-detalhe-linha">Itens: {formatarBRL(detalhe.valorTotal)}</p>
+                  {detalhe.desconto > 0 && (
+                    <p className="gm-detalhe-linha">
+                      Desconto{detalhe.cupom ? ` (${detalhe.cupom})` : ''}: − {formatarBRL(detalhe.desconto)}
+                    </p>
+                  )}
+                  <p className="gm-detalhe-total">Total: <strong>{formatarBRL(detalhe.total)}</strong></p>
+                </section>
+
+                {(detalhe.observacao || detalhe.motivoCancelamento) && (
+                  <section className="gm-detalhe-bloco">
+                    <h4><IconTag size={14} /> Observações</h4>
+                    {detalhe.observacao && <p>{detalhe.observacao}</p>}
+                    {detalhe.motivoCancelamento && (
+                      <p className="gm-detalhe-motivo"><strong>Motivo do cancelamento:</strong> {detalhe.motivoCancelamento}</p>
+                    )}
+                  </section>
+                )}
+              </div>
+
+              <div className="gm-detalhe-itens">
+                <h4><IconShoppingCart size={14} /> Itens do pedido</h4>
+                {detalhe.itensDetalhados && detalhe.itensDetalhados.length > 0 ? (
+                  <ul className="gm-detalhe-itens-lista">
+                    {detalhe.itensDetalhados.map((item) => (
+                      <li key={item.id_produto} className="gm-detalhe-item">
+                        <span className="gm-detalhe-item-img">
+                          {item.imagem ? <Imagem src={item.imagem} alt={item.nome} sizes="48px" /> : <IconPackage size={16} />}
+                        </span>
+                        <span className="gm-detalhe-item-nome">{item.nome}</span>
+                        <span className="gm-detalhe-item-qtd">{item.quantidade} × {formatarBRL(item.preco)}</span>
+                        <span className="gm-detalhe-item-sub">{formatarBRL(item.subtotal)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="gm-detalhe-itens-texto">{detalhe.itens || 'Sem itens registrados.'}</p>
+                )}
+                <p className="gm-detalhe-itens-legenda">
+                  Preço de cada item: valor atual no catálogo da loja.
+                </p>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <div className="gm-modal-footer">
+          <button type="button" className="gm-btn-sec" onClick={onFechar}>Fechar</button>
+          {!encerrado && (
+            <button
+              type="button"
+              className="gm-btn-primary gm-btn-danger"
+              onClick={() => onMudarStatus(pedidoAtualizado, 'cancelado', true)}
+            >
+              Cancelar pedido
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1108,7 +1430,9 @@ function SecAvaliacoes({
 const STATUS_DEMANDA: { chave: string; label: string }[] = [
   { chave: 'pendente', label: 'Pendentes' },
   { chave: 'preparo', label: 'Em preparo' },
-  { chave: 'caminho', label: 'Saiu para entrega' },
+  { chave: 'pronto', label: 'Prontos' },
+  { chave: 'caminho', label: 'A caminho' },
+  { chave: 'tentativa', label: 'Tentativa de entrega' },
   { chave: 'entregue', label: 'Entregues' },
 ];
 
@@ -2322,6 +2646,7 @@ export default function GerenciamentoMercado({
   const [pedidosLoading, setPedidosLoading] = useState(true);
   const [pedidosExpandidos, setPedidosExpandidos] = useState(false);
   const [confirmacaoStatus, setConfirmacaoStatus] = useState<{ pedido: Pedido; novo: Pedido['statusAtual'] } | null>(null);
+  const [detalhesPedido, setDetalhesPedido] = useState<Pedido | null>(null);
   const [salvandoStatus, setSalvandoStatus] = useState<Set<number>>(new Set());
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [avaliacoesProdutos, setAvaliacoesProdutos] = useState<Avaliacao[]>([]);
@@ -2379,7 +2704,7 @@ export default function GerenciamentoMercado({
         setPedidos(
           (data.pedidos ?? []).map((p: {
             id: number; cliente: string; itens: string; valorTotal: number;
-            dataCompra: string; status: 'pendente' | 'preparo' | 'caminho' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
+            dataCompra: string; status: 'pendente' | 'preparo' | 'pronto' | 'caminho' | 'tentativa' | 'entregue' | 'aguardando_pagamento' | 'cancelado';
             observacao?: string;
             tipoEntrega?: 'entrega' | 'retirada'; taxaEntrega?: number;
             enderecoEntrega?: string;
@@ -2397,7 +2722,7 @@ export default function GerenciamentoMercado({
               data: p.dataCompra,
               status: info.chave,
               statusAtual: p.status,
-              label: info.label,
+              label: nomeStatusLoja(p.status, p.tipoEntrega),
               observacao: (p.observacao ?? '').trim(),
               tipoEntrega: p.tipoEntrega === 'retirada' ? 'retirada' : 'entrega',
               enderecoEntrega: (p.enderecoEntrega ?? '').trim(),
@@ -2511,15 +2836,34 @@ export default function GerenciamentoMercado({
     void aplicarMudancaStatus(p, novo);
   }
 
+  /**
+   * Status devolvido pela API (detalhe do pedido): a lista é a fonte única,
+   * então o que chega diferente só é aplicado se ainda for outro status.
+   */
+  const sincronizarStatusServidor = useCallback((id: number, status: Pedido['statusAtual']) => {
+    const info = STATUS_PEDIDO[status];
+    if (!info) return;
+    const aplica = (x: Pedido): Pedido =>
+      x.id === id && x.statusAtual !== status
+        ? { ...x, status: info.chave, statusAtual: status, label: nomeStatusLoja(status, x.tipoEntrega) }
+        : x;
+    setPedidos((prev) => prev.map(aplica));
+    setDetalhesPedido((prev) => (prev ? aplica(prev) : prev));
+  }, []);
+
   /** Muda o status no backend e reflete a mudança na lista da tela. */
-  async function aplicarMudancaStatus(p: Pedido, novo: Pedido['statusAtual']) {
+  async function aplicarMudancaStatus(p: Pedido, novo: Pedido['statusAtual'], motivo = '') {
     setSalvandoStatus(prev => new Set(prev).add(p.id));
     try {
       if (novo === 'cancelado') {
-        await api.cancelarPedido(p.id);
+        await api.cancelarPedido(p.id, motivo);
         const info = STATUS_PEDIDO.cancelado;
+        const label = nomeStatusLoja('cancelado', p.tipoEntrega);
         setPedidos(prev =>
-          prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: 'cancelado', label: info.label } : x))
+          prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: 'cancelado', label } : x))
+        );
+        setDetalhesPedido(prev =>
+          prev && prev.id === p.id ? { ...prev, status: 'cancelado', statusAtual: 'cancelado', label } : prev
         );
         showToast('sucesso', `Pedido #${p.id} cancelado. O estoque dos itens voltou para a loja.`);
         return;
@@ -2529,11 +2873,15 @@ export default function GerenciamentoMercado({
       if (novo === 'aguardando_pagamento') return;
 
       await api.atualizarStatusPedido(p.id, novo);
-      const info = STATUS_PEDIDO[novo];
+      const info = STATUS_PEDIDO[novo] ?? STATUS_PEDIDO.pendente;
+      const label = nomeStatusLoja(novo, p.tipoEntrega);
       setPedidos(prev =>
-        prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: novo, label: info.label } : x))
+        prev.map(x => (x.id === p.id ? { ...x, status: info.chave, statusAtual: novo, label } : x))
       );
-      showToast('sucesso', `Pedido #${p.id} agora está "${info.label}".`);
+      setDetalhesPedido(prev =>
+        prev && prev.id === p.id ? { ...prev, status: info.chave, statusAtual: novo, label } : prev
+      );
+      showToast('sucesso', `Pedido #${p.id} agora está "${label}".`);
     } catch (err) {
       showToast('erro', err instanceof Error ? err.message : 'Não foi possível atualizar o pedido.');
     } finally {
@@ -2677,6 +3025,7 @@ export default function GerenciamentoMercado({
       pedidos={pedidosExpandidos ? pedidos : pedidos.slice(0, 5)}
       loading={pedidosLoading}
       onMudarStatus={handleMudarStatus}
+      onVerDetalhes={setDetalhesPedido}
       salvandoIds={salvandoStatus}
       expandido={pedidosExpandidos}
       onAlternar={() => setPedidosExpandidos(v => !v)}
@@ -2826,12 +3175,21 @@ export default function GerenciamentoMercado({
         <ModalConfirmarStatus
           pedido={confirmacaoStatus.pedido}
           novoStatus={confirmacaoStatus.novo}
-          onConfirmar={() => {
+          onConfirmar={(motivo) => {
             const { pedido, novo } = confirmacaoStatus;
             setConfirmacaoStatus(null);
-            void aplicarMudancaStatus(pedido, novo);
+            void aplicarMudancaStatus(pedido, novo, motivo);
           }}
           onFechar={() => setConfirmacaoStatus(null)}
+        />
+      )}
+
+      {detalhesPedido && (
+        <ModalDetalhesPedido
+          pedido={detalhesPedido}
+          onFechar={() => setDetalhesPedido(null)}
+          onMudarStatus={handleMudarStatus}
+          onStatusServidor={sincronizarStatusServidor}
         />
       )}
 

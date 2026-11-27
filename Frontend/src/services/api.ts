@@ -229,8 +229,11 @@ export const api = {
     request('/pedidos/meus'),
   detalharPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}`),
-  cancelarPedido: (pedidoId: string | number) =>
-    request(`/pedidos/${pedidoId}/cancelar`, { method: 'POST' }),
+  cancelarPedido: (pedidoId: string | number, motivo?: string) =>
+    request(`/pedidos/${pedidoId}/cancelar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo: motivo ?? '' }),
+    }),
   itensRecompra: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/itens-recompra`),
   removerPedidoHistorico: (pedidoId: string | number) =>
@@ -316,7 +319,7 @@ export const api = {
     request(`/mercados/${mercadoId}/pedidos`),
   atualizarStatusPedido: (
     pedidoId: string | number,
-    status: 'pendente' | 'preparo' | 'caminho' | 'entregue'
+    status: 'pendente' | 'preparo' | 'pronto' | 'caminho' | 'tentativa' | 'entregue'
   ) =>
     request(`/pedidos/${pedidoId}/status`, {
       method: 'PUT',

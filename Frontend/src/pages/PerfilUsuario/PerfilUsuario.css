@@ -431,6 +431,16 @@
   color: var(--pendente-texto);
 }
 
+.pu-status.pronto {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+
+.pu-status.tentativa {
+  background: rgba(251, 146, 60, 0.16);
+  color: #fb923c;
+}
+
 .pu-status.entregue {
   background: var(--verde-bg);
   color: var(--verde-texto);

@@ -298,7 +298,7 @@ const enviarEmailPedidoConfirmado = async (email, pedido) => {
   if (error) throw new Error(error.message || 'Falha ao enviar e-mail');
 };
 
-const enviarEmailStatusPedido = async (email, pedido, status) => {
+const enviarEmailStatusPedido = async (email, pedido, status, motivo = null) => {
   if (LOG_EMAILS) {
     console.log(`=== EMAIL STATUS_PEDIDO (MODELO LOCAL) ===`)
     console.log(`Para: ${email}`)
@@ -311,21 +311,32 @@ const enviarEmailStatusPedido = async (email, pedido, status) => {
     aguardando_pagamento: 'Aguardando confirmação do pagamento',
     pendente:  'Pedido recebido pela loja',
     preparo:   'Seu pedido está sendo preparado',
+    pronto:    pedido.tipoEntrega === 'retirada' ? 'Seu pedido está pronto para retirada' : 'Seu pedido está pronto para sair',
     caminho:   pedido.tipoEntrega === 'retirada' ? 'Seu pedido está pronto para retirada' : 'Seu pedido saiu para entrega',
-    entregue:  'Pedido entregue — obrigado!',
+    tentativa: 'Sua entrega ainda não foi concluída',
+    entregue:  pedido.tipoEntrega === 'retirada' ? 'Pedido retirado no balcão — obrigado!' : 'Pedido entregue — obrigado!',
     cancelado: 'Pedido cancelado',
   };
   const mensagens = {
     aguardando_pagamento: 'Assim que o pagamento for confirmado, a loja recebe o seu pedido e o preparo começa.',
     pendente:  'A loja recebeu o seu pedido e vai começar a prepará-lo em breve.',
-    preparo:   'Os itens do seu pedido estão sendo separados e preparados agora.',
+    preparo:   pedido.tipoEntrega === 'retirada'
+      ? 'Os itens do seu pedido estão sendo separados e preparados para a retirada no balcão.'
+      : 'Os itens do seu pedido estão sendo separados e preparados agora.',
+    pronto:    pedido.tipoEntrega === 'retirada'
+      ? 'Pode buscar o seu pedido no balcão no horário de funcionamento da loja.'
+      : 'O pedido está aguardando o entregador sair com ele para o seu endereço.',
     caminho:   pedido.tipoEntrega === 'retirada'
       ? 'Pode buscar o seu pedido no balcão no horário de funcionamento da loja.'
       : 'O entregador já está a caminho do seu endereço.',
-    entregue:  'O pedido foi concluído. Se puder, avalie a loja e os produtos no site.',
+    tentativa: 'O entregador tentou entregar, mas não conseguiu desta vez. Fale com a loja pelo site para combinar uma nova tentativa.',
+    entregue:  pedido.tipoEntrega === 'retirada'
+      ? 'Você já retirou o pedido no balcão. Se puder, avalie a loja e os produtos no site.'
+      : 'O pedido foi concluído. Se puder, avalie a loja e os produtos no site.',
     cancelado: 'O pedido foi cancelado e os produtos voltaram para o estoque. Se tiver dúvidas, fale com a loja.',
   };
-  const mensagem = mensagens[status] || 'O status do seu pedido foi atualizado.';
+  const motivoTexto = status === 'cancelado' && motivo ? ` Motivo informado pela loja: ${motivo}` : '';
+  const mensagem = (mensagens[status] || 'O status do seu pedido foi atualizado.') + motivoTexto;
 
   const { error } = await getResend().emails.send({
     from: EmailDominio,

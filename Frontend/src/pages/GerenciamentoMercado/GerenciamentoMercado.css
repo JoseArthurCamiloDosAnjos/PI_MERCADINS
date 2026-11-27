@@ -492,6 +492,8 @@
 .gm-pedido-status--entregue { background: var(--verde-bg);    color: var(--verde-texto); }
 .gm-pedido-status--caminho  { background: var(--verde-medio); color: var(--verde-claro); }
 .gm-pedido-status--preparo  { background: var(--pendente-bg); color: var(--pendente-texto); }
+.gm-pedido-status--pronto   { background: rgba(52,211,153,0.16); color: #6ee7b7; }
+.gm-pedido-status--tentativa { background: rgba(251,146,60,0.16); color: #fdba74; }
 .gm-pedido-status--novo     { background: var(--novo-bg);     color: var(--novo-texto); }
 .gm-pedido-status--aguardando { background: rgba(96,165,250,0.15); color: #93c5fd; }
 .gm-pedido-status--cancelado  { background: rgba(248,113,113,0.15); color: #fca5a5; }
@@ -605,6 +607,149 @@
 .gm-status-mudanca-cliente strong { color: var(--branco); }
 .gm-btn-primary.gm-btn-danger { background: #ef4444; color: #ffffff; }
 .gm-btn-primary.gm-btn-danger:hover { background: #dc2626; }
+
+/* ─── Motivo do cancelamento (informado pela loja ao cliente) ──────────────── */
+.gm-status-motivo { display: flex; flex-direction: column; gap: 6px; }
+.gm-status-motivo > span {
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  color: var(--cinza-texto);
+}
+.gm-status-motivo > span em {
+  font-style: normal; font-weight: 600;
+  text-transform: none; letter-spacing: 0;
+}
+.gm-status-motivo textarea {
+  background: var(--azul-bg);
+  border: 1.5px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 600;
+  color: var(--branco); font-family: var(--font);
+  resize: vertical; min-height: 64px;
+  transition: border-color 0.2s;
+}
+.gm-status-motivo textarea:focus { outline: none; border-color: var(--amarelo); }
+.gm-status-motivo small { font-size: 10px; color: var(--cinza-texto); text-align: right; }
+
+/* ─── Detalhes completos do pedido ─────────────────────────────────────────── */
+.gm-modal--detalhes { max-width: 660px; }
+.gm-detalhe-status-msg { margin: 0; font-size: 13px; color: var(--cinza-texto); }
+.gm-detalhe-status-msg--erro { color: #fca5a5; }
+
+.gm-detalhe-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gm-detalhe-data,
+.gm-detalhe-tipo {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; color: var(--cinza-texto);
+}
+
+/* Linha do tempo — cada etapa é um botão que move o pedido para lá */
+.gm-detalhe-etapas {
+  display: flex; align-items: stretch; gap: 4px; flex-wrap: wrap;
+  list-style: none; margin: 0; padding: 0;
+}
+.gm-detalhe-etapa { display: flex; align-items: center; gap: 4px; flex: 1 1 110px; min-width: 0; }
+.gm-detalhe-etapa-liga { flex: 1; height: 2px; min-width: 8px; background: var(--azul-borda); }
+.gm-detalhe-etapa-btn {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; width: 100%; min-width: 0;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  color: var(--branco-suave); text-align: left;
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-full);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.gm-detalhe-etapa-btn:hover:not(:disabled) { border-color: var(--amarelo); color: var(--branco); }
+.gm-detalhe-etapa-btn:disabled { cursor: default; opacity: 1; }
+.gm-detalhe-etapa-btn.feita { background: var(--verde-bg); border-color: transparent; color: var(--verde-texto); }
+.gm-detalhe-etapa-btn.ativa { background: var(--amarelo); border-color: var(--amarelo); color: var(--azul-sidebar); font-weight: 800; }
+.gm-detalhe-etapa-ponto {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; flex-shrink: 0;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.14);
+  font-size: 9px; font-weight: 800;
+}
+.gm-detalhe-etapa--desvio { flex: 0 0 auto; }
+.gm-detalhe-etapa--desvio .gm-detalhe-etapa-btn {
+  border-style: dashed; border-color: rgba(251, 146, 60, 0.45); color: #fdba74;
+}
+.gm-detalhe-etapa--desvio .gm-detalhe-etapa-btn.ativa {
+  background: rgba(251, 146, 60, 0.16); border-style: solid; color: #fdba74;
+}
+
+.gm-detalhe-nota {
+  margin: 0; font-size: 11.5px; line-height: 1.6;
+  color: var(--amarelo); background: var(--pendente-bg);
+  border-radius: var(--radius-md); padding: 8px 10px;
+}
+
+.gm-detalhe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.gm-detalhe-bloco {
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  min-width: 0;
+}
+.gm-detalhe-bloco h4,
+.gm-detalhe-itens h4 {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 8px;
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--cinza-texto);
+}
+.gm-detalhe-bloco p {
+  margin: 0 0 4px;
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--branco-suave);
+  word-break: break-word;
+}
+.gm-detalhe-linha { display: flex; align-items: flex-start; gap: 6px; }
+.gm-detalhe-linha svg { flex-shrink: 0; margin-top: 3px; }
+.gm-detalhe-total { margin-top: 6px; color: var(--amarelo); font-weight: 800; }
+.gm-detalhe-total strong { font-size: 14px; }
+.gm-detalhe-motivo { color: #fca5a5; }
+
+.gm-detalhe-itens h4 { margin-top: 2px; }
+.gm-detalhe-itens-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.gm-detalhe-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center; gap: 10px;
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+.gm-detalhe-item-img {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; border-radius: 8px;
+  background: var(--azul-medio); color: var(--cinza-texto);
+}
+.gm-detalhe-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.gm-detalhe-item-nome { font-size: 12.5px; font-weight: 700; color: var(--branco); min-width: 0; word-break: break-word; }
+.gm-detalhe-item-qtd { font-size: 11.5px; color: var(--cinza-texto); white-space: nowrap; }
+.gm-detalhe-item-sub { font-size: 12.5px; font-weight: 800; color: var(--amarelo); min-width: 72px; text-align: right; }
+.gm-detalhe-itens-texto { margin: 0; font-size: 12.5px; color: var(--branco-suave); }
+.gm-detalhe-itens-legenda { margin: 6px 0 0; font-size: 10px; font-style: italic; color: var(--cinza-texto); }
+
+@media (max-width: 560px) {
+  .gm-detalhe-etapa { flex-basis: 100%; }
+  .gm-detalhe-etapa-liga { display: none; }
+  .gm-detalhe-item { grid-template-columns: 36px 1fr auto; }
+  .gm-detalhe-item-qtd { grid-column: 2; }
+  .gm-detalhe-item-sub { grid-column: 3; grid-row: 1; min-width: 0; }
+}
 
 /* ─── Avaliações ────────────────────────────────────────────────────────── */
 .gm-reviews-grid {

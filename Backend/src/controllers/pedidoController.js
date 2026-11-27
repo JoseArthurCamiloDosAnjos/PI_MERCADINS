@@ -74,31 +74,61 @@ function avisarVendedorPedido(sql, idPedido) {
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
 }
 
-function avisarClientePedido(sql, idPedido, status) {
+function avisarClientePedido(sql, idPedido, status, motivo = null) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
       if (!dados?.email) return;
       const primeiroNome = String(dados.cliente || '').split(' ')[0];
+      const ehRetirada = dados.tipoEntrega === 'retirada';
       const textos = {
         pendente: [
           'Pedido recebido',
           `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi recebido e já está com a loja.`,
         ],
-        preparo: [
-          'Pedido em preparo',
-          `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero}.`,
+        preparo: ehRetirada
+          ? [
+              'Pedido em preparo',
+              `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero} para retirada no balcão.`,
+            ]
+          : [
+              'Pedido em preparo',
+              `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero}.`,
+            ],
+        pronto: ehRetirada
+          ? [
+              'Pedido pronto para retirada',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto e aguarda você no balcão do ${dados.mercado}. Pode buscar no horário de funcionamento.`,
+            ]
+          : [
+              'Pedido pronto',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto e vai sair para entrega em breve.`,
+            ],
+        caminho: ehRetirada
+          ? [
+              'Pedido pronto para retirada',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto para retirada no balcão do ${dados.mercado}. Pode buscar no horário de funcionamento.`,
+            ]
+          : [
+              'Pedido saiu para entrega',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
+            ],
+        tentativa: [
+          'Entrega ainda não concluída',
+          `Olá, ${primeiroNome}! O entregador tentou entregar o seu pedido nº ${dados.numero}, mas não conseguiu desta vez. Fale com o ${dados.mercado} pelo site para combinar uma nova tentativa.`,
         ],
-        caminho: [
-          'Pedido saiu para entrega',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
-        ],
-        entregue: [
-          'Pedido entregue',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
-        ],
+        entregue: ehRetirada
+          ? [
+              'Pedido retirado',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi retirado no balcão do ${dados.mercado}. Obrigado por comprar no Mercadins.`,
+            ]
+          : [
+              'Pedido entregue',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
+            ],
         cancelado: [
           'Pedido cancelado',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`,
+          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`
+          + (motivo ? ` Motivo informado pela loja: ${motivo}` : ''),
         ],
       };
       const [titulo, mensagem] = textos[status] || [
@@ -736,7 +766,11 @@ const listarPedidosMercado = async (req, res) => {
   }
 };
 
-const ORDEM_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'];
+// Linha principal do pedido, na ordem em que ele avança.
+const ORDEM_STATUS = ['pendente', 'preparo', 'pronto', 'caminho', 'entregue'];
+// 'tentativa' é um desvio da linha: o entregador tentou e não conseguiu.
+const DESVIOS_STATUS = ['tentativa'];
+const TODOS_STATUS = [...ORDEM_STATUS, ...DESVIOS_STATUS];
 
 const atualizarStatusPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -746,15 +780,17 @@ const atualizarStatusPedido = async (req, res) => {
   if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
     return res.status(400).json({ erro: 'Pedido inválido.' });
   }
-  if (!ORDEM_STATUS.includes(status)) {
-    return res.status(400).json({ erro: 'Status inválido. Use: pendente, preparo, caminho ou entregue.' });
+  if (!TODOS_STATUS.includes(status)) {
+    return res.status(400).json({
+      erro: 'Status inválido. Use: pendente, preparo, pronto, caminho, entregue ou tentativa.',
+    });
   }
 
   try {
     const sql = await conectar();
 
     const [pedido] = await sql`
-      SELECT id, id_mercado, status FROM historico_compras WHERE id = ${pedidoId}
+      SELECT id, id_mercado, status, tipo_entrega FROM historico_compras WHERE id = ${pedidoId}
     `;
     if (!pedido) {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
@@ -774,11 +810,16 @@ const atualizarStatusPedido = async (req, res) => {
     if (pedido.status === 'cancelado') {
       return res.status(400).json({ erro: 'Este pedido foi cancelado e não pode mudar de status.' });
     }
+    if (status === 'tentativa' && pedido.tipo_entrega === 'retirada') {
+      return res.status(400).json({
+        erro: 'Pedidos de retirada no balcão não têm tentativa de entrega — o cliente retira no balcão quando estiver pronto.',
+      });
+    }
 
     // Avançar e retroceder são permitidos: a loja corrige etapas marcadas por
     // engano (ex.: "A caminho" voltando para "Em preparo"). Só não muda quem
     // está aguardando pagamento ou já cancelado, bloqueados acima.
-    const atual = ORDEM_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
+    const atual = TODOS_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
     if (status === atual) {
       return res.status(200).json({
         mensagem: 'O pedido já está neste status.',
@@ -1189,6 +1230,8 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
 const cancelarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const pedidoId   = Number(req.params.id);
+  // Motivo que a loja informa ao cliente (vem do modal do painel do vendedor).
+  const motivoLoja = String(req.body?.motivo || '').trim().slice(0, 300);
 
   if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
     return res.status(400).json({ erro: 'Pedido inválido.' });
@@ -1247,7 +1290,11 @@ const cancelarPedido = async (req, res) => {
       }
     }
 
-    const motivoCancelamento = ehDaLoja ? 'Cancelado pela loja' : 'Cancelado pelo cliente';
+    // A loja pode explicar o cancelamento no modal; o motivo vai para o campo
+    // `motivo_cancelamento` e aparece no e-mail e na notificação do cliente.
+    const motivoInformado = ehDaLoja ? motivoLoja : '';
+    const motivoBase = ehDaLoja ? 'Cancelado pela loja' : 'Cancelado pelo cliente';
+    const motivoCancelamento = motivoInformado ? `${motivoBase}: ${motivoInformado}` : motivoBase;
 
     const [cancelado] = await sql`
       UPDATE historico_compras
@@ -1284,13 +1331,13 @@ const cancelarPedido = async (req, res) => {
     }
 
     montarDadosPedidoParaEmail(sql, pedido.id)
-      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
+      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado', motivoInformado || null))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-    avisarClientePedido(sql, pedido.id, 'cancelado');
+    avisarClientePedido(sql, pedido.id, 'cancelado', motivoInformado || null);
 
     res.status(200).json({
       mensagem: 'Pedido cancelado. O estoque dos produtos voltou para a loja.',
-      pedido: { id: pedido.id, status: 'cancelado' },
+      pedido: { id: pedido.id, status: 'cancelado', motivo: motivoCancelamento },
     });
   } catch (err) {
     console.error('ERRO cancelarPedido:', err);
@@ -1466,7 +1513,8 @@ const detalharPedido = async (req, res) => {
     const sql = await conectar();
 
     const [pedido] = await sql`
-      SELECT h.*, m.nome AS mercado, m.slug AS mercado_slug, u.nome AS cliente
+      SELECT h.*, m.nome AS mercado, m.slug AS mercado_slug,
+             u.nome AS cliente, u.email AS cliente_email, u.telefone AS cliente_telefone
       FROM historico_compras h
       JOIN mercados m ON m.id_mercado = h.id_mercado
       JOIN usuarios u ON u.id_usuario = h.id_usuario
@@ -1555,6 +1603,37 @@ const detalharPedido = async (req, res) => {
       - (Number(pedido.desconto) || 0)
       + (Number(pedido.taxa_entrega) || 0);
 
+    // Dados extras que só a loja que gere o pedido vê (contato do cliente,
+    // motivo do cancelamento e itens com preço atual do catálogo).
+    let detalhesLoja = null;
+    if (gerencia) {
+      const itens = Array.isArray(pedido.itens_json) ? pedido.itens_json : [];
+      const ids = itens.map((i) => Number(i?.id_produto)).filter(Number.isFinite);
+      const produtos = ids.length
+        ? await sql`SELECT id_produto, nome, preco, imagem FROM produtos WHERE id_produto = ANY(${ids})`
+        : [];
+      const porId = new Map(produtos.map((p) => [Number(p.id_produto), p]));
+
+      detalhesLoja = {
+        clienteEmail: pedido.cliente_email || '',
+        clienteTelefone: pedido.telefone || '',
+        motivoCancelamento: pedido.motivo_cancelamento || '',
+        itensDetalhados: itens.map((i) => {
+          const prod = porId.get(Number(i.id_produto));
+          const quantidade = Number(i.quantidade) || 0;
+          const preco = Number(prod?.preco) || 0;
+          return {
+            id_produto: Number(i.id_produto),
+            nome: prod?.nome || 'Produto fora do catálogo',
+            imagem: prod?.imagem || '',
+            quantidade,
+            preco,
+            subtotal: Math.round(preco * quantidade * 100) / 100,
+          };
+        }),
+      };
+    }
+
     res.status(200).json({
       pedido: {
         id: pedido.id,
@@ -1575,6 +1654,7 @@ const detalharPedido = async (req, res) => {
         formaPagamento: pedido.forma_pagamento || 'presencial',
         dataCompra: pedido.data_compra,
         gerencia,
+        ...(detalhesLoja || {}),
       },
       pagamento,
     });

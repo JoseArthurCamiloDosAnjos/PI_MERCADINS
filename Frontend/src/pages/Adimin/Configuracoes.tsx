@@ -26,6 +26,7 @@ export default function Configuracoes() {
     confirmar_senha: '',
   })
   const [salvandoSenha, setSalvandoSenha] = useState(false)
+  const [urlInput, setUrlInput] = useState(false)
 
   const iniciais = usuario?.nome
     ?.split(' ')
@@ -36,7 +37,7 @@ export default function Configuracoes() {
 
   async function handleSalvarPerfil() {
     if (!formPerfil.nome.trim()) {
-      showToast('aviso', 'O nome e obrigatorio')
+      showToast('aviso', 'O nome é obrigatório')
       return
     }
     setSalvandoPerfil(true)
@@ -58,28 +59,13 @@ export default function Configuracoes() {
   }
 
   async function handleTrocarSenha() {
-    if (!formSenha.senha_atual) {
-      showToast('aviso', 'Informe a senha atual')
-      return
-    }
-    if (!formSenha.nova_senha) {
-      showToast('aviso', 'Informe a nova senha')
-      return
-    }
-    if (formSenha.nova_senha.length < 6) {
-      showToast('aviso', 'A nova senha deve ter pelo menos 6 caracteres')
-      return
-    }
-    if (formSenha.nova_senha !== formSenha.confirmar_senha) {
-      showToast('aviso', 'As senhas nao conferem')
-      return
-    }
+    if (!formSenha.senha_atual) { showToast('aviso', 'Informe a senha atual'); return }
+    if (!formSenha.nova_senha) { showToast('aviso', 'Informe a nova senha'); return }
+    if (formSenha.nova_senha.length < 6) { showToast('aviso', 'A nova senha deve ter pelo menos 6 caracteres'); return }
+    if (formSenha.nova_senha !== formSenha.confirmar_senha) { showToast('aviso', 'As senhas não conferem'); return }
     setSalvandoSenha(true)
     try {
-      await api.trocarSenha({
-        senha_atual: formSenha.senha_atual,
-        nova_senha: formSenha.nova_senha,
-      })
+      await api.trocarSenha({ senha_atual: formSenha.senha_atual, nova_senha: formSenha.nova_senha })
       setFormSenha({ senha_atual: '', nova_senha: '', confirmar_senha: '' })
       showToast('sucesso', 'Senha redefinida com sucesso')
     } catch (err) {
@@ -92,35 +78,69 @@ export default function Configuracoes() {
   return (
     <div className="adm-config">
 
-      {/* ─── Perfil ────────────────────────────────────────────── */}
-      <div className="adm-config-section">
-        <h3><IconUser size={18} /> Perfil do Administrador</h3>
-        <p className="adm-config-desc">Atualize suas informacoes pessoais.</p>
-
-        <div className="adm-config-avatar-area">
-          <div className="adm-config-avatar">
-            {usuario?.foto_perfil
-              ? <img src={usuario.foto_perfil} alt={usuario.nome} onError={onAvatarError} />
-              : iniciais
-            }
-            <label className="adm-config-avatar-overlay">
-              <IconCamera size={18} />
-              <input
-                type="text"
-                placeholder="URL da foto"
-                value={formPerfil.foto_perfil_url}
-                onChange={e => setFormPerfil(p => ({ ...p, foto_perfil_url: e.target.value }))}
-                className="adm-config-avatar-input"
-              />
-            </label>
+      {/* ── Hero do perfil ─────────────────────────────────────── */}
+      <div className="adm-config-hero">
+        <div className="adm-config-hero-bg" />
+        <div className="adm-config-hero-body">
+          <div className="adm-config-hero-avatar-wrap">
+            <div className="adm-config-hero-avatar">
+              {usuario?.foto_perfil
+                ? <img src={usuario.foto_perfil} alt={usuario.nome} onError={onAvatarError} />
+                : <span>{iniciais}</span>
+              }
+              <button
+                className="adm-config-hero-cam"
+                title="Alterar foto"
+                onClick={() => setUrlInput(v => !v)}
+                type="button"
+              >
+                <IconCamera size={14} />
+              </button>
+            </div>
+          </div>
+          <div className="adm-config-hero-info">
+            <div className="adm-config-hero-badge">Administrador</div>
+            <h2 className="adm-config-hero-nome">{usuario?.nome ?? '—'}</h2>
+            <p className="adm-config-hero-email">{usuario?.email ?? '—'}</p>
           </div>
         </div>
 
-        <div className="adm-config-form">
+        {urlInput && (
+          <div className="adm-config-url-row">
+            <input
+              className="adm-config-url-input"
+              type="text"
+              placeholder="Cole a URL da foto de perfil aqui..."
+              value={formPerfil.foto_perfil_url}
+              onChange={e => setFormPerfil(p => ({ ...p, foto_perfil_url: e.target.value }))}
+            />
+            <button
+              className="adm-config-url-ok"
+              onClick={() => setUrlInput(false)}
+              type="button"
+            >
+              OK
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Dados pessoais ─────────────────────────────────────── */}
+      <div className="adm-config-card">
+        <div className="adm-config-card-header">
+          <span className="adm-config-card-icon"><IconUser size={16} /></span>
+          <div>
+            <h3 className="adm-config-card-title">Dados pessoais</h3>
+            <p className="adm-config-card-sub">Atualize suas informações de perfil.</p>
+          </div>
+        </div>
+
+        <div className="adm-config-grid">
           <div className="adm-config-field">
             <label>Nome completo</label>
             <input
               type="text"
+              placeholder="Seu nome"
               value={formPerfil.nome}
               onChange={e => setFormPerfil(p => ({ ...p, nome: e.target.value }))}
             />
@@ -129,6 +149,7 @@ export default function Configuracoes() {
             <label>E-mail</label>
             <input
               type="email"
+              placeholder="seu@email.com"
               value={formPerfil.email}
               maxLength={LIMITS.email}
               onChange={e => setFormPerfil(p => ({ ...p, email: sanitizeEmail(e.target.value) }))}
@@ -154,24 +175,29 @@ export default function Configuracoes() {
           </div>
         </div>
 
-        <div className="adm-config-actions">
-          <button className="adm-btn-salvar" onClick={handleSalvarPerfil} disabled={salvandoPerfil}>
-            {salvandoPerfil ? 'Salvando...' : 'Salvar alteracoes'}
+        <div className="adm-config-footer">
+          <button className="adm-config-btn-salvar" onClick={handleSalvarPerfil} disabled={salvandoPerfil}>
+            {salvandoPerfil ? 'Salvando...' : 'Salvar alterações'}
           </button>
         </div>
       </div>
 
-      {/* ─── Senha ─────────────────────────────────────────────── */}
-      <div className="adm-config-section">
-        <h3><IconLock size={18} /> Redefinir senha</h3>
-        <p className="adm-config-desc">Altere sua senha de acesso.</p>
+      {/* ── Segurança ──────────────────────────────────────────── */}
+      <div className="adm-config-card">
+        <div className="adm-config-card-header">
+          <span className="adm-config-card-icon adm-config-card-icon--lock"><IconLock size={16} /></span>
+          <div>
+            <h3 className="adm-config-card-title">Segurança da conta</h3>
+            <p className="adm-config-card-sub">Altere sua senha de acesso ao painel.</p>
+          </div>
+        </div>
 
-        <div className="adm-config-form">
-          <div className="adm-config-field">
+        <div className="adm-config-senha-grid">
+          <div className="adm-config-field adm-config-field--full">
             <label>Senha atual</label>
             <input
               type="password"
-              placeholder="Digite sua senha atual"
+              placeholder="••••••••"
               value={formSenha.senha_atual}
               onChange={e => setFormSenha(p => ({ ...p, senha_atual: sanitizePassword(e.target.value) }))}
               maxLength={LIMITS.senha}
@@ -182,7 +208,7 @@ export default function Configuracoes() {
             <label>Nova senha</label>
             <input
               type="password"
-              placeholder="Digite a nova senha"
+              placeholder="••••••••"
               value={formSenha.nova_senha}
               onChange={e => setFormSenha(p => ({ ...p, nova_senha: sanitizePassword(e.target.value) }))}
               maxLength={LIMITS.senha}
@@ -193,7 +219,7 @@ export default function Configuracoes() {
             <label>Confirmar nova senha</label>
             <input
               type="password"
-              placeholder="Confirme a nova senha"
+              placeholder="••••••••"
               value={formSenha.confirmar_senha}
               onChange={e => setFormSenha(p => ({ ...p, confirmar_senha: sanitizePassword(e.target.value) }))}
               maxLength={LIMITS.confirmar}
@@ -202,8 +228,8 @@ export default function Configuracoes() {
           </div>
         </div>
 
-        <div className="adm-config-actions">
-          <button className="adm-btn-salvar" onClick={handleTrocarSenha} disabled={salvandoSenha}>
+        <div className="adm-config-footer">
+          <button className="adm-config-btn-salvar adm-config-btn-salvar--sec" onClick={handleTrocarSenha} disabled={salvandoSenha}>
             {salvandoSenha ? 'Redefinindo...' : 'Redefinir senha'}
           </button>
         </div>

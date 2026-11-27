@@ -272,7 +272,7 @@ const criarCheckout = async (req, res) => {
       valor: plano.valor,
       ciclo: cicloDb,
       descricao: `Plano ${plano.nome} Mercadins — ${cicloDb === 'ANUAL' ? 'anual' : 'mensal'}`,
-      redirectUrl,
+      redirectUrl: `${redirectUrl}?pagamento=1`,
       billingType: 'UNDEFINED',
     });
 

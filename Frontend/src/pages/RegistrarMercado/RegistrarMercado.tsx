@@ -106,7 +106,7 @@ export default function RegistrarMercado() {
     });
   }
 
-  const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
+  const [planoSelecionado, setPlanoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
       return salvo ? JSON.parse(salvo) : null;
@@ -114,6 +114,20 @@ export default function RegistrarMercado() {
       return null;
     }
   });
+
+  useEffect(() => {
+    function atualizarPlano() {
+      try {
+        const salvo = localStorage.getItem('planoSelecionado');
+        setPlanoSelecionado(salvo ? JSON.parse(salvo) : null);
+      } catch {
+        setPlanoSelecionado(null);
+      }
+    }
+    atualizarPlano();
+    window.addEventListener('storage', atualizarPlano);
+    return () => window.removeEventListener('storage', atualizarPlano);
+  }, []);
 
   const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
     ? planoSelecionado!.id!

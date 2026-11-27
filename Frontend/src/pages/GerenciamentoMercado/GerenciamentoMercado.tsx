@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import './GerenciamentoMercado.css';
 import { api } from '../../services/api';
@@ -917,7 +918,7 @@ function AcoesPedido({
           ⋯
         </button>
 
-        {menuAberto && (
+        {menuAberto && createPortal(
           <div className="gm-status-popup-overlay" onClick={() => setMenuAberto(false)}>
             <div
               className="gm-status-popup"
@@ -975,7 +976,8 @@ function AcoesPedido({
                 Cancelar pedido
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

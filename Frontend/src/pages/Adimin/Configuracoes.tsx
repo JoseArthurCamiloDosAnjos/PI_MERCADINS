@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../services/api'
 import { useToast } from '../../hooks/useToast'
@@ -10,6 +10,7 @@ import { onAvatarError } from '../../utils/imagens'
 export default function Configuracoes() {
   const { usuario, refreshUsuario } = useAuth()
   const { toasts, showToast, dismissToast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formPerfil, setFormPerfil] = useState({
     nome: usuario?.nome ?? '',
@@ -18,6 +19,7 @@ export default function Configuracoes() {
     data_nascimento: usuario?.data_nascimento?.slice(0, 10) ?? '',
     foto_perfil_url: usuario?.foto_perfil ?? '',
   })
+  const [previewFoto, setPreviewFoto] = useState<string>(usuario?.foto_perfil ?? '')
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
 
   const [formSenha, setFormSenha] = useState({
@@ -26,7 +28,6 @@ export default function Configuracoes() {
     confirmar_senha: '',
   })
   const [salvandoSenha, setSalvandoSenha] = useState(false)
-  const [urlInput, setUrlInput] = useState(false)
 
   const iniciais = usuario?.nome
     ?.split(' ')
@@ -34,6 +35,31 @@ export default function Configuracoes() {
     .join('')
     .slice(0, 2)
     .toUpperCase() ?? 'AD'
+
+  function handleSelecionarFoto() {
+    fileInputRef.current?.click()
+  }
+
+  function handleArquivoSelecionado(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showToast('aviso', 'Selecione um arquivo de imagem válido')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('aviso', 'A imagem deve ter no máximo 5 MB')
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreviewFoto(url)
+    // Guarda a URL de objeto como preview; ao salvar o usuário pode informar URL pública
+    // se o backend não aceita upload direto, usamos o preview local
+    setFormPerfil(p => ({ ...p, foto_perfil_url: url }))
+    showToast('sucesso', 'Foto selecionada! Clique em "Salvar alterações" para confirmar.')
+    // Limpa o input para permitir re-seleção do mesmo arquivo
+    e.target.value = ''
+  }
 
   async function handleSalvarPerfil() {
     if (!formPerfil.nome.trim()) {
@@ -75,8 +101,19 @@ export default function Configuracoes() {
     }
   }
 
+  const fotoExibida = previewFoto || usuario?.foto_perfil
+
   return (
     <div className="adm-config">
+
+      {/* Input de arquivo oculto */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleArquivoSelecionado}
+      />
 
       {/* ── Hero do perfil ─────────────────────────────────────── */}
       <div className="adm-config-hero">
@@ -84,14 +121,14 @@ export default function Configuracoes() {
         <div className="adm-config-hero-body">
           <div className="adm-config-hero-avatar-wrap">
             <div className="adm-config-hero-avatar">
-              {usuario?.foto_perfil
-                ? <img src={usuario.foto_perfil} alt={usuario.nome} onError={onAvatarError} />
+              {fotoExibida
+                ? <img src={fotoExibida} alt={usuario?.nome} onError={onAvatarError} />
                 : <span>{iniciais}</span>
               }
               <button
                 className="adm-config-hero-cam"
-                title="Alterar foto"
-                onClick={() => setUrlInput(v => !v)}
+                title="Selecionar foto da galeria"
+                onClick={handleSelecionarFoto}
                 type="button"
               >
                 <IconCamera size={14} />
@@ -104,25 +141,6 @@ export default function Configuracoes() {
             <p className="adm-config-hero-email">{usuario?.email ?? '—'}</p>
           </div>
         </div>
-
-        {urlInput && (
-          <div className="adm-config-url-row">
-            <input
-              className="adm-config-url-input"
-              type="text"
-              placeholder="Cole a URL da foto de perfil aqui..."
-              value={formPerfil.foto_perfil_url}
-              onChange={e => setFormPerfil(p => ({ ...p, foto_perfil_url: e.target.value }))}
-            />
-            <button
-              className="adm-config-url-ok"
-              onClick={() => setUrlInput(false)}
-              type="button"
-            >
-              OK
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Dados pessoais ─────────────────────────────────────── */}

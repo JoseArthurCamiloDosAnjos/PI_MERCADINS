@@ -2,7 +2,6 @@ import { Suspense, lazy, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import AdminSidebar from './AdminSidebar'
-import { IconEye } from '../../components/Icons'
 import LogoTopbar from '../../components/LogoTopbar'
 import './Admin.css'
 
@@ -51,9 +50,6 @@ export default function Adiministrador() {
               <p>{ABAS[abaAtiva].desc}</p>
             </div>
           </div>
-          <a className="adm-header-site" href="/" target="_blank" rel="noreferrer">
-            <IconEye size={15} /> Ver site
-          </a>
         </header>
         <section className="adm-content">
           <Suspense fallback={<p className="adm-carregando">Carregando…</p>}>

@@ -1941,6 +1941,96 @@
 
 /* (estilos antigos de config removidos — substituídos pelos novos acima) */
 
+/* ── Modal Cortesia ───────────────────────────────────────────────────────── */
+
+.adm-cortesia-modal {
+  max-width: 440px;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.adm-cortesia-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--azul-borda);
+  position: relative;
+}
+
+.adm-cortesia-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(245, 200, 74, 0.12);
+  border: 1px solid rgba(245, 200, 74, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.adm-cortesia-titulo {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--branco);
+  margin: 0 0 2px;
+}
+
+.adm-cortesia-subtitulo {
+  font-size: 0.78rem;
+  color: var(--cinza-texto);
+  margin: 0;
+}
+
+.adm-cortesia-subtitulo strong {
+  color: var(--amarelo);
+}
+
+.adm-cortesia-close {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+}
+
+.adm-cortesia-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adm-cortesia-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.adm-cortesia-body .adm-form-group {
+  margin-bottom: 0;
+}
+
+.adm-cortesia-body .adm-input {
+  background: var(--azul-escuro);
+}
+
+.adm-cortesia-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--azul-borda);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.adm-cortesia-actions .adm-btn-cancelar,
+.adm-cortesia-actions .adm-btn-promover {
+  flex: 0 0 auto;
+  min-width: 120px;
+  padding: 10px 20px;
+}
+
 .adm-carregando { color: #8892a4; font-size: 14px; padding: 2rem; text-align: center; }
 
 

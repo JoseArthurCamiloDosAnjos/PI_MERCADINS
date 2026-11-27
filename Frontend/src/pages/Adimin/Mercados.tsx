@@ -124,6 +124,44 @@ export default function Mercados() {
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null)
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false)
   const [bloqueandoId, setBloqueandoId] = useState<number | null>(null)
+  const [cortesiaModal, setCortesiaModal] = useState<{ aberto: boolean; mercadoId: number }>({ aberto: false, mercadoId: 0 })
+  const [cortesiaForm, setCortesiaForm] = useState({ codigo_plano: 'profissional', quantidade: 3, unidade: 'meses' })
+  const [cortesiaLoading, setCortesiaLoading] = useState(false)
+
+  const abrirCortesia = (id: number) => {
+    setCortesiaForm({ codigo_plano: 'profissional', quantidade: 3, unidade: 'meses' })
+    setCortesiaModal({ aberto: true, mercadoId: id })
+  }
+
+  const submeterCortesia = async () => {
+    setCortesiaLoading(true)
+    try {
+      const data = await api.adminConcederCortesia(cortesiaModal.mercadoId, cortesiaForm)
+      showToast('sucesso', data.mensagem || 'Cortesia concedida com sucesso!')
+      setCortesiaModal({ aberto: false, mercadoId: 0 })
+      if (detalhe) await abrirDetalhe(detalhe.mercado.id_mercado)
+      await carregar()
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Erro ao conceder cortesia')
+    } finally {
+      setCortesiaLoading(false)
+    }
+  }
+
+  const revogarCortesia = async (id: number) => {
+    if (!window.confirm('Tem certeza que deseja revogar a cortesia e retornar o mercado para o plano básico?')) return
+    setCortesiaLoading(true)
+    try {
+      const data = await api.adminRevogarCortesia(id)
+      showToast('sucesso', data.mensagem || 'Cortesia revogada com sucesso!')
+      if (detalhe) await abrirDetalhe(detalhe.mercado.id_mercado)
+      await carregar()
+    } catch (err: unknown) {
+      showToast('erro', err instanceof Error ? err.message : 'Erro ao revogar cortesia')
+    } finally {
+      setCortesiaLoading(false)
+    }
+  }
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -428,7 +466,7 @@ export default function Mercados() {
               )}
             </section>
 
-            <div className="adm-modal-actions">
+            <div className="adm-modal-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 className={detalhe.mercado.status === 'ativo' ? 'adm-btn-remover-admin' : 'adm-btn-promover'}
                 disabled={bloqueandoId === detalhe.mercado.id_mercado}
@@ -436,7 +474,84 @@ export default function Mercados() {
               >
                 {detalhe.mercado.status === 'ativo' ? 'Bloquear mercado' : 'Desbloquear mercado'}
               </button>
+              <button className="adm-btn-detalhes" onClick={() => abrirCortesia(detalhe.mercado.id_mercado)}>
+                🎁 Conceder Cortesia
+              </button>
+              {detalhe.mercado.plano && detalhe.mercado.plano !== 'basico' && (
+                <button 
+                  className="adm-btn-remover-admin" 
+                  disabled={cortesiaLoading}
+                  onClick={() => revogarCortesia(detalhe.mercado.id_mercado)}
+                >
+                  ❌ Revogar Cortesia / Plano
+                </button>
+              )}
             </div>
+
+            {cortesiaModal.aberto && cortesiaModal.mercadoId === detalhe?.mercado.id_mercado && (
+              <div className="adm-modal-overlay" onClick={() => setCortesiaModal({ aberto: false, mercadoId: 0 })}>
+                <div className="adm-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+                  <button className="adm-modal-close" onClick={() => setCortesiaModal({ aberto: false, mercadoId: 0 })}>
+                    <CloseIcon />
+                  </button>
+                  <h3>Conceder Cortesia de Assinatura</h3>
+                  <p className="adm-muted">Mercado: <strong>{detalhe.mercado.nome}</strong></p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 4, fontWeight: 500, fontSize: 13 }}>Plano</label>
+                      <select
+                        className="adm-select"
+                        value={cortesiaForm.codigo_plano}
+                        onChange={e => setCortesiaForm({ ...cortesiaForm, codigo_plano: e.target.value })}
+                      >
+                        <option value="basico">Essencial (Básico)</option>
+                        <option value="profissional">Plus (Profissional)</option>
+                        <option value="personalizado">Personalizado</option>
+                      </select>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500, fontSize: 13 }}>Quantidade</label>
+                        <input
+                          type="number"
+                          min="1"
+                          className="adm-select"
+                          style={{ width: '100%', padding: '8px 12px', background: 'transparent', color: 'inherit' }}
+                          value={cortesiaForm.quantidade}
+                          onChange={e => setCortesiaForm({ ...cortesiaForm, quantidade: Number(e.target.value) || 1 })}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500, fontSize: 13 }}>Unidade</label>
+                        <select
+                          className="adm-select"
+                          value={cortesiaForm.unidade}
+                          onChange={e => setCortesiaForm({ ...cortesiaForm, unidade: e.target.value })}
+                        >
+                          <option value="meses">Meses</option>
+                          <option value="anos">Anos</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                      <button className="adm-btn-detalhes" onClick={() => setCortesiaModal({ aberto: false, mercadoId: 0 })}>
+                        Cancelar
+                      </button>
+                      <button
+                        className="adm-btn-promover"
+                        disabled={cortesiaLoading}
+                        onClick={submeterCortesia}
+                      >
+                        {cortesiaLoading ? 'Concedendo...' : 'Conceder Cortesia'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

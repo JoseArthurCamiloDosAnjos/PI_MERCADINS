@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { PLANOS, type Plano } from '../MercadinsPromo/planos';
 import ConsultorModal from '../../components/ConsultorModal';
 import './SelecionarPlano.css';
@@ -16,7 +15,6 @@ const CheckIcon = () => (
 
 export default function SelecionarPlano() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [consultorAberto, setConsultorAberto] = useState(false);
 
@@ -26,15 +24,16 @@ export default function SelecionarPlano() {
   };
 
   function escolherPlano(plano: Plano) {
-    if (usuario?.is_admin) {
-      localStorage.removeItem('planoSelecionado');
-    } else {
-      localStorage.setItem('planoSelecionado', JSON.stringify({
-        id: plano.id,
-        nome: plano.name,
-        cobranca: billingAnnual ? 'anual' : 'mensal',
-      }));
-    }
+    // Sempre grava o plano escolhido. Sem isso o formulário cai no plano
+    // padrão (basico) e o Asaas cobra R$ 79 mesmo quem escolheu o Plus.
+    localStorage.setItem('planoSelecionado', JSON.stringify({
+      id: plano.id,
+      nome: plano.name,
+      cobranca: billingAnnual ? 'anual' : 'mensal',
+    }));
+    // Um novo plano abandona qualquer tentativa de pagamento pendente anterior,
+    // senão a tela de "aguardando pagamento" reabre o checkout antigo (Essencial).
+    localStorage.removeItem('aguardandoPagamento');
     navigate('/registrar-mercado');
   }
 

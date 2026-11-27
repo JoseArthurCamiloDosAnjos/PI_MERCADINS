@@ -617,11 +617,17 @@
 }
 .vt-vazio-btn:hover { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
 
-/* ─── FAB — nova categoria ───────────────────────────────────────────────── */
+/* ─── FAB — nova categoria (fixo no rodapé) ──────────────────────────────── */
 .vt-fab-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 90;
   display: flex;
-  justify-content: center;
-  padding: 1rem 0 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
 }
 .vt-fab {
   width: 56px;
@@ -632,27 +638,31 @@
   color: var(--vt-cor-texto);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 18px rgba(24, 67, 160, 0.5);
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s, color 0.2s;
-  padding: 8px 4px;
+  pointer-events: auto;
 }
 .vt-fab:hover {
   background: var(--vt-cor-icones);
   color: var(--vt-azul-escuro);
   border-color: var(--vt-cor-icones);
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.1);
   box-shadow: 0 6px 24px rgba(245, 200, 74, 0.4);
 }
 .vt-fab-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-align: center;
   white-space: nowrap;
-  margin-top: 2px;
-  color: inherit;
+  color: var(--vt-cor-texto);
+  background: var(--vt-azul-card);
+  border: 1px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-full);
+  padding: 3px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
 }
 
 /* ─── Menu Rápido (Ações Rápidas) ────────────────────────────────────────── */

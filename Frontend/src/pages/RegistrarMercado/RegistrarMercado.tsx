@@ -129,6 +129,14 @@ export default function RegistrarMercado() {
     return () => window.removeEventListener('storage', atualizarPlano);
   }, []);
 
+  // Sem plano escolhido não há o que cobrar: volta para a seleção de planos
+  // em vez de usar silenciosamente o plano padrão (basico → R$ 79).
+  useEffect(() => {
+    if (!aguardandoPagamento && !planoSelecionado) {
+      navigate('/planos', { replace: true });
+    }
+  }, [aguardandoPagamento, planoSelecionado, navigate]);
+
   const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
     ? planoSelecionado!.id!
     : 'basico';

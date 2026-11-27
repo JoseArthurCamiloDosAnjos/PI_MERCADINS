@@ -375,22 +375,13 @@ function CategoriaSection({
             ) : (
               <>
                 <h2 className="vt-categoria-titulo">{categoria.nome}</h2>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <button
-                    className="vt-categoria-btn-editar"
-                    onClick={() => setEditandoNome(true)}
-                    title="Renomear categoria"
-                  >
-                    <IconPencil size={13} />
-                  </button>
-                  <button
-                    className="vt-btn-add-produto-header"
-                    onClick={() => setEscolhaAberta(true)}
-                    title="Adicionar produto nesta categoria"
-                  >
-                    <IconPlus size={13} /> Adicionar Produto
-                  </button>
-                </div>
+                <button
+                  className="vt-categoria-btn-editar"
+                  onClick={() => setEditandoNome(true)}
+                  title="Editar nome da categoria"
+                >
+                  <IconPencil size={13} />
+                </button>
               </>
             )
           }
@@ -530,6 +521,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         setDados({
           id: mercadoData.mercado.id_mercado,
+          slug: mercadoData.mercado.slug ?? undefined,
           nome: mercadoData.mercado.nome,
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
@@ -652,7 +644,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
             refsCategoria.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             // Abrir o modal de escolha (produto pronto / novo)
             // Disparar o click no botão de adicionar produto da categoria
-            const btn = refsCategoria.current[targetId]?.querySelector('.vt-btn-add-produto-header') as HTMLElement;
+            const btn = refsCategoria.current[targetId]?.querySelector('.vt-produto-add') as HTMLElement;
             btn?.click();
           }
         }, 100);
@@ -826,7 +818,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                       : dados.categorias[0].id;
                     setCategoriaAtiva(targetId);
                     setTimeout(() => {
-                      const btn = refsCategoria.current[targetId]?.querySelector('.vt-btn-add-produto-header') as HTMLElement;
+                      const btn = refsCategoria.current[targetId]?.querySelector('.vt-produto-add') as HTMLElement;
                       btn?.click();
                     }, 100);
                   }}>
@@ -842,7 +834,14 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
                   <IconPaleta size={14} />
                   <span>Personalizar Cores</span>
                 </button>
-                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => { setMenuAberto(false); window.open(`/${dados.slug}`, '_blank'); }}>
+                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => {
+                  setMenuAberto(false);
+                  if (dados.slug) {
+                    window.open(`/${dados.slug}`, '_blank');
+                  } else {
+                    showToast('aviso', 'Slug da vitrine ainda não disponível. Salve a vitrine e tente novamente.');
+                  }
+                }}>
                   <IconLink size={14} />
                   <span>Ver Vitrine Pública</span>
                 </button>
@@ -950,10 +949,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         {dados.categorias.length > 0 && (
           <div className="vt-fab-wrap">
-            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Adicionar categoria">
+            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Nova categoria (Atalho: C)">
               <IconPlus size={24} />
-              <span className="vt-fab-label">Nova Categoria</span>
             </button>
+            <span className="vt-fab-label">Nova Categoria</span>
           </div>
         )}
       </main>

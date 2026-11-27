@@ -475,7 +475,7 @@ export default function Mercados() {
                 {detalhe.mercado.status === 'ativo' ? 'Bloquear mercado' : 'Desbloquear mercado'}
               </button>
               <button className="adm-btn-detalhes" onClick={() => abrirCortesia(detalhe.mercado.id_mercado)}>
-                🎁 Conceder Cortesia
+                Conceder Cortesia
               </button>
               {detalhe.mercado.plano && detalhe.mercado.plano !== 'basico' && (
                 <button 
@@ -483,7 +483,7 @@ export default function Mercados() {
                   disabled={cortesiaLoading}
                   onClick={() => revogarCortesia(detalhe.mercado.id_mercado)}
                 >
-                  ❌ Revogar Cortesia / Plano
+                  Revogar Cortesia / Plano
                 </button>
               )}
             </div>

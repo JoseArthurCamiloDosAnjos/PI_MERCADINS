@@ -152,7 +152,7 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
 
   const corpo = {
     customer: customerId,
-    billingType: 'UNDEFINED',
+    billingType: 'CREDIT_CARD',
     value: valor,
     cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
     nextDueDate,

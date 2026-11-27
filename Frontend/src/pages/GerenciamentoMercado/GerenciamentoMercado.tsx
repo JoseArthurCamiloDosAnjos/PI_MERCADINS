@@ -918,45 +918,63 @@ function AcoesPedido({
         </button>
 
         {menuAberto && (
-          <div className="gm-pedido-menu" role="menu">
-            <p className="gm-pedido-menu-titulo">Mudar status para</p>
-            {statusDisponiveis(pedido).map((s) => (
+          <div className="gm-status-popup-overlay" onClick={() => setMenuAberto(false)}>
+            <div
+              className="gm-status-popup"
+              role="menu"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="gm-status-popup-header">
+                <p className="gm-status-popup-titulo">Mudar status do pedido {pedido.num}</p>
+                <button
+                  type="button"
+                  className="gm-status-popup-fechar"
+                  onClick={() => setMenuAberto(false)}
+                  aria-label="Fechar"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="gm-pedido-menu-titulo">Mudar status para</p>
+              {statusDisponiveis(pedido).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="menuitem"
+                  className="gm-pedido-menu-item"
+                  onClick={() => {
+                    setMenuAberto(false);
+                    onMudarStatus(pedido, s, true);
+                  }}
+                >
+                  {nomeStatusLoja(s, pedido.tipoEntrega)}
+                </button>
+              ))}
+              <div className="gm-pedido-menu-div" />
               <button
-                key={s}
                 type="button"
                 role="menuitem"
                 className="gm-pedido-menu-item"
                 onClick={() => {
                   setMenuAberto(false);
-                  onMudarStatus(pedido, s, true);
+                  onVerDetalhes(pedido);
                 }}
               >
-                {nomeStatusLoja(s, pedido.tipoEntrega)}
+                Ver detalhes do pedido
               </button>
-            ))}
-            <div className="gm-pedido-menu-div" />
-            <button
-              type="button"
-              role="menuitem"
-              className="gm-pedido-menu-item"
-              onClick={() => {
-                setMenuAberto(false);
-                onVerDetalhes(pedido);
-              }}
-            >
-              Ver detalhes do pedido
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className="gm-pedido-menu-item gm-pedido-menu-item--perigo"
-              onClick={() => {
-                setMenuAberto(false);
-                onMudarStatus(pedido, 'cancelado', true);
-              }}
-            >
-              Cancelar pedido
-            </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="gm-pedido-menu-item gm-pedido-menu-item--perigo"
+                onClick={() => {
+                  setMenuAberto(false);
+                  onMudarStatus(pedido, 'cancelado', true);
+                }}
+              >
+                Cancelar pedido
+              </button>
+            </div>
           </div>
         )}
       </div>

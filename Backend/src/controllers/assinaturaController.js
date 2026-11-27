@@ -99,6 +99,15 @@ async function confirmarAssinatura(sql, assinatura, pagamento) {
 
   if (!assinatura.id_mercado && assinatura.dados_mercado) {
     await criarMercadoDaAssinatura(sql, assinatura);
+  } else if (assinatura.id_mercado && assinatura.codigo_plano) {
+    // Upgrade/alteração de plano: sincroniza o plano do mercado já existente
+    // com o plano da assinatura confirmada (ex.: basico → profissional).
+    await sql`
+      UPDATE mercados
+      SET plano = ${assinatura.codigo_plano}
+      WHERE id_mercado = ${assinatura.id_mercado}
+        AND plano IS DISTINCT FROM ${assinatura.codigo_plano}
+    `;
   }
 
   await reativarMercados(sql, assinatura);
@@ -160,6 +169,8 @@ const criarCheckout = async (req, res) => {
     if (validacao.erro) {
       return res.status(400).json({ erro: validacao.erro });
     }
+
+    console.log(`[checkout] usuario=${id_usuario} plano=${plano.codigo} (${plano.nome}) ciclo=${cicloDb} valor=${plano.valor}`);
 
     const [assinaturaExistente] = await sql`
       SELECT * FROM assinaturas
@@ -253,11 +264,15 @@ const criarCheckout = async (req, res) => {
     });
     const customerId = customer.id;
 
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    const redirectUrl = `${frontendUrl}/registrar-mercado`;
+
     const assinaturaAsaas = await asaas.criarAssinatura({
       customerId,
       valor: plano.valor,
       ciclo: cicloDb,
       descricao: `Plano ${plano.nome} Mercadins — ${cicloDb === 'ANUAL' ? 'anual' : 'mensal'}`,
+      redirectUrl,
     });
 
     const urlCheckout = await asaas.buscarUrlPagamento(assinaturaAsaas.id);

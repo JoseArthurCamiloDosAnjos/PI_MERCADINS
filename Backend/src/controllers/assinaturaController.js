@@ -273,6 +273,7 @@ const criarCheckout = async (req, res) => {
       ciclo: cicloDb,
       descricao: `Plano ${plano.nome} Mercadins — ${cicloDb === 'ANUAL' ? 'anual' : 'mensal'}`,
       redirectUrl,
+      billingType: 'UNDEFINED',
     });
 
     const urlCheckout = await asaas.buscarUrlPagamento(assinaturaAsaas.id);

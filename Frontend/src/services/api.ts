@@ -216,7 +216,7 @@ export const api = {
       endereco_entrega?: string;
       cupom?: string;
       agendamento?: string;
-      forma_pagamento?: 'presencial' | 'cartao';
+      forma_pagamento?: 'presencial' | 'cartao' | 'boleto';
     }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {

@@ -398,7 +398,7 @@ const enviarEmailPagamentoAposCancelamento = async (email, pedido, { estornado }
 const NOMES_PAGAMENTO = {
   presencial: 'Pagar na entrega',
   pix: 'Pix (pago online)',
-  cartao: 'Cartão (pago online)',
+  cartao: 'Cartão de crédito ou débito (pago online)',
 };
 
 const enviarEmailPedidoVendedor = async (emailVendedor, pedido) => {

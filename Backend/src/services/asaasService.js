@@ -145,14 +145,14 @@ async function criarCustomer({ nome, email, cpfCnpj, mobilePhone }) {
   return chamarApi('/v3/customers', { method: 'POST', body })
 }
 
-async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUrl }) {
+async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUrl, billingType }) {
   const vencimento = new Date()
   vencimento.setDate(vencimento.getDate() + 3)
   const nextDueDate = vencimento.toISOString().slice(0, 10)
 
   const corpo = {
     customer: customerId,
-    billingType: 'CREDIT_CARD',
+    billingType: billingType || 'UNDEFINED',
     value: valor,
     cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
     nextDueDate,
@@ -218,10 +218,10 @@ function montarSplitVendedor(walletId, externalReference) {
   return [split];
 }
 
-async function criarPagamentoPedidoCartao({ customerId, valor, descricao, externalReference, redirectUrl, splits }) {
+async function criarPagamentoPedido({ customerId, valor, descricao, externalReference, redirectUrl, splits, billingType }) {
   const corpo = {
     customer: customerId,
-    billingType: 'CREDIT_CARD',
+    billingType: billingType || 'UNDEFINED',
     value: valor,
     description: descricao,
     dueDate: vencimentoPedido(),
@@ -368,7 +368,7 @@ module.exports = {
   buscarPagamentosAssinatura,
   cancelarAssinatura,
   montarSplitVendedor,
-  criarPagamentoPedidoCartao,
+  criarPagamentoPedido,
   buscarPagamento,
   buscarPagamentoPorExternalReference,
   cancelarPagamento,

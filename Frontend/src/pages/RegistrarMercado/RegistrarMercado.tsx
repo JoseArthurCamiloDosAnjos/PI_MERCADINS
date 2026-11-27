@@ -312,14 +312,7 @@ export default function RegistrarMercado() {
     setStatusAtual('pendente');
     setAguardandoPagamento(true);
 
-    const janela = window.open(checkout.urlCheckout, '_blank');
-    if (!janela) {
-      showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Ir para o pagamento" abaixo.');
-      return;
-    }
-    janela.opener = null;
-    janelaAsaasRef.current = janela;
-    showToast('sucesso', 'Pagamento aberto em nova aba. Assim que for confirmado, ela fecha sozinha.');
+    window.location.href = checkout.urlCheckout;
   }
 
   async function handleSubmit(e: React.FormEvent) {

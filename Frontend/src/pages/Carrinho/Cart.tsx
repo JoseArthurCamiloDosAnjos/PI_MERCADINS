@@ -76,9 +76,9 @@ interface CartScreenProps {
   endereco?: EnderecoEntrega;
   onEnderecoChange?: (endereco: EnderecoEntrega) => void;
 
-  // ── Pagamento (B3): pagar na entrega ou cartão ─────────────────────────────
-  formaPagamento?: "presencial" | "cartao";
-  onFormaPagamentoChange?: (forma: "presencial" | "cartao") => void;
+  // ── Pagamento (B3): pagar na entrega, cartão ou boleto ──────────────────────
+  formaPagamento?: "presencial" | "cartao" | "boleto";
+  onFormaPagamentoChange?: (forma: "presencial" | "cartao" | "boleto") => void;
 }
 
 const formatBRL = (value: number) =>
@@ -152,6 +152,14 @@ const IconCard = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="5" width="20" height="14" rx="2.5" />
     <path d="M2 10h20" />
+  </svg>
+);
+
+const IconBoleto = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+    <path d="M10 4v2M14 4v2" />
   </svg>
 );
 
@@ -858,8 +866,22 @@ export default function CartScreen({
                 />
                 <IconCard />
                 <span className="cart-payment__texto">
-                  <strong>Cartão de crédito</strong>
+                  <strong>Cartão de crédito ou débito</strong>
                   <small>Página segura do Asaas</small>
+                </span>
+              </label>
+              <label className={`cart-payment__opcao ${formaPagamento === "boleto" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="forma-pagamento"
+                  value="boleto"
+                  checked={formaPagamento === "boleto"}
+                  onChange={() => onFormaPagamentoChange("boleto")}
+                />
+                <IconBoleto />
+                <span className="cart-payment__texto">
+                  <strong>Boleto bancário</strong>
+                  <small>Gere e pague quando puder</small>
                 </span>
               </label>
             </fieldset>

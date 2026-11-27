@@ -530,15 +530,21 @@ const criarPedido = async (req, res) => {
         splitEnviado = !!splits;
         motivoSplit = '';
 
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+        const redirectUrl = `${frontendUrl}/pedidos/${pedido.id}`;
+
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         let pagamento;
+        const billingType = formaPagamento === 'boleto' ? 'BOLETO' : 'UNDEFINED';
         try {
-          pagamento = await asaas.criarPagamentoPedidoCartao({
+          pagamento = await asaas.criarPagamentoPedido({
             customerId: customer.id,
             valor: totalPedido,
             descricao,
             externalReference: refPedido,
             splits: splits || undefined,
+            billingType,
+            redirectUrl,
           });
         } catch (erroSplit) {
           motivoSplit = String(erroSplit.message || '');
@@ -569,11 +575,13 @@ const criarPedido = async (req, res) => {
           } else {
             console.error(`Pedido ${pedido.id}: split recusado (${motivoSplit}) — cobrança refeita sem split.`);
             splitEnviado = false;
-            pagamento = await asaas.criarPagamentoPedidoCartao({
+            pagamento = await asaas.criarPagamentoPedido({
               customerId: customer.id,
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
+              billingType,
+              redirectUrl,
             });
           }
         }
@@ -591,7 +599,7 @@ const criarPedido = async (req, res) => {
         });
 
         return res.status(201).json({
-          mensagem: 'Pedido criado. Finalize o pagamento do cartão para a loja iniciar o preparo.',
+          mensagem: 'Pedido criado. Finalize o pagamento online para a loja iniciar o preparo.',
           pedido: {
             ...pedido,
             total: totalPedido,
@@ -637,7 +645,7 @@ const criarPedido = async (req, res) => {
                 valorTotal: totalPedido,
               });
               return res.status(201).json({
-                mensagem: 'Pedido criado. Finalize o pagamento do cartão para a loja iniciar o preparo.',
+                mensagem: 'Pedido criado. Finalize o pagamento online para a loja iniciar o preparo.',
                 pedido: {
                   ...pedido,
                   total: totalPedido,

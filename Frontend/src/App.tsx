@@ -11,7 +11,6 @@ import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
 import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
-import { abrirAbaAsaas } from './utils/abaAsaas'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -174,7 +173,7 @@ function CartWrapper() {
   const [cupom, setCupom] = useState<{ codigo: string; desconto: number } | null>(null)
   const [verificandoCupom, setVerificandoCupom] = useState(false)
   const [agendamento, setAgendamento] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'cartao'>('presencial')
+  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'cartao' | 'boleto'>('presencial')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
@@ -310,19 +309,13 @@ function CartWrapper() {
       })
       const idPedido = resposta.pedido?.id
 
-      if (formaPagamento === 'cartao' && resposta.pagamento?.urlPagamento) {
+      if ((formaPagamento === 'cartao' || formaPagamento === 'boleto') && resposta.pagamento?.urlPagamento) {
         carrinho.limpar()
         setObservacao('')
         setCupom(null)
         setAgendamento('')
         if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
-        const janela = abrirAbaAsaas(resposta.pagamento.urlPagamento)
-        if (janela) {
-          showToast('sucesso', 'Pagamento aberto em nova aba. Esta aba acompanha o pedido: assim que for confirmado, a página atualiza sozinha.')
-        } else {
-          showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Abrir a página de pagamento" na tela do pedido.')
-        }
-        setTimeout(() => navigate(idPedido ? `/pedidos/${idPedido}` : '/pedidos'), 1600)
+        window.location.href = resposta.pagamento.urlPagamento
         return
       }
 

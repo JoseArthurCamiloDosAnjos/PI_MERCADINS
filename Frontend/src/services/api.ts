@@ -461,8 +461,6 @@ export const api = {
   adminAlertas:     ()         => request('/admin/alertas'),
   adminBloquearMercado: (id: number) =>
     request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
-  adminBloquearMercado: (id: number) =>
-    request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
   adminConcederCortesia: (id: number, dados: { codigo_plano: string; quantidade: number; unidade: string }) =>
     request(`/admin/mercados/${id}/cortesia`, { method: 'PUT', body: JSON.stringify(dados) }),
   adminRevogarCortesia: (id: number) =>

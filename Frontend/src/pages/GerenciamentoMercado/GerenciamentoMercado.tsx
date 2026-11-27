@@ -523,7 +523,7 @@ function EditarProdutoModal({
 // ─── Caixa de URL da loja (copiar link) ────────────────────────────────────────
 
 function montarUrlVitrine(slug: string) {
-  return `${window.location.origin}/vitrine/${slug}`;
+  return `${window.location.origin}/${slug}`;
 }
 
 function CaixaUrlLoja({ slug }: { slug: string }) {

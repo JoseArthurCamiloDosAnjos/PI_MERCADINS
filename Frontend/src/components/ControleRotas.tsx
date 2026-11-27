@@ -31,7 +31,7 @@ const TITULOS: Array<[RegExp, string]> = [
   [/^\/admin/, 'Administração — Mercadins'],
   [/\/carrinho/, 'Carrinho — Mercadins'],
   [/\/produto\//, 'Produto — Mercadins'],
-  [/^\/vitrine\//, 'Loja — Mercadins'],
+  [/^\/[^/]+\//, 'Loja — Mercadins'],
 ];
 
 function tituloDaRota(pathname: string): string {

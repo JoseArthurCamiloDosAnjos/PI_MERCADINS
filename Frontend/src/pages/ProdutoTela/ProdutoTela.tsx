@@ -83,6 +83,7 @@ function IconCard({ size = 15 }: { size?: number }) {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ProdutoDetalhe extends ProdutoCarrinho {
+  slug?: string;
   imagens?: string[];
   precoOriginal?: string;
   avaliacao?: number;
@@ -127,7 +128,7 @@ interface ProdutoTelaProps {
   corBase?: string;
   corDestaque?: string;
   recomendados?: ProdutoDetalhe[];
-  onAbrirProduto?: (catId: number, prodId: number) => void;
+  onAbrirProduto?: (prod: ProdutoDetalhe) => void;
   onVoltar: () => void;
   onIrParaCarrinho?: () => void;
 }
@@ -634,7 +635,7 @@ export default function ProdutoTela({
                     key={p.id_produto}
                     type="button"
                     className="pd-reco-card"
-                    onClick={() => onAbrirProduto?.(categoriaId, p.id_produto)}
+                    onClick={() => onAbrirProduto?.(p)}
                   >
                     <span className="pd-reco-img">
                       {imagensReco.length > 0

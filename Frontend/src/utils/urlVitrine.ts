@@ -14,13 +14,8 @@ function origem(): string {
 }
 
 /** Forma curta: mercadins.com.br/nome_mercado (rota /:slug). */
-export function urlVitrineCurta(slug: string): string {
+export function urlVitrine(slug: string): string {
   return `${origem()}/${slug}`;
-}
-
-/** Forma tradicional: mercadins.com.br/vitrine/nome_mercado. */
-export function urlVitrineCompleta(slug: string): string {
-  return `${origem()}/vitrine/${slug}`;
 }
 
 /** Texto enxuto exibido na interface (sem protocolo e sem www). */
@@ -28,9 +23,9 @@ export function urlVitrineExibida(slug: string): string {
   return `${hostExibido()}/${slug}`;
 }
 
-/** Copia a forma curta para a área de transferência. */
+/** Copia a URL da vitrine para a área de transferência. */
 export async function copiarUrlVitrine(slug: string): Promise<boolean> {
-  const url = urlVitrineCurta(slug);
+  const url = urlVitrine(slug);
   try {
     await navigator.clipboard.writeText(url);
     return true;

@@ -365,7 +365,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           {favoritos.map((f, i) => {
-            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); };
+            const abrirLoja = () => { if (f.slug) navigate(`/${f.slug}`); };
             return (
               <div
                 key={f.id}

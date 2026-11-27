@@ -179,7 +179,7 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
       localStorage.setItem(chave, JSON.stringify(novos));
 
       showToast('sucesso', 'Itens adicionados ao carrinho. Confira antes de finalizar.');
-      navigate(`/vitrine/${p.slug}/carrinho`);
+      navigate(`/${p.slug}/carrinho`);
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Não foi possível montar o carrinho.');
     } finally {
@@ -453,7 +453,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           { favoritos.map((f, i) => {
-            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); else if (f.id_mercado) navigate(`/vitrine/${f.id_mercado}`); };
+            const abrirLoja = () => { if (f.slug) navigate(`/${f.slug}`); else if (f.id_mercado) navigate(`/${f.id_mercado}`); };
             return (
               <div
                 key={f.id}
@@ -478,9 +478,9 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
         </div>
         {favoritos.length === 0 && (
           <a
-            href="/vitrine"
+            href="/"
             className="pu-empty-inline"
-            onClick={() => navigate('/vitrine')}
+            onClick={() => navigate('/')}
             style={{ cursor: 'pointer' }}
           >
             <span>Explore mercados</span>

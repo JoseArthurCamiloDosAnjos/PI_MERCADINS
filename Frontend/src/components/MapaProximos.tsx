@@ -159,7 +159,7 @@ export default function MapaProximos() {
   const geocodificarEEntra = useCallback(
     async (mercado: MercadoProximo) => {
       if (mercado.latitude && mercado.longitude) {
-        navigate(`/vitrine/${mercado.slug}`);
+        navigate(`/${mercado.slug}`);
         return;
       }
       try {
@@ -171,7 +171,7 @@ export default function MapaProximos() {
       } catch {
         // segue para a loja mesmo sem geocodificar
       }
-      navigate(`/vitrine/${mercado.slug}`);
+      navigate(`/${mercado.slug}`);
     },
     [navigate],
   );

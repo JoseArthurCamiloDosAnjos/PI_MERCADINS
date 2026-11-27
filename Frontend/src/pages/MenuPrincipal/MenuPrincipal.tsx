@@ -127,6 +127,8 @@ type ProdutoBusca = {
   id_mercado: number;
   mercado: string;
   slug: string;
+  produtoSlug: string;
+  categoriaSlug: string;
   cidade: string;
   estado: string;
 };
@@ -460,7 +462,7 @@ const lojasFiltradas = useMemo(() => {
 
   function abrirMercado(slug: string) {
     registrarVisita(slug);
-    navigate(`/vitrine/${slug}`);
+    navigate(`/${slug}`);
   }
 
   function irParaMercado(slug: string) {
@@ -599,7 +601,7 @@ const lojasFiltradas = useMemo(() => {
                           setDropdownProdutos(false);
                           registrarVisita(p.slug);
                           navigate(
-                            `/vitrine/${p.slug}/produto/${p.id_categoria}/${p.id_produto}`
+                            `/${p.slug}/produto/${p.categoriaSlug}/${p.produtoSlug}`
                           );
                         }}
                       >

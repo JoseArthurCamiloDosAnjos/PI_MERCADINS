@@ -78,7 +78,7 @@ export default function Favoritos() {
   }
 
   function abrirLoja(f: Favorito) {
-    if (f.slug) navigate(`/vitrine/${f.slug}`);
+    if (f.slug) navigate(`/${f.slug}`);
   }
 
   return (

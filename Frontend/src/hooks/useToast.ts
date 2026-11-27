@@ -65,19 +65,20 @@ export function useToast() {
 
     const id = ++toastIdCounter;
 
-    setToasts((prev) => {
-      const next = [...prev, { id, tipo, mensagem }];
-      if (next.length > MAX_TOASTS) {
-        const removeId = next[0].id;
-        clearTimeout(toastTimers.current.get(removeId));
-        toastTimers.current.delete(removeId);
-        return next.slice(1);
-      }
-      return next;
-    });
-    const timer = setTimeout(() => dismissToast(id), 3500);
-    toastTimers.current.set(id, timer);
-  }, [dismissToast]);
+    // Calcula a lista nova a partir do espelho síncrono (não do estado do React)
+    // para que `toastsRef` e `toasts` fiquem sempre juntos.
+    const proximos = [...toastsRef.current, { id, tipo, mensagem }];
+    if (proximos.length > MAX_TOASTS) {
+      const removido = proximos.shift()!;
+      limparTimer(removido.id);
+    }
+    aplicar(proximos);
+
+    toastTimers.current.set(
+      id,
+      setTimeout(() => dismissToast(id), DURACAO_TOAST)
+    );
+  }, [agendarDismiss, aplicar, dismissToast, limparTimer]);
 
 
   return { toasts, showToast, dismissToast };

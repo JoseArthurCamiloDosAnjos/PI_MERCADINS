@@ -434,6 +434,9 @@ function Rotas() {
           <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
           <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
           <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
+          <Route path="/:slug"                                    element={<VitrineClienteWrapper />} />
+          <Route path="/:slug/carrinho"                           element={<CartWrapper />} />
+          <Route path="/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
           <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
           <Route path="*"                  element={<PaginaNaoEncontrada />} />
         </Routes>

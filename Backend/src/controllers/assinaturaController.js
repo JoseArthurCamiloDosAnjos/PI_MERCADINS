@@ -607,6 +607,10 @@ const webhookAsaas = async (req, res) => {
 
     if (pagamento?.id) {
       await registrarFatura(sql, assinatura, pagamento);
+      if (evento === 'PAYMENT_CREATED') {
+        const urlRedirect = `${baseFrontend()}/registrar-mercado?pagamento=1`;
+        await aplicarCallbackNaFatura(pagamento.id, urlRedirect);
+      }
     }
 
     // ── Máquina de estados (helper em asaasService) ─────────────────────────

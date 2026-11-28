@@ -293,11 +293,17 @@ function DetalhePedido({
     if (pagou || primeiroLoad) {
       fecharAbaAsaas();
       if (statusPedido === 'pendente') {
-        showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada e o pedido segue para a loja.');
-        navigate('/');
+        showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada.');
+        // Abre nova aba para o site/loja
+        const novaAba = window.open('/', '_blank');
+        if (novaAba) {
+          try {
+            novaAba.opener = null;
+          } catch { /* cross-origin */ }
+        }
       }
     }
-  }, [statusPedido, showToast, navigate]);
+  }, [statusPedido, showToast]);
 
   useEffect(() => {
     if (!statusPedido) return;

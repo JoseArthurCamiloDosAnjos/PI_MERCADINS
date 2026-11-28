@@ -515,37 +515,43 @@ const webhookAsaas = async (req, res) => {
     pagamento.additionalInfo = req.body.additionalInfo;
   }
 
-  const sql = await conectar();
-
-  // ── 2. Idempotência por ID do EVENTO (gate de 1ª camada) ───────────────────
-  let eventoPersistido = false;
+  // ── 2. Idempotência + Lógica principal (tudo dentro do try-catch) ───────────
   try {
-    const linhas = await sql`
-      INSERT INTO asaas_eventos (asaas_event_id, evento, payload, status)
-      VALUES (${eventId}, ${evento}, ${JSON.stringify(req.body)}::jsonb, 'PENDING')
-      ON CONFLICT (asaas_event_id) DO NOTHING
-      RETURNING id
-    `;
-    eventoPersistido = linhas.length > 0;
-  } catch (erroTabela) {
-    console.error(
-      'webhookAsaas: tabela asaas_eventos indisponível — processando sem gate de evento (' +
-      `${erroTabela.message}). Aplicar migração 023.`
-    );
-    eventoPersistido = true;
-  }
+    const sql = await conectar();
 
-  if (!eventoPersistido) {
-    const [existente] = await sql`
-      SELECT status FROM asaas_eventos WHERE asaas_event_id = ${eventId} LIMIT 1
-    `;
-    if (existente?.status === 'DONE') {
+    // ── 2.1 Idempotência por ID do EVENTO (gate de 1ª camada) ────────────────
+    let eventoPersistido = false;
+    try {
+      const linhas = await sql`
+        INSERT INTO asaas_eventos (asaas_event_id, evento, payload, status)
+        VALUES (${eventId}, ${evento}, ${JSON.stringify(req.body)}::jsonb, 'PENDING')
+        ON CONFLICT (asaas_event_id) DO NOTHING
+        RETURNING id
+      `;
+      eventoPersistido = linhas.length > 0;
+    } catch (erroTabela) {
+      console.error(
+        'webhookAsaas: tabela asaas_eventos indisponível — processando sem gate de evento (' +
+        `${erroTabela.message}). Aplicar migração 023.`
+      );
+      eventoPersistido = true;
+    }
+
+    if (!eventoPersistido) {
+      try {
+        const [existente] = await sql`
+          SELECT status FROM asaas_eventos WHERE asaas_event_id = ${eventId} LIMIT 1
+        `;
+        if (existente?.status === 'DONE') {
+          return res.status(200).json({ recebido: true, duplicado: true });
+        }
+      } catch (errSelect) {
+        console.error('webhookAsaas: erro ao checar evento duplicado:', errSelect.message);
+      }
       return res.status(200).json({ recebido: true, duplicado: true });
     }
-    return res.status(200).json({ recebido: true, duplicado: true });
-  }
 
-  try {
+    // ── 2.2 Lógica principal do webhook ──────────────────────────────────────
     let statusApi = null;
     if (pagamento?.id) {
       const fonte = await asaas.buscarPagamento(pagamento.id);

@@ -294,8 +294,6 @@ function DetalhePedido({
       fecharAbaAsaas();
       if (statusPedido === 'pendente') {
         showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada.');
-        // Fecha a aba do Asaas e abre uma nova aba para o site/loja
-        const abaAsaasFechada = fecharAbaAsaas();
         // Pequeno delay para garantir que o estado foi atualizado antes de navegar
         const delayNavigate = setTimeout(() => {
           // Tenta navegar de volta para a página inicial do mercado

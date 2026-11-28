@@ -225,9 +225,11 @@ Comportamento com assinatura já existente (detalhes em
 loja já criada → nova assinatura sem bloquear; pendência com o **mesmo**
 formulário → retoma o mesmo link; formulário **diferente** → substitui a
 pendência; pagamento confirmado mas a loja não nasceu → cria a loja na hora e
-devolve `mercado` (sem cobrar de novo), com `mensagem`. O `urlCheckout` é
-aberto pelo frontend em **nova aba** que fecha sozinha quando o pagamento
-confirma ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
+devolve `mercado` (sem cobrar de novo), com `mensagem`. A assinatura é criada
+com `callback.successUrl = {FRONTEND_URL}/registrar-mercado?pagamento=1`; o
+Asaas aceita esse retorno no domínio cadastrado e devolve o usuário à tela de
+status, que faz polling de 5 em 5 s até o status `ativa`
+([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
 
 Fluxo completo, estados, carência de 3 dias e como testar:
 **[docs/pagamentos.md](pagamentos.md)**.

@@ -51,8 +51,9 @@ RegistrarMercado ──POST /api/assinaturas/checkout──► Asaas (customer +
    Se já existir assinatura `pendente`/`ativa`/`inadimplente`, ela é **retomada**
    em vez de criar outra.
 2. **Aguardando pagamento** — a assinatura fica `pendente`; o checkout do
-   Asaas abre em **nova aba** e a aba original faz polling — quando o
-   pagamento confirma, a aba do Asaas **fecha sozinha** (§14).
+   Asaas abre na **mesma aba** e, como o `callback` é aceito no domínio
+   cadastrado, o Asaas **devolve o usuário** para
+   `/registrar-mercado?pagamento=1`, onde a tela faz polling (§14).
 3. **Confirmação** — ao confirmar o pagamento (§3): status vira `ativa`,
    `proximo_pagamento` é recalculado no servidor (`+1 mês` ou `+1 ano`), a fatura
    é gravada e **o mercado é criado** a partir de `dados_mercado` (é nesse momento
@@ -278,7 +279,7 @@ npm run migrate                   # banco local (DB_PROVIDER)
 | `Assas_API_KEY` | chave única (legada) — vale para os dois ambientes quando as específicas não estão preenchidas |
 | `Assas_API_URL_Sandbox` / `Assas_API_URL_Producao` | base da API de cada ambiente (o código escolhe junto com o ambiente ativo) |
 | `ASAAS_WEBHOOK_TOKEN` | valor esperado no cabeçalho `asaas-access-token` (legado: `webhook-security-token`). **Obrigatório**: sem ele o webhook responde `401` e não processa (fail-closed). Vários tokens? Separe por vírgula — assim webhook de sandbox e de produção valem para a mesma URL. Cadastre o MESMO valor como “Auth Token” da integração de webhook no painel do Asaas |
-| `FRONTEND_URL` | base do site (e-mails, sitemap) — pedidos e assinaturas **não** usam retorno do Asaas; ambos seguem o fluxo de nova aba (§14) |
+| `FRONTEND_URL` | base do site (e-mails, sitemap) **e base da `successUrl` do `callback`** enviado nas assinaturas (`/registrar-mercado?pagamento=1`) e nos pedidos (`/pedidos/{id}?pagamento=1`). No domínio cadastrado (`https://mercadins.com.br`) o Asaas aceita o retorno; em `localhost` recusa e cai no fallback (§14) |
 
 **Sandbox × produção:** a chave de sandbox **não** vale na URL de produção e
 vice-versa. Por isso cada ambiente tem a sua chave: a mesma máquina pode ter as
@@ -530,20 +531,30 @@ das assinaturas.
 
 ## 14. Retorno automático após o pagamento
 
-### Assinatura (plano da loja) — nova aba que fecha sozinha
+### Assinatura (plano da loja) — volta para a tela de status
 
-O painel do Asaas (sandbox e produção) **não tem campo para cadastrar
-domínio**, então a `successUrl` é sempre recusada. Por isso o checkout da
-assinatura **não envia `callback`**:
+O checkout da assinatura **envia `callback`** com
+`successUrl = {FRONTEND_URL}/registrar-mercado?pagamento=1`
+(`assinaturaController.js` → `asaasService.criarAssinatura`). Testado na
+sandbox: o Asaas **aceita** esse retorno, porque `mercadins.com.br` (e `www`)
+está cadastrado como domínio da conta — `POST /v3/subscriptions` com
+`callback` responde `200`.
 
-1. o frontend abre o link do checkout em uma **nova aba**;
-2. a tela "Aguardando pagamento" fica na aba original e **faz polling** a
-   cada 5 s em `GET /assinaturas/minha`;
-3. assim que o status vira `ativa`, o site **fecha a aba do Asaas sozinho**
-   e segue para o gerenciador do mercado.
+1. o frontend grava `aguardandoPagamento` no `localStorage` e abre o link do
+   checkout na **mesma aba** (`window.location.href` em
+   `RegistrarMercado.tsx`);
+2. pago, o Asaas redireciona de volta para
+   `/registrar-mercado?pagamento=1`; a tela lê o parâmetro, mostra
+   **"Aguardando pagamento"** e faz **polling** a cada 5 s em
+   `GET /assinaturas/minha`;
+3. quando o status vira `ativa`, ela avisa, navega para o gerenciador do
+   mercado e limpa o `localStorage`.
 
-Nada depende de retorno automático. Se o navegador bloquear a nova aba, o
-botão manual **"Ir para o pagamento"** continua disponível na tela de status.
+Em desenvolvimento local a `successUrl` é `http://localhost:5173/...` e o
+Asaas a **recusa** (`400 invalid_object`) — nesse caso não há retorno
+automático: quem acompanha é a própria tela de status (ela reabre ao voltar
+para `/registrar-mercado`, pelo `localStorage`) e o botão manual
+**"Ir para o pagamento"**.
 
 ### Pedido (cartão) — nova aba (mesmo fluxo da assinatura)
 
@@ -562,21 +573,22 @@ mesmo da assinatura:
 Se o navegador bloquear a nova aba, o cliente usa o link manual **"Abrir a
 página de pagamento"** na tela do pedido.
 
-### Requisito fora do código (legado — não é mais usado)
+### Requisito fora do código
 
-> Nenhuma cobrança envia `callback` hoje. A seção abaixo fica como referência
-> caso o retorno automático seja reativado: a `successUrl` precisa pertencer
-> ao **domínio cadastrado na conta Asaas** (painel → **Configurações da conta →
-> Informações** — `mercadins.com.br`, nas contas sandbox e produção). Sem isso
-> a API recusa o `callback` com `400 invalid_object`.
+> A `successUrl` precisa pertencer ao **domínio cadastrado na conta Asaas**
+> (painel → **Configurações da conta → Informações** — `mercadins.com.br`,
+> nas contas sandbox e produção). Sem isso a API recusa o `callback` com
+> `400 invalid_object` — é o que acontece em `localhost` (§14): a assinatura
+> (ou o pedido) é recriada sem `callback` e o pagamento segue normalmente.
 
 ### Comportamento quando o Asaas recusa o `callback` (fallback defensivo)
 
-O serviço (`asaasService.js`) ainda mantém o fallback — disparado apenas em
+O serviço (`asaasService.js`) mantém o fallback — disparado apenas em
 **recusa de validação (4xx)** cuja mensagem fala em `successUrl`, `callback` ou
-`domínio` — que recria a cobrança sem `callback` (o pagamento nunca falha por
-isso) e devolve `semRedirect: true`. Hoje ele é **código defensivo inativo**:
-nenhum chamador envia `redirectUrl`, então `semRedirect` é sempre `false`.
+`domínio` — que recria a cobrança/assinatura sem `callback` (o pagamento nunca
+falha por isso) e devolve `semRedirect: true`. Ele só roda onde a `successUrl`
+é recusada (ex.: `localhost`); no domínio cadastrado a chamada é aceita na
+primeira tentativa e o fallback não chega a ser exercitado.
 
 Erros de **rede/timeout** não disparam esse fallback (são ambíguos — a
 cobrança pode ter sido criada); o pedido é verificado por `externalReference`
@@ -584,9 +596,10 @@ antes de qualquer recriação/rollback (§8).
 
 ### Observações
 
-- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o redirect nunca
-  seria aceito — `localhost` não é domínio cadastrável; por isso os dois
-  fluxos (pedido e assinatura) usam **nova aba + polling**;
+- em desenvolvimento (`FRONTEND_URL=http://localhost:5173`) o retorno da
+  assinatura é recusado — `localhost` não é domínio cadastrável — e o
+  acompanhamento passa a ser só pelo **polling** da tela "Aguardando
+  pagamento";
 - **boleto** não redireciona: a confirmação não é imediata (só o cartão tem
   sentido em retorno automático);
 - redirecionar **não** confirma pagamento — quem confirma é o webhook ou a

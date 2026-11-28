@@ -134,6 +134,24 @@ async function sincronizarComAsaas(sql, assinatura) {
   return { confirmado: false, pagamento: pendente };
 }
 
+function baseFrontend() {
+  return (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+}
+
+// Grava o retorno automático (callback.successUrl) na fatura que o cliente vai
+// pagar — best-effort: se o Asaas recusar (ex.: localhost), o checkout segue e o
+// acompanhamento é pelo polling da tela "Aguardando pagamento".
+async function aplicarCallbackNaFatura(paymentId, successUrl) {
+  if (!paymentId || !successUrl) return false;
+  try {
+    await asaas.atualizarCallbackPagamento(paymentId, successUrl);
+    return true;
+  } catch (erro) {
+    console.warn(`assinatura: callback não gravado na fatura ${paymentId} (${erro.message}) — segue sem retorno automático.`);
+    return false;
+  }
+}
+
 const criarCheckout = async (req, res) => {
   const id_usuario = req.usuarioId;
   const { codigo_plano, ciclo, mercado } = req.body;
@@ -221,17 +239,21 @@ const criarCheckout = async (req, res) => {
         }
 
         if (mesmoFormulario) {
-          let urlCheckout = null;
+          let faturaRetomada = null;
           try {
-            urlCheckout = await asaas.buscarUrlPagamento(assinaturaExistente.asaas_subscription_id);
+            faturaRetomada = await asaas.buscarFaturaAssinatura(assinaturaExistente.asaas_subscription_id);
           } catch { /* falha ignorada */ }
 
-          if (urlCheckout) {
+          if (faturaRetomada?.invoiceUrl) {
+            await aplicarCallbackNaFatura(
+              faturaRetomada.id,
+              `${baseFrontend()}/registrar-mercado?pagamento=1`
+            );
             return res.json({
               mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
               status: assinaturaExistente.status,
               idAssinatura: assinaturaExistente.id,
-              urlCheckout,
+              urlCheckout: faturaRetomada.invoiceUrl,
             });
           }
         }
@@ -276,7 +298,11 @@ const criarCheckout = async (req, res) => {
       billingType: 'UNDEFINED',
     });
 
-    const urlCheckout = await asaas.buscarUrlPagamento(assinaturaAsaas.id);
+    const fatura = await asaas.buscarFaturaAssinatura(assinaturaAsaas.id);
+    if (fatura?.id) {
+      await aplicarCallbackNaFatura(fatura.id, `${redirectUrl}?pagamento=1`);
+    }
+    const urlCheckout = fatura?.invoiceUrl || null;
 
     const [assinatura] = await sql`
       INSERT INTO assinaturas (

@@ -162,6 +162,29 @@ async function buscarUrlPagamento(subscriptionId) {
   return pagamento?.invoiceUrl || null
 }
 
+// A 1ª fatura da assinatura pode nascer com alguns segundos de atraso e o
+// checkout precisa dela (invoiceUrl) — consulta várias vezes antes de desistir.
+async function buscarFaturaAssinatura(subscriptionId, { tentativas = 4, esperaMs = 1500 } = {}) {
+  for (let tentativa = 0; tentativa < tentativas; tentativa++) {
+    if (tentativa > 0) await new Promise((resolve) => setTimeout(resolve, esperaMs))
+    const dados = await chamarApi(`/v3/payments?subscription=${subscriptionId}&limit=1`)
+    const pagamento = dados?.data?.[0]
+    if (pagamento?.invoiceUrl) return pagamento
+  }
+  return null
+}
+
+// Grava o retorno automático na PRÓPRIA fatura que o cliente vai pagar
+// (PUT /v3/payments/{id}) — mesmo mecanismo do fluxo de pedido. Validado na
+// sandbox: domínio cadastrado aceita (200), localhost recusa (400 invalid_object).
+async function atualizarCallbackPagamento(paymentId, redirectUrl) {
+  if (!paymentId || !redirectUrl) return null
+  return chamarApi(`/v3/payments/${paymentId}`, {
+    method: 'PUT',
+    body: { callback: { successUrl: redirectUrl, autoRedirect: true } },
+  })
+}
+
 async function buscarPagamentosAssinatura(subscriptionId, limite = 10) {
   const dados = await chamarApi(
     `/v3/payments?subscription=${subscriptionId}&limit=${limite}&order=DESC`
@@ -336,6 +359,8 @@ module.exports = {
   criarCustomer,
   criarAssinatura,
   buscarUrlPagamento,
+  buscarFaturaAssinatura,
+  atualizarCallbackPagamento,
   buscarPagamentosAssinatura,
   cancelarAssinatura,
   montarSplitVendedor,

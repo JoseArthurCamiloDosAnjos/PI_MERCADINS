@@ -182,7 +182,7 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
 
 function erroDeCallbackRecusado(msg, code) {
   const texto = `${String(msg || '')} ${String(code || '')}`;
-  return /successUrl|callback|dom[ií]nio|domain|redirect[\s_-]?url|return[\s_-]?url|autoRedirect/i.test(texto);
+  return /successUrl|callback|domínio|domain|redirect.*url|return.*url|autoRedirect|blocked|not.allowed|invalid.*domain|origem|http.*origin/i.test(texto);
 }
 
 async function buscarUrlPagamento(subscriptionId) {

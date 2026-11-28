@@ -66,45 +66,11 @@
   box-sizing: border-box;
 }
 
-.vtc-btn-voltar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--vt-cor-texto);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-.vtc-btn-voltar:hover {
-  background: var(--vt-azul-card);
-  color: var(--vt-amarelo);
-}
-
 .vtc-topbar-direita {
   display: flex;
   align-items: center;
   gap: 14px;
 }
-
-.vtc-btn-voltar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--vt-cinza);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0.3rem 0;
-  transition: color 0.2s;
-}
-.vtc-btn-voltar:hover { color: var(--vt-cor-texto); }
 
 .vtc-btn-entrar {
   background: transparent;
@@ -1077,8 +1043,8 @@
   box-shadow: 0 0 0 3px rgba(24, 146, 82, 0.15);
 }
 
-.vtc-status--fechado { color: #b45309; }
+.vtc-status--fechado { color: #dc2626; }
 .vtc-status--fechado .vtc-status-dot {
-  background: #d97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
 }

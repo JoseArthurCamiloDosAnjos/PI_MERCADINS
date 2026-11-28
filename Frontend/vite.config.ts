@@ -4,11 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Aceita conexões de outros dispositivos da rede local (http://<ip>:5173)
-    host: true,
+    // 'localhost' = apenas localhost (não mostra Network IPs)
+    // Para acesso externo: npm run dev -- --host
+    host: 'localhost',
     proxy: {
       '/api': 'http://localhost:3001',
       '/imagens': 'http://localhost:3001',
-    }
-  }
+    },
+  },
 })

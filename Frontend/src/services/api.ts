@@ -216,7 +216,7 @@ export const api = {
       endereco_entrega?: string;
       cupom?: string;
       agendamento?: string;
-      forma_pagamento?: 'presencial' | 'cartao';
+      forma_pagamento?: 'presencial' | 'cartao' | 'boleto';
     }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
@@ -229,8 +229,11 @@ export const api = {
     request('/pedidos/meus'),
   detalharPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}`),
-  cancelarPedido: (pedidoId: string | number) =>
-    request(`/pedidos/${pedidoId}/cancelar`, { method: 'POST' }),
+  cancelarPedido: (pedidoId: string | number, motivo?: string) =>
+    request(`/pedidos/${pedidoId}/cancelar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo: motivo ?? '' }),
+    }),
   itensRecompra: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/itens-recompra`),
   removerPedidoHistorico: (pedidoId: string | number) =>
@@ -316,7 +319,7 @@ export const api = {
     request(`/mercados/${mercadoId}/pedidos`),
   atualizarStatusPedido: (
     pedidoId: string | number,
-    status: 'pendente' | 'preparo' | 'caminho' | 'entregue'
+    status: 'pendente' | 'preparo' | 'pronto' | 'caminho' | 'tentativa' | 'entregue'
   ) =>
     request(`/pedidos/${pedidoId}/status`, {
       method: 'PUT',
@@ -337,6 +340,19 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ oculta }),
     }),
+
+  // ── Comentário do próprio usuário (editar/remover) ─────────────────────────
+  editarAvaliacao: (
+    mercadoId: string | number,
+    avaliacaoId: string | number,
+    dados: { nota: number; texto: string }
+  ) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    }),
+  removerAvaliacao: (mercadoId: string | number, avaliacaoId: string | number) =>
+    request(`/mercados/${mercadoId}/avaliacoes/${avaliacaoId}`, { method: 'DELETE' }),
   avaliacoesProdutosMercado: (mercadoId: string | number) =>
     request(`/mercados/${mercadoId}/avaliacoes-produtos`),
   moderarAvaliacaoProduto: (
@@ -368,6 +384,27 @@ export const api = {
     request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes`, {
       method: 'POST',
       body: JSON.stringify(dados),
+    }),
+
+  editarAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number,
+    dados: { nota: number; texto: string }
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    }),
+  removerAvaliacaoProduto: (
+    mercadoId:   string | number,
+    categoriaId: string | number,
+    produtoId:   string | number,
+    avaliacaoId: string | number
+  ) =>
+    request(`/mercados/${mercadoId}/categorias/${categoriaId}/produtos/${produtoId}/avaliacoes/${avaliacaoId}`, {
+      method: 'DELETE',
     }),
 
   // ── Carrinho ────────────────────────────────────────────────────────────────
@@ -424,6 +461,10 @@ export const api = {
   adminAlertas:     ()         => request('/admin/alertas'),
   adminBloquearMercado: (id: number) =>
     request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
+  adminConcederCortesia: (id: number, dados: { codigo_plano: string; quantidade: number; unidade: string }) =>
+    request(`/admin/mercados/${id}/cortesia`, { method: 'PUT', body: JSON.stringify(dados) }),
+  adminRevogarCortesia: (id: number) =>
+    request(`/admin/mercados/${id}/revogar-cortesia`, { method: 'PUT' }),
   adminMercados: (params?: string) =>
     request(`/admin/mercados${params ? `?${params}` : ''}`),
   adminMercadoDetalhe: (id: number) => request(`/admin/mercados/${id}`),

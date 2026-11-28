@@ -4,7 +4,7 @@ const autenticar = require('../middleware/authMiddleware');
 const autenticarOpcional = require('../middleware/authOpcionalMiddleware');
 const { criarMercado, criarSubcontaAsaas, listarMercados, buscarMercadoPorId, buscarMercadoPorSlug, atualizarMercado, deletarMercado, meusMercados, dashboardMercado, geocodificarMercado, listarMercadosProximos } = require('../controllers/marketController');
 const { favoritarMercado } = require('../controllers/usuarioController');
-const { listarAvaliacoesMercado, criarAvaliacao, alternarVisibilidadeAvaliacao, listarAvaliacoesProdutosDoMercado } = require('../controllers/avaliacaoController');
+const { listarAvaliacoesMercado, criarAvaliacao, editarAvaliacao, removerAvaliacao, alternarVisibilidadeAvaliacao, listarAvaliacoesProdutosDoMercado } = require('../controllers/avaliacaoController');
 const { criarPedido, listarPedidosMercado, financeiroMercado } = require('../controllers/pedidoController');
 const { listarCupons, criarCupom, atualizarCupom, deletarCupom, validarCupomNoCarrinho } = require('../controllers/cupomController');
 
@@ -22,6 +22,8 @@ router.delete('/:id/favoritar', autenticar, favoritarMercado);
 router.post('/:id/asaas/subconta', autenticar, criarSubcontaAsaas);
 router.get('/:id/avaliacoes',  autenticarOpcional, listarAvaliacoesMercado);
 router.post('/:id/avaliacoes', autenticar, criarAvaliacao);
+router.patch('/:id/avaliacoes/:avaliacaoId', autenticar, editarAvaliacao);
+router.delete('/:id/avaliacoes/:avaliacaoId', autenticar, removerAvaliacao);
 router.put('/:id/avaliacoes/:avaliacaoId', autenticar, alternarVisibilidadeAvaliacao);
 router.get('/:id/avaliacoes-produtos', autenticar, listarAvaliacoesProdutosDoMercado);
 router.get('/:id/cupons',          autenticar, listarCupons);

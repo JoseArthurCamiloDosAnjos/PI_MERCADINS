@@ -127,7 +127,7 @@ Classes distintas (helper `classificarStatusAsaas` em `asaasService.js`) —
 | `vencido` | `OVERDUE` | assinatura → `inadimplente`; pedido permanece aguardando |
 | `falha` | `DELETED`, `FAILED`, `EXPIRED` | cancela pedido (devolve estoque/cupom) |
 | `estorno_solicitado` | `REFUND_REQUESTED` | **não cancela** — só registra; aguarda `REFUNDED` |
-| `estorno_concluido` | `REFUNDED`, `CHARGBACK_*` | pedido já pago → cancela com devoluções; assinatura → log `CRÍTICO` (sem rebaixar automático) |
+| `estorno_concluido` | `REFUNDED`, `CHARGBACK_*` | pedido já pago → cancela o pedido e estorna as cobranças; assinatura → log `CRÍTICO` (sem rebaixar automático) |
 
 ### Mercado (`mercados.status`)
 

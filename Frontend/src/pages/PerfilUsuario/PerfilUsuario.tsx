@@ -16,9 +16,10 @@ import MapaProximos from '../../components/MapaProximos';
 import EnderecoPopup from '../../components/EnderecoPopup/EnderecoPopup';
 import { useEnderecos } from '../../hooks/useEnderecos';
 import { formatarEndereco, type EnderecoEntrega, type EnderecoSalvo } from '../../utils/endereco';
+import { nomeStatusCliente, passosPedido, indiceDoStatus, type TipoEntrega } from '../../utils/statusPedido';
 import './PerfilUsuario.css';
+import LogoTopbar from '../../components/LogoTopbar';
 import {
-  IconLock,
   IconStore,
   IconShoppingBag,
   IconStar,
@@ -32,7 +33,7 @@ import {
 } from '../../components/Icons';
 
 interface Favorito  { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; slug?: string; produtos: string; valor_total: string; data_compra: string; status: string; observacao?: string; forma_pagamento?: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; slug?: string; produtos: string; valor_total: string; data_compra: string; status: string; tipo_entrega?: 'entrega' | 'retirada'; observacao?: string; forma_pagamento?: string; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 interface Depoimento { id: number; nota: number; texto: string; cliente: string; data_cadastro: string; minha: boolean; }
 
@@ -82,38 +83,22 @@ function BtnOlho({ visivel, onToggle }: { visivel: boolean; onToggle: () => void
 
 // ─── Telas ────────────────────────────────────────────────────────────────────
 
-const ETAPAS_PEDIDO = [
-  { chave: 'pendente', label: 'Pedido recebido' },
-  { chave: 'preparo',  label: 'Em preparo' },
-  { chave: 'caminho',  label: 'A caminho' },
-  { chave: 'entregue', label: 'Entregue' },
-] as const;
-
-const NOMES_STATUS: Record<string, string> = {
-  aguardando_pagamento: 'Aguardando pagamento',
-  pendente: 'Recebido pela loja',
-  preparo: 'Em preparo',
-  caminho: 'A caminho',
-  entregue: 'Entregue',
-  cancelado: 'Cancelado',
-};
-
-function PilhaStatus({ status }: { status: string }) {
-  const idxAtual = ETAPAS_PEDIDO.findIndex(e => e.chave === status);
-  if (idxAtual < 0) return null;
-  const atual = idxAtual;
+function PilhaStatus({ status, tipoEntrega }: { status: string; tipoEntrega?: TipoEntrega }) {
+  const atual = indiceDoStatus(status, tipoEntrega);
+  if (atual < 0) return null;
+  const passos = passosPedido(tipoEntrega);
   return (
     <ol className="pu-timeline" aria-label="Etapas do pedido">
-      {ETAPAS_PEDIDO.map((etapa, i) => {
+      {passos.map((etapa, i) => {
         const feita = i < atual;
         const ativa = i === atual;
         return (
           <li
-            key={etapa.chave}
+            key={etapa}
             className={`pu-timeline-item${feita ? ' feita' : ''}${ativa ? ' ativa' : ''}`}
           >
             <span className="pu-timeline-ponto" aria-hidden="true">{feita ? '✓' : ''}</span>
-            <span className="pu-timeline-label">{etapa.label}</span>
+            <span className="pu-timeline-label">{nomeStatusCliente(etapa, tipoEntrega)}</span>
           </li>
         );
       })}
@@ -194,7 +179,7 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
       localStorage.setItem(chave, JSON.stringify(novos));
 
       showToast('sucesso', 'Itens adicionados ao carrinho. Confira antes de finalizar.');
-      navigate(`/vitrine/${p.slug}/carrinho`);
+      navigate(`/${p.slug}/carrinho`);
     } catch (e: unknown) {
       showToast('erro', e instanceof Error ? e.message : 'Não foi possível montar o carrinho.');
     } finally {
@@ -210,8 +195,8 @@ function CardPedido({ p, showToast, onPedidoCancelado }: {
         <p className="pu-hcard-preco">R$ {p.valor_total}</p>
         <p className="pu-hcard-itens" title="Itens comprados">{p.produtos}</p>
         <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-        <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
-        <PilhaStatus status={p.status} />
+        <span className={`pu-status ${p.status}`}>● {nomeStatusCliente(p.status, p.tipo_entrega)}</span>
+        <PilhaStatus status={p.status} tipoEntrega={p.tipo_entrega} />
         <button
           className="pu-hcard-acompanhar"
           type="button"
@@ -357,8 +342,7 @@ export function TelaEnderecos() {
 
   return (
     <section>
-      <div className="pu-sec-row">
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconMapPin size={14} /></span>Endereços de entrega</h2>
+      <div className="pu-sec-row pu-sec-row--fim">
         <button className="pu-btn-link" onClick={abrirNovo}>Adicionar endereço</button>
       </div>
 
@@ -469,7 +453,7 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           { favoritos.map((f, i) => {
-            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); else if (f.id_mercado) navigate(`/vitrine/${f.id_mercado}`); };
+            const abrirLoja = () => { if (f.slug) navigate(`/${f.slug}`); else if (f.id_mercado) navigate(`/${f.id_mercado}`); };
             return (
               <div
                 key={f.id}
@@ -494,9 +478,9 @@ function TelaPerfil({ favoritos, historico, avaliacoes, onAtualizarFavoritos, on
         </div>
         {favoritos.length === 0 && (
           <a
-            href="/vitrine"
+            href="/"
             className="pu-empty-inline"
-            onClick={() => navigate('/vitrine')}
+            onClick={() => navigate('/')}
             style={{ cursor: 'pointer' }}
           >
             <span>Explore mercados</span>
@@ -620,8 +604,6 @@ function TelaSeguranca() {
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
 
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
-
         <h3 className="pu-sub-title">Alterar senha</h3>
 
         {etapa === 'form' ? (
@@ -863,14 +845,13 @@ export function TelaDepoimentos() {
       <div className="pu-divider" />
 
       <section>
-        <div className="pu-sec-row">
-          <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconStar size={14} /></span>Meus depoimentos</h2>
-          {meus.length > 0 && (
+        {meus.length > 0 && (
+          <div className="pu-sec-row">
             <span className="pu-dep-resumo">
               {meus.length} publicado{meus.length > 1 ? 's' : ''}
             </span>
-          )}
-        </div>
+          </div>
+        )}
         {meus.length === 0 ? (
           <div className="pu-empty">
             <div className="pu-empty-icon"><IconStar size={22} /></div>
@@ -1015,10 +996,13 @@ export default function PerfilUsuario() {
       />
       <main className="pu-main">
         <div className="pu-topbar">
-          <span className="pu-topbar-title">{TITULOS[nav]}</span>
+          <div className="pu-topbar-esq">
+            <LogoTopbar />
+          </div>
         </div>
         <div className="pu-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
+            <h1 className="pu-page-title">{TITULOS[nav]}</h1>
             {TELAS[telaAtiva]}
           </div>
         </div>

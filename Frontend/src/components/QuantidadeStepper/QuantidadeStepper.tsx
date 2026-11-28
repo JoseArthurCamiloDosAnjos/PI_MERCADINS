@@ -8,6 +8,8 @@ type QuantidadeStepperProps = {
   valor: number;
   maximo?: number | null;
   onMudar: (novo: number) => void;
+  /** Chamado quando o usuário tenta passar do limite (estoque ou plano). */
+  aoExceder?: () => void;
   className: string;
   classeBotao?: string;
   classeCampo?: string;
@@ -21,6 +23,7 @@ export default function QuantidadeStepper({
   valor,
   maximo,
   onMudar,
+  aoExceder,
   className,
   classeBotao,
   classeCampo,
@@ -31,14 +34,16 @@ export default function QuantidadeStepper({
 }: QuantidadeStepperProps) {
   const [texto, setTexto] = useState<string | null>(null);
 
+  const limite = maximo == null ? null : Math.max(maximo, MINIMO);
+
   const limitar = (n: number) => {
     const acimaDoMinimo = Math.max(MINIMO, n);
-    if (maximo == null) return acimaDoMinimo;
-    return Math.min(acimaDoMinimo, Math.max(maximo, MINIMO));
+    if (limite == null) return acimaDoMinimo;
+    return Math.min(acimaDoMinimo, limite);
   };
 
   const bloquearMenos = desabilitado || (desabilitarMenos ?? valor <= MINIMO);
-  const bloquearMais = desabilitado || (maximo != null && valor >= maximo);
+  const bloquearMais = desabilitado || (limite != null && valor >= limite);
 
   const mostrar = texto ?? String(valor);
 
@@ -53,7 +58,9 @@ export default function QuantidadeStepper({
       setTexto('');
       return;
     }
-    const novo = limitar(parseInt(digitos, 10));
+    const pretendido = parseInt(digitos, 10);
+    const novo = limitar(pretendido);
+    if (limite != null && pretendido > limite) aoExceder?.();
     setTexto(String(novo));
     if (novo !== valor) onMudar(novo);
   };
@@ -84,8 +91,18 @@ export default function QuantidadeStepper({
       <button
         type="button"
         className={classeBotao}
-        onClick={() => clicar(limitar(valor + 1))}
-        disabled={bloquearMais}
+        onClick={() => {
+          // No limite o botão fica desabilitado visualmente, mas o clique ainda
+          // explica o motivo (estoque ou plano) em um toast.
+          if (bloquearMais) {
+            aoExceder?.();
+            setTexto(null);
+            return;
+          }
+          clicar(limitar(valor + 1));
+        }}
+        disabled={desabilitado}
+        aria-disabled={bloquearMais || undefined}
         aria-label="Aumentar quantidade"
       >
         {iconeMais}

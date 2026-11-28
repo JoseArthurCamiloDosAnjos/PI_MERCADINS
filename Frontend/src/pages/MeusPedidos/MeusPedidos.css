@@ -15,28 +15,6 @@
   border-bottom: 1px solid var(--azul-borda);
 }
 
-.meuspedidos-voltar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--azul-card);
-  border: 1px solid var(--azul-item);
-  border-radius: var(--radius-full);
-  padding: 7px 16px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--cinza-texto);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-}
-
-.meuspedidos-voltar:hover {
-  background: var(--azul-item);
-  border-color: var(--azul-claro);
-  color: var(--branco);
-}
-
 .meuspedidos-titulo h1 {
   margin: 0;
   font-size: 16px;
@@ -278,6 +256,8 @@
 .mp-status--aguardando_pagamento { background: #fff4d6; color: #8a6100; }
 .mp-status--pendente             { background: #e8effc; color: #1a3a7a; }
 .mp-status--preparo              { background: #fdf3d7; color: #7a5c00; }
+.mp-status--pronto               { background: #d9f7ec; color: #0f6b52; }
+.mp-status--tentativa            { background: #fdeedc; color: #9a4a06; }
 .mp-status--caminho              { background: #dff5e7; color: #14663a; }
 .mp-status--entregue             { background: #d6f2e0; color: #14532d; }
 .mp-status--cancelado            { background: #fde8ea; color: #9b1c2c; }

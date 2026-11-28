@@ -1,6 +1,8 @@
 import { IconShoppingCart, IconX, IconArrowRight } from '../Icons';
 import Imagem from '../Imagem';
-import { useCarrinho } from '../../hooks/useCarrinho';
+import { useCarrinho, limiteQuantidade, mensagemLimiteQuantidade } from '../../hooks/useCarrinho';
+import { useToast } from '../../hooks/useToast';
+import ToastContainer from '../Toast';
 import QuantidadeStepper from '../QuantidadeStepper/QuantidadeStepper';
 import './CarrinhoSidebar.css';
 
@@ -48,6 +50,8 @@ export default function CarrinhoSidebar({
   storeName,
   tema,
 }: CarrinhoSidebarProps) {
+  const { toasts, showToast, dismissToast } = useToast();
+
   if (!aberto) return null;
 
   return (
@@ -97,19 +101,25 @@ export default function CarrinhoSidebar({
                       <QuantidadeStepper
                         className="cs-stepper"
                         valor={item.quantidade}
-                        maximo={item.produto.estoque}
+                        maximo={limiteQuantidade(item.produto.estoque)}
                         onMudar={(nova) =>
                           carrinho.alterarQuantidade(
                             item.produto.id_produto,
                             nova - item.quantidade
                           )
                         }
+                        aoExceder={() =>
+                          showToast('erro', mensagemLimiteQuantidade(item.produto.estoque))
+                        }
                         iconeMenos={<IconMinus />}
                         iconeMais={<IconPlusMini />}
                       />
-                      {item.produto.estoque != null && item.produto.estoque > 0 && item.quantidade >= item.produto.estoque && (
-                        <span className="cs-max">Máx. {item.produto.estoque}</span>
-                      )}
+                      {limiteQuantidade(item.produto.estoque) > 0 &&
+                        item.quantidade >= limiteQuantidade(item.produto.estoque) && (
+                          <span className="cs-max">
+                            Máx. {limiteQuantidade(item.produto.estoque)}
+                          </span>
+                        )}
                       <span className="cs-item-total">{formatBRL(preco * item.quantidade)}</span>
                     </div>
                   </div>
@@ -155,6 +165,8 @@ export default function CarrinhoSidebar({
           </button>
         </footer>
       </aside>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

@@ -1,12 +1,46 @@
 const { conectar } = require('../db/neon')
 
+function gerarSlugBase(txt) {
+  return txt
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function slugUnicoCategoria(sql, mercadoId, nome, excetoId = null) {
+  const base = gerarSlugBase(nome);
+  let slug = base;
+  let contador = 1;
+
+  while (true) {
+    let existe;
+    if (excetoId) {
+      existe = await sql`
+        SELECT 1 FROM categorias
+        WHERE slug = ${slug} AND id_mercado = ${Number(mercadoId)} AND id_categoria != ${excetoId}
+      `;
+    } else {
+      existe = await sql`
+        SELECT 1 FROM categorias
+        WHERE slug = ${slug} AND id_mercado = ${Number(mercadoId)}
+      `;
+    }
+    if (existe.length === 0) break;
+    contador++;
+    slug = `${base}-${contador}`;
+  }
+  return slug;
+}
+
 const listarCategorias = async (req, res) => {
   const { mercadoId } = req.params
 
   try {
     const sql = await conectar()
     const categorias = await sql`
-      SELECT id_categoria AS id, nome
+      SELECT id_categoria AS id, nome, slug
       FROM categorias
       WHERE id_mercado = ${Number(mercadoId)}
       ORDER BY id_categoria
@@ -38,10 +72,12 @@ const criarCategoria = async (req, res) => {
     if (!permissao)
       return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
 
+    const slug = await slugUnicoCategoria(sql, mercadoId, nome.trim());
+
     const [nova] = await sql`
-      INSERT INTO categorias (nome, id_mercado)
-      VALUES (${nome.trim()}, ${Number(mercadoId)})
-      RETURNING id_categoria AS id, nome
+      INSERT INTO categorias (nome, id_mercado, slug)
+      VALUES (${nome.trim()}, ${Number(mercadoId)}, ${slug})
+      RETURNING id_categoria AS id, nome, slug
     `
 
     res.status(201).json(nova)
@@ -71,12 +107,14 @@ const atualizarCategoria = async (req, res) => {
     if (!permissao)
       return res.status(403).json({ erro: 'Você não tem acesso a este mercado.' })
 
+    const slug = await slugUnicoCategoria(sql, mercadoId, nome.trim(), Number(categoriaId));
+
     const [atualizada] = await sql`
       UPDATE categorias
-      SET nome = ${nome.trim()}
+      SET nome = ${nome.trim()}, slug = ${slug}
       WHERE id_categoria = ${Number(categoriaId)}
         AND id_mercado = ${Number(mercadoId)}
-      RETURNING id_categoria AS id, nome
+      RETURNING id_categoria AS id, nome, slug
     `
 
     if (!atualizada)

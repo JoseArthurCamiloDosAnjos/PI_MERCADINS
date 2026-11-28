@@ -25,6 +25,11 @@ import {
   IconX,
   IconArrowLeft,
   IconMapPin,
+  IconZap,
+  IconChevronRight,
+  IconPackage,
+  IconGear,
+  IconLink,
 } from '../../components/Icons';
 import { localizacaoCompleta } from '../../utils/localizacao';
 
@@ -60,6 +65,7 @@ interface Categoria {
 
 interface VitrineMercado {
   id: number;
+  slug?: string;
   logo?: string;
   banner?: string;
   nome: string;
@@ -208,8 +214,9 @@ function ProdutoCard({ produto, onEditar }: ProdutoCardProps) {
 
 function ProdutoAddCard({ onAdd }: { onAdd: () => void }) {
   return (
-    <button className="vt-produto-card vt-produto-add" onClick={onAdd} aria-label="Adicionar ao carrinho">
+    <button className="vt-produto-card vt-produto-add" onClick={onAdd} aria-label="Adicionar produto">
       <span className="vt-add-icon"><IconPlus size={20} /></span>
+      <span className="vt-add-label">Adicionar Produto</span>
     </button>
   );
 }
@@ -371,7 +378,7 @@ function CategoriaSection({
                 <button
                   className="vt-categoria-btn-editar"
                   onClick={() => setEditandoNome(true)}
-                  title="Renomear categoria"
+                  title="Editar nome da categoria"
                 >
                   <IconPencil size={13} />
                 </button>
@@ -477,6 +484,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
   const [modalSaida, setModalSaida]               = useState(false);
   const [modalPaleta, setModalPaleta]             = useState(false);
   const [modalDescricao, setModalDescricao]       = useState(false);
+  const [menuAberto, setMenuAberto]             = useState(false);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
   const [carregando, setCarregando]               = useState(!!mercadoId);
   const [busca, setBusca]                         = useState('');
@@ -513,6 +521,7 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         setDados({
           id: mercadoData.mercado.id_mercado,
+          slug: mercadoData.mercado.slug ?? undefined,
           nome: mercadoData.mercado.nome,
           descricao: mercadoData.mercado.descricao ?? '',
           logo: mercadoData.mercado.foto_perfil ?? undefined,
@@ -596,6 +605,55 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
     setCategoriaAtiva(id);
     refsCategoria.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  // ── Atalhos de teclado ───────────────────────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignorar se estiver digitando em input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      // C = Criar Categoria
+      if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        if (dados.id && dados.id !== 0) {
+          setModalCategoria(true);
+        } else {
+          showToast('aviso', 'Salve o mercado primeiro antes de criar categorias.');
+        }
+      }
+      
+      // P = Adicionar Produto (na categoria ativa ou primeira categoria)
+      if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (!dados.id || dados.id === 0) {
+          showToast('aviso', 'Salve o mercado primeiro antes de adicionar produtos.');
+          return;
+        }
+        if (dados.categorias.length === 0) {
+          showToast('aviso', 'Crie uma categoria primeiro.');
+          return;
+        }
+        const targetId = categoriaAtiva && dados.categorias.some(c => c.id === categoriaAtiva)
+          ? categoriaAtiva
+          : dados.categorias[0].id;
+        setCategoriaAtiva(targetId);
+        // Aguardar scroll e abrir modal
+        setTimeout(() => {
+          const cat = dados.categorias.find(c => c.id === targetId);
+          if (cat) {
+            refsCategoria.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Abrir o modal de escolha (produto pronto / novo)
+            // Disparar o click no botão de adicionar produto da categoria
+            const btn = refsCategoria.current[targetId]?.querySelector('.vt-produto-add') as HTMLElement;
+            btn?.click();
+          }
+        }, 100);
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dados.id, dados.categorias, categoriaAtiva, showToast]);
 
   // ── Salvar vitrine ────────────────────────────────────────────────────────
 
@@ -740,9 +798,56 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         <div className="vt-topbar-direita">
 
-          <button className="vt-btn-paleta" onClick={() => setModalPaleta(true)} title="Personalizar cores">
-            <IconPaleta size={14} /> Cores
-          </button>
+          {/* ── Menu Rápido de Ações ────────────────────────────────────── */}
+          <div className="vt-menu-rapido">
+            <button className="vt-menu-rapido-trigger" onClick={() => setMenuAberto(!menuAberto)} aria-expanded={menuAberto}>
+              <IconZap size={14} /> Ações Rápidas
+              <IconChevronRight size={12} style={{ transition: 'transform 0.2s', transform: menuAberto ? 'rotate(90deg)' : '' }} />
+            </button>
+            {menuAberto && (
+              <div className="vt-menu-rapido-dropdown" role="menu">
+                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => { setMenuAberto(false); setModalCategoria(true); }}>
+                  <IconPlus size={14} />
+                  <span>Nova Categoria</span>
+                </button>
+                {dados.categorias.length > 0 && (
+                  <button className="vt-menu-rapido-item" role="menuitem" onClick={() => {
+                    setMenuAberto(false);
+                    const targetId = categoriaAtiva && dados.categorias.some(c => c.id === categoriaAtiva)
+                      ? categoriaAtiva
+                      : dados.categorias[0].id;
+                    setCategoriaAtiva(targetId);
+                    setTimeout(() => {
+                      const btn = refsCategoria.current[targetId]?.querySelector('.vt-produto-add') as HTMLElement;
+                      btn?.click();
+                    }, 100);
+                  }}>
+                    <IconPackage size={14} />
+                    <span>Adicionar Produto</span>
+                  </button>
+                )}
+                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => { setMenuAberto(false); setModalEditar(true); }}>
+                  <IconGear size={14} />
+                  <span>Editar Mercado</span>
+                </button>
+                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => { setMenuAberto(false); setModalPaleta(true); }}>
+                  <IconPaleta size={14} />
+                  <span>Personalizar Cores</span>
+                </button>
+                <button className="vt-menu-rapido-item" role="menuitem" onClick={() => {
+                  setMenuAberto(false);
+                  if (dados.slug) {
+                    window.open(`/${dados.slug}`, '_blank');
+                  } else {
+                    showToast('aviso', 'Slug da vitrine ainda não disponível. Salve a vitrine e tente novamente.');
+                  }
+                }}>
+                  <IconLink size={14} />
+                  <span>Ver Vitrine Pública</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {temAlteracoes && (
             <button
@@ -844,9 +949,10 @@ export default function Vitrine({ mercadoId, onVoltar }: VitrineProps) {
 
         {dados.categorias.length > 0 && (
           <div className="vt-fab-wrap">
-            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Adicionar categoria">
+            <button className="vt-fab" onClick={() => setModalCategoria(true)} title="Nova categoria (Atalho: C)">
               <IconPlus size={24} />
             </button>
+            <span className="vt-fab-label">Nova Categoria</span>
           </div>
         )}
       </main>

@@ -1,59 +1,29 @@
 require('dotenv').config()
 
-function resolverAmbiente() {
-  const forcado = String(process.env.ASAAS_AMBIENTE || '').toLowerCase().trim()
-  if (forcado === 'sandbox' || forcado === 'producao') return forcado
-
-  const temChavePorAmbiente = !!(process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY_Sandbox)
-  if (!temChavePorAmbiente) {
-    const legada = (process.env.Assas_API_KEY || '').trim()
-    if (legada.startsWith('$aact_prod_')) return 'producao'
-    if (legada.startsWith('$aact_hmlg_')) return 'sandbox'
-  }
-
-  return 'sandbox'
-}
-
-const AMBIENTE = resolverAmbiente()
+// Ambiente fixo: SANDBOX apenas
+const AMBIENTE = 'sandbox'
 
 function chaveApi() {
-  if (AMBIENTE === 'producao') {
-    return process.env.Assas_API_KEY_Producao || process.env.Assas_API_KEY || ''
-  }
   return process.env.Assas_API_KEY_Sandbox || process.env.Assas_API_KEY || ''
 }
 
 function fonteChave() {
-  if (AMBIENTE === 'producao') {
-    if (process.env.Assas_API_KEY_Producao) return 'Assas_API_KEY_Producao'
-  } else if (process.env.Assas_API_KEY_Sandbox) {
-    return 'Assas_API_KEY_Sandbox'
-  }
+  if (process.env.Assas_API_KEY_Sandbox) return 'Assas_API_KEY_Sandbox'
   return process.env.Assas_API_KEY ? 'Assas_API_KEY' : null
 }
 
-const BASE_URL = (
-  (AMBIENTE === 'producao'
-    ? process.env.Assas_API_URL_Producao
-    : process.env.Assas_API_URL_Sandbox) || ''
-).replace(/\/+$/, '')
+const BASE_URL = (process.env.Assas_API_URL_Sandbox || '').replace(/\/+$/, '')
 
 if (!BASE_URL) {
   console.error(
-    `asaasService: URL da API não configurada (esperando ${
-      AMBIENTE === 'producao' ? 'Assas_API_URL_Producao' : 'Assas_API_URL_Sandbox'
-    } para o ambiente "${AMBIENTE}")`
+    'asaasService: URL da API não configurada (esperando Assas_API_URL_Sandbox para o ambiente "sandbox")'
   )
 }
 
-if (String(process.env.ASAAS_AMBIENTE || '').trim()) {
-  const legada = (process.env.Assas_API_KEY || '').trim()
-  if (AMBIENTE === 'sandbox' && legada.startsWith('$aact_prod_')) {
-    console.error('asaasService: ASAAS_AMBIENTE=sandbox com chave de PRODUÇÃO — as chamadas vão falhar com 401 (invalid_environment).')
-  }
-  if (AMBIENTE === 'producao' && legada.startsWith('$aact_hmlg_')) {
-    console.error('asaasService: ASAAS_AMBIENTE=producao com chave de SANDBOX — as chamadas vão falhar com 401 (invalid_environment).')
-  }
+// Validar se a chave é de sandbox
+const legada = (process.env.Assas_API_KEY || '').trim()
+if (legada.startsWith('$aact_prod_')) {
+  console.error('asaasService: ATENÇÃO — Chave de PRODUÇÃO detectada ($aact_prod_) mas ambiente forçado para SANDBOX. As chamadas vão falhar com 401 (invalid_environment). Use Assas_API_KEY_Sandbox com chave $aact_hmlg_.')
 }
 
 const PLANOS = {
@@ -145,14 +115,14 @@ async function criarCustomer({ nome, email, cpfCnpj, mobilePhone }) {
   return chamarApi('/v3/customers', { method: 'POST', body })
 }
 
-async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUrl }) {
+async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUrl, billingType }) {
   const vencimento = new Date()
   vencimento.setDate(vencimento.getDate() + 3)
   const nextDueDate = vencimento.toISOString().slice(0, 10)
 
   const corpo = {
     customer: customerId,
-    billingType: 'UNDEFINED',
+    billingType: billingType || 'UNDEFINED',
     value: valor,
     cycle: ciclo === 'ANUAL' ? 'YEARLY' : 'MONTHLY',
     nextDueDate,
@@ -218,10 +188,10 @@ function montarSplitVendedor(walletId, externalReference) {
   return [split];
 }
 
-async function criarPagamentoPedidoCartao({ customerId, valor, descricao, externalReference, redirectUrl, splits }) {
+async function criarPagamentoPedido({ customerId, valor, descricao, externalReference, redirectUrl, splits, billingType }) {
   const corpo = {
     customer: customerId,
-    billingType: 'CREDIT_CARD',
+    billingType: billingType || 'UNDEFINED',
     value: valor,
     description: descricao,
     dueDate: vencimentoPedido(),
@@ -353,11 +323,11 @@ async function verificarConexao() {
 }
 
 module.exports = {
-  ambienteAsaas: () => AMBIENTE,
+  ambienteAsaas: () => 'sandbox',
   baseUrlAsaas: () => BASE_URL || null,
   chaveApi,
   fonteChave,
-  resolverAmbiente,
+  resolverAmbiente: () => 'sandbox',
   verificarConexao,
 
   obterPlano,
@@ -368,7 +338,7 @@ module.exports = {
   buscarPagamentosAssinatura,
   cancelarAssinatura,
   montarSplitVendedor,
-  criarPagamentoPedidoCartao,
+  criarPagamentoPedido,
   buscarPagamento,
   buscarPagamentoPorExternalReference,
   cancelarPagamento,
@@ -377,6 +347,6 @@ module.exports = {
   pagamentoPago,
   classificarErroAsaas,
   verificarChave,
-  AMBIENTE,
+  AMBIENTE: 'sandbox',
   BASE_URL,
 }

@@ -6,8 +6,12 @@ import { IconShoppingCart } from "../../components/Icons";
 import Imagem from "../../components/Imagem";
 import { useAuth } from "../../context/AuthContext";
 import { useEnderecos } from "../../hooks/useEnderecos";
+import { useToast } from "../../hooks/useToast";
+import ToastContainer from "../../components/Toast";
+import { limiteQuantidade, mensagemLimiteQuantidade } from "../../hooks/useCarrinho";
 import EnderecoPopup from "../../components/EnderecoPopup/EnderecoPopup";
 import QuantidadeStepper from "../../components/QuantidadeStepper/QuantidadeStepper";
+import LogoTopbar from "../../components/LogoTopbar";
 import { parseHorario, estaAberto, proximaAbertura } from "../../utils/horario";
 import {
   type EnderecoEntrega,
@@ -72,9 +76,9 @@ interface CartScreenProps {
   endereco?: EnderecoEntrega;
   onEnderecoChange?: (endereco: EnderecoEntrega) => void;
 
-  // ── Pagamento (B3): pagar na entrega ou cartão ─────────────────────────────
-  formaPagamento?: "presencial" | "cartao";
-  onFormaPagamentoChange?: (forma: "presencial" | "cartao") => void;
+  // ── Pagamento (B3): pagar na entrega, cartão ou boleto ──────────────────────
+  formaPagamento?: "presencial" | "cartao" | "boleto";
+  onFormaPagamentoChange?: (forma: "presencial" | "cartao" | "boleto") => void;
 }
 
 const formatBRL = (value: number) =>
@@ -91,12 +95,6 @@ const OPCOES_AGENDAMENTO = [
 ];
 
 // Ícones (SVG inline, sem dependências externas)
-const IconArrowLeft = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 12H5M12 19l-7-7 7-7" />
-  </svg>
-);
-
 const IconTrash = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
@@ -154,6 +152,14 @@ const IconCard = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="5" width="20" height="14" rx="2.5" />
     <path d="M2 10h20" />
+  </svg>
+);
+
+const IconBoleto = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+    <path d="M10 4v2M14 4v2" />
   </svg>
 );
 
@@ -216,6 +222,7 @@ export default function CartScreen({
   onFormaPagamentoChange,
 }: CartScreenProps) {
   const items = initialItems;
+  const { toasts, showToast, dismissToast } = useToast();
   const [coupon, setCoupon] = useState("");
   const [erroEndereco, setErroEndereco] = useState<string | null>(null);
   const [enderecoPopupAberto, setEnderecoPopupAberto] = useState(false);
@@ -447,10 +454,7 @@ export default function CartScreen({
     <div className="cart-page">
       <div className="cart-topbar">
         <div className="cart-topbar__left">
-          <button className="cart-back" onClick={onBack} type="button" aria-label="Voltar à loja">
-            <IconArrowLeft />
-            <span className="cart-back__texto">Voltar à loja</span>
-          </button>
+          <LogoTopbar onClick={onBack} title="Voltar à loja" />
           <div className="cart-topbar__title">
             <h1>Carrinho</h1>
             <span className="cart-topbar__store">
@@ -510,14 +514,20 @@ export default function CartScreen({
                     <QuantidadeStepper
                       className="qty-stepper"
                       valor={item.quantity}
-                      maximo={item.estoque}
+                      maximo={limiteQuantidade(item.estoque)}
                       onMudar={(nova) => definirQuantidade(item.id, nova)}
+                      aoExceder={() =>
+                        showToast("erro", mensagemLimiteQuantidade(item.estoque))
+                      }
                       iconeMenos={<IconMinus />}
                       iconeMais={<IconPlus />}
                     />
-                    {item.estoque != null && item.estoque > 0 && item.quantity >= item.estoque && (
-                      <span className="qty-max">Máx. {item.estoque}</span>
-                    )}
+                    {limiteQuantidade(item.estoque) > 0 &&
+                      item.quantity >= limiteQuantidade(item.estoque) && (
+                        <span className="qty-max">
+                          Máx. {limiteQuantidade(item.estoque)}
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -856,8 +866,22 @@ export default function CartScreen({
                 />
                 <IconCard />
                 <span className="cart-payment__texto">
-                  <strong>Cartão de crédito</strong>
+                  <strong>Cartão de crédito ou débito</strong>
                   <small>Página segura do Asaas</small>
+                </span>
+              </label>
+              <label className={`cart-payment__opcao ${formaPagamento === "boleto" ? "is-ativa" : ""}`}>
+                <input
+                  type="radio"
+                  name="forma-pagamento"
+                  value="boleto"
+                  checked={formaPagamento === "boleto"}
+                  onChange={() => onFormaPagamentoChange("boleto")}
+                />
+                <IconBoleto />
+                <span className="cart-payment__texto">
+                  <strong>Boleto bancário</strong>
+                  <small>Gere e pague quando puder</small>
                 </span>
               </label>
             </fieldset>
@@ -961,6 +985,8 @@ export default function CartScreen({
           </>,
           document.body
         )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

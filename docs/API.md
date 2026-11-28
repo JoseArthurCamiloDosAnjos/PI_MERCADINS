@@ -72,8 +72,10 @@ curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
 | DELETE | `/:id` | token | Remove a loja |
 | POST | `/:id/favoritar` | token | Adiciona aos favoritos do cliente |
 | DELETE | `/:id/favoritar` | token | Remove dos favoritos |
-| GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja |
-| POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5 e texto) |
+| GET | `/:id/avaliacoes` | opcional | Avaliações e média da loja (cada item traz `minha` e `editado`) |
+| POST | `/:id/avaliacoes` | token | Avalia a loja (nota 1–5; texto opcional, até 500 caracteres) |
+| PATCH | `/:id/avaliacoes/:avaliacaoId` | token (autor) | Edita o **próprio** comentário (nota + texto não vazio até 500) → `403` se for de outro usuário e `editado: true` na resposta |
+| DELETE | `/:id/avaliacoes/:avaliacaoId` | token (autor) | Remove o **próprio** comentário → `403` se for de outro usuário |
 | PUT | `/:id/avaliacoes/:avaliacaoId` | token (dono) | Moderação: oculta/exibe uma avaliação da loja |
 | GET | `/:id/avaliacoes-produtos` | token (dono) | Avaliações de produtos da loja (moderação no painel) |
 | GET | `/:id/financeiro?ano=&mes=` | token | Resumo financeiro do mês (padrão: mês atual; inclui bloco `recebimento` com os repasses do Split) |
@@ -256,7 +258,7 @@ transições de pedido). Payload sem `id`/`event` → `400`.
 | `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` / `RECEIVED_IN_CASH` (pedido — `externalReference "pedido:<id>"`) | Pedido `aguardando_pagamento` vira `pendente`; e-mails de confirmação ao cliente e aviso ao vendedor |
 | Falha real (`DELETED`, `FAILED`, `EXPIRED`) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
 | `REFUND_REQUESTED` | Estorno **solicitado** — não cancela; aguarda `REFUNDED` |
-| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela com devoluções; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
+| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela o pedido e estorna as cobranças; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
 | `PAYMENT_SPLIT_*` | Sincroniza os repasses (tabela `repasses`) do Split |
 
 ---
@@ -292,12 +294,12 @@ cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, mínimo e cupom; envia E-mail de confirmação) |
+| POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, teto de 99 unidades por produto, mínimo e cupom; envia E-mail de confirmação) |
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
 | GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
-| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
-| PUT | `/api/pedidos/:id/status` | token (dono) | Muda o status e avisa o cliente por E-mail |
-| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível) |
+| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja); para quem **gerencia**, inclui contato do cliente, motivo do cancelamento e itens detalhados |
+| PUT | `/api/pedidos/:id/status` | token (membro da loja) | Muda o status para qualquer etapa (avança **ou volta**), inclusive `tentativa`, e avisa o cliente por E-mail |
+| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível); a loja cancela até a entrega e pode enviar `{ "motivo": "..." }` no corpo |
 | GET | `/api/pedidos/:id/itens-recompra` | token | Produtos do pedido com preço/estoque atuais (base do botão "comprar de novo") |
 | DELETE | `/api/pedidos/:id/historico` | token | Cliente remove o pedido da própria lista |
 | GET | `/api/usuario/historico` | token | Histórico de compras do cliente |
@@ -337,10 +339,33 @@ Corpo de um pedido:
   O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
   exibido como `pix`).
 
-Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
-`pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda
-os estados especiais `aguardando_pagamento` (webhook ainda não confirmou) e
-`cancelado` (não muda mais).
+Status possíveis do pedido (`PUT /api/pedidos/:id/status`), por tipo de
+recebimento:
+
+- **entrega**: `pendente → preparo → pronto → caminho → entregue`;
+- **retirada**: `pendente → preparo → pronto → entregue` (não existe "saiu
+  para entrega" — o cliente busca no balcão).
+
+A loja pode percorrer a fila nos dois sentidos — inclusive **voltar uma etapa**
+para corrigir um status marcado por engano. Há ainda o desvio `tentativa`
+("Tentativa de entrega", **só em pedidos de entrega**): marca que o entregador
+tentou e não conseguiu; o pedido segue valendo a etapa `caminho` e volta a ela
+ou avança para `entregue`. Em retirada o servidor recusa `tentativa`. Os estados
+especiais `aguardando_pagamento` (webhook ainda não confirmou) e `cancelado`
+(não muda mais) continuam como antes.
+
+O cancelamento (`POST /:id/cancelar`) é feito pelo cliente ou pela loja, até a
+entrega, e recupera estoque e cupom. Quando quem cancela é a loja, o corpo pode
+trazer `{ "motivo": "..." }` (até 300 caracteres): o texto é gravado em
+`motivo_cancelamento` (`"Cancelado pela loja: …"`), aparece no e-mail e na
+notificação do cliente e é devolvido em `GET /pedidos/:id` para quem gerencia.
+
+As **chaves** de status são sempre as mesmas, mas o **texto** exibido no site
+depende de `tipo_entrega`: em pedidos de `retirada`, `pronto`/`caminho` aparece
+como **"Pronto para retirada"** e `entregue` como **"Retirado no balcão"** (na
+visão da loja, "Retirado"), em vez de "A caminho"/"Entregue". Os rótulos vêm de
+`Frontend/src/utils/statusPedido.ts` e os e-mails/notificações repetem a mesma
+lógica no backend.
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").
@@ -363,8 +388,10 @@ O resumo financeiro da loja (`GET /:id/financeiro`) devolve o bloco
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
-| GET | `/` | opcional | Média, total e lista (com `minha` quando o logado já avaliou) |
+| GET | `/` | opcional | Média, total e lista (com `minha` quando o logado já avaliou e `editado` quando ele editou) |
 | POST | `/` | token | Avalia o produto; `foto` (link) é opcional |
+| PATCH | `/:avaliacaoId` | token (autor) | Edita o **próprio** comentário (nota + texto não vazio até 500) → `403` se for de outro usuário |
+| DELETE | `/:avaliacaoId` | token (autor) | Remove o **próprio** comentário → `403` se for de outro usuário |
 
 ```json
 { "nota": 5, "texto": "Muito fresco", "foto": "https://.../produto.jpg" }
@@ -427,7 +454,7 @@ CRUD completo (painel → aba "Catálogo"):
 | GET | `/api/usuario/avaliacoes` | token | Avaliações de lojas feitas pelo cliente |
 | GET | `/api/usuario/historico` | token | Compras do cliente |
 | GET | `/api/carrinho/:mercadoId` | token | Carrinho salvo de uma loja |
-| PUT | `/api/carrinho/:mercadoId` | token | Salva o carrinho (sobrevive ao fechar a aba) |
+| PUT | `/api/carrinho/:mercadoId` | token | Salva o carrinho (sobrevive ao fechar a aba); itens acima do limite — estoque ou 99 unidades por produto — são ajustados e a resposta vem com `ajustado: true` |
 | DELETE | `/api/carrinho/:mercadoId` | token | Limpa o carrinho |
 
 ---

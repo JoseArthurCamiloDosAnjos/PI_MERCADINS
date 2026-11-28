@@ -4,6 +4,7 @@ import { api } from '../services/api';
 export interface ProdutoCarrinho {
   id_produto: number;
   id_categoria: number;
+  slug?: string;
   nome: string;
   descricao?: string;
   preco?: string;
@@ -18,6 +19,32 @@ export interface ItemCarrinho {
 }
 
 const STORAGE_KEY = 'carrinho';
+
+/**
+ * Teto de unidades de um único produto em um pedido — mesma regra do backend
+ * (Backend/src/utils/limites.js).
+ */
+export const MAX_UNIDADES_PRODUTO = 99;
+
+/**
+ * Limite de unidades de um produto aceito no carrinho: o menor valor entre o
+ * estoque disponível e o teto de unidades por produto. Um produto sem estoque
+ * informado (ou zerado) não pode ser selecionado.
+ */
+export function limiteQuantidade(estoque?: number): number {
+  const disponivel = Math.max(0, Number(estoque) || 0);
+  return Math.min(disponivel, MAX_UNIDADES_PRODUTO);
+}
+
+/** Texto explicando por que o limite de um produto foi atingido. */
+export function mensagemLimiteQuantidade(estoque?: number): string {
+  const disponivel = Math.max(0, Number(estoque) || 0);
+  if (disponivel <= 0) return 'Produto sem estoque disponível.';
+  if (disponivel > MAX_UNIDADES_PRODUTO) {
+    return `Limite de ${MAX_UNIDADES_PRODUTO} unidades por produto.`;
+  }
+  return `Estoque esgotado: só temos ${disponivel} unidade${disponivel === 1 ? '' : 's'}.`;
+}
 
 function loadCarrinhoLocal(mercadoId: number): ItemCarrinho[] {
   try {
@@ -99,20 +126,37 @@ export function useCarrinho(mercadoId: number) {
             const estoqueDoServidor = new Map(
               itensBanco.map(i => [i.produto.id_produto, i.produto.estoque])
             );
-            const atualizados = prev.map(item => {
-              const atual = estoqueDoServidor.get(item.produto.id_produto);
-              if (atual === undefined || atual === item.produto.estoque) return item;
-              return { ...item, produto: { ...item.produto, estoque: atual } };
-            });
-            if (atualizados.some((item, i) => item !== prev[i])) {
+            // Estoque/plano mudaram? Ajusta os itens que ficaram acima do novo limite.
+            const atualizados = prev
+              .map(item => {
+                const atual = estoqueDoServidor.get(item.produto.id_produto);
+                if (atual === undefined) return item;
+                const quantidade = Math.min(item.quantidade, limiteQuantidade(atual));
+                if (atual === item.produto.estoque && quantidade === item.quantidade) return item;
+                return {
+                  ...item,
+                  quantidade,
+                  produto: { ...item.produto, estoque: atual },
+                };
+              })
+              .filter(item => item.quantidade > 0);
+            if (atualizados.length !== prev.length ||
+                atualizados.some((item, i) => item !== prev[i])) {
               saveCarrinhoLocal(mercadoId, atualizados);
             }
-            debounceSalvar(mercadoId, prev);
+            debounceSalvar(mercadoId, atualizados);
             return atualizados;
           }
           if (itensBanco.length > 0) {
-            saveCarrinhoLocal(mercadoId, itensBanco);
-            return itensBanco;
+            // Carrinho vindo do banco também respeita o limite atual.
+            const ajustados = itensBanco
+              .map(item => ({
+                ...item,
+                quantidade: Math.min(item.quantidade, limiteQuantidade(item.produto.estoque)),
+              }))
+              .filter(item => item.quantidade > 0);
+            saveCarrinhoLocal(mercadoId, ajustados);
+            return ajustados;
           }
           return prev;
         });
@@ -123,7 +167,7 @@ export function useCarrinho(mercadoId: number) {
   }, [mercadoId]);
 
   const adicionar = useCallback((produto: ProdutoCarrinho, quantidade: number): boolean => {
-    const maximo = produto.estoque ?? 0;
+    const maximo = limiteQuantidade(produto.estoque);
     if (maximo <= 0) return false;
 
     const atual = itens.find(i => i.produto.id_produto === produto.id_produto)?.quantidade ?? 0;
@@ -153,10 +197,10 @@ export function useCarrinho(mercadoId: number) {
       const novos = prev
         .map(i => {
           if (i.produto.id_produto !== idProduto) return i;
-          const maximo = i.produto.estoque;
-          // Sem estoque informado ou zerado não deixa aumentar.
-          if (delta > 0 && (maximo === undefined || maximo <= 0)) return i;
-          const nova = typeof maximo === 'number' && maximo > 0
+          const maximo = limiteQuantidade(i.produto.estoque);
+          // Sem estoque (ou sem limite disponível) não deixa aumentar.
+          if (delta > 0 && maximo <= 0) return i;
+          const nova = maximo > 0
             ? Math.min(i.quantidade + delta, maximo)
             : i.quantidade + delta;
           return { ...i, quantidade: nova };

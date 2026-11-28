@@ -115,6 +115,29 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// ── DB connection test (sem auth) ────────────────────────────────────────────
+app.get('/api/health/db', async (_req, res) => {
+  try {
+    const { conectar } = require('./db/neon.js')
+    const sql = await conectar()
+    const result = await sql`SELECT NOW() as agora, version() as versao`
+    const eventos = await sql`SELECT count(*) as total FROM asaas_eventos`
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      db: result[0],
+      asaas_eventos_count: eventos[0]?.total || 0
+    })
+  } catch (err) {
+    console.error('ERRO /api/health/db:', err)
+    res.status(500).json({ 
+      erro: 'Falha na conexão com banco', 
+      detalhe: err.message,
+      stack: err.stack 
+    })
+  }
+})
+
 // ── API routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth',              authRoutes)
 app.use('/api/mercados',          marketRoutes)

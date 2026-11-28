@@ -1,0 +1,13 @@
+.logo-topbar {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.logo-topbar img {
+  display: block;
+  height: 42px;
+  width: auto;
+  border-radius: 8px;
+}

@@ -98,7 +98,7 @@
 }
 
 .gm-status-open--fechado {
-  background: #fdf0e0; color: #b45309;
+  background: rgba(239, 68, 68, 0.15); color: #ef4444;
 }
 
 .gm-status-open--neutro {

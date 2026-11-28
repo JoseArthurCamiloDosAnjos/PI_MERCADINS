@@ -620,7 +620,7 @@ const webhookAsaas = async (req, res) => {
       return res.status(404).json({ erro: err.message });
     }
     console.error('ERRO webhookAsaas:', err);
-    res.status(500).json({ erro: 'Erro ao processar webhook.' });
+    res.status(500).json({ erro: 'Erro ao processar webhook.', detalhe: err.message, stack: err.stack });
   }
 };
 

@@ -531,7 +531,7 @@ const criarPedido = async (req, res) => {
         motivoSplit = '';
 
         const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
-        const redirectUrl = `${frontendUrl}/pedidos/${pedido.id}`;
+        const redirectUrl = `${frontendUrl}/pedidos/${pedido.id}?pagamento=1`;
 
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         let pagamento;

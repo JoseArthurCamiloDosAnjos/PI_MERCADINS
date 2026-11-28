@@ -245,10 +245,12 @@ const criarCheckout = async (req, res) => {
           } catch { /* falha ignorada */ }
 
           if (faturaRetomada?.invoiceUrl) {
+            console.log(`[callback] retomada ${assinaturaExistente.id} → fatura ${faturaRetomada.id}`);
             await aplicarCallbackNaFatura(
               faturaRetomada.id,
               `${baseFrontend()}/registrar-mercado?pagamento=1`
             );
+            console.log(`[callback] gravado na fatura retomada ${faturaRetomada.id}`);
             return res.json({
               mensagem: 'Você já possui uma assinatura pendente. Retome o pagamento.',
               status: assinaturaExistente.status,
@@ -299,8 +301,10 @@ const criarCheckout = async (req, res) => {
     });
 
     const fatura = await asaas.buscarFaturaAssinatura(assinaturaAsaas.id);
+    console.log(`[callback] assinatura ${assinaturaAsaas.id} → fatura ${fatura?.id || 'não achou'} (${fatura?.invoiceUrl || 'sem url'})`);
     if (fatura?.id) {
       await aplicarCallbackNaFatura(fatura.id, `${redirectUrl}?pagamento=1`);
+      console.log(`[callback] gravado na fatura ${fatura.id}`);
     }
     const urlCheckout = fatura?.invoiceUrl || null;
 
@@ -609,7 +613,9 @@ const webhookAsaas = async (req, res) => {
       await registrarFatura(sql, assinatura, pagamento);
       if (evento === 'PAYMENT_CREATED') {
         const urlRedirect = `${baseFrontend()}/registrar-mercado?pagamento=1`;
+        console.log(`[callback] webhook PAYMENT_CREATED → fatura recorrente ${pagamento.id}`);
         await aplicarCallbackNaFatura(pagamento.id, urlRedirect);
+        console.log(`[callback] gravado na fatura recorrente ${pagamento.id}`);
       }
     }
 

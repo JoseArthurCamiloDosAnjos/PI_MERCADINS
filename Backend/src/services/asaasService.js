@@ -1,6 +1,7 @@
 require('dotenv').config()
 
-// Ambiente fixo: SANDBOX apenas
+// Ambiente fixo: SANDBOX apenas (modo development para testes de callback)
+// Em producao: use npm run dev:neon e configure as env vars de producao
 const AMBIENTE = 'sandbox'
 
 function chaveApi() {

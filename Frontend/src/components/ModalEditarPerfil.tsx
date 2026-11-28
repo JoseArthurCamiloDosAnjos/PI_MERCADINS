@@ -7,6 +7,7 @@ import { uploadImagem } from '../services/upload';
 import ToastContainer from './Toast';
 import LoadingOverlay from './LoadingOverlay';
 import { IconCamera, IconCheck, IconX } from './Icons';
+import { onAvatarError } from '../utils/imagens';
 
 interface Props {
   onFechar: () => void;
@@ -169,7 +170,7 @@ export default function ModalEditarPerfil({ onFechar }: Props) {
           <div className="pu-modal-avatar">
             <div className="pu-modal-photo-wrap">
               {foto
-                ? <img src={foto} alt="Foto de perfil" className="pu-modal-photo-img" />
+                ? <img src={foto} alt="Foto de perfil" className="pu-modal-photo-img" onError={onAvatarError} />
                 : <span className="pu-modal-av-circle">{iniciais}</span>
               }
               <button

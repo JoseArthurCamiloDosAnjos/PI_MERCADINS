@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -17,6 +17,7 @@ import { TelaEnderecos, TelaDepoimentos } from '../PerfilUsuario/PerfilUsuario';
 import './PerfilVendedor.css';
 import '../PerfilUsuario/PerfilUsuario.css';
 import '../MeusPedidos/MeusPedidos.css';
+import LogoTopbar from '../../components/LogoTopbar';
 import {
   IconUser,
   IconLock,
@@ -33,8 +34,8 @@ import {
   IconCreditCard,
   IconBell,
   IconLocationMap,
-  IconShieldCheck,
 } from '../../components/Icons';
+import { nomeStatusCliente, passosPedido, indiceDoStatus, type TipoEntrega } from '../../utils/statusPedido';
 
 interface Mercado {
   id_mercado: number;
@@ -46,7 +47,7 @@ interface Mercado {
 }
 
 interface Favorito { id: number; id_mercado: number; nome: string; slug?: string | null; data_cadastro: string; }
-interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; }
+interface Historico { id: number; id_mercado: number; mercado: string; produtos: string; valor_total: string; data_compra: string; status: string; tipo_entrega?: TipoEntrega; }
 interface Avaliacao { id: number; id_mercado: number; loja: string; nota: number; texto: string; data_cadastro: string; }
 
 interface PedidoDetalhe {
@@ -60,7 +61,7 @@ interface PedidoDetalhe {
   desconto: number;
   cupom: string;
   total: number;
-  tipoEntrega: 'entrega' | 'retirada';
+  tipoEntrega: TipoEntrega;
   enderecoEntrega: string;
   agendamento: string;
   observacao: string;
@@ -69,17 +70,6 @@ interface PedidoDetalhe {
   dataCompra: string;
   gerencia: boolean;
 }
-
-const NOMES_STATUS: Record<string, string> = {
-  aguardando_pagamento: 'Aguardando pagamento',
-  pendente: 'Recebido pela loja',
-  preparo: 'Em preparo',
-  caminho: 'A caminho',
-  entregue: 'Entregue',
-  cancelado: 'Cancelado',
-};
-
-const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
 
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -164,7 +154,7 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [onFechar]);
 
-  const indiceAtual = pedido ? PASSOS_NORMAL.indexOf(pedido.status) : -1;
+  const indiceAtual = pedido ? indiceDoStatus(pedido.status, pedido.tipoEntrega) : -1;
 
   return (
     <div
@@ -193,13 +183,13 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
                 </p>
               </div>
               <span className={`mp-status mp-status--${pedido.status}`}>
-                {NOMES_STATUS[pedido.status] ?? pedido.status}
+                {nomeStatusCliente(pedido.status, pedido.tipoEntrega)}
               </span>
             </div>
 
             {pedido.status !== 'cancelado' && (
               <ol className="mp-timeline">
-                {PASSOS_NORMAL.map((p, i) => (
+                {passosPedido(pedido.tipoEntrega).map((p, i) => (
                   <li
                     key={p}
                     className={
@@ -208,7 +198,7 @@ function DetalhePedidoHistorico({ pedidoId, onFechar }: { pedidoId: number; onFe
                       (indiceAtual === i ? ' is-atual' : '')
                     }
                   >
-                    {NOMES_STATUS[p]}
+                    {nomeStatusCliente(p, pedido.tipoEntrega)}
                   </li>
                 ))}
               </ol>
@@ -292,10 +282,14 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
   const [mostrandoTodos, setMostrandoTodos] = useState(false);
   const mercadosVisiveis = mostrandoTodos ? mercados : mercados.slice(0, LIMITE_MERCADOS);
 
+  const mediaAvaliacoes = avaliacoes.length > 0
+    ? avaliacoes.reduce((soma, a) => soma + a.nota, 0) / avaliacoes.length
+    : 0;
+
   const stats = [
     { Icon: IconStore, cls: 'navy', val: String(mercados.length), lbl: 'Mercados ativos' },
-    { Icon: IconStar, cls: 'gold', val: '0 ★', lbl: 'Avaliação média' },
-    { Icon: IconPackage, cls: 'gold', val: '0', lbl: 'Pedidos totais' },
+    { Icon: IconStar, cls: 'gold', val: `${mediaAvaliacoes.toFixed(1)} ★`, lbl: 'Avaliação média' },
+    { Icon: IconPackage, cls: 'gold', val: String(historico.length), lbl: 'Pedidos totais' },
   ];
 
   return (
@@ -371,7 +365,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
             <span className="pu-circ-label pu-circ-muted">Adicionar</span>
           </div>
           {favoritos.map((f, i) => {
-            const abrirLoja = () => { if (f.slug) navigate(`/vitrine/${f.slug}`); };
+            const abrirLoja = () => { if (f.slug) navigate(`/${f.slug}`); };
             return (
               <div
                 key={f.id}
@@ -409,7 +403,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
 
       <div className="pu-divider" />
 
-      <section>
+      <section id="historico-compras">
         <div className="pu-sec-row">
           <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconShoppingBag size={14} /></span>Histórico de Compras</h2>
           <button className="pu-btn-link">Ver todos</button>
@@ -443,7 +437,7 @@ function TelaPerfil({ mercados, carregando, favoritos, historico, avaliacoes, on
                   <p className="pu-hcard-nome">{p.mercado}</p>
                   <p className="pu-hcard-preco">R$ {p.valor_total}</p>
                   <p className="pu-hcard-data">{new Date(p.data_compra).toLocaleDateString('pt-BR')}</p>
-                  <span className={`pu-status ${p.status}`}>● {NOMES_STATUS[p.status] ?? p.status}</span>
+                  <span className={`pu-status ${p.status}`}>● {nomeStatusCliente(p.status, p.tipo_entrega)}</span>
                   <span className="pv-hcard-ver">Ver detalhes <IconArrowRight size={12} /></span>
                 </div>
               </div>
@@ -538,19 +532,6 @@ function TelaSeguranca() {
     <>
       {enviando && <LoadingOverlay mensagem={etapa === 'codigo' ? 'Confirmando código...' : 'Enviando email...'} />}
       <section>
-        <h2 className="pu-sec-title"><span className="pu-sec-icon"><IconLock size={14} /></span>Segurança</h2>
-        <div className={`pu-2fa-status${usuario?.dois_fatores ? ' ativo' : ''}`}>
-          <span className="pu-2fa-icone"><IconShieldCheck size={20} /></span>
-          <div className="pu-2fa-texto">
-            <strong>Verificação em duas etapas</strong>
-            <p>
-              {usuario?.dois_fatores
-                ? 'Ativa. A cada login enviamos um código de 6 dígitos para o seu email.'
-                : 'Será ativada automaticamente no seu próximo login.'}
-            </p>
-          </div>
-          <span className="pu-2fa-badge">{usuario?.dois_fatores ? 'Ativa' : 'Obrigatória'}</span>
-        </div>
         <h3 className="pu-sub-title">Alterar senha</h3>
         {etapa === 'form' ? (
           <div className="pu-form-block">
@@ -700,6 +681,17 @@ export default function PerfilVendedor() {
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const { usuario } = useAuth();
   const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  // Mesma âncora do perfil de usuário: voltar de um pedido leva o vendedor
+  // direto ao histórico de compras do painel dele.
+  useEffect(() => {
+    if (hash !== '#historico-compras') return;
+    const alvo = document.getElementById('historico-compras');
+    if (!alvo) return;
+    const t = setTimeout(() => alvo.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   const iniciais = usuario ? getIniciais(usuario.nome) : '?';
 
@@ -757,11 +749,14 @@ export default function PerfilVendedor() {
       />
       <main className="pv-main">
         <div className="pv-topbar">
-          <span className="pv-topbar-title">{TITULOS[nav]}</span>
+          <div className="pv-topbar-esq">
+            <LogoTopbar />
+          </div>
           <button className="pv-btn-new" onClick={() => navigate(ROTA_CRIAR_MERCADO)}>+ Novo Mercado</button>
         </div>
         <div className="pv-content">
           <div className={`pu-tela-fade ${visivel ? 'pu-tela-visivel' : 'pu-tela-oculta'}`}>
+            <h1 className="pv-page-title">{TITULOS[nav]}</h1>
             {TELAS[telaAtiva]}
           </div>
         </div>

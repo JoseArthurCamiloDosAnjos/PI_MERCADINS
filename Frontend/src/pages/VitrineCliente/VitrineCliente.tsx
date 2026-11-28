@@ -21,7 +21,6 @@ import { aplicarSeo } from '../../utils/seo';
 import JsonLd from '../../components/JsonLd';
 import {
   IconStore,
-  IconArrowLeft,
   IconShare,
   IconLink,
   IconMessage,
@@ -33,7 +32,10 @@ import {
   IconClock,
   IconChevronRight,
 } from '../../components/Icons';
+
+import LogoTopbar from '../../components/LogoTopbar';
 import { useCarrinho, mensagemLimiteQuantidade } from '../../hooks/useCarrinho';
+
 import { localizacaoCompleta } from '../../utils/localizacao';
 import { estaAberto, parseHorario, proximaAbertura, gruposDaSemana } from '../../utils/horario';
 
@@ -96,6 +98,7 @@ function distanciaEdicao(a: string, b: string): number {
 
 interface Produto {
   id_produto: number;
+  slug?: string;
   imagem?: string;
   imagens?: string[];
   nome: string;
@@ -107,6 +110,7 @@ interface Produto {
 
 interface Categoria {
   id: number;
+  slug?: string;
   nome: string;
   produtos: Produto[];
 }
@@ -172,14 +176,14 @@ function cortarEmPalavra(texto: string, max: number) {
 function ProdutoCardCliente({
   produto,
   slug,
-  categoriaId,
+  categoriaSlug,
   onAbrir,
   onAdicionar,
   noCarrinho = 0,
 }: {
   produto: Produto;
   slug?: string;
-  categoriaId: number;
+  categoriaSlug?: string;
   onAbrir?: () => void;
   onAdicionar?: (produto: Produto) => void;
   noCarrinho?: number;
@@ -195,8 +199,8 @@ function ProdutoCardCliente({
   const [imgIdx, setImgIdx] = useState(0);
 
   function handleClick() {
-    if (slug) {
-      navigate(`/vitrine/${slug}/produto/${categoriaId}/${produto.id_produto}`);
+    if (slug && produto.slug && categoriaSlug) {
+      navigate(`/${slug}/produto/${categoriaSlug}/${produto.slug}`);
     } else {
       onAbrir?.();
     }
@@ -262,7 +266,7 @@ function ProdutoCardCliente({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps) {
+export default function VitrineCliente({ mercadoId, slug, onVoltar }: VitrineClienteProps) {
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
   const [dados, setDados]           = useState<VitrineMercado | null>(null);
@@ -592,19 +596,13 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
             addressRegion: dados.estado ?? undefined,
             addressCountry: 'BR',
           },
-          url: `${window.location.origin}/vitrine/${dados.slug ?? ''}`,
+          url: `${window.location.origin}/${dados.slug ?? ''}`,
         }}
       />
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="vtc-topbar">
-        <button
-          className="vtc-btn-voltar"
-          onClick={() => navigate(-1)}
-        >
-          <IconArrowLeft size={16} />
-          <span>Voltar</span>
-        </button>
+        <LogoTopbar onClick={onVoltar ?? undefined} />
         <div className="vtc-topbar-direita">
           {usuario ? (
             <ProfileMenu />
@@ -856,7 +854,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
                   key={produto.id_produto}
                   produto={produto}
                   slug={slug}
-                  categoriaId={catId}
+                  categoriaSlug={dados?.categorias.find(c => c.id === catId)?.slug}
                   onAdicionar={adicionarPelaVitrine}
                   noCarrinho={quantidadesNoCarrinho.get(produto.id_produto) ?? 0}
                 />
@@ -877,7 +875,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
                     key={p.id_produto}
                     produto={p}
                     slug={slug}
-                    categoriaId={cat.id}
+                    categoriaSlug={cat.slug}
                     onAdicionar={adicionarPelaVitrine}
                     noCarrinho={quantidadesNoCarrinho.get(p.id_produto) ?? 0}
                   />
@@ -895,7 +893,7 @@ export default function VitrineCliente({ mercadoId, slug }: VitrineClienteProps)
         carrinho={carrinho}
         onIrParaCarrinho={() => {
           setCarrinhoAberto(false);
-          if (slug) navigate(`/vitrine/${slug}/carrinho`);
+          if (slug) navigate(`/${slug}/carrinho`);
         }}
         storeName={dados.nome}
         tema={tema}

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import { LIMITS, bloquearEspaco, sanitizeEmail } from '../../hooks/useBlockEmojis'
+import { onAvatarError } from '../../utils/imagens'
 
 interface Usuario {
   id_usuario: number
@@ -409,7 +410,7 @@ export default function Usuarios() {
                         <div className="adm-user-cell">
                           <div className="adm-user-avatar" style={{ borderColor: tipoCor(u) }}>
                             {u.foto_perfil
-                              ? <img src={u.foto_perfil} alt={u.nome} />
+                              ? <img src={u.foto_perfil} alt={u.nome} onError={onAvatarError} />
                               : iniciais(u.nome)
                             }
                           </div>
@@ -469,7 +470,7 @@ export default function Usuarios() {
             <div className="adm-modal-header">
               <div className="adm-modal-avatar">
                 {detalhes.usuario.foto_perfil
-                  ? <img src={detalhes.usuario.foto_perfil} alt={detalhes.usuario.nome} />
+                  ? <img src={detalhes.usuario.foto_perfil} alt={detalhes.usuario.nome} onError={onAvatarError} />
                   : iniciais(detalhes.usuario.nome)
                 }
               </div>

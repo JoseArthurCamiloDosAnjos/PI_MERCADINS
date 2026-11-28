@@ -106,7 +106,7 @@ export default function RegistrarMercado() {
     });
   }
 
-  const [planoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
+  const [planoSelecionado, setPlanoSelecionado] = useState<{ id?: string; nome: string; cobranca: string } | null>(() => {
     try {
       const salvo = localStorage.getItem('planoSelecionado');
       return salvo ? JSON.parse(salvo) : null;
@@ -114,6 +114,28 @@ export default function RegistrarMercado() {
       return null;
     }
   });
+
+  useEffect(() => {
+    function atualizarPlano() {
+      try {
+        const salvo = localStorage.getItem('planoSelecionado');
+        setPlanoSelecionado(salvo ? JSON.parse(salvo) : null);
+      } catch {
+        setPlanoSelecionado(null);
+      }
+    }
+    atualizarPlano();
+    window.addEventListener('storage', atualizarPlano);
+    return () => window.removeEventListener('storage', atualizarPlano);
+  }, []);
+
+  // Sem plano escolhido não há o que cobrar: volta para a seleção de planos
+  // em vez de usar silenciosamente o plano padrão (basico → R$ 79).
+  useEffect(() => {
+    if (!aguardandoPagamento && !planoSelecionado) {
+      navigate('/planos', { replace: true });
+    }
+  }, [aguardandoPagamento, planoSelecionado, navigate]);
 
   const planoId = ['basico', 'profissional', 'personalizado'].includes(planoSelecionado?.id ?? '')
     ? planoSelecionado!.id!
@@ -290,14 +312,7 @@ export default function RegistrarMercado() {
     setStatusAtual('pendente');
     setAguardandoPagamento(true);
 
-    const janela = window.open(checkout.urlCheckout, '_blank');
-    if (!janela) {
-      showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Ir para o pagamento" abaixo.');
-      return;
-    }
-    janela.opener = null;
-    janelaAsaasRef.current = janela;
-    showToast('sucesso', 'Pagamento aberto em nova aba. Assim que for confirmado, ela fecha sozinha.');
+    window.location.href = checkout.urlCheckout;
   }
 
   async function handleSubmit(e: React.FormEvent) {

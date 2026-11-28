@@ -116,15 +116,15 @@ export default function MercadinsPromo() {
       navigate("/vendedor");
       return;
     }
-    if (usuario.is_admin) {
-      localStorage.removeItem("planoSelecionado");
-    } else {
-      localStorage.setItem("planoSelecionado", JSON.stringify({
-        id: plano.id,
-        nome: plano.name,
-        cobranca: billingAnnual ? "anual" : "mensal",
-      }));
-    }
+    // Sempre grava o plano escolhido (inclusive admin) para o checkout
+    // cobrar o plano clicado em vez de cair no padrão "basico".
+    localStorage.setItem("planoSelecionado", JSON.stringify({
+      id: plano.id,
+      nome: plano.name,
+      cobranca: billingAnnual ? "anual" : "mensal",
+    }));
+    // Abandona tentativa de pagamento anterior para não reabrir o checkout antigo
+    localStorage.removeItem("aguardandoPagamento");
     navigate("/registrar-mercado");
   };
 

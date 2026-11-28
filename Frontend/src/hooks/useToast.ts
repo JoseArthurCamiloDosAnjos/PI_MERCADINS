@@ -64,17 +64,22 @@ export function useToast() {
     }
 
     const id = ++toastIdCounter;
-    let novos = [...toastsRef.current, { id, tipo, mensagem: texto }];
 
-    // Ultrapassou o limite: remove os mais antigos imediatamente.
-    while (novos.length > MAX_TOASTS) {
-      limparTimer(novos[0].id);
-      novos = novos.slice(1);
+    // Calcula a lista nova a partir do espelho síncrono (não do estado do React)
+    // para que `toastsRef` e `toasts` fiquem sempre juntos.
+    const proximos = [...toastsRef.current, { id, tipo, mensagem }];
+    if (proximos.length > MAX_TOASTS) {
+      const removido = proximos.shift()!;
+      limparTimer(removido.id);
     }
+    aplicar(proximos);
 
-    aplicar(novos);
-    agendarDismiss(id);
-  }, [agendarDismiss, aplicar, limparTimer]);
+    toastTimers.current.set(
+      id,
+      setTimeout(() => dismissToast(id), DURACAO_TOAST)
+    );
+  }, [agendarDismiss, aplicar, dismissToast, limparTimer]);
+
 
   return { toasts, showToast, dismissToast };
 }

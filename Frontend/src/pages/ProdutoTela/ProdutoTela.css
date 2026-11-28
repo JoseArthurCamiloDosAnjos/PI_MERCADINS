@@ -36,21 +36,6 @@
   box-sizing: border-box;
 }
 
-.pd-btn-voltar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--vt-cinza);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: color 0.2s;
-}
-.pd-btn-voltar:hover { color: var(--vt-branco); }
-
 .pd-busca-wrap {
   flex: 1;
   max-width: 420px;

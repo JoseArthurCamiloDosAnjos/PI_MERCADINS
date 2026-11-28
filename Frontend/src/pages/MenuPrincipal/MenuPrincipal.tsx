@@ -127,6 +127,8 @@ type ProdutoBusca = {
   id_mercado: number;
   mercado: string;
   slug: string;
+  produtoSlug: string;
+  categoriaSlug: string;
   cidade: string;
   estado: string;
 };
@@ -460,7 +462,7 @@ const lojasFiltradas = useMemo(() => {
 
   function abrirMercado(slug: string) {
     registrarVisita(slug);
-    navigate(`/vitrine/${slug}`);
+    navigate(`/${slug}`);
   }
 
   function irParaMercado(slug: string) {
@@ -599,7 +601,7 @@ const lojasFiltradas = useMemo(() => {
                           setDropdownProdutos(false);
                           registrarVisita(p.slug);
                           navigate(
-                            `/vitrine/${p.slug}/produto/${p.id_categoria}/${p.id_produto}`
+                            `/${p.slug}/produto/${p.categoriaSlug}/${p.produtoSlug}`
                           );
                         }}
                       >
@@ -1120,9 +1122,10 @@ const lojasFiltradas = useMemo(() => {
 }
 
 function LinhaHorario({ store, agora }: { store: Store; agora: Date }) {
-  const texto = horarioDeHoje(parseHorario(store.horario), agora);
+  const horario = parseHorario(store.horario);
+  const texto = horarioDeHoje(horario, agora);
   if (!texto) return null;
-  const fechado = texto.startsWith("Fechado");
+  const fechado = texto.startsWith("Fechado") || estaAberto(horario, agora) === false;
   return (
     <p className={`store-horario ${fechado ? "off" : ""}`}>
       {fechado ? <IconX size={13} /> : <IconClock size={13} />} {texto}

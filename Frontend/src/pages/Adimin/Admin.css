@@ -37,6 +37,13 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
 }
 
+.adm-header-esq {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
 .adm-header-texto {
   min-width: 0;
 }
@@ -1564,31 +1571,330 @@
 .adm-config {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  max-width: 640px;
+  gap: 24px;
+  max-width: 760px;
+  animation: slideUp 0.3s ease both;
 }
 
-.adm-config-section {
+/* ── Hero card ────────────────────────────────────────────────────────────── */
+
+.adm-config-hero {
+  position: relative;
   background: var(--azul-card);
   border: 1px solid var(--azul-borda);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  overflow: hidden;
+  padding: 0 0 24px;
 }
 
-.adm-config-section h3 {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--branco);
-  margin-bottom: 4px;
+.adm-config-hero-bg {
+  height: 90px;
+  background: linear-gradient(135deg, var(--azul-medio) 0%, var(--azul-claro) 100%);
+  opacity: 0.55;
+}
+
+.adm-config-hero-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 0 24px;
+  margin-top: -40px;
+}
+
+.adm-config-hero-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.adm-config-hero-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--azul-item);
+  border: 3px solid var(--amarelo);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--amarelo);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
 }
 
-.adm-config-desc {
-  font-size: 0.8rem;
+.adm-config-hero-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adm-config-hero-cam {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border: 2px solid var(--azul-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.adm-config-hero-cam:hover { transform: scale(1.1); }
+
+.adm-config-hero-info {
+  padding-bottom: 4px;
+  min-width: 0;
+}
+
+.adm-config-hero-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+
+.adm-config-hero-nome {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--branco);
+  line-height: 1.2;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-config-hero-email {
+  font-size: 0.78rem;
   color: var(--cinza-texto);
-  margin-bottom: 18px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-config-url-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px 0;
+  animation: slideUp 0.2s ease;
+}
+
+.adm-config-url-input {
+  flex: 1;
+  padding: 9px 14px;
+  background: var(--azul-escuro);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  color: var(--branco);
+  font-size: 0.82rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.adm-config-url-input:focus { border-color: var(--amarelo); }
+.adm-config-url-input::placeholder { color: var(--cinza-texto); opacity: 0.6; }
+
+.adm-config-url-ok {
+  padding: 9px 20px;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.adm-config-url-ok:hover { opacity: 0.85; }
+
+/* ── Cards de seção ───────────────────────────────────────────────────────── */
+
+.adm-config-card {
+  background: var(--azul-card);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.adm-config-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--azul-borda);
+}
+
+.adm-config-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(245, 200, 74, 0.12);
+  border: 1px solid rgba(245, 200, 74, 0.3);
+  color: var(--amarelo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.adm-config-card-icon--lock {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #818cf8;
+}
+
+.adm-config-card-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--branco);
+  margin: 0 0 2px;
+}
+
+.adm-config-card-sub {
+  font-size: 0.78rem;
+  color: var(--cinza-texto);
+  margin: 0;
+}
+
+/* ── Grid de campos (2 colunas) ───────────────────────────────────────────── */
+
+.adm-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.adm-config-senha-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+/* ── Campo ────────────────────────────────────────────────────────────────── */
+
+.adm-config-card .adm-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adm-config-card .adm-config-field--full {
+  grid-column: 1 / -1;
+}
+
+.adm-config-card .adm-config-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cinza-texto);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.adm-config-card .adm-config-field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--azul-escuro);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  color: var(--branco);
+  font-size: 0.85rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.adm-config-card .adm-config-field input:focus {
+  border-color: var(--amarelo);
+  box-shadow: 0 0 0 3px rgba(245, 200, 74, 0.1);
+}
+
+.adm-config-card .adm-config-field input::placeholder {
+  color: var(--cinza-texto);
+  opacity: 0.55;
+}
+
+/* ── Footer do card ───────────────────────────────────────────────────────── */
+
+.adm-config-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--azul-borda);
+  background: rgba(0,0,0,0.08);
+}
+
+.adm-config-btn-salvar {
+  padding: 10px 28px;
+  background: var(--amarelo);
+  color: var(--azul-escuro);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.adm-config-btn-salvar:hover { opacity: 0.88; transform: translateY(-1px); }
+.adm-config-btn-salvar:active { transform: translateY(0); }
+
+.adm-config-btn-salvar:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.adm-config-btn-salvar--sec {
+  background: #818cf8;
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .adm-config-grid,
+  .adm-config-senha-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-config-hero-body {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: -32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .adm-config {
+    max-width: 100%;
+  }
+
+  .adm-config-card-header,
+  .adm-config-grid,
+  .adm-config-senha-grid,
+  .adm-config-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .adm-2fa-desc { margin-bottom: 12px; }
@@ -1633,130 +1939,96 @@
   color: var(--amarelo);
 }
 
-/* ── Avatar ──────────────────────────────────────────────────────────────── */
+/* (estilos antigos de config removidos — substituídos pelos novos acima) */
 
-.adm-config-avatar-area {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
+/* ── Modal Cortesia ───────────────────────────────────────────────────────── */
 
-.adm-config-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: var(--azul-item);
-  border: 2px solid var(--amarelo);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--amarelo);
-  position: relative;
+.adm-cortesia-modal {
+  max-width: 440px;
+  padding: 0 !important;
   overflow: hidden;
 }
 
-.adm-config-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.adm-cortesia-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--azul-borda);
+  position: relative;
 }
 
-.adm-config-avatar-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+.adm-cortesia-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(245, 200, 74, 0.12);
+  border: 1px solid rgba(245, 200, 74, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  color: #fff;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.adm-config-avatar:hover .adm-config-avatar-overlay {
-  opacity: 1;
-}
-
-.adm-config-avatar-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ── Formulario ──────────────────────────────────────────────────────────── */
-
-.adm-config-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.adm-config-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.adm-config-field label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--cinza-texto);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.adm-config-field input {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--azul-escuro);
-  border: 1px solid var(--azul-borda);
-  border-radius: var(--radius-md);
+.adm-cortesia-titulo {
+  font-size: 1rem;
+  font-weight: 800;
   color: var(--branco);
-  font-size: 0.85rem;
-  font-family: var(--font);
-  outline: none;
-  transition: border-color 0.2s;
+  margin: 0 0 2px;
 }
 
-.adm-config-field input:focus {
-  border-color: var(--amarelo);
-}
-
-.adm-config-field input::placeholder {
+.adm-cortesia-subtitulo {
+  font-size: 0.78rem;
   color: var(--cinza-texto);
-  opacity: 0.6;
+  margin: 0;
 }
 
-/* ── Acoes ───────────────────────────────────────────────────────────────── */
+.adm-cortesia-subtitulo strong {
+  color: var(--amarelo);
+}
 
-.adm-config-actions {
-  margin-top: 18px;
+.adm-cortesia-close {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+}
+
+.adm-cortesia-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adm-cortesia-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.adm-cortesia-body .adm-form-group {
+  margin-bottom: 0;
+}
+
+.adm-cortesia-body .adm-input {
+  background: var(--azul-escuro);
+}
+
+.adm-cortesia-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--azul-borda);
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.adm-config-actions .adm-btn-salvar {
-  min-width: 160px;
-}
-
-.adm-config-actions .adm-btn-salvar:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (max-width: 600px) {
-  .adm-config {
-    max-width: 100%;
-  }
-
-  .adm-config-section {
-    padding: 18px;
-  }
+.adm-cortesia-actions .adm-btn-cancelar,
+.adm-cortesia-actions .adm-btn-promover {
+  flex: 0 0 auto;
+  min-width: 120px;
+  padding: 10px 20px;
 }
 
 .adm-carregando { color: #8892a4; font-size: 14px; padding: 2rem; text-align: center; }

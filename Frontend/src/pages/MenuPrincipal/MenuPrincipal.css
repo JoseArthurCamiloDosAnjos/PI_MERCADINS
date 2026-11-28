@@ -824,7 +824,7 @@ button {
 }
 
 .store-status.fechado {
-  background: rgba(107, 114, 128, 0.9);
+  background: rgba(220, 38, 38, 0.92);
   color: white;
 }
 
@@ -946,7 +946,7 @@ button {
 }
 
 .store-horario.off {
-  color: var(--muted);
+  color: #dc2626;
 }
 
 .store-content h3 {

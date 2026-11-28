@@ -810,6 +810,142 @@ function formatarMeses(dados) {
   })
 }
 
+async function concederCortesia(req, res) {
+  try {
+    const sql = await conectar()
+    const { id } = req.params
+    const { codigo_plano, quantidade, unidade } = req.body
+
+    // Validações
+    const planosValidos = ['basico', 'profissional', 'personalizado']
+    if (!planosValidos.includes(codigo_plano)) {
+      return res.status(400).json({ erro: 'Plano inválido.' })
+    }
+    const qtd = Number(quantidade)
+    if (!Number.isInteger(qtd) || qtd <= 0) {
+      return res.status(400).json({ erro: 'Quantidade deve ser um número inteiro positivo.' })
+    }
+    if (!['meses', 'anos'].includes(unidade)) {
+      return res.status(400).json({ erro: 'Unidade deve ser "meses" ou "anos".' })
+    }
+
+    // Verifica se o mercado existe
+    const [mercado] = await sql`
+      SELECT id_mercado, status FROM mercados WHERE id_mercado = ${Number(id)}
+    `
+    if (!mercado) {
+      return res.status(404).json({ erro: 'Mercado não encontrado.' })
+    }
+
+    // Calcula a data de expiração
+    const intervalo = unidade === 'anos' ? `${qtd} years` : `${qtd} months`
+    const proximoPagamento = await sql`
+      SELECT (NOW() + INTERVAL '${intervalo}')::date AS data
+    `
+    const expiraEm = proximoPagamento[0].data
+
+    // Atualiza o plano do mercado
+    await sql`
+      UPDATE mercados
+      SET plano = ${codigo_plano}
+      WHERE id_mercado = ${Number(id)}
+    `
+
+    // Verifica se já existe assinatura para este mercado
+    const [assinaturaExistente] = await sql`
+      SELECT * FROM assinaturas WHERE id_mercado = ${Number(id)} ORDER BY id DESC LIMIT 1
+    `
+
+    if (assinaturaExistente) {
+      await sql`
+        UPDATE assinaturas
+        SET codigo_plano = ${codigo_plano},
+            ciclo = ${unidade === 'anos' ? 'ANUAL' : 'MENSAL'},
+            valor = 0,
+            status = 'ativa',
+            proximo_pagamento = ${expiraEm},
+            asaas_customer_id = NULL,
+            asaas_subscription_id = NULL,
+            atualizada_em = NOW()
+        WHERE id = ${assinaturaExistente.id}
+      `
+    } else {
+      // Pega o dono do mercado para vincular a assinatura
+      const [dono] = await sql`
+        SELECT id_usuario FROM usuarios_mercados
+        WHERE id_mercado = ${Number(id)} AND papel = 'dono'
+        LIMIT 1
+      `
+      const id_usuario = dono?.id_usuario || 1
+
+      await sql`
+        INSERT INTO assinaturas (id_usuario, id_mercado, codigo_plano, ciclo, valor, status, proximo_pagamento, dados_mercado)
+        VALUES (${id_usuario}, ${Number(id)}, ${codigo_plano}, ${unidade === 'anos' ? 'ANUAL' : 'MENSAL'}, 0, 'ativa', ${expiraEm}, '{"cortesia": true}'::jsonb)
+      `
+    }
+
+    // Se mercado estava bloqueado/suspenso, reativa
+    if (mercado.status !== 'ativo') {
+      await sql`UPDATE mercados SET status = 'ativo' WHERE id_mercado = ${Number(id)}`
+    }
+
+    res.json({
+      mensagem: `Cortesia de ${qtd} ${unidade} do plano ${codigo_plano} concedida com sucesso!`,
+      expira_em: expiraEm,
+      plano: codigo_plano
+    })
+  } catch (err) {
+    console.error('ERRO concederCortesia:', err)
+    res.status(500).json({ erro: 'Erro ao conceder cortesia.' })
+  }
+}
+
+async function revogarCortesia(req, res) {
+  try {
+    const sql = await conectar()
+    const { id } = req.params
+
+    // Verifica se o mercado existe
+    const [mercado] = await sql`
+      SELECT id_mercado, plano, status FROM mercados WHERE id_mercado = ${Number(id)}
+    `
+    if (!mercado) {
+      return res.status(404).json({ erro: 'Mercado não encontrado.' })
+    }
+
+    // Busca a assinatura ativa do mercado
+    const [assinatura] = await sql`
+      SELECT * FROM assinaturas 
+      WHERE id_mercado = ${Number(id)} AND status = 'ativa'
+      ORDER BY id DESC LIMIT 1
+    `
+
+    if (assinatura) {
+      // Marca a assinatura como cancelada
+      await sql`
+        UPDATE assinaturas
+        SET status = 'cancelada', atualizada_em = NOW()
+        WHERE id = ${assinatura.id}
+      `
+    }
+
+    // Reverte o plano do mercado para 'basico'
+    await sql`
+      UPDATE mercados
+      SET plano = 'basico'
+      WHERE id_mercado = ${Number(id)}
+    `
+
+    res.json({
+      mensagem: 'Cortesia revogada com sucesso. O mercado voltou para o plano Essencial (Básico).',
+      plano: 'basico'
+    })
+  } catch (err) {
+    console.error('ERRO revogarCortesia:', err)
+    res.status(500).json({ erro: 'Erro ao revogar cortesia.' })
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -824,4 +960,6 @@ module.exports = {
   listarMercadosAdmin,
   detalheMercadoAdmin,
   bloquearMercado,
+  concederCortesia,
+  revogarCortesia,
 }

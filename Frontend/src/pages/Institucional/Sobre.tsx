@@ -114,20 +114,22 @@ export default function Sobre() {
             </div>
           </div>
 
-          <div className="inst-team-card">
+          
+        </div>
+      </section>
+      <section className="inst-section inst-legal">
+        <h2>Testadores</h2>
+        <div className="inst-team-card">
             <span className="inst-team-avatar" aria-hidden="true">CB</span>
             <div>
               <h3>Cayo Barroso dos Santos</h3>
-              <p>Desenvolvedor</p>
+              <p>Testador</p>
               <p className="inst-team-desc">
-                Desenvolvedor front-end. Contribuiu com a interface do site
-                e com melhorias na usabilidade do Mercadins.
+                Ele verificou, testou e ajudou a indentificar erros possiveis no site.
               </p>
             </div>
           </div>
-        </div>
       </section>
-
       <div className="inst-ctas">
         <Link className="inst-cta" to="/mercados-parceiros">
           Conhecer mercados parceiros

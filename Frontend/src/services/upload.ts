@@ -1,5 +1,6 @@
 //  Upload de imagens — pasta local "imagens" + cópia de backup no Supabase
 import { BASE_URL } from './api'
+import { guardarBlob } from './imagemCache'
 import { supabase } from './supabase'
 
 const getToken = () => localStorage.getItem('token')
@@ -70,27 +71,21 @@ async function uploadLocal(file: File, categoria: string): Promise<string> {
 }
 
 async function uploadSupabase(file: File, categoria: string): Promise<string | null> {
-  if (!supabase) return null
-  try {
-    const ext = file.name.split('.').pop() || 'png'
-    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const caminho = `${categoria}/${nomeArquivo}`
+  if (!supabase) return null // não configurado — sem backup, sem erro
+  const ext = file.name.split('.').pop() || 'png'
+  const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const caminho = `${categoria}/${nomeArquivo}`
 
-    const { error } = await supabase.storage
-      .from('imagens')
-      .upload(caminho, file, { cacheControl: '3600', upsert: false })
+  const { error } = await supabase.storage
+    .from('imagens')
+    .upload(caminho, file, { cacheControl: '86400', upsert: false })
 
-    if (error) {
-      console.error('Erro ao enviar imagem (Supabase):', error)
-      return null
-    }
-
-    const { data } = supabase.storage.from('imagens').getPublicUrl(caminho)
-    return data.publicUrl
-  } catch (falha) {
-    console.error('Erro no upload Supabase:', falha)
-    return null
+  if (error) {
+    throw new Error(error.message || 'Falha ao enviar a imagem para o Supabase.')
   }
+
+  const { data } = supabase.storage.from('imagens').getPublicUrl(caminho)
+  return data.publicUrl
 }
 
 export async function uploadImagem(file: File, categoria: string): Promise<string | null> {
@@ -100,9 +95,31 @@ export async function uploadImagem(file: File, categoria: string): Promise<strin
     uploadSupabase(arquivo, categoria),
   ])
 
-  if (local.status === 'fulfilled') return local.value
-  console.error('Erro no upload local:', local.reason)
+  // A imagem fica no cache do navegador no mesmo momento em que é salva —
+  // continua visível offline sem novo fetch.
+  const indexar = (url: string) => guardarBlob(url, arquivo).catch(console.error)
 
-  if (backup.status === 'fulfilled' && backup.value) return backup.value
+  // Com Supabase configurado o backup é OBRIGATÓRIO: a URL gravada no banco
+  // precisa ser permanente (o disco do Render é efêmero e URLs localhost de
+  // dev não existem em produção). Sem Supabase (auto-hospedado), usa a URL
+  // local mesmo.
+  if (supabase) {
+    if (backup.status === 'fulfilled' && backup.value) {
+      if (local.status === 'fulfilled') indexar(local.value)
+      indexar(backup.value)
+      return backup.value
+    }
+    console.error('Backup da imagem no Supabase falhou:', backup.status === 'rejected' ? backup.reason : 'sem URL')
+    throw new Error(
+      'Não foi possível salvar a imagem no armazenamento permanente (Supabase). ' +
+        'O registro não foi salvo — tente novamente.'
+    )
+  }
+
+  if (local.status === 'fulfilled') {
+    indexar(local.value)
+    return local.value
+  }
+  console.error('Erro no upload local:', local.reason)
   return null
 }

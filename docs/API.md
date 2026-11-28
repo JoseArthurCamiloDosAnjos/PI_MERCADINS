@@ -32,9 +32,7 @@ Erros seguem sempre o mesmo formato:
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
 | POST | `/register` | público | Cria conta de cliente; envia código de verificação por E-mail (com limite de tentativas) |
-| POST | `/login` | público | Valida E-mail + senha e **não devolve token direto**: retorna `{ requer_2fa: true, token_parcial, mensagem }` — um código de 6 dígitos é enviado por E-mail e o token parcial (10 min) só troca pelo token definitivo em `/2fa/verificar` (limite de 10 tentativas/minuto; exige e-mail verificado — senão `403`) |
-| POST | `/2fa/verificar` | token parcial | Confirma o código de 6 dígitos → `{ token, usuario }` (5 tentativas; após isso o código é invalidado; código expira em 10 min) |
-| POST | `/2fa/reenviar` | token parcial | Gera e envia um novo código por E-mail |
+| POST | `/login` | público | Valida E-mail + senha e devolve `{ token, usuario, is_admin_login }` (limite de 10 tentativas/minuto; não exige e-mail verificado — o login marca a conta como verificada) |
 | GET | `/perfil` | token | Devolve o perfil de quem está logado |
 | PUT | `/perfil` | token | Atualiza o perfil — **`nome` e `email` são obrigatórios no corpo**; opcionais: `telefone`, `data_nascimento`, `foto_perfil_url` |
 | POST | `/verificar-email` | público | Confirma o código recebido por E-mail no cadastro |
@@ -53,13 +51,7 @@ Exemplo de login:
 curl -X POST https://pi-mercadins.onrender.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"cliente@exemplo.com","senha":"SuaSenha@123"}'
-# → { "requer_2fa": true, "token_parcial": "eyJhbGci...", "mensagem": "Código de verificação enviado para seu email." }
-
-# Depois, com o código recebido no E-mail:
-curl -X POST https://pi-mercadins.onrender.com/api/auth/2fa/verificar \
-  -H "Content-Type: application/json" \
-  -d '{"token_parcial":"eyJhbGci...","codigo":"123456"}'
-# → { "token": "eyJhbGci...", "usuario": { "id_usuario": 1, "nome": "...", ... } }
+# → { "token": "eyJhbGci...", "usuario": { "id_usuario": 1, "nome": "...", ... }, "is_admin_login": false }
 ```
 
 ---
@@ -233,9 +225,11 @@ Comportamento com assinatura já existente (detalhes em
 loja já criada → nova assinatura sem bloquear; pendência com o **mesmo**
 formulário → retoma o mesmo link; formulário **diferente** → substitui a
 pendência; pagamento confirmado mas a loja não nasceu → cria a loja na hora e
-devolve `mercado` (sem cobrar de novo), com `mensagem`. O `urlCheckout` é
-aberto pelo frontend em **nova aba** que fecha sozinha quando o pagamento
-confirma ([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
+devolve `mercado` (sem cobrar de novo), com `mensagem`. A assinatura é criada
+com `callback.successUrl = {FRONTEND_URL}/registrar-mercado?pagamento=1`; o
+Asaas aceita esse retorno no domínio cadastrado e devolve o usuário à tela de
+status, que faz polling de 5 em 5 s até o status `ativa`
+([pagamentos.md §14](pagamentos.md#14-retorno-automático-após-o-pagamento)).
 
 Fluxo completo, estados, carência de 3 dias e como testar:
 **[docs/pagamentos.md](pagamentos.md)**.
@@ -266,7 +260,7 @@ transições de pedido). Payload sem `id`/`event` → `400`.
 | `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` / `RECEIVED_IN_CASH` (pedido — `externalReference "pedido:<id>"`) | Pedido `aguardando_pagamento` vira `pendente`; e-mails de confirmação ao cliente e aviso ao vendedor |
 | Falha real (`DELETED`, `FAILED`, `EXPIRED`) no pedido | Cancela o pedido, devolve o estoque e apaga as linhas de `repasses` |
 | `REFUND_REQUESTED` | Estorno **solicitado** — não cancela; aguarda `REFUNDED` |
-| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela com devoluções; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
+| `REFUNDED` / `CHARGBACK_*` | Estorno **concluído** — em pedido já pago cancela o pedido e estorna as cobranças; em assinatura loga `CRÍTICO` (sem rebaixar status automático) |
 | `PAYMENT_SPLIT_*` | Sincroniza os repasses (tabela `repasses`) do Split |
 
 ---
@@ -305,9 +299,9 @@ cadastrada; `webhook_tokens` = quantos tokens o webhook aceita (vírgula).
 | POST | `/api/mercados/:id/pedidos` | token | Cria o pedido (valida estoque, teto de 99 unidades por produto, mínimo e cupom; envia E-mail de confirmação) |
 | GET | `/api/mercados/:id/pedidos` | token (dono) | Lista os pedidos da loja (com entrega, agendamento e cupom) |
 | GET | `/api/pedidos/meus` | token | Acompanhamento do cliente: pedidos que ele fez |
-| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja) |
-| PUT | `/api/pedidos/:id/status` | token (dono) | Muda o status e avisa o cliente por E-mail |
-| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível) |
+| GET | `/api/pedidos/:id` | token | Detalhe de um pedido (cliente dono ou vendedor da loja); para quem **gerencia**, inclui contato do cliente, motivo do cancelamento e itens detalhados |
+| PUT | `/api/pedidos/:id/status` | token (membro da loja) | Muda o status para qualquer etapa (avança **ou volta**), inclusive `tentativa`, e avisa o cliente por E-mail |
+| POST | `/api/pedidos/:id/cancelar` | token | Cliente cancela o próprio pedido (se ainda for possível); a loja cancela até a entrega e pode enviar `{ "motivo": "..." }` no corpo |
 | GET | `/api/pedidos/:id/itens-recompra` | token | Produtos do pedido com preço/estoque atuais (base do botão "comprar de novo") |
 | DELETE | `/api/pedidos/:id/historico` | token | Cliente remove o pedido da própria lista |
 | GET | `/api/usuario/historico` | token | Histórico de compras do cliente |
@@ -347,10 +341,33 @@ Corpo de um pedido:
   O **Pix foi removido** do fluxo de pedidos (histórico antigo continua
   exibido como `pix`).
 
-Status possíveis do pedido (`PUT /api/pedidos/:id/status`): a fila de avanço é
-`pendente → preparo → caminho → entregue` (só avança, não volta); existem ainda
-os estados especiais `aguardando_pagamento` (webhook ainda não confirmou) e
-`cancelado` (não muda mais).
+Status possíveis do pedido (`PUT /api/pedidos/:id/status`), por tipo de
+recebimento:
+
+- **entrega**: `pendente → preparo → pronto → caminho → entregue`;
+- **retirada**: `pendente → preparo → pronto → entregue` (não existe "saiu
+  para entrega" — o cliente busca no balcão).
+
+A loja pode percorrer a fila nos dois sentidos — inclusive **voltar uma etapa**
+para corrigir um status marcado por engano. Há ainda o desvio `tentativa`
+("Tentativa de entrega", **só em pedidos de entrega**): marca que o entregador
+tentou e não conseguiu; o pedido segue valendo a etapa `caminho` e volta a ela
+ou avança para `entregue`. Em retirada o servidor recusa `tentativa`. Os estados
+especiais `aguardando_pagamento` (webhook ainda não confirmou) e `cancelado`
+(não muda mais) continuam como antes.
+
+O cancelamento (`POST /:id/cancelar`) é feito pelo cliente ou pela loja, até a
+entrega, e recupera estoque e cupom. Quando quem cancela é a loja, o corpo pode
+trazer `{ "motivo": "..." }` (até 300 caracteres): o texto é gravado em
+`motivo_cancelamento` (`"Cancelado pela loja: …"`), aparece no e-mail e na
+notificação do cliente e é devolvido em `GET /pedidos/:id` para quem gerencia.
+
+As **chaves** de status são sempre as mesmas, mas o **texto** exibido no site
+depende de `tipo_entrega`: em pedidos de `retirada`, `pronto`/`caminho` aparece
+como **"Pronto para retirada"** e `entregue` como **"Retirado no balcão"** (na
+visão da loja, "Retirado"), em vez de "A caminho"/"Entregue". Os rótulos vêm de
+`Frontend/src/utils/statusPedido.ts` e os e-mails/notificações repetem a mesma
+lógica no backend.
 
 O servidor calcula: `total = subtotal − desconto + taxa de entrega` e grava tudo
 no histórico, junto de `produto_ids` (base do selo "compra verificada").
@@ -490,6 +507,13 @@ mudada com a variável `IMAGENS_DIR`.
 
 As imagens são servidas em `GET /imagens/<categoria>/<arquivo>`.
 
+> **Fluxo completo do upload (frontend):** o `Frontend/src/services/upload.ts`
+> envia para esta rota **e**, em paralelo, faz uma cópia de backup no Supabase
+> (bucket `imagens`, `cacheControl` de 24 h). A falha do backup é registrada
+> no console mas não bloqueia o upload local. Em seguida a imagem é indexada
+> no cache offline do navegador (IndexedDB `mercadins-cache`, ver
+> `Frontend/src/services/imagemCache.ts`), então ela já aparece sem rede.
+
 ---
 
 ## Depoimentos — `/api/depoimentos`
@@ -536,8 +560,7 @@ O `robots.txt` do frontend aponta para esta rota.
 
 ## Limites e proteções
 
-- **Limite de requisições:** as rotas de autenticação têm limite (ex.: login, 10 por minuto por IP); verificação de 2FA, 5 a cada 15 minutos e reenvio de código, 3 a cada 15 minutos; o teste de notificação também (5 a cada 15 minutos);
-- **2FA:** código de 6 dígitos por E-mail em todo login, expira em 10 minutos e trava após 5 tentativas;
+- **Limite de requisições:** as rotas de autenticação têm limite (ex.: login, 10 por minuto por IP); o teste de notificação também (5 a cada 15 minutos);
 - **Validação:** todos os campos são validados no servidor (nada confia no navegador);
 - **SQL:** todas as consultas usam parâmetros do driver (nunca concatenação de texto) — verificado pelo script `npm run auditar-sql`;
 - **E-mails:** envio em segundo plano — falha de E-mail nunca impede um pedido de ser criado;

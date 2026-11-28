@@ -4,10 +4,11 @@ import { api } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast';
 import {
-  IconArrowLeft,
   IconMapPin,
   IconStore,
 } from '../../components/Icons';
+import LogoTopbar from '../../components/LogoTopbar';
+import { onAvatarError } from '../../utils/imagens';
 import './Favoritos.css';
 
 function IconStar({ size = 14, filled = true }: { size?: number; filled?: boolean }) {
@@ -77,16 +78,13 @@ export default function Favoritos() {
   }
 
   function abrirLoja(f: Favorito) {
-    if (f.slug) navigate(`/vitrine/${f.slug}`);
+    if (f.slug) navigate(`/${f.slug}`);
   }
 
   return (
     <div className="favoritos-page">
       <div className="favoritos-topbar">
-        <button className="favoritos-voltar" onClick={() => navigate('/')} type="button">
-          <IconArrowLeft size={16} />
-          Início
-        </button>
+        <LogoTopbar />
         <div className="favoritos-titulo">
           <h1>Meus favoritos</h1>
           <p>
@@ -137,7 +135,7 @@ export default function Favoritos() {
                     aria-label={`Abrir a loja ${f.nome}`}
                   >
                     {f.foto_perfil ? (
-                      <img src={f.foto_perfil} alt={f.nome} loading="lazy" />
+                      <img src={f.foto_perfil} alt={f.nome} loading="lazy" onError={onAvatarError} />
                     ) : (
                       <IconStore size={30} />
                     )}

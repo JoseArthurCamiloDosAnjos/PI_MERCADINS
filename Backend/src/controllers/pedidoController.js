@@ -74,31 +74,61 @@ function avisarVendedorPedido(sql, idPedido) {
     .catch((err) => console.error('Falha no e-mail de pedido ao vendedor:', err.message));
 }
 
-function avisarClientePedido(sql, idPedido, status) {
+function avisarClientePedido(sql, idPedido, status, motivo = null) {
   montarDadosPedidoParaEmail(sql, idPedido)
     .then((dados) => {
       if (!dados?.email) return;
       const primeiroNome = String(dados.cliente || '').split(' ')[0];
+      const ehRetirada = dados.tipoEntrega === 'retirada';
       const textos = {
         pendente: [
           'Pedido recebido',
           `Olá, ${primeiroNome}! Seu pedido nº ${dados.numero} no ${dados.mercado} foi recebido e já está com a loja.`,
         ],
-        preparo: [
-          'Pedido em preparo',
-          `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero}.`,
+        preparo: ehRetirada
+          ? [
+              'Pedido em preparo',
+              `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero} para retirada no balcão.`,
+            ]
+          : [
+              'Pedido em preparo',
+              `Olá, ${primeiroNome}! O ${dados.mercado} começou a preparar o seu pedido nº ${dados.numero}.`,
+            ],
+        pronto: ehRetirada
+          ? [
+              'Pedido pronto para retirada',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto e aguarda você no balcão do ${dados.mercado}. Pode buscar no horário de funcionamento.`,
+            ]
+          : [
+              'Pedido pronto',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto e vai sair para entrega em breve.`,
+            ],
+        caminho: ehRetirada
+          ? [
+              'Pedido pronto para retirada',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} está pronto para retirada no balcão do ${dados.mercado}. Pode buscar no horário de funcionamento.`,
+            ]
+          : [
+              'Pedido saiu para entrega',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
+            ],
+        tentativa: [
+          'Entrega ainda não concluída',
+          `Olá, ${primeiroNome}! O entregador tentou entregar o seu pedido nº ${dados.numero}, mas não conseguiu desta vez. Fale com o ${dados.mercado} pelo site para combinar uma nova tentativa.`,
         ],
-        caminho: [
-          'Pedido saiu para entrega',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} saiu para entrega. Fique de olho no portão.`,
-        ],
-        entregue: [
-          'Pedido entregue',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
-        ],
+        entregue: ehRetirada
+          ? [
+              'Pedido retirado',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi retirado no balcão do ${dados.mercado}. Obrigado por comprar no Mercadins.`,
+            ]
+          : [
+              'Pedido entregue',
+              `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} foi entregue. Obrigado por comprar no Mercadins.`,
+            ],
         cancelado: [
           'Pedido cancelado',
-          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`,
+          `Olá, ${primeiroNome}! O seu pedido nº ${dados.numero} no ${dados.mercado} foi cancelado. Se precisar, fale com a loja pelo site.`
+          + (motivo ? ` Motivo informado pela loja: ${motivo}` : ''),
         ],
       };
       const [titulo, mensagem] = textos[status] || [
@@ -500,15 +530,21 @@ const criarPedido = async (req, res) => {
         splitEnviado = !!splits;
         motivoSplit = '';
 
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+        const redirectUrl = `${frontendUrl}/pedidos/${pedido.id}?pagamento=1`;
+
         const descricao = `Pedido nº ${pedido.id} — ${mercado.nome}`;
         let pagamento;
+        const billingType = formaPagamento === 'boleto' ? 'BOLETO' : 'UNDEFINED';
         try {
-          pagamento = await asaas.criarPagamentoPedidoCartao({
+          pagamento = await asaas.criarPagamentoPedido({
             customerId: customer.id,
             valor: totalPedido,
             descricao,
             externalReference: refPedido,
             splits: splits || undefined,
+            billingType,
+            redirectUrl,
           });
         } catch (erroSplit) {
           motivoSplit = String(erroSplit.message || '');
@@ -539,11 +575,13 @@ const criarPedido = async (req, res) => {
           } else {
             console.error(`Pedido ${pedido.id}: split recusado (${motivoSplit}) — cobrança refeita sem split.`);
             splitEnviado = false;
-            pagamento = await asaas.criarPagamentoPedidoCartao({
+            pagamento = await asaas.criarPagamentoPedido({
               customerId: customer.id,
               valor: totalPedido,
               descricao,
               externalReference: refPedido,
+              billingType,
+              redirectUrl,
             });
           }
         }
@@ -561,7 +599,7 @@ const criarPedido = async (req, res) => {
         });
 
         return res.status(201).json({
-          mensagem: 'Pedido criado. Finalize o pagamento do cartão para a loja iniciar o preparo.',
+          mensagem: 'Pedido criado. Finalize o pagamento online para a loja iniciar o preparo.',
           pedido: {
             ...pedido,
             total: totalPedido,
@@ -607,7 +645,7 @@ const criarPedido = async (req, res) => {
                 valorTotal: totalPedido,
               });
               return res.status(201).json({
-                mensagem: 'Pedido criado. Finalize o pagamento do cartão para a loja iniciar o preparo.',
+                mensagem: 'Pedido criado. Finalize o pagamento online para a loja iniciar o preparo.',
                 pedido: {
                   ...pedido,
                   total: totalPedido,
@@ -736,7 +774,11 @@ const listarPedidosMercado = async (req, res) => {
   }
 };
 
-const ORDEM_STATUS = ['pendente', 'preparo', 'caminho', 'entregue'];
+// Linha principal do pedido, na ordem em que ele avança.
+const ORDEM_STATUS = ['pendente', 'preparo', 'pronto', 'caminho', 'entregue'];
+// 'tentativa' é um desvio da linha: o entregador tentou e não conseguiu.
+const DESVIOS_STATUS = ['tentativa'];
+const TODOS_STATUS = [...ORDEM_STATUS, ...DESVIOS_STATUS];
 
 const atualizarStatusPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
@@ -746,15 +788,17 @@ const atualizarStatusPedido = async (req, res) => {
   if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
     return res.status(400).json({ erro: 'Pedido inválido.' });
   }
-  if (!ORDEM_STATUS.includes(status)) {
-    return res.status(400).json({ erro: 'Status inválido. Use: pendente, preparo, caminho ou entregue.' });
+  if (!TODOS_STATUS.includes(status)) {
+    return res.status(400).json({
+      erro: 'Status inválido. Use: pendente, preparo, pronto, caminho, entregue ou tentativa.',
+    });
   }
 
   try {
     const sql = await conectar();
 
     const [pedido] = await sql`
-      SELECT id, id_mercado, status FROM historico_compras WHERE id = ${pedidoId}
+      SELECT id, id_mercado, status, tipo_entrega FROM historico_compras WHERE id = ${pedidoId}
     `;
     if (!pedido) {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
@@ -774,10 +818,21 @@ const atualizarStatusPedido = async (req, res) => {
     if (pedido.status === 'cancelado') {
       return res.status(400).json({ erro: 'Este pedido foi cancelado e não pode mudar de status.' });
     }
+    if (status === 'tentativa' && pedido.tipo_entrega === 'retirada') {
+      return res.status(400).json({
+        erro: 'Pedidos de retirada no balcão não têm tentativa de entrega — o cliente retira no balcão quando estiver pronto.',
+      });
+    }
 
-    const atual = ORDEM_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
-    if (ORDEM_STATUS.indexOf(status) < ORDEM_STATUS.indexOf(atual)) {
-      return res.status(400).json({ erro: 'O status de um pedido só pode avançar, não voltar.' });
+    // Avançar e retroceder são permitidos: a loja corrige etapas marcadas por
+    // engano (ex.: "A caminho" voltando para "Em preparo"). Só não muda quem
+    // está aguardando pagamento ou já cancelado, bloqueados acima.
+    const atual = TODOS_STATUS.includes(pedido.status) ? pedido.status : 'pendente';
+    if (status === atual) {
+      return res.status(200).json({
+        mensagem: 'O pedido já está neste status.',
+        pedido: { id: pedido.id, status: atual },
+      });
     }
 
     const [atualizado] = await sql`
@@ -843,13 +898,38 @@ const financeiroMercado = async (req, res) => {
 
     const pedidos = await sql`
       SELECT h.produtos, h.valor_total, h.desconto, h.taxa_entrega, h.status,
-             (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo' AS data_local
+             TO_CHAR(
+               (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo',
+               'YYYY-MM-DD'
+             ) AS dia_iso
       FROM historico_compras h
       WHERE h.id_mercado = ${mercadoId}
         AND h.data_compra >= ${folgaInicio}
         AND h.data_compra <  ${folgaFim}
       ORDER BY h.data_compra ASC
       LIMIT 5000
+    `;
+
+    const serieMensalRaw = await sql`
+      SELECT TO_CHAR(
+               DATE_TRUNC('month',
+                 (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo'
+               ),
+               'YYYY-MM'
+             ) AS mes,
+             COALESCE(
+               SUM(
+                 COALESCE(h.valor_total, 0) - COALESCE(h.desconto, 0) + COALESCE(h.taxa_entrega, 0)
+               ),
+               0
+             )::float AS val
+      FROM historico_compras h
+      WHERE h.id_mercado = ${mercadoId}
+        AND h.status NOT IN ('cancelado', 'aguardando_pagamento')
+        AND (h.data_compra AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo'
+          >= DATE_TRUNC('month', (now() AT TIME ZONE 'America/Sao_Paulo')) - INTERVAL '5 months'
+      GROUP BY 1
+      ORDER BY 1
     `;
 
     const produtosMercado = await sql`
@@ -888,8 +968,8 @@ const financeiroMercado = async (req, res) => {
     const porProduto = new Map();
 
     for (const p of pedidos) {
-      const d = new Date(p.data_local);
-      if (d.getFullYear() !== ano || d.getMonth() + 1 !== mes) continue;
+      const diaIso = p.dia_iso;
+      if (!diaIso || diaIso.slice(0, 7) !== `${ano}-${String(mes).padStart(2, '0')}`) continue;
 
       const st = p.status || 'pendente';
       porStatus[st] = (porStatus[st] || 0) + 1;
@@ -902,7 +982,7 @@ const financeiroMercado = async (req, res) => {
       faturamento += valor;
       totalPedidos += 1;
 
-      const dia = d.getDate();
+      const dia = Number(diaIso.slice(8, 10));
       const reg = porDia.get(dia) || { pedidos: 0, receita: 0 };
       reg.pedidos += 1;
       reg.receita += valor;
@@ -942,6 +1022,10 @@ const financeiroMercado = async (req, res) => {
         retidoPlataforma: round2(repasseRetido),
       },
       porStatus,
+      serieMensal: serieMensalRaw.map(r => ({
+        mes: r.mes,
+        val: Math.round((Number(r.val) || 0) * 100) / 100,
+      })),
       serieDiaria: Array.from({ length: diasNoMes }, (_, i) => {
         const reg = porDia.get(i + 1) || { pedidos: 0, receita: 0 };
         return { dia: i + 1, pedidos: reg.pedidos, receita: round2(reg.receita) };
@@ -1154,6 +1238,8 @@ async function processarPagamentoPedido(sql, evento, pagamentoAsaas) {
 const cancelarPedido = async (req, res) => {
   const id_usuario = req.usuarioId;
   const pedidoId   = Number(req.params.id);
+  // Motivo que a loja informa ao cliente (vem do modal do painel do vendedor).
+  const motivoLoja = String(req.body?.motivo || '').trim().slice(0, 300);
 
   if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
     return res.status(400).json({ erro: 'Pedido inválido.' });
@@ -1171,30 +1257,57 @@ const cancelarPedido = async (req, res) => {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
     }
 
-    if (Number(pedido.id_usuario) !== Number(id_usuario)) {
-      return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
+    // Quem cancela pode ser o cliente dono do pedido ou a própria loja
+    // (dono/admin/funcionario vinculado ao mercado).
+    const ehDono = Number(pedido.id_usuario) === Number(id_usuario);
+    let ehDaLoja = false;
+    if (!ehDono) {
+      const [membro] = await sql`
+        SELECT papel FROM usuarios_mercados
+        WHERE id_usuario = ${id_usuario} AND id_mercado = ${pedido.id_mercado}
+      `;
+      if (!membro) {
+        return res.status(403).json({ erro: 'Você não pode cancelar este pedido.' });
+      }
+      ehDaLoja = true;
     }
 
     if (pedido.status === 'cancelado') {
       return res.status(200).json({ mensagem: 'Este pedido já estava cancelado.', pedido: { id: pedido.id, status: 'cancelado' } });
     }
 
-    if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
-      return res.status(400).json({
-        erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
-      });
+    if (ehDaLoja) {
+      // A loja cancela enquanto o pedido não for entregue — inclusive em
+      // preparo ou a caminho, quando a entrega não vai acontecer.
+      if (pedido.status === 'entregue') {
+        return res.status(400).json({
+          erro: 'Este pedido já foi entregue e não pode mais ser cancelado.',
+        });
+      }
+    } else {
+      if (!['pendente', 'aguardando_pagamento'].includes(pedido.status)) {
+        return res.status(400).json({
+          erro: 'Este pedido já está em preparo e não pode mais ser cancelado. Fale com a loja.',
+        });
+      }
+
+      if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
+        return res.status(400).json({
+          erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
+        });
+      }
     }
 
-    if (pedido.status === 'pendente' && ['pix', 'cartao'].includes(pedido.forma_pagamento)) {
-      return res.status(400).json({
-        erro: 'Este pedido já foi pago e não pode ser cancelado pela tela. Fale com a loja para combinar o estorno.',
-      });
-    }
+    // A loja pode explicar o cancelamento no modal; o motivo vai para o campo
+    // `motivo_cancelamento` e aparece no e-mail e na notificação do cliente.
+    const motivoInformado = ehDaLoja ? motivoLoja : '';
+    const motivoBase = ehDaLoja ? 'Cancelado pela loja' : 'Cancelado pelo cliente';
+    const motivoCancelamento = motivoInformado ? `${motivoBase}: ${motivoInformado}` : motivoBase;
 
     const [cancelado] = await sql`
       UPDATE historico_compras
-      SET status = 'cancelado', motivo_cancelamento = 'Cancelado pelo cliente'
-      WHERE id = ${pedido.id} AND status IN ('pendente', 'aguardando_pagamento')
+      SET status = 'cancelado', motivo_cancelamento = ${motivoCancelamento}
+      WHERE id = ${pedido.id} AND status = ${pedido.status}
       RETURNING id, status
     `;
     if (!cancelado) {
@@ -1209,20 +1322,30 @@ const cancelarPedido = async (req, res) => {
 
     if (pedido.asaas_payment_id) {
       try {
-        await asaas.cancelarPagamento(pedido.asaas_payment_id);
+        if (ehDaLoja) {
+          // Pagamento já confirmado → estorno. Se ainda estiver pendente o
+          // estorno falha e a cobrança é apenas cancelada em seguida.
+          try {
+            await asaas.estornarPagamento(pedido.asaas_payment_id);
+          } catch {
+            await asaas.cancelarPagamento(pedido.asaas_payment_id);
+          }
+        } else {
+          await asaas.cancelarPagamento(pedido.asaas_payment_id);
+        }
       } catch (err) {
-        console.error(`Falha ao cancelar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
+        console.error(`Falha ao encerrar cobrança ${pedido.asaas_payment_id} no Asaas: ${err.message}`);
       }
     }
 
     montarDadosPedidoParaEmail(sql, pedido.id)
-      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado'))
+      .then((dados) => dados && enviarEmailStatusPedido(dados.email, dados, 'cancelado', motivoInformado || null))
       .catch((err) => console.error('Falha no e-mail de cancelamento:', err.message));
-    avisarClientePedido(sql, pedido.id, 'cancelado');
+    avisarClientePedido(sql, pedido.id, 'cancelado', motivoInformado || null);
 
     res.status(200).json({
       mensagem: 'Pedido cancelado. O estoque dos produtos voltou para a loja.',
-      pedido: { id: pedido.id, status: 'cancelado' },
+      pedido: { id: pedido.id, status: 'cancelado', motivo: motivoCancelamento },
     });
   } catch (err) {
     console.error('ERRO cancelarPedido:', err);
@@ -1398,7 +1521,8 @@ const detalharPedido = async (req, res) => {
     const sql = await conectar();
 
     const [pedido] = await sql`
-      SELECT h.*, m.nome AS mercado, m.slug AS mercado_slug, u.nome AS cliente
+      SELECT h.*, m.nome AS mercado, m.slug AS mercado_slug,
+             u.nome AS cliente, u.email AS cliente_email, u.telefone AS cliente_telefone
       FROM historico_compras h
       JOIN mercados m ON m.id_mercado = h.id_mercado
       JOIN usuarios u ON u.id_usuario = h.id_usuario
@@ -1487,6 +1611,37 @@ const detalharPedido = async (req, res) => {
       - (Number(pedido.desconto) || 0)
       + (Number(pedido.taxa_entrega) || 0);
 
+    // Dados extras que só a loja que gere o pedido vê (contato do cliente,
+    // motivo do cancelamento e itens com preço atual do catálogo).
+    let detalhesLoja = null;
+    if (gerencia) {
+      const itens = Array.isArray(pedido.itens_json) ? pedido.itens_json : [];
+      const ids = itens.map((i) => Number(i?.id_produto)).filter(Number.isFinite);
+      const produtos = ids.length
+        ? await sql`SELECT id_produto, nome, preco, imagem FROM produtos WHERE id_produto = ANY(${ids})`
+        : [];
+      const porId = new Map(produtos.map((p) => [Number(p.id_produto), p]));
+
+      detalhesLoja = {
+        clienteEmail: pedido.cliente_email || '',
+        clienteTelefone: pedido.telefone || '',
+        motivoCancelamento: pedido.motivo_cancelamento || '',
+        itensDetalhados: itens.map((i) => {
+          const prod = porId.get(Number(i.id_produto));
+          const quantidade = Number(i.quantidade) || 0;
+          const preco = Number(prod?.preco) || 0;
+          return {
+            id_produto: Number(i.id_produto),
+            nome: prod?.nome || 'Produto fora do catálogo',
+            imagem: prod?.imagem || '',
+            quantidade,
+            preco,
+            subtotal: Math.round(preco * quantidade * 100) / 100,
+          };
+        }),
+      };
+    }
+
     res.status(200).json({
       pedido: {
         id: pedido.id,
@@ -1507,6 +1662,7 @@ const detalharPedido = async (req, res) => {
         formaPagamento: pedido.forma_pagamento || 'presencial',
         dataCompra: pedido.data_compra,
         gerencia,
+        ...(detalhesLoja || {}),
       },
       pagamento,
     });

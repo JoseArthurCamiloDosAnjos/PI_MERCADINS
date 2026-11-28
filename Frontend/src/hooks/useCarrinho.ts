@@ -4,6 +4,7 @@ import { api } from '../services/api';
 export interface ProdutoCarrinho {
   id_produto: number;
   id_categoria: number;
+  slug?: string;
   nome: string;
   descricao?: string;
   preco?: string;

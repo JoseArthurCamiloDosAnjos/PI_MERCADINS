@@ -59,7 +59,7 @@ export default function MercadosParceiros() {
             <Link
               key={mercado.id_mercado}
               className="inst-loja-card"
-              to={`/vitrine/${mercado.slug}`}
+              to={`/${mercado.slug}`}
             >
               <h3>{mercado.nome}</h3>
               <p>{localizacao(mercado)}</p>

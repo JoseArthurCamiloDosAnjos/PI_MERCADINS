@@ -80,12 +80,6 @@ export const api = {
   confirmarTrocaEmail: (dados: { codigo: string }) =>
     request('/auth/confirmar-troca-email', { method: 'POST', body: JSON.stringify(dados) }),
 
-  // ── Verificação em duas etapas (2FA) ─────────────────────────────────────────
-  verificar2FA: (dados: { token_parcial: string; codigo: string }) =>
-    request('/auth/2fa/verificar', { method: 'POST', body: JSON.stringify(dados) }),
-  reenviar2FA: (dados: { token_parcial: string }) =>
-    request('/auth/2fa/reenviar', { method: 'POST', body: JSON.stringify(dados) }),
-
   // ── Mercados ─────────────────────────────────────────────────────────────────
   meusMercados: () =>
     request('/usuarios-mercados/meus'),
@@ -222,7 +216,7 @@ export const api = {
       endereco_entrega?: string;
       cupom?: string;
       agendamento?: string;
-      forma_pagamento?: 'presencial' | 'cartao';
+      forma_pagamento?: 'presencial' | 'cartao' | 'boleto';
     }
   ) =>
     request(`/mercados/${mercadoId}/pedidos`, {
@@ -235,8 +229,11 @@ export const api = {
     request('/pedidos/meus'),
   detalharPedido: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}`),
-  cancelarPedido: (pedidoId: string | number) =>
-    request(`/pedidos/${pedidoId}/cancelar`, { method: 'POST' }),
+  cancelarPedido: (pedidoId: string | number, motivo?: string) =>
+    request(`/pedidos/${pedidoId}/cancelar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo: motivo ?? '' }),
+    }),
   itensRecompra: (pedidoId: string | number) =>
     request(`/pedidos/${pedidoId}/itens-recompra`),
   removerPedidoHistorico: (pedidoId: string | number) =>
@@ -322,7 +319,7 @@ export const api = {
     request(`/mercados/${mercadoId}/pedidos`),
   atualizarStatusPedido: (
     pedidoId: string | number,
-    status: 'pendente' | 'preparo' | 'caminho' | 'entregue'
+    status: 'pendente' | 'preparo' | 'pronto' | 'caminho' | 'tentativa' | 'entregue'
   ) =>
     request(`/pedidos/${pedidoId}/status`, {
       method: 'PUT',
@@ -464,6 +461,10 @@ export const api = {
   adminAlertas:     ()         => request('/admin/alertas'),
   adminBloquearMercado: (id: number) =>
     request(`/admin/mercados/${id}/bloquear`, { method: 'PUT' }),
+  adminConcederCortesia: (id: number, dados: { codigo_plano: string; quantidade: number; unidade: string }) =>
+    request(`/admin/mercados/${id}/cortesia`, { method: 'PUT', body: JSON.stringify(dados) }),
+  adminRevogarCortesia: (id: number) =>
+    request(`/admin/mercados/${id}/revogar-cortesia`, { method: 'PUT' }),
   adminMercados: (params?: string) =>
     request(`/admin/mercados${params ? `?${params}` : ''}`),
   adminMercadoDetalhe: (id: number) => request(`/admin/mercados/${id}`),

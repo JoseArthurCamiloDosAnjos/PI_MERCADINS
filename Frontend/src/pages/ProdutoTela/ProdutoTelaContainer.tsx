@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProdutoTela from './ProdutoTela';
 import type { ProdutoDetalhe } from './ProdutoTela';
 import { api } from '../../services/api';
@@ -10,7 +10,7 @@ interface ProdutoTelaContainerProps {
   produtoId: number;
   onVoltar: () => void;
   onAbrirCarrinho: () => void;
-  onAbrirProduto: (catId: number, prodId: number) => void;
+  onAbrirProduto: (prod: ProdutoDetalhe) => void;
 }
 
 export default function ProdutoTelaContainer({
@@ -24,12 +24,19 @@ export default function ProdutoTelaContainer({
   const [produto, setProduto] = useState<ProdutoDetalhe | null>(null);
   const [recomendados, setRecomendados] = useState<ProdutoDetalhe[]>([]);
   const [categoriaNome, setCategoriaNome] = useState<string | undefined>(undefined);
+  const [categoriaSlug, setCategoriaSlug] = useState<string | undefined>(undefined);
   const [mercadoNome, setMercadoNome] = useState('');
   const [mercadoLogo, setMercadoLogo] = useState<string | undefined>(undefined);
   const [paleta, setPaleta] = useState<string>('classico');
   const [corBase, setCorBase] = useState<string | undefined>(undefined);
   const [corDestaque, setCorDestaque] = useState<string | undefined>(undefined);
   const [carregando, setCarregando] = useState(true);
+
+  const handleAbrirProduto = useCallback((prod: ProdutoDetalhe) => {
+    if (categoriaSlug && prod.slug) {
+      onAbrirProduto(prod);
+    }
+  }, [categoriaSlug, onAbrirProduto]);
 
   useEffect(() => {
     if (produto?.nome) document.title = `${produto.nome} — Mercadins`;
@@ -68,10 +75,13 @@ export default function ProdutoTelaContainer({
         setRecomendados(recomendadosCategoria);
 
         const categorias = await api.listarCategorias(mercadoId);
-        const cat = (categorias as { id: number; nome: string }[]).find(
+        const cat = (categorias as { id: number; nome: string; slug?: string }[]).find(
           (c) => c.id === categoriaId
         );
-        if (cat) setCategoriaNome(cat.nome);
+        if (cat) {
+          setCategoriaNome(cat.nome);
+          setCategoriaSlug(cat.slug);
+        }
       } catch (err) {
         console.error('Erro ao carregar produto:', err);
       } finally {
@@ -111,7 +121,7 @@ export default function ProdutoTelaContainer({
       corBase={corBase}
       corDestaque={corDestaque}
       recomendados={recomendados}
-      onAbrirProduto={onAbrirProduto}
+      onAbrirProduto={handleAbrirProduto}
       onVoltar={onVoltar}
       onIrParaCarrinho={onAbrirCarrinho}
     />

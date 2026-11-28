@@ -1,26 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { fecharAbaAsaas, temAbaAsaasAberta } from '../../utils/abaAsaas';
 import ToastContainer from '../../components/Toast';
+import LogoTopbar from '../../components/LogoTopbar';
+import { nomeStatusCliente, passosPedido, indiceDoStatus, type TipoEntrega } from '../../utils/statusPedido';
 import './MeusPedidos.css';
 
 //  B4 — Acompanhamento do pedido (visão do cliente)
 
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-const NOMES_STATUS: Record<string, string> = {
-  aguardando_pagamento: 'Aguardando pagamento',
-  pendente: 'Recebido pela loja',
-  preparo: 'Em preparo',
-  caminho: 'A caminho',
-  entregue: 'Entregue',
-  cancelado: 'Cancelado',
-};
-
-const PASSOS_NORMAL = ['pendente', 'preparo', 'caminho', 'entregue'];
 
 type ToastTipo = 'sucesso' | 'erro' | 'aviso' | 'info';
 
@@ -36,7 +28,7 @@ interface PedidoLista {
   taxaEntrega: number;
   desconto: number;
   cupom: string;
-  tipoEntrega: 'entrega' | 'retirada';
+  tipoEntrega: TipoEntrega;
   agendamento: string;
   status: string;
   formaPagamento: string;
@@ -116,7 +108,7 @@ function ListaPedidos({
         `pedido nº ${p.id}`,
         String(p.id),
         new Date(p.dataCompra).toLocaleDateString('pt-BR'),
-        NOMES_STATUS[p.status] ?? p.status,
+        nomeStatusCliente(p.status, p.tipoEntrega),
         p.tipoEntrega === 'retirada' ? 'retirada no balcão' : 'entrega',
         p.formaPagamento === 'pix' ? 'pix' : p.formaPagamento === 'cartao' ? 'cartão' : '',
         p.cupom,
@@ -181,7 +173,7 @@ function ListaPedidos({
                 <p className="mp-card__numero">Pedido nº {p.id}</p>
               </div>
               <span className={`mp-status mp-status--${p.status}`}>
-                {NOMES_STATUS[p.status] ?? p.status}
+                {nomeStatusCliente(p.status, p.tipoEntrega)}
               </span>
               <span className="mp-card__total">{formatBRL(p.valorTotal)}</span>
               <button
@@ -289,6 +281,8 @@ function DetalhePedido({
 
   const statusPedido = pedido?.status;
   const statusAnteriorRef = useRef<string | null>(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!statusPedido) return;
     const anterior = statusAnteriorRef.current;
@@ -299,10 +293,17 @@ function DetalhePedido({
     if (pagou || primeiroLoad) {
       fecharAbaAsaas();
       if (statusPedido === 'pendente') {
-        showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada e o pedido segue para a loja.');
+        showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada.');
+        // Pequeno delay para garantir que o estado foi atualizado antes de navegar
+        const delayNavigate = setTimeout(() => {
+          // Tenta navegar de volta para a página inicial do mercado
+          navigate('/');
+        }, 500);
+        // Limpa o timeout se o componente descarregar
+        return () => clearTimeout(delayNavigate);
       }
     }
-  }, [statusPedido, showToast]);
+  }, [statusPedido, showToast, navigate]);
 
   useEffect(() => {
     if (!statusPedido) return;
@@ -352,8 +353,8 @@ function DetalhePedido({
     ['pendente', 'aguardando_pagamento'].includes(pedido.status) &&
     !pagoJa;
 
-  const passos = PASSOS_NORMAL;
-  const indiceAtual = passos.indexOf(pedido.status);
+  const passos = passosPedido(pedido.tipoEntrega);
+  const indiceAtual = indiceDoStatus(pedido.status, pedido.tipoEntrega);
 
   return (
     <>
@@ -370,7 +371,7 @@ function DetalhePedido({
             </p>
           </div>
           <span className={`mp-status mp-status--${pedido.status}`}>
-            {NOMES_STATUS[pedido.status] ?? pedido.status}
+            {nomeStatusCliente(pedido.status, pedido.tipoEntrega)}
           </span>
         </div>
 
@@ -385,7 +386,7 @@ function DetalhePedido({
                   (indiceAtual === i ? ' is-atual' : '')
                 }
               >
-                {NOMES_STATUS[p]}
+                {nomeStatusCliente(p, pedido.tipoEntrega)}
               </li>
             ))}
           </ol>
@@ -524,17 +525,18 @@ export default function MeusPedidos() {
   const id = Number(pedidoId);
   const [busca, setBusca] = useState('');
   const { toasts, showToast, dismissToast } = useToast();
+  // Quem tem loja volta para o painel do vendedor — nunca para o perfil de
+  // usuário comum, senão o vendedor "perde" o próprio perfil ao voltar.
+  const { temMercado } = useAuth();
+  const rotaPerfil = temMercado ? '/vendedor' : '/perfil';
 
   return (
     <div className="meuspedidos-page">
       <div className="meuspedidos-topbar">
-        <button
-          className="meuspedidos-voltar"
-          onClick={() => navigate(id ? '/perfil#historico-compras' : '/')}
-          type="button"
-        >
-          <IconArrowLeft /> {id ? 'Perfil' : 'Início'}
-        </button>
+        <LogoTopbar
+          onClick={() => navigate(id ? `${rotaPerfil}#historico-compras` : '/')}
+          title={id ? 'Ir para o perfil' : 'Ir para o início'}
+        />
         <div className="meuspedidos-titulo">
           <h1>{id ? 'Acompanhar pedido' : 'Meus pedidos'}</h1>
           <p>{id ? 'Acompanhe o status em tempo real' : 'Todos os pedidos que você fez'}</p>

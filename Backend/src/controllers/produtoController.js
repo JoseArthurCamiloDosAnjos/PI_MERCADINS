@@ -21,6 +21,40 @@ function estoqueValido(valor) {
   return Math.min(Math.floor(num), 9999999);
 }
 
+function gerarSlugBase(txt) {
+  return txt
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function slugUnicoProduto(sql, categoriaId, nome, excetoId = null) {
+  const base = gerarSlugBase(nome);
+  let slug = base;
+  let contador = 1;
+
+  while (true) {
+    let existe;
+    if (excetoId) {
+      existe = await sql`
+        SELECT 1 FROM produtos
+        WHERE slug = ${slug} AND id_categoria = ${Number(categoriaId)} AND id_produto != ${excetoId}
+      `;
+    } else {
+      existe = await sql`
+        SELECT 1 FROM produtos
+        WHERE slug = ${slug} AND id_categoria = ${Number(categoriaId)}
+      `;
+    }
+    if (existe.length === 0) break;
+    contador++;
+    slug = `${base}-${contador}`;
+  }
+  return slug;
+}
+
 async function usoDoMercado(sql, mercadoId) {
   const produtos = await sql`
     SELECT COALESCE(array_length(p.imagens, 1), 0) AS fotos
@@ -43,7 +77,7 @@ const listarProdutos = async (req, res) => {
     const sql = await conectar()
 
     const produtos = await sql`
-      SELECT p.*,
+      SELECT p.*, p.slug,
              COALESCE(ap.media, 0)::float AS avaliacao,
              COALESCE(ap.total, 0)::int   AS "numAvaliacoes"
       FROM produtos p
@@ -125,8 +159,10 @@ const criarProduto = async (req, res) => {
       })
     }
 
+    const slug = await slugUnicoProduto(sql, categoriaId, nome.trim());
+
     const [novoProduto] = await sql`
-      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque, custo)
+      INSERT INTO produtos (nome, descricao, imagem, preco, imagens, id_categoria, estoque, custo, slug)
       VALUES (
         ${nome.trim()},
         ${descricao?.trim() ?? null},
@@ -135,7 +171,8 @@ const criarProduto = async (req, res) => {
         ${imagensUrls},
         ${Number(categoriaId)},
         ${estoqueNum},
-        ${Math.max(0, Math.min(99999999, parsePreco(custo)))}
+        ${Math.max(0, Math.min(99999999, parsePreco(custo)))},
+        ${slug}
       )
       RETURNING *
     `
@@ -213,6 +250,8 @@ const atualizarProduto = async (req, res) => {
       ? null
       : Math.max(0, Math.min(99999999, parsePreco(custo)))
 
+    const slug = await slugUnicoProduto(sql, categoriaId, nome.trim(), Number(produtoId));
+
     const [produtoAtualizado] = await sql`
       UPDATE produtos
       SET nome      = ${nome.trim()},
@@ -221,7 +260,8 @@ const atualizarProduto = async (req, res) => {
           preco     = ${precoNum},
           custo     = COALESCE(${custoNovo}, custo),
           imagens   = CASE WHEN ${imagensUrls.length} > 0 THEN ${imagensUrls} ELSE imagens END,
-          estoque   = ${estoqueNum}
+          estoque   = ${estoqueNum},
+          slug      = ${slug}
       WHERE id_produto   = ${Number(produtoId)}
         AND id_categoria = ${Number(categoriaId)}
       RETURNING *

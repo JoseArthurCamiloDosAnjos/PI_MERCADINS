@@ -132,7 +132,8 @@
   text-overflow: ellipsis;
 }
 
-.vt-btn-paleta {
+.vt-btn-paleta,
+.vt-btn-rapido-categoria {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -147,7 +148,28 @@
   transition: all 0.2s;
   white-space: nowrap;
 }
-.vt-btn-paleta:hover { border-color: var(--vt-cor-icones); color: var(--vt-cor-icones); }
+.vt-btn-paleta:hover,
+.vt-btn-rapido-categoria:hover { border-color: var(--vt-cor-icones); color: var(--vt-cor-icones); }
+
+.vt-btn-add-produto-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--vt-azul-medio);
+  border: 1px solid var(--vt-azul-claro);
+  color: var(--vt-cor-texto);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--vt-radius-sm);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.vt-btn-add-produto-header:hover {
+  background: var(--vt-cor-icones);
+  color: var(--vt-azul-escuro);
+  border-color: var(--vt-cor-icones);
+}
 
 .vt-btn-salvar {
   display: flex;
@@ -595,11 +617,17 @@
 }
 .vt-vazio-btn:hover { background: var(--vt-amarelo-hover); transform: translateY(-1px); }
 
-/* ─── FAB — nova categoria ───────────────────────────────────────────────── */
+/* ─── FAB — nova categoria (fixo no rodapé) ──────────────────────────────── */
 .vt-fab-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 90;
   display: flex;
-  justify-content: center;
-  padding: 1rem 0 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
 }
 .vt-fab {
   width: 56px;
@@ -614,13 +642,102 @@
   justify-content: center;
   box-shadow: 0 4px 18px rgba(24, 67, 160, 0.5);
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s, color 0.2s;
+  pointer-events: auto;
 }
 .vt-fab:hover {
   background: var(--vt-cor-icones);
   color: var(--vt-azul-escuro);
   border-color: var(--vt-cor-icones);
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.1);
   box-shadow: 0 6px 24px rgba(245, 200, 74, 0.4);
+}
+.vt-fab-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--vt-cor-texto);
+  background: var(--vt-azul-card);
+  border: 1px solid var(--vt-azul-item);
+  border-radius: var(--vt-radius-full);
+  padding: 3px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+/* ─── Menu Rápido (Ações Rápidas) ────────────────────────────────────────── */
+.vt-menu-rapido {
+  position: relative;
+  display: inline-flex;
+}
+.vt-menu-rapido-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--vt-azul-card);
+  border: 1.5px solid var(--vt-azul-item);
+  color: var(--vt-cor-texto-sec);
+  padding: 7px 14px;
+  border-radius: var(--vt-radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.vt-menu-rapido-trigger:hover {
+  border-color: var(--vt-cor-icones);
+  color: var(--vt-cor-icones);
+}
+.vt-menu-rapido-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--vt-azul-card);
+  border: 1px solid var(--vt-azul-borda);
+  border-radius: var(--vt-radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+  animation: vtPop 0.15s ease-out;
+}
+.vt-menu-rapido-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--vt-cor-texto);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vt-menu-rapido-item:hover {
+  background: var(--vt-azul-item);
+}
+.vt-menu-rapido-item svg {
+  flex-shrink: 0;
+}
+
+/* ─── Produto Add Card — legenda ─────────────────────────────────────────── */
+.vt-produto-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.vt-add-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vt-cor-texto-sec);
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* ─── Carousel nos cards de produto ──────────────────────────────────────── */

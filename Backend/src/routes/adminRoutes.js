@@ -21,6 +21,8 @@ router.get('/alertas',      adminController.alertas)
 router.get('/mercados',        adminController.listarMercadosAdmin)
 router.get('/mercados/:id',    adminController.detalheMercadoAdmin)
 router.put('/mercados/:id/bloquear', adminController.bloquearMercado)
+router.put('/mercados/:id/cortesia', adminController.concederCortesia)
+router.put('/mercados/:id/revogar-cortesia', adminController.revogarCortesia)
 
 router.get('/catalogo',        catalogoController.listarCatalogoAdmin)
 router.post('/catalogo',       catalogoController.criarItemCatalogo)

@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import { removeEmojis } from '../hooks/useBlockEmojis';
 import ToastContainer from './Toast';
 import { IconStore, IconX, IconHeart } from './Icons';
+import { onAvatarError } from '../utils/imagens';
 import './AdicionarMercadoFavorito.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ export default function AdicionarMercadoFavorito({
                 <div className="amf-item" key={m.id_mercado}>
                   <div className="amf-item-icone">
                     {m.foto_perfil
-                      ? <img src={m.foto_perfil} alt={m.nome} />
+                      ? <img src={m.foto_perfil} alt={m.nome} onError={onAvatarError} />
                       : <IconStore size={18} />
                     }
                   </div>

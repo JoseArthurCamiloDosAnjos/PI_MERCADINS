@@ -98,7 +98,7 @@
 }
 
 .gm-status-open--fechado {
-  background: #fdf0e0; color: #b45309;
+  background: rgba(239, 68, 68, 0.15); color: #ef4444;
 }
 
 .gm-status-open--neutro {
@@ -172,16 +172,16 @@
 .gm-topbar-title { font-size: 16px; font-weight: 800; color: var(--branco); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .gm-topbar-actions { display: flex; align-items: center; gap: 10px; }
 
-.gm-btn-back {
-  display: flex; align-items: center; gap: 6px;
-  background: var(--azul-card); color: var(--cinza-texto);
-  font-size: 12px; font-weight: 700;
-  padding: 7px 16px; border-radius: var(--radius-full);
-  border: 1px solid var(--azul-item);
-  cursor: pointer; transition: all 0.2s;
-  white-space: nowrap;
+.gm-page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 1.4rem;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--branco);
+  letter-spacing: -0.3px;
 }
-.gm-btn-back:hover { background: var(--azul-item); color: var(--branco); }
 
 .gm-btn-sec {
   display: flex; align-items: center; gap: 7px;
@@ -194,7 +194,6 @@
 }
 .gm-btn-sec:hover { border-color: var(--branco-suave); color: var(--branco); }
 
-.gm-btn-back:focus-visible,
 .gm-btn-sec:focus-visible {
   outline: 3px solid var(--amarelo);
   outline-offset: 2px;
@@ -214,6 +213,11 @@
   opacity: 0.88;
 }
 .gm-btn-vitrine:focus-visible { outline-color: var(--azul-claro); }
+
+.gm-sidebar-voltar {
+  margin: 0.9rem 0.8rem 0;
+  animation-delay: 0s !important;
+}
 
 .gm-content {
   flex: 1;
@@ -488,6 +492,8 @@
 .gm-pedido-status--entregue { background: var(--verde-bg);    color: var(--verde-texto); }
 .gm-pedido-status--caminho  { background: var(--verde-medio); color: var(--verde-claro); }
 .gm-pedido-status--preparo  { background: var(--pendente-bg); color: var(--pendente-texto); }
+.gm-pedido-status--pronto   { background: rgba(52,211,153,0.16); color: #6ee7b7; }
+.gm-pedido-status--tentativa { background: rgba(251,146,60,0.16); color: #fdba74; }
 .gm-pedido-status--novo     { background: var(--novo-bg);     color: var(--novo-texto); }
 .gm-pedido-status--aguardando { background: rgba(96,165,250,0.15); color: #93c5fd; }
 .gm-pedido-status--cancelado  { background: rgba(248,113,113,0.15); color: #fca5a5; }
@@ -512,6 +518,265 @@
   font-weight: 800; font-size: 14px;
   flex-shrink: 0;
   min-width: 60px; text-align: center;
+}
+.gm-pedido-check--espera    { color: #93c5fd; font-weight: 700; }
+.gm-pedido-check--cancelado { color: #fca5a5; }
+
+/* Ações do pedido: avançar, voltar etapa e menu de status */
+.gm-pedido-acoes {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0; margin-left: auto;
+}
+.gm-pedido-btn {
+  font-family: var(--font);
+  font-size: 11px; font-weight: 700;
+  color: var(--branco-suave);
+  background: transparent;
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.gm-pedido-btn:hover { border-color: var(--azul-claro); color: var(--branco); background: var(--azul-medio); }
+.gm-pedido-btn:disabled,
+.gm-pedido-menu-btn:disabled { opacity: 0.55; cursor: wait; transform: none; filter: none; }
+
+.gm-pedido-menu-wrap { position: relative; flex-shrink: 0; }
+.gm-pedido-menu-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--azul-medio);
+  border: 1px solid var(--azul-item);
+  color: var(--branco-suave);
+  font-size: 15px; font-weight: 800; line-height: 1;
+}
+.gm-pedido-menu-btn:hover { border-color: var(--amarelo); color: var(--amarelo); }
+
+/* Popup centralizado de status do pedido */
+.gm-status-popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1200;
+  animation: popIn 0.16s ease;
+}
+.gm-status-popup {
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(80vh, 560px);
+  overflow-y: auto;
+  background: var(--azul-card);
+  border: 1px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  animation: popIn 0.16s ease;
+}
+.gm-status-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.gm-status-popup-titulo {
+  margin: 0;
+  font-size: 13px; font-weight: 800;
+  color: var(--branco);
+}
+.gm-status-popup-fechar {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--azul-item);
+  color: var(--branco-suave);
+  font-size: 12px;
+  cursor: pointer;
+}
+.gm-status-popup-fechar:hover { border-color: #ef4444; color: #ef4444; }
+.gm-pedido-menu-titulo {
+  margin: 6px 8px 4px;
+  font-size: 9px; font-weight: 800;
+  letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--cinza-texto);
+}
+.gm-pedido-menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--branco-suave);
+  background: transparent; border: 0; border-radius: 8px;
+  padding: 8px 9px;
+}
+.gm-pedido-menu-item:hover { background: var(--azul-medio); color: var(--branco); }
+.gm-pedido-menu-item--perigo { color: #fca5a5; }
+.gm-pedido-menu-item--perigo:hover { background: rgba(248, 113, 113, 0.14); color: #fecaca; }
+.gm-pedido-menu-div { height: 1px; background: var(--azul-borda); margin: 4px 3px; }
+
+/* ─── Modal de confirmação de status ──────────────────────────────────────── */
+.gm-status-mudanca { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.gm-status-mudanca-bloco { display: flex; flex-direction: column; gap: 7px; }
+.gm-status-mudanca-rotulo {
+  font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--cinza-texto);
+}
+.gm-status-mudanca-seta { font-size: 16px; font-weight: 800; color: var(--amarelo); }
+.gm-status-mudanca-nota {
+  margin: 0;
+  font-size: 12px; line-height: 1.6;
+  color: var(--branco-suave);
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.gm-status-mudanca-cliente { margin: 0; font-size: 11.5px; color: var(--cinza-texto); }
+.gm-status-mudanca-cliente strong { color: var(--branco); }
+.gm-btn-primary.gm-btn-danger { background: #ef4444; color: #ffffff; }
+.gm-btn-primary.gm-btn-danger:hover { background: #dc2626; }
+
+/* ─── Motivo do cancelamento (informado pela loja ao cliente) ──────────────── */
+.gm-status-motivo { display: flex; flex-direction: column; gap: 6px; }
+.gm-status-motivo > span {
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  color: var(--cinza-texto);
+}
+.gm-status-motivo > span em {
+  font-style: normal; font-weight: 600;
+  text-transform: none; letter-spacing: 0;
+}
+.gm-status-motivo textarea {
+  background: var(--azul-bg);
+  border: 1.5px solid var(--azul-item);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 600;
+  color: var(--branco); font-family: var(--font);
+  resize: vertical; min-height: 64px;
+  transition: border-color 0.2s;
+}
+.gm-status-motivo textarea:focus { outline: none; border-color: var(--amarelo); }
+.gm-status-motivo small { font-size: 10px; color: var(--cinza-texto); text-align: right; }
+
+/* ─── Detalhes completos do pedido ─────────────────────────────────────────── */
+.gm-modal--detalhes { max-width: 660px; }
+.gm-detalhe-status-msg { margin: 0; font-size: 13px; color: var(--cinza-texto); }
+.gm-detalhe-status-msg--erro { color: #fca5a5; }
+
+.gm-detalhe-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gm-detalhe-data,
+.gm-detalhe-tipo {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; color: var(--cinza-texto);
+}
+
+/* Linha do tempo — cada etapa é um botão que move o pedido para lá */
+.gm-detalhe-etapas {
+  display: flex; align-items: stretch; gap: 4px; flex-wrap: wrap;
+  list-style: none; margin: 0; padding: 0;
+}
+.gm-detalhe-etapa { display: flex; align-items: center; gap: 4px; flex: 1 1 110px; min-width: 0; }
+.gm-detalhe-etapa-liga { flex: 1; height: 2px; min-width: 8px; background: var(--azul-borda); }
+.gm-detalhe-etapa-btn {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; width: 100%; min-width: 0;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  color: var(--branco-suave); text-align: left;
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-full);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.gm-detalhe-etapa-btn:hover:not(:disabled) { border-color: var(--amarelo); color: var(--branco); }
+.gm-detalhe-etapa-btn:disabled { cursor: default; opacity: 1; }
+.gm-detalhe-etapa-btn.feita { background: var(--verde-bg); border-color: transparent; color: var(--verde-texto); }
+.gm-detalhe-etapa-btn.ativa { background: var(--amarelo); border-color: var(--amarelo); color: var(--azul-sidebar); font-weight: 800; }
+.gm-detalhe-etapa-ponto {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; flex-shrink: 0;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.14);
+  font-size: 9px; font-weight: 800;
+}
+.gm-detalhe-etapa--desvio { flex: 0 0 auto; }
+.gm-detalhe-etapa--desvio .gm-detalhe-etapa-btn {
+  border-style: dashed; border-color: rgba(251, 146, 60, 0.45); color: #fdba74;
+}
+.gm-detalhe-etapa--desvio .gm-detalhe-etapa-btn.ativa {
+  background: rgba(251, 146, 60, 0.16); border-style: solid; color: #fdba74;
+}
+
+.gm-detalhe-nota {
+  margin: 0; font-size: 11.5px; line-height: 1.6;
+  color: var(--amarelo); background: var(--pendente-bg);
+  border-radius: var(--radius-md); padding: 8px 10px;
+}
+
+.gm-detalhe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.gm-detalhe-bloco {
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  min-width: 0;
+}
+.gm-detalhe-bloco h4,
+.gm-detalhe-itens h4 {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 8px;
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--cinza-texto);
+}
+.gm-detalhe-bloco p {
+  margin: 0 0 4px;
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--branco-suave);
+  word-break: break-word;
+}
+.gm-detalhe-linha { display: flex; align-items: flex-start; gap: 6px; }
+.gm-detalhe-linha svg { flex-shrink: 0; margin-top: 3px; }
+.gm-detalhe-total { margin-top: 6px; color: var(--amarelo); font-weight: 800; }
+.gm-detalhe-total strong { font-size: 14px; }
+.gm-detalhe-motivo { color: #fca5a5; }
+
+.gm-detalhe-itens h4 { margin-top: 2px; }
+.gm-detalhe-itens-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.gm-detalhe-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center; gap: 10px;
+  background: var(--azul-bg);
+  border: 1px solid var(--azul-borda);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+.gm-detalhe-item-img {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; border-radius: 8px;
+  background: var(--azul-medio); color: var(--cinza-texto);
+}
+.gm-detalhe-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.gm-detalhe-item-nome { font-size: 12.5px; font-weight: 700; color: var(--branco); min-width: 0; word-break: break-word; }
+.gm-detalhe-item-qtd { font-size: 11.5px; color: var(--cinza-texto); white-space: nowrap; }
+.gm-detalhe-item-sub { font-size: 12.5px; font-weight: 800; color: var(--amarelo); min-width: 72px; text-align: right; }
+.gm-detalhe-itens-texto { margin: 0; font-size: 12.5px; color: var(--branco-suave); }
+.gm-detalhe-itens-legenda { margin: 6px 0 0; font-size: 10px; font-style: italic; color: var(--cinza-texto); }
+
+@media (max-width: 560px) {
+  .gm-detalhe-etapa { flex-basis: 100%; }
+  .gm-detalhe-etapa-liga { display: none; }
+  .gm-detalhe-item { grid-template-columns: 36px 1fr auto; }
+  .gm-detalhe-item-qtd { grid-column: 2; }
+  .gm-detalhe-item-sub { grid-column: 3; grid-row: 1; min-width: 0; }
 }
 
 /* ─── Avaliações ────────────────────────────────────────────────────────── */
@@ -992,6 +1257,7 @@
 }
 .gm-aviso-custo p { margin: 0; font-size: 0.85rem; color: var(--pendente-texto); }
 
+.gm-bar-chart--diario { gap: 2px; }
 .gm-bar-chart--diario .gm-bar-val { display: none; }
 .gm-bar-chart--diario .gm-bar-col { flex: 1; min-width: 0; }
 .gm-bar-chart--diario .gm-bar-label { font-size: 9px; }

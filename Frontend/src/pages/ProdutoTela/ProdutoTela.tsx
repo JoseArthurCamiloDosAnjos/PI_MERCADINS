@@ -16,9 +16,9 @@ import CarrinhoSidebar from '../../components/CarrinhoSidebar/CarrinhoSidebar';
 import QuantidadeStepper from '../../components/QuantidadeStepper/QuantidadeStepper';
 import {
   IconStore,
-  IconArrowLeft,
   IconCamera,
 } from '../../components/Icons';
+import LogoTopbar from '../../components/LogoTopbar';
 import { uploadImagem, ehImagemValida } from '../../services/upload';
 
 // ─── Ícones locais (mesmo padrão usado na VitrineCliente) ─────────────────────
@@ -83,6 +83,7 @@ function IconCard({ size = 15 }: { size?: number }) {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ProdutoDetalhe extends ProdutoCarrinho {
+  slug?: string;
   imagens?: string[];
   precoOriginal?: string;
   avaliacao?: number;
@@ -127,7 +128,7 @@ interface ProdutoTelaProps {
   corBase?: string;
   corDestaque?: string;
   recomendados?: ProdutoDetalhe[];
-  onAbrirProduto?: (catId: number, prodId: number) => void;
+  onAbrirProduto?: (prod: ProdutoDetalhe) => void;
   onVoltar: () => void;
   onIrParaCarrinho?: () => void;
 }
@@ -248,6 +249,8 @@ export default function ProdutoTela({
       const url = await enviarFotoParaStorage(arquivo);
       if (url) setFotoAval(url);
       else showToast('erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } catch (e) {
+      showToast('erro', e instanceof Error ? e.message : 'Não foi possível enviar a foto. Tente novamente.');
     } finally {
       setFotoEnviando(false);
     }
@@ -442,9 +445,7 @@ export default function ProdutoTela({
 
       {/* ── Topbar ────────────────────────────────────────────────────── */}
       <div className="pd-topbar">
-        <button className="pd-btn-voltar" onClick={onVoltar}>
-          <IconArrowLeft size={15} /> Voltar
-        </button>
+        <LogoTopbar onClick={onVoltar} />
 
         <div className="pd-busca-wrap">
           <IconSearch size={14} />
@@ -634,7 +635,7 @@ export default function ProdutoTela({
                     key={p.id_produto}
                     type="button"
                     className="pd-reco-card"
-                    onClick={() => onAbrirProduto?.(categoriaId, p.id_produto)}
+                    onClick={() => onAbrirProduto?.(p)}
                   >
                     <span className="pd-reco-img">
                       {imagensReco.length > 0

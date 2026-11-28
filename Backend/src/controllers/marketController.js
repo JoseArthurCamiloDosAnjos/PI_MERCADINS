@@ -30,6 +30,33 @@ function gerarSlug(nome) {
     .replace(/^-|-$/g, '');
 }
 
+// Monta um slug único: nome → nome-cidade → nome-cidade-2, -3, ...
+async function slugUnico(sql, nome, cidade, excetoId = null) {
+  const base = gerarSlug(nome);
+  const sufixoCidade = cidade ? gerarSlug(cidade) : "";
+
+  const ocupado = async (s) => {
+    const linhas = excetoId
+      ? await sql`SELECT 1 FROM mercados WHERE slug = ${s} AND id_mercado != ${excetoId}`
+      : await sql`SELECT 1 FROM mercados WHERE slug = ${s}`;
+    return linhas.length > 0;
+  };
+
+  const candidatos = [base];
+  if (sufixoCidade) candidatos.push(`${base}-${sufixoCidade}`);
+
+  for (const c of candidatos) {
+    if (!(await ocupado(c))) return c;
+  }
+
+  const prefixo = sufixoCidade ? `${base}-${sufixoCidade}` : base;
+  for (let n = 2; n < 1000; n++) {
+    const c = `${prefixo}-${n}`;
+    if (!(await ocupado(c))) return c;
+  }
+  return `${prefixo}-${Date.now()}`;
+}
+
 // Helpers de validação
 
 function limparMascara(valor) {
@@ -316,13 +343,7 @@ async function criarMercadoCompleto(sql, id_usuario, d) {
     }
   }
 
-  let slug = gerarSlug(d.nome);
-  const slugExistente = await sql`
-    SELECT id_mercado FROM mercados WHERE slug = ${slug}
-  `;
-  if (slugExistente.length > 0) {
-    slug = `${slug}-${Date.now()}`;
-  }
+  const slug = await slugUnico(sql, d.nome, d.cidade);
 
   const [novoMercado] = await sql`
     INSERT INTO mercados (nome, email, telefone, cnpj, cep, estado, cidade, bairro, rua, descricao, slug, paleta, cor_base, cor_destaque, cor_texto, cor_icones, cor_texto_sec, plano, categorias, horario, taxa_entrega, pedido_minimo, oferece_entrega, oferece_retirada, termos_aceitos_em, termos_versao, termos_ip, asaas_wallet_id)
@@ -726,7 +747,7 @@ const atualizarMercado = async (req, res) => {
       return res.status(403).json({ erro: "Apenas o dono ou admin pode editar o mercado" });
 
     const [existente] = await sql`
-      SELECT id_mercado FROM mercados
+      SELECT id_mercado, cidade FROM mercados
       WHERE id_mercado = ${Number(id)}
     `;
 
@@ -749,14 +770,7 @@ const atualizarMercado = async (req, res) => {
 
     let slugAtualizado = undefined;
     if (nome?.trim()) {
-      let slug = gerarSlug(nome);
-      const slugExistente = await sql`
-        SELECT id_mercado FROM mercados WHERE slug = ${slug} AND id_mercado != ${Number(id)}
-      `;
-      if (slugExistente.length > 0) {
-        slug = `${slug}-${Date.now()}`;
-      }
-      slugAtualizado = slug;
+      slugAtualizado = await slugUnico(sql, nome, cidade ?? existente.cidade, Number(id));
     }
 
     const [mercadoAtualizado] = await sql`

@@ -13,8 +13,8 @@ const buscarProdutos = async (req, res) => {
 
     const produtos = await sql`
       SELECT
-        p.id_produto, p.nome, p.preco, p.imagem, p.imagens, p.estoque,
-        c.id_categoria, c.nome AS categoria,
+        p.id_produto, p.nome, p.preco, p.imagem, p.imagens, p.estoque, p.slug AS produto_slug,
+        c.id_categoria, c.nome AS categoria, c.slug AS categoria_slug,
         m.id_mercado, m.nome AS mercado, m.slug, m.cidade, m.estado
       FROM produtos p
       JOIN categorias c ON c.id_categoria = p.id_categoria
@@ -44,6 +44,8 @@ const buscarProdutos = async (req, res) => {
         id_mercado: p.id_mercado,
         mercado: p.mercado,
         slug: p.slug,
+        produtoSlug: p.produto_slug,
+        categoriaSlug: p.categoria_slug,
         cidade: p.cidade,
         estado: p.estado,
       })),

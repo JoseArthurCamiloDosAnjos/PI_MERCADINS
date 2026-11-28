@@ -11,7 +11,6 @@ import { useToast } from './hooks/useToast'
 import ToastContainer from './components/Toast'
 import CookieBanner from './components/CookieBanner/CookieBanner'
 import { type EnderecoEntrega, carregarEndereco, salvarEndereco, limparEnderecoSalvo, formatarEndereco, ENDERECO_VAZIO } from './utils/endereco'
-import { abrirAbaAsaas } from './utils/abaAsaas'
 
 const Login = lazy(() => import('./pages/Login/Login'))
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada/PaginaNaoEncontrada'))
@@ -68,21 +67,46 @@ function VitrineClienteWrapper() {
 // ─── Wrapper: resolve slug -> mercadoId e renderiza a tela cheia do produto ────
 
 function ProdutoTelaWrapper() {
-  const { slug, categoriaId, produtoId } = useParams<{ slug: string; categoriaId: string; produtoId: string }>()
+  const { slug, categoriaSlug, produtoSlug } = useParams<{ slug: string; categoriaSlug: string; produtoSlug: string }>()
   const navigate = useNavigate()
   const [mercadoId, setMercadoId] = useState<number | null>(null)
+  const [categoriaId, setCategoriaId] = useState<number | null>(null)
+  const [produtoId, setProdutoId] = useState<number | null>(null)
+  const [categoriaSlugResolvido, setCategoriaSlugResolvido] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    if (!slug) {
+    if (!slug || !categoriaSlug || !produtoSlug) {
       navigate('/')
       return
     }
     api.buscarMercadoPorSlug(slug)
-      .then(data => setMercadoId(data.mercado.id_mercado))
+      .then(async (data) => {
+        const mercadoId = data.mercado.id_mercado
+        setMercadoId(mercadoId)
+        
+        // Resolver categoria por slug
+        const categorias = await api.listarCategorias(mercadoId)
+        const categoria = categorias.find((c: { slug?: string }) => c.slug === categoriaSlug)
+        if (!categoria) {
+          navigate('/')
+          return
+        }
+        setCategoriaId(categoria.id)
+        setCategoriaSlugResolvido(categoria.slug ?? null)
+        
+        // Resolver produto por slug
+        const produtos = await api.listarProdutos(mercadoId, categoria.id)
+        const produto = produtos.find((p: { slug?: string }) => p.slug === produtoSlug)
+        if (!produto) {
+          navigate('/')
+          return
+        }
+        setProdutoId(produto.id_produto)
+      })
       .catch(() => navigate('/'))
       .finally(() => setCarregando(false))
-  }, [slug, navigate])
+  }, [slug, categoriaSlug, produtoSlug, navigate])
 
   if (carregando) return <LoadingOverlay mensagem="Carregando..." />
   if (!mercadoId || !categoriaId || !produtoId) return null
@@ -90,11 +114,15 @@ function ProdutoTelaWrapper() {
   return (
     <ProdutoTelaContainer
       mercadoId={mercadoId}
-      categoriaId={Number(categoriaId)}
-      produtoId={Number(produtoId)}
+      categoriaId={categoriaId}
+      produtoId={produtoId}
       onVoltar={() => navigate(-1)}
-      onAbrirCarrinho={() => navigate(`/vitrine/${slug}/carrinho`)}
-      onAbrirProduto={(catId, prodId) => navigate(`/vitrine/${slug}/produto/${catId}/${prodId}`)}
+      onAbrirCarrinho={() => navigate(`/${slug}/carrinho`)}
+      onAbrirProduto={(prod: { slug?: string }) => {
+        if (prod.slug && categoriaSlugResolvido) {
+          navigate(`/${slug}/produto/${categoriaSlugResolvido}/${prod.slug}`);
+        }
+      }}
     />
   )
 }
@@ -145,7 +173,7 @@ function CartWrapper() {
   const [cupom, setCupom] = useState<{ codigo: string; desconto: number } | null>(null)
   const [verificandoCupom, setVerificandoCupom] = useState(false)
   const [agendamento, setAgendamento] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'cartao'>('presencial')
+  const [formaPagamento, setFormaPagamento] = useState<'presencial' | 'cartao' | 'boleto'>('presencial')
   const [carregando, setCarregando] = useState(true)
   const [finalizando, setFinalizando] = useState(false)
   const [observacao, setObservacao] = useState('')
@@ -281,19 +309,13 @@ function CartWrapper() {
       })
       const idPedido = resposta.pedido?.id
 
-      if (formaPagamento === 'cartao' && resposta.pagamento?.urlPagamento) {
+      if ((formaPagamento === 'cartao' || formaPagamento === 'boleto') && resposta.pagamento?.urlPagamento) {
         carrinho.limpar()
         setObservacao('')
         setCupom(null)
         setAgendamento('')
         if (mercadoId) salvarEscolhas(mercadoId, { tipoEntrega: tipoEfetivo })
-        const janela = abrirAbaAsaas(resposta.pagamento.urlPagamento)
-        if (janela) {
-          showToast('sucesso', 'Pagamento aberto em nova aba. Esta aba acompanha o pedido: assim que for confirmado, a página atualiza sozinha.')
-        } else {
-          showToast('aviso', 'O navegador bloqueou a nova aba de pagamento. Use o botão "Abrir a página de pagamento" na tela do pedido.')
-        }
-        setTimeout(() => navigate(idPedido ? `/pedidos/${idPedido}` : '/pedidos'), 1600)
+        window.location.href = resposta.pagamento.urlPagamento
         return
       }
 
@@ -320,7 +342,7 @@ function CartWrapper() {
         storeName={mercadoNome}
         storeLocation={mercadoLocal}
         initialItems={itensConvertidos}
-        onBack={() => navigate(`/vitrine/${slug}`)}
+        onBack={() => navigate(`/${slug}`)}
         onCheckout={handleCheckout}
         finalizando={finalizando}
         observacao={observacao}
@@ -431,9 +453,9 @@ function Rotas() {
           <Route path="/vendedor/mercado/:mercadoId/vitrine" element={usuario && temMercado ? <VitrineVendedorWrapper /> : <Navigate to={usuario ? '/perfil' : '/auth'} />} />
           <Route path="/registrar-mercado" element={usuario ? <RegistrarMercado /> : <Navigate to="/auth" />} />
           <Route path="/planos"            element={<SelecionarPlano />} />
-          <Route path="/vitrine/:slug"                                    element={<VitrineClienteWrapper />} />
-          <Route path="/vitrine/:slug/carrinho"                           element={<CartWrapper />} />
-          <Route path="/vitrine/:slug/produto/:categoriaId/:produtoId"    element={<ProdutoTelaWrapper />} />
+          <Route path="/:slug"                                    element={<VitrineClienteWrapper />} />
+          <Route path="/:slug/carrinho"                           element={<CartWrapper />} />
+          <Route path="/:slug/produto/:categoriaSlug/:produtoSlug" element={<ProdutoTelaWrapper />} />
           <Route path="/admin"             element={usuario?.is_admin ? <Administrador /> : <Navigate to={destino} />} />
           <Route path="*"                  element={<PaginaNaoEncontrada />} />
         </Routes>

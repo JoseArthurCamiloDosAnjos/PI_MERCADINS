@@ -485,38 +485,37 @@ const cancelarAssinatura = async (req, res) => {
 };
 
 const webhookAsaas = async (req, res) => {
-  // ── 1. Autenticação ────────────────────────────────────────────────────────
-  const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
-    .split(',')
-    .map((token) => token.trim())
-    .filter(Boolean);
-  const tokenRecebido = String(
-    req.headers['asaas-access-token'] || req.headers['webhook-security-token'] || ''
-  ).trim();
-
-  if (tokensAceitos.length === 0) {
-    console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — rejeitando eventos (fail-closed).');
-    return res.status(401).json({ erro: 'Webhook não configurado (ASAAS_WEBHOOK_TOKEN ausente).' });
-  }
-  if (!tokenRecebido || !tokensAceitos.includes(tokenRecebido)) {
-    return res.status(401).json({ erro: 'Token de webhook inválido.' });
-  }
-
-  const evento = req.body?.event;
-  const eventId = req.body?.id;
-  const pagamento = req.body?.payment;
-  const subscriptionNoPayload = req.body?.subscription?.id || null;
-
-  if (!evento || !eventId || (!pagamento?.id && !subscriptionNoPayload)) {
-    return res.status(400).json({ erro: 'Payload de webhook inválido (event/id/payment ausentes).' });
-  }
-
-  if (pagamento && req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
-    pagamento.additionalInfo = req.body.additionalInfo;
-  }
-
-  // ── 2. Idempotência + Lógica principal (tudo dentro do try-catch) ───────────
   try {
+    // ── 1. Autenticação ────────────────────────────────────────────────────────
+    const tokensAceitos = String(process.env.ASAAS_WEBHOOK_TOKEN || '')
+      .split(',')
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const tokenRecebido = String(
+      req.headers['asaas-access-token'] || req.headers['webhook-security-token'] || ''
+    ).trim();
+
+    if (tokensAceitos.length === 0) {
+      console.warn('webhookAsaas: ASAAS_WEBHOOK_TOKEN ausente — rejeitando eventos (fail-closed).');
+      return res.status(401).json({ erro: 'Webhook não configurado (ASAAS_WEBHOOK_TOKEN ausente).' });
+    }
+    if (!tokenRecebido || !tokensAceitos.includes(tokenRecebido)) {
+      return res.status(401).json({ erro: 'Token de webhook inválido.' });
+    }
+
+    const evento = req.body?.event;
+    const eventId = req.body?.id;
+    const pagamento = req.body?.payment;
+    const subscriptionNoPayload = req.body?.subscription?.id || null;
+
+    if (!evento || !eventId || (!pagamento?.id && !subscriptionNoPayload)) {
+      return res.status(400).json({ erro: 'Payload de webhook inválido (event/id/payment ausentes).' });
+    }
+
+    if (pagamento && req.body.additionalInfo && typeof req.body.additionalInfo === 'object') {
+      pagamento.additionalInfo = req.body.additionalInfo;
+    }
+
     const sql = await conectar();
 
     // ── 2.1 Idempotência por ID do EVENTO (gate de 1ª camada) ────────────────
@@ -614,19 +613,10 @@ const webhookAsaas = async (req, res) => {
     }
 
     await marcarEventoComoDone(sql, eventId);
-    res.status(200).json({ recebido: true });
+    return res.status(200).json({ recebido: true });
   } catch (err) {
-    try {
-      await sql`DELETE FROM asaas_eventos WHERE asaas_event_id = ${eventId} AND status = 'PENDING'`;
-    } catch (erroLimpeza) {
-      console.error('webhookAsaas: falha ao liberar evento para retry:', erroLimpeza.message);
-    }
-    const statusErro = Number(err?.status);
-    if (statusErro === 404) {
-      return res.status(404).json({ erro: err.message });
-    }
     console.error('ERRO webhookAsaas:', err);
-    res.status(500).json({ erro: 'Erro ao processar webhook.', detalhe: err.message, stack: err.stack });
+    return res.status(500).json({ erro: 'Erro ao processar webhook.', detalhe: err.message, stack: err.stack });
   }
 };
 

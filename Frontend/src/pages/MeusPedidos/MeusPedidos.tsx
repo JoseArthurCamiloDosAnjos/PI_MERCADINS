@@ -281,6 +281,8 @@ function DetalhePedido({
 
   const statusPedido = pedido?.status;
   const statusAnteriorRef = useRef<string | null>(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!statusPedido) return;
     const anterior = statusAnteriorRef.current;
@@ -292,9 +294,10 @@ function DetalhePedido({
       fecharAbaAsaas();
       if (statusPedido === 'pendente') {
         showToast('sucesso', 'Pagamento confirmado! A aba do pagamento foi fechada e o pedido segue para a loja.');
+        navigate('/');
       }
     }
-  }, [statusPedido, showToast]);
+  }, [statusPedido, showToast, navigate]);
 
   useEffect(() => {
     if (!statusPedido) return;

@@ -136,7 +136,7 @@ async function criarAssinatura({ customerId, valor, ciclo, descricao, redirectUr
     const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
     return { ...assinatura, semRedirect: false }
   } catch (erro) {
-    if (corpo.callback && erro.status >= 400 && erro.status < 500 && erroDeCallbackRecusado(erro.message, erro.code)) {
+    if (corpo.callback && (erro.status >= 400 && erro.status < 500 || erro.status >= 500) && erroDeCallbackRecusado(erro.message, erro.code)) {
       delete corpo.callback
       try {
         const assinatura = await chamarApi('/v3/subscriptions', { method: 'POST', body: corpo })
@@ -213,7 +213,7 @@ async function criarPagamentoPedido({ customerId, valor, descricao, externalRefe
       semRedirect: false,
     }
   } catch (erro) {
-    if (corpo.callback && erro.status >= 400 && erro.status < 500 && erroDeCallbackRecusado(erro.message, erro.code)) {
+    if (corpo.callback && (erro.status >= 400 && erro.status < 500 || erro.status >= 500) && erroDeCallbackRecusado(erro.message, erro.code)) {
       delete corpo.callback
       try {
         const pagamento = await chamarApi('/v3/payments', { method: 'POST', body: corpo })
